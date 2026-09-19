@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-v87.4.38-durable-outbox";
+const VERSION = "ward-command-pwa-v87.4.39-onward";
 const PRECACHE = [
   "./",
   "./index.html",
