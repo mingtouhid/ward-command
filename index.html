@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.4.45 obs-admit-form -->
+<!-- WARD COMMAND RELEASE: v87.4.46 obs-hero-refer-push -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -371,6 +371,9 @@ a{color:var(--teal2);text-decoration:none}
 .multi{display:flex;flex-wrap:wrap;gap:6px}
 
 .hero{background:var(--hero);color:var(--hero-ink);border:0;border-radius:28px;padding:22px 20px 20px;margin:0 0 14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.hero-obs{position:absolute;top:14px;right:14px;z-index:2;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:8px 12px;border-radius:14px;background:rgba(245,158,11,.22);border:1px solid rgba(253,230,138,.35);color:#fff7ed;text-align:right}
+.hero-obs span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;opacity:.9}
+.hero-obs b{font-size:20px;line-height:1;font-weight:800}
 .hero .label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--hero-muted);font-weight:600}
 .hero .count{font-size:56px;line-height:.95;font-weight:700;margin:10px 0 8px;letter-spacing:-.03em}
 .hero .sub{color:var(--hero-muted);font-size:13px;line-height:1.45}
@@ -620,7 +623,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.4.45 obs-admit-form -->
+<!-- WARD COMMAND RELEASE: v87.4.46 obs-hero-refer-push -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1046,7 +1049,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.4.45";
+const APP_VERSION="8.7.4.46";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1226,7 +1229,7 @@ async function notifyServerEvent({eventType,category='clinical',priority='normal
   const allowed={
     admission:['clinical','active_team'],discharge:['clinical','active_team'],transfer:['clinical','active_team'],
     handover:['handovers','handover'],task:['tasks','task_assignees'],ect:['ect','active_team'],
-    critical_status_update:['clinical','active_team']
+    critical_status_update:['clinical','active_team'],observation:['clinical','active_team']
   };
   const pair=allowed[eventType];
   if(!pair||pair[0]!==category||pair[1]!==recipientScope) throw new Error("Invalid notification event routing");
@@ -2144,6 +2147,7 @@ function homeView(){
   }));
   return `<div class="home-split">
     <div class="hero">
+      <button type="button" class="hero-obs" onclick="go('observe')"><span>Under observation</span><b>${(S.patients||[]).filter(p=>p.status==='observation').length}</b></button>
       <div class="label">Patients in ward</div>
       <div class="count">${list.length}</div>
       <div class="hero-wards">${wards.length?wards.map(w=>`<div class="hero-ward"><b>${w.n}</b><span>${esc(w.name)}</span></div>`).join(""):`<p class="sub">No sections yet</p>`}</div>
@@ -2158,7 +2162,6 @@ function homeView(){
       <button class="stat attn" onclick="go('handover')"><span>Handover</span><b>${inbox}</b></button>
       <button class="stat" onclick="go('ect')"><span>ECT planned</span><b>${ect}</b></button>
       <button class="stat" onclick="ui.ctab='in';go('census')"><span>Empty beds</span><b>${empty}</b></button>
-      <button class="stat attn" onclick="go('observe')"><span>Under observation</span><b>${(S.patients||[]).filter(p=>p.status==='observation').length}</b></button>
     </div>
     <div class="card">
       <p class="tiny">On duty</p>
@@ -2624,16 +2627,48 @@ async function convertObservation(pid){
     }
     const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.outcome="admitted"}
     ev(pid,"Admitted from observation",true,"note");
+    try{
+      await notifyServerEvent({
+        eventType:"admission",category:"clinical",priority:"normal",patientId:pid,
+        title:"Admitted from observation",
+        body:p.name+" admitted from observation",
+        targetUrl:"./#/snap/"+encodeURIComponent(pid),
+        recipientScope:"active_team",
+        dedupeKey:"admission:"+pid
+      });
+    }catch(ne){ evFail(pid,"Admission notification",ne); }
     closePanel();toast("Admitted "+p.name,"ok");save();render();
   }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
   finally{workflowUnlock("obs-admit",pid);setBusy(false)}
 }
 function obsCloseAsk(pid,outcome){
   const p=patient(pid);if(!p||p.status!=="observation")return;
-  const label=outcome==="referred"?"Refer":"Dispose";
-  ui.confirm={fn:"obsClose",pid,outcome,title:label+" observation",ok:label,
-    body:label+" "+p.name+" and free the bed? This is not a ward discharge of an admitted patient."};
+  if(outcome==="referred"){
+    ui.obsRefer={pid,dept:"",reason:""};
+    openPanel("obsRefer",{pid});
+    return;
+  }
+  ui.confirm={fn:"obsClose",pid,outcome,title:"Dispose observation",ok:"Dispose",
+    body:"Dispose "+p.name+" and free the bed? This is not a ward discharge of an admitted patient."};
   render();
+}
+function obsReferForm(){
+  const pid=(ui.panel&&ui.panel.pid)||(ui.obsRefer&&ui.obsRefer.pid);
+  const p=patient(pid);if(!p)return "";
+  const d=ui.obsRefer=ui.obsRefer||{pid};
+  return `<p class="tiny">Refer ${esc(p.name)} out of observation and free the bed.</p>
+    <label class="field"><span>Refer to department</span><input id="orefdept" value="${esc(d.dept||"")}" placeholder="e.g. Medicine / Neurology"/></label>
+    <label class="field"><span>Reason</span><textarea id="orefreason" rows="3" placeholder="Why referred">${esc(d.reason||"")}</textarea></label>
+    <button class="btn block" onclick="submitObsRefer('${pid}')">Refer</button>
+    <button class="btn ghost block" style="margin-top:8px" onclick="closePanel()">Cancel</button>`;
+}
+function submitObsRefer(pid){
+  const dept=(document.getElementById("orefdept")||{}).value||"";
+  const reason=(document.getElementById("orefreason")||{}).value||"";
+  ui.obsRefer=Object.assign(ui.obsRefer||{},{pid,dept:dept.trim(),reason:reason.trim()});
+  if(!ui.obsRefer.dept){toast("Enter the department.","bad");return}
+  if(!ui.obsRefer.reason){toast("Enter the reason.","bad");return}
+  closeObservation(pid,"referred");
 }
 async function closeObservation(pid,outcome){
   if(!needWrite())return;
@@ -2642,15 +2677,18 @@ async function closeObservation(pid,outcome){
   if(workflowLocked("obs-close",pid))return;
   setBusy(true,"Closing observation\u2026");
   try{
+    const dept=(ui.obsRefer&&ui.obsRefer.dept)||(val("orefdept")||"").trim()||ref;
+    const reason=(ui.obsRefer&&ui.obsRefer.reason)||(val("orefreason")||"").trim();
     const {data,error}=await sb.rpc("ward_close_observation",{
-      p_token:sessionTok,p_patient_id:pid,p_outcome:outcome,p_referral_to:ref||null
+      p_token:sessionTok,p_patient_id:pid,p_outcome:outcome,p_referral_to:outcome==="referred"?dept:null,p_reason:reason||null
     });
     if(error) throw error;
     const bed=S.beds.find(b=>b.patientId===pid); if(bed) bed.patientId=null;
     p.status="discharged";p.dischargedAt=now();p.dischargeMode=outcome==="referred"?"transfer":"advice";
     const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.outcome=outcome}
-    ev(pid,"Observation ended \u00b7 "+outcome,true,"note");
-    toast(outcome==="referred"?"Referred":"Disposed","ok");save();go("observe");
+    ev(pid,"Observation ended \u00b7 "+outcome+(dept?" \u00b7 "+dept:""),true,"note");
+    closePanel();ui.obsRefer=null;
+    toast(outcome==="referred"?"Referred"+(dept?" to "+dept:""):"Disposed","ok");save();go("observe");
   }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
   finally{workflowUnlock("obs-close",pid);setBusy(false)}
 }
@@ -3265,6 +3303,7 @@ function livePanels(){
   if(p.kind==="ect") html+=ectFormBody(p.id);
   if(p.kind==="task") html+=taskFormBody(p.id);
   if(p.kind==="obsAdmit") html+=panelBox("Admit from observation",obsAdmitForm());
+  if(p.kind==="obsRefer") html+=panelBox("Refer from observation",obsReferForm());
   return html;
 }
 function giveHandoverForm(defShift){
