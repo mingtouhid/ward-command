@@ -1047,12 +1047,23 @@ function seed(){
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
 const SETUP_PIN="4829";
-const APP_VERSION="8.7.4.30";
+const APP_VERSION="8.7.4.32";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
 try{pending=JSON.parse(localStorage.getItem("ward-command-outbox")||"[]")||[]}catch(e){pending=[]}
-const persistOutbox=()=>{try{localStorage.setItem("ward-command-outbox",JSON.stringify(pending.slice(-200)))}catch(e){}};
+function scrubForeignOutbox(){
+  const me=String(S.userId||"");
+  pending=pending.filter(op=>{
+    if(op.table!=="handovers") return true;
+    const from=(op.row&& (op.row.from_id||op.row.from))||"";
+    if(me && from && String(from)!==me) return false;
+    const err=String(op.lastError||"").toLowerCase();
+    if(/handover sender must be|posted by another resident/.test(err)) return false;
+    return true;
+  });
+}
+const persistOutbox=()=>{try{scrubForeignOutbox();localStorage.setItem("ward-command-outbox",JSON.stringify(pending.slice(-200)))}catch(e){}};
 window.__WARD_S=S;
 const persist=()=>localStorage.setItem(KEY,JSON.stringify(S));
 const save=()=>{persist(); if(sb&&!applyingRemote) schedulePush()};
@@ -1095,6 +1106,11 @@ function stampRow(table,row){
 }
 function queue(table,row){
   if(!row||!row.id&&table!=="patient_snapshots")return;
+  if(table==="handovers"){
+    const from=row.from_id||row.from;
+    if(from && S.userId && String(from)!==String(S.userId)) return;
+  }
+  pending=pending.filter(op=>!(op.table===table && op.row && row.id && op.row.id===row.id && op.status!=="acked"));
   const op={id:"op-"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),table,row:stampRow(table,row),createdAt:now(),lastAttemptAt:null,tries:0,status:"pending",lastError:""};
   pending.push(op);
   persistOutbox();
@@ -1103,8 +1119,8 @@ function qSnap(pid){const sn=S.snaps[pid]||{};queue("patient_snapshots",{id:pid,
 function qEvent(e){if(!e)return;queue("activity_log",{id:e.id,patient_id:(e.pid&&S.patients.some(x=>x.id===e.pid))?e.pid:null,kind:e.kind||evKind(e.title),title:e.title||"Event",detail:e.detail||null,actor_id:S.userId||null,created_at:e.at||now()})}
 function qHandover(h){
   if(!h||!h.from)return;
-  // Never enqueue another resident's handover — server stamps from_id from the session.
-  if(String(h.from)!==String(S.userId) && h.status!=="acknowledged") return;
+  // Outbox may only carry handovers this session posted. Taking uses ward_take_handover.
+  if(String(h.from)!==String(S.userId)) return;
   queue("handovers",{id:h.id,from_id:S.userId,to_id:h.to||S.userId,shift:["morning","evening","night"].includes(h.shift)?h.shift:"morning",status:h.status||"sent",created_at:h.at||now(),acknowledged_by:h.ackBy||null,acknowledged_at:h.ackAt||null});
 }
 function qHitem(i){if(!i||!i.hid||!i.pid)return;queue("handover_items",{id:i.id,handover_id:i.hid,patient_id:i.pid,priority:["stat","high","medium","low"].includes(i.pri)?i.pri:"high",problem:i.problem||"",action_required:i.action||"",done:!!i.done})}
@@ -1540,7 +1556,14 @@ function outboxPatient(op){
 function isStaleOutbox(op){
   if(!op) return false;
   const msg=String(op.lastError||"").toLowerCase();
+  const row=op.row||{};
   const p=outboxPatient(op);
+  if(op.table==="handovers"){
+    const from=row.from_id||row.from;
+    if(from && S.userId && String(from)!==String(S.userId)) return true;
+    if(/handover sender must be|posted by another resident/.test(msg)) return true;
+  }
+  if(/only the receiving resident/.test(msg)) return true;
   if(op.table==="ect_plans"){
     if(p&&p.status==="discharged") return true;
     if(!p && /active patient not found/.test(msg)) return true;
@@ -1660,7 +1683,7 @@ async function cloudPush(includeEct){
   await step("medication_orders",(S.orders||[]).map(o=>({id:o.id,patient_id:o.pid,drug:o.drug,dose:o.dose,route:o.route||"PO",frequency:o.freq||"OD",scheduled_time:o.time||null,start_date:asDate(o.start)||asDate(now()),stop_date:asDate(o.stop),status:o.status||"active"})));
   await step("medication_doses",(S.doses||[]).filter(d=>d.oid&&d.pid).map(d=>({id:d.id,order_id:d.oid,patient_id:d.pid,scheduled_at:d.at||now(),status:d.status||"pending",given_by:d.by||null})));
   await step("tasks",(S.tasks||[]).map(x=>({id:x.id,patient_id:x.pid,title:x.title,detail:x.detail||"",priority:["stat","high","medium","low"].includes(x.pri)?x.pri:"high",status:x.status||"open",assigned_to:x.to||null,created_by:S.userId||null})));
-  await step("handovers",(S.handovers||[]).filter(h=>h.from&&h.to).map(h=>({id:h.id,from_id:h.from,to_id:h.to,shift:["morning","evening","night"].includes(h.shift)?h.shift:"morning",status:h.status||"sent",created_at:h.at||now()})));
+  await step("handovers",(S.handovers||[]).filter(h=>h.from&&h.to&&String(h.from)===String(S.userId)).map(h=>({id:h.id,from_id:h.from,to_id:h.to,shift:["morning","evening","night"].includes(h.shift)?h.shift:"morning",status:h.status||"sent",created_at:h.at||now()})));
   await step("handover_items",(S.hitems||[]).filter(i=>i.hid&&i.pid).map(i=>({id:i.id,handover_id:i.hid,patient_id:i.pid,priority:["stat","high","medium","low"].includes(i.pri)?i.pri:"high",problem:i.problem||"",action_required:i.action||"",done:!!i.done})));
   if(includeEct){
     let remote=[];
@@ -2944,7 +2967,7 @@ async function ackHNow(id){
   const h=S.handovers.find(x=>x.id===id);if(!h)return;
   if(h._busy)return; h._busy=true; render();
   const prev={status:h.status,ackBy:h.ackBy,ackAt:h.ackAt};
-  h.status="acknowledged";h.ackBy=S.userId;h.ackAt=now(); qHandover(h); save(); render();
+  h.status="acknowledged";h.ackBy=S.userId;h.ackAt=now(); save(); render();
   try{
     if(!sessionTok||!sb) throw new Error("Sign in again to sync writes");
     let error=null;
@@ -2963,7 +2986,7 @@ async function ackHNow(id){
     ev(null,"Handover acknowledged · "+shiftLabel(h.shift)+" · "+rname(S.userId),true,"handover");
     toast("Acknowledged "+shiftLabel(h.shift),"ok");
   }catch(e){
-    h.status=prev.status;h.ackBy=prev.ackBy;h.ackAt=prev.ackAt;qHandover(h);save();evFail(null,"Handover acknowledgement",e);toast("Handover was not acknowledged","bad");
+    h.status=prev.status;h.ackBy=prev.ackBy;h.ackAt=prev.ackAt;save();evFail(null,"Handover acknowledgement",e);toast("Handover was not acknowledged","bad");
   }finally{h._busy=false;setBusy(false);render();}
 }
 async function sendH(){
