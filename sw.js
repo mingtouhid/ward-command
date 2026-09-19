@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-v87.4.32-no-foreign-ho";
+const VERSION = "ward-command-pwa-v87.4.36-connection";
 const PRECACHE = [
   "./",
   "./index.html",

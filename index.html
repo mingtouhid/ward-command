@@ -1047,7 +1047,7 @@ function seed(){
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
 const SETUP_PIN="4829";
-const APP_VERSION="8.7.4.32";
+const APP_VERSION="8.7.4.36";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1266,8 +1266,8 @@ let nav={tab:"home",stack:[]};
 let navDir="fwd";
 let navAnim=false;
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
-const PAGE_TAB={home:"home",patients:"patients",snap:"patients",handover:"handover",more:"more",tasks:"more",census:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more"};
-function tabRoot(tab){return tab==="handover"?"handover":(tab||"home")}
+const PAGE_TAB={home:"home",patients:"patients",snap:"patients",handover:"handover",more:"more",tasks:"more",census:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more"};
+function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more")?tab:"home"}
 function syncRoute(){
   if(nav.stack.length){
     const top=nav.stack[nav.stack.length-1];
@@ -1317,7 +1317,7 @@ function go(page,id){
   navDir="fwd";navAnim=true;
   syncRoute();
   try{history.pushState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(e){}
-  render();
+  render({force:1});
 }
 function back(){
   if(ui.pick){ui.pick=null;render();return}
@@ -1328,7 +1328,7 @@ function back(){
     navDir="back";navAnim=true;
     syncRoute();
     try{history.pushState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(e){}
-    render();
+    render({force:1});
     return;
   }
   if(nav.tab!=="home") go("home");
@@ -1874,7 +1874,7 @@ function ico(name){
 }
 function shell(inner){
   const u=user();
-  const on=p=>route.page===p||(p==="patients"&&route.page==="snap")||(p==="more"&&["census","ect","activity","setup","ward","more"].includes(route.page))?"on":"";
+  const on=p=>route.page===p||(p==="patients"&&route.page==="snap")||(p==="more"&&["census","ect","activity","setup","ward","more","users","about","connection"].includes(route.page))?"on":"";
   return `<header class="top"><div><p class="kicker">${greet()}</p><h1>${esc(S.unit.name)}</h1></div>
     <div class="who">${statusChip()}<b style="display:block;margin-top:4px">${esc(u.displayName)}</b></div></header>
     <main class="main">${inner}</main>
@@ -2716,7 +2716,7 @@ function runFab(kind){
     givePrn(o.id);
     return;
   }
-  if(kind==="task"){const tsk={id:uid("t"),pid,title:note||"Review "+bedOf(pid),pri:"high",status:"open"};S.tasks.unshift(tsk);ev(pid,"Task added");qTask(tsk)}
+  if(kind==="task"){const tsk={id:uid("t"),pid,title:note||"Review "+bedOf(pid),pri:"high",status:"open",to:S.userId,by:S.userId,at:now()};S.tasks.unshift(tsk);ev(pid,"Task added",true,"task");qTask(tsk)}
   if(kind==="handover"){
     const toShift=nextShift();
     let h=S.handovers.find(x=>x.from===S.userId&&x.shift===toShift&&x.status==="sent");
@@ -2880,14 +2880,25 @@ function hoSection(title,list,canAck,empty){
   if(!list.length) return empty||"";
   return `<p class="more-section">${esc(title)}</p>`+list.map(h=>hoPack(h,canAck)).join("");
 }
+function hoWhen(v){
+  if(!v) return "—";
+  const d=new Date(v);
+  if(isNaN(d)) return "—";
+  return d.toLocaleString([], {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+}
 function hoPack(h,canAck){
   const items=S.hitems.filter(i=>i.hid===h.id).slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
   const open=items.filter(i=>!i.done).length;
+  const mine=String(h.to||"")===String(S.userId||"");
+  const statusLine=h.status==="acknowledged"
+    ? `Acknowledged by ${esc(rname(h.ackBy||h.to))} · ${esc(hoWhen(h.ackAt||h.at))}`
+    : `Waiting for ${esc(rname(h.to)||"recipient")}`;
   return `<div class="card ho-pack">
     <div class="row">
       <div>
         <b class="sm">From ${esc(rname(h.from))}${h.to&&h.to!==h.from?" → "+esc(rname(h.to)):""}</b>
-        <p class="tiny">${rel(h.at)} · ${items.length} patient${items.length===1?"":"s"} · ${open} open</p>
+        <p class="tiny">Posted ${esc(hoWhen(h.at))} · ${items.length} patient${items.length===1?"":"s"} · ${open} open</p>
+        <p class="tiny" style="margin-top:4px">${statusLine}</p>
       </div>
     </div>
     ${items.map(i=>`<div class="ho-item ${i.done?"done":""}">
@@ -2899,9 +2910,9 @@ function hoPack(h,canAck){
       <p class="mustknow">${i.done?"✓ ":""}${esc(i.problem||"")}</p>
       <p class="tiny" style="margin:8px 0 2px">Do</p>
       <p class="shoulddo">${esc(i.action||"—")}</p>
-      ${i.done?`<p class="tiny">Done</p>`:`<button class="btn sm" style="margin-top:8px" onclick="clearItem('${i.id}')" ${i._busy?"disabled":""}>Done</button>`}
+      ${i.done?`<p class="tiny">Done</p>`:(mine?`<button class="btn sm" style="margin-top:8px" onclick="clearItem('${i.id}')" ${i._busy?"disabled":""}>Done</button>`:`<p class="tiny" style="margin-top:8px">Open</p>`)}
     </div>`).join("")}
-    ${canAck&&h.status==="sent"&&canWrite()&&(String(h.to)===String(S.userId)||canAdmin())?`<button class="btn sm" style="margin-top:10px" onclick="ackH('${h.id}')">Take handover</button>`:(h.status==="acknowledged"?`<p class="tiny" style="margin-top:8px">Taken by ${esc(rname(h.ackBy))} · ${rel(h.ackAt||h.at)}</p>`:"")}
+    ${mine&&canAck&&h.status==="sent"&&canWrite()?`<button class="btn sm" style="margin-top:10px" onclick="ackH('${h.id}')">Take handover</button>`:""}
   </div>`;
 }
 function openGiveHandover(){
@@ -2958,6 +2969,7 @@ function giveHandoverForm(defShift){
 function ackH(id){
   if(!needWrite())return;
   const h=S.handovers.find(x=>x.id===id);if(!h)return;
+  if(String(h.to)!==String(S.userId)){toast("Only "+rname(h.to)+" can take this handover.","bad");return}
   ui.confirm={fn:"ackH",id,title:"Take handover",ok:"Take",danger:false,body:"Take this "+shiftLabel(h.shift)+" handover from "+rname(h.from)+"?"};
   render();
 }
@@ -3210,10 +3222,29 @@ function tasksView(){
           ${t.detail?`<div class="task-detail">${esc(t.detail)}</div>`:""}
           <div class="task-meta">${p?`${esc(bedOf(p.id))} · ${esc(p.name)}`:"Patient not linked"} · Assigned to ${esc(ass)}</div>
           ${creator?`<div class="task-meta">Created by ${esc(creator)}${t.at?` · ${esc(new Date(t.at).toLocaleString([], {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}))}`:""}</div>`:""}
+          ${t.status==="done"?`<div class="task-meta">Completed${t.completedAt?` · ${esc(new Date(t.completedAt).toLocaleString([], {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}))}`:""}</div>`:`<div class="task-meta">Open · waiting on ${esc(ass)}</div>`}
         </button>
-        ${t.status!=="done"?`<button class="btn ghost block" onclick="doneTask('${t.id}')" ${t._busy?"disabled":""}>Mark complete</button>`:`<button class="btn ghost block" onclick="reopenTask('${t.id}')" ${t._busy?"disabled":""}>Reopen task</button>`}
+        ${String(t.to||"")===String(S.userId||"")?(t.status!=="done"?`<button class="btn ghost block" onclick="doneTask('${t.id}')" ${t._busy?"disabled":""}>Mark complete</button>`:`<button class="btn ghost block" onclick="reopenTask('${t.id}')" ${t._busy?"disabled":""}>Reopen task</button>`):""}
       </div>`;
     }).join(""):`<div class="card">No tasks match this view.</div>`}`;
+}
+function aboutView(){
+  return `<button class="back" onclick="back()">← Back</button>
+    <h2 class="page-title">About</h2>
+    <div class="card">
+      <p class="tiny">APP</p>
+      <h2 style="margin:6px 0 8px">Ward Command</h2>
+      <p class="sm">Ward board for psychiatric inpatients — beds, snapshot, medicines, ECT, tasks, handover and discharge — built for duty residents.</p>
+    </div>
+    <div class="card">
+      <p class="tiny">VERSION</p>
+      <p class="sm" style="margin-top:6px"><b>${esc(APP_VERSION)}</b></p>
+    </div>
+    <div class="card">
+      <p class="tiny">DEVELOPER</p>
+      <p class="sm" style="margin-top:6px"><b>Dr. T Alom</b></p>
+      <p class="tiny" style="margin-top:4px">PGT — Psychiatry<br>Assam Medical College &amp; Hospital (AMCH), Dibrugarh</p>
+    </div>`;
 }
 function moreView(){
   const cfg=canCfg(user().role);
@@ -3244,7 +3275,8 @@ function moreView(){
     <div class="more-grid">
     ${row("ui.setupTab='theme';go('setup')",ico("theme"),"Theme","slate")}
     ${row("ui.setupTab='notify';go('setup')",ico("notify"),"Notifications","sky")}
-    ${row("ui.setupTab='cloud';go('setup')",ico("cloud"),"Connection","teal")}
+    ${row("go('connection')",ico("cloud"),"Connection","teal")}
+    ${row("go('about')",ico("activity"),"About","slate")}
     ${row("askLogout()",ico("logout"),"Log out","rose","color:#e11d48")}
     </div>`;
 }
@@ -3544,6 +3576,10 @@ function setupView(){
         <p class="feedback-note">Stays on this phone.</p>
       </div>`;
   }
+  return connectionView();
+}
+function connectionView(){
+  const back=`<button class="back" onclick="back()">← Back</button>`;
   const diag=(ui.diag||[]).map(x=>`<p class="tiny">${x.ok?"●":"○"} ${esc(x.msg)}</p>`).join("")||`<p class="tiny"></p>`;
   const elog=loadElog();
   const c=outboxCounts();
@@ -3917,6 +3953,7 @@ function markDose(id,st){
 async function doneTask(id){
   if(!needWrite())return;
   const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  if(String(t.to||"")!==String(S.userId||"")){toast("Only "+(t.to?rname(t.to):"the assigned resident")+" can complete this task.","bad");return}
   if(t._busy)return; t._busy=true; render();
   const prev={status:t.status,completedAt:t.completedAt};
   t.status="done"; t.completedAt=now(); qTask(t); save(); render();
@@ -3935,6 +3972,7 @@ async function doneTask(id){
 async function reopenTask(id){
   if(!needWrite())return;
   const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  if(String(t.to||"")!==String(S.userId||"")){toast("Only "+(t.to?rname(t.to):"the assigned resident")+" can reopen this task.","bad");return}
   if(t._busy)return; t._busy=true; render();
   const prev={status:t.status,completedAt:t.completedAt};
   t.status="open"; t.completedAt=null; qTask(t); save(); render();
@@ -3953,6 +3991,8 @@ async function reopenTask(id){
 async function clearItem(id){
   if(!needWrite())return;
   const i=S.hitems.find(x=>x.id===id);if(!i)return;
+  const pack=S.handovers.find(h=>h.id===i.hid);
+  if(!pack || String(pack.to)!==String(S.userId)){toast("Only the receiving resident can mark this done.","bad");return}
   if(i._busy)return; i._busy=true; render();
   const prev=i.done; i.done=true; qHitem(i); save(); render();
   try{
@@ -4345,7 +4385,7 @@ function render(opts){
   const y=main?main.scrollTop:0;
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
-  const pages={home:homeView,patients:patientsView,snap:snapView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,more:moreView,users:usersView};
+  const pages={home:homeView,patients:patientsView,snap:snapView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,more:moreView,users:usersView,about:aboutView,connection:connectionView};
   syncRoute();
   el.innerHTML=shell((pages[route.page]||patientsView)());
   const main2=document.querySelector(".main");
