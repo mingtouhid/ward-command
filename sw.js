@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-v87.4.40-rpc-lock";
+const VERSION = "ward-command-pwa-v87.4.41-stale-task";
 const PRECACHE = [
   "./",
   "./index.html",
