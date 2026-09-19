@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.4.43 address-phone -->
+<!-- WARD COMMAND RELEASE: v87.4.44 observation-path -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -620,7 +620,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.4.43 address-phone -->
+<!-- WARD COMMAND RELEASE: v87.4.44 observation-path -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1046,8 +1046,8 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.4.43";
-let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];return x}}catch(e){}return seed()})();
+const APP_VERSION="8.7.4.44";
+let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
 try{pending=JSON.parse(localStorage.getItem("ward-command-outbox")||"[]")||[]}catch(e){pending=[]}
@@ -1185,7 +1185,8 @@ function qAssign(a){if(!a)return;queue("patient_bed_assignments",{id:a.id,patien
 const user=()=>S.residents.find(r=>r.id===S.userId);
 const rname=id=>(S.residents.find(r=>r.id===id)||{}).displayName||"?";
 const patient=id=>S.patients.find(p=>p.id===id);
-const onWard=id=>{const p=patient(id);return !!(p&&p.status!=="discharged")};
+const onWard=id=>{const p=patient(id);return !!(p&&p.status==="admitted")};
+const underObs=id=>{const p=patient(id);return !!(p&&p.status==="observation")};
 const bedOf=pid=>{const b=S.beds.find(x=>x.patientId===pid);return b?b.no:"—"};
 const bedObj=pid=>S.beds.find(x=>x.patientId===pid);
 const onBed=b=>b.patientId?patient(b.patientId):null;
@@ -1285,7 +1286,7 @@ let nav={tab:"home",stack:[]};
 let navDir="fwd";
 let navAnim=false;
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
-const PAGE_TAB={home:"home",patients:"patients",snap:"patients",handover:"handover",more:"more",tasks:"more",census:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more"};
+const PAGE_TAB={home:"home",patients:"patients",snap:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more"};
 function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more")?tab:"home"}
 function syncRoute(){
   if(nav.stack.length){
@@ -1489,6 +1490,7 @@ async function doCloudPull(){
   S.hitems=items.map(r=>({id:r.id,hid:r.handover_id,pid:r.patient_id,pri:r.priority,problem:r.problem,action:r.action_required||"",done:!!r.done,at:r.created_at||now()}));
   S.ect=ect.map(r=>({id:r.id,pid:r.patient_id,indication:r.indication||"",sessionsDone:r.sessions_done||0,nextAt:r.next_session_at,npo:r.npo!==false,status:r.status||"planned",by:r.created_by,at:r.created_at}));
   S.ectSessions=(ectSessions||[]).map(r=>({id:r.id,planId:r.plan_id,pid:r.patient_id,sessionNumber:r.session_number,at:r.session_at,anaesthesia:r.anaesthesia||null,stimulus:r.stimulus||null,seizureSeconds:r.seizure_seconds==null?null:r.seizure_seconds,complications:r.complications||null,response:r.response||null,nextPlan:r.next_plan||null,by:r.recorded_by||null}));
+  S.obsStays=(wardState.observation_stays||[]).map(r=>({id:r.id,pid:r.patient_id,bedId:r.bed_id,reason:r.reason||"",note:r.note||"",at:r.started_at,by:r.started_by,endedAt:r.ended_at||null,endedBy:r.ended_by||null,outcome:r.outcome||null,referralTo:r.referral_to||""}));
   S.criticalStatusUpdates=criticalStatusUpdates.map(r=>({id:r.id,pid:r.patient_id,message:r.message,by:r.created_by,byName:r.created_by_name||((S.residents||[]).find(x=>String(x.id)===String(r.created_by))||{}).displayName||((S.residents||[]).find(x=>String(x.id)===String(r.created_by))||{}).username||r.created_by||"Clinician",at:r.created_at}));
   const incoming=events.map(r=>({id:r.id,pid:r.patient_id,title:r.title,by:r.actor_id,at:r.created_at}));
   const byId={};
@@ -1879,6 +1881,7 @@ function ico(name){
     handover:'<svg viewBox="0 0 24 24" fill="none"><rect x="4.5" y="3.5" width="11.5" height="15" rx="2.4" fill="#f59e0b"/><path d="M7.2 8h6.2M7.2 11.2h6.2M7.2 14.4h3.6" stroke="#fff7ed" stroke-width="1.7" stroke-linecap="round"/><rect x="12.2" y="12.2" width="7.4" height="7.4" rx="2.2" fill="#fb7185"/><path d="M14.2 15.9h3.4M15.9 14.2v3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>',
     ect:'<svg viewBox="0 0 24 24" fill="none"><path d="M12.8 3.2L6 13.2h5.1L9.8 20.8 18 10.6h-5.1L12.8 3.2z" fill="#8b5cf6"/><path d="M12.8 3.2L6 13.2h5.1L9.8 20.8 18 10.6h-5.1L12.8 3.2z" stroke="#c4b5fd" stroke-width="1.2" stroke-linejoin="round"/></svg>',
     more:'<svg viewBox="0 0 24 24" fill="none"><circle cx="6.5" cy="12" r="2" fill="#94a3b8"/><circle cx="12" cy="12" r="2" fill="#38bdf8"/><circle cx="17.5" cy="12" r="2" fill="#14b8a6"/></svg>',
+    observe:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.2" fill="#f59e0b"/><circle cx="12" cy="12" r="3.2" fill="#fff7ed"/><path d="M12 4.6v2.2M12 17.2v2.2M4.6 12h2.2M17.2 12h2.2" stroke="#fff7ed" stroke-width="1.6" stroke-linecap="round"/></svg>',
     census:'<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="13" rx="2.4" fill="#14b8a6"/><path d="M8 6V5.2A2.2 2.2 0 0 1 10.2 3h3.6A2.2 2.2 0 0 1 16 5.2V6" stroke="#99f6e4" stroke-width="1.7"/><path d="M9 12h6M12 9v6" stroke="#ecfdf5" stroke-width="1.8" stroke-linecap="round"/></svg>',
     setup:'<svg viewBox="0 0 24 24" fill="none"><path fill="#f59e0b" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96c-.5-.4-1.04-.71-1.63-.95l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.59.24-1.13.55-1.63.95l-2.39-.96a.5.5 0 0 0-.6.22L2.8 8.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.92 14.16a.5.5 0 0 0-.12.64l1.92 3.32c.13.23.4.32.64.22l2.39-.96c.5.4 1.04.71 1.63.95l.36 2.54c.05.24.25.42.49.42h3.8c.24 0 .45-.18.5-.42l.36-2.54c.59-.24 1.13-.55 1.63-.95l2.39.96c.24.1.51 0 .64-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58z"/><circle cx="12" cy="12" r="3.15" fill="#fff7ed"/></svg>',
     tasks:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="#2563eb"/><rect x="7" y="8" width="10" height="2" rx="1" fill="#dbeafe"/><rect x="7" y="12" width="7" height="2" rx="1" fill="#93c5fd"/><circle cx="16.2" cy="16.2" r="3.1" fill="#22c55e"/><path d="M14.8 16.2l.9.9 1.8-1.8" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>',
@@ -1893,7 +1896,7 @@ function ico(name){
 }
 function shell(inner){
   const u=user();
-  const on=p=>route.page===p||(p==="patients"&&route.page==="snap")||(p==="more"&&["census","ect","activity","setup","ward","more","users","about","connection"].includes(route.page))?"on":"";
+  const on=p=>route.page===p||(p==="patients"&&route.page==="snap")||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection"].includes(route.page))?"on":"";
   return `<header class="top"><div><p class="kicker">${greet()}</p><h1>${esc(S.unit.name)}</h1></div>
     <div class="who">${statusChip()}<b style="display:block;margin-top:4px">${esc(u.displayName)}</b></div></header>
     <main class="main">${inner}</main>
@@ -2037,6 +2040,11 @@ function clinicianCopy(msg,table){
   if(/invalid or expired|not signed in|no active ward session/.test(low)) return "Sign in again.";
   if(/only the receiving resident/.test(low)) return "Already taken by someone else, or not addressed to you.";
   if(/handover sender must be/.test(low)) return "This handover belongs to another resident.";
+  if(/bed is already occupied/.test(low)) return "Bed taken.";
+  if(/hospital number already/.test(low)) return "Hospital number already on file.";
+  if(/not under observation/.test(low)) return "That patient is not under observation.";
+  if(/already under observation/.test(low)) return "Already under observation.";
+  if(/provisional diagnosis is required|at least one medication/.test(low)) return "Diagnosis and at least one medicine are required.";
   if(/destination bed is already occupied|already occupied/.test(low)) return "That bed was taken on another phone.";
   if(/source bed does not contain/.test(low)) return "Patient is no longer on that bed — refresh and try again.";
   if(/discharged patient cannot/.test(low)) return "This patient is already discharged.";
@@ -2148,6 +2156,7 @@ function homeView(){
       <button class="stat attn" onclick="go('handover')"><span>Handover</span><b>${inbox}</b></button>
       <button class="stat" onclick="go('ect')"><span>ECT planned</span><b>${ect}</b></button>
       <button class="stat" onclick="ui.ctab='in';go('census')"><span>Empty beds</span><b>${empty}</b></button>
+      <button class="stat attn" onclick="go('observe')"><span>Under observation</span><b>${(S.patients||[]).filter(p=>p.status==='observation').length}</b></button>
     </div>
     <div class="card">
       <p class="tiny">On duty</p>
@@ -2159,7 +2168,7 @@ function homeView(){
 }
 
 function unplacedPatients(){
-  return (S.patients||[]).filter(p=>p.status!=="discharged" && !S.beds.some(b=>b.patientId===p.id));
+  return (S.patients||[]).filter(p=>p.status==="admitted" && !S.beds.some(b=>b.patientId===p.id));
 }
 function patientCard(p,bed){
   const f=flags(p), sn=S.snaps[p.id]||{};
@@ -2170,7 +2179,7 @@ function patientCard(p,bed){
         <div class="patient-head">
           <div class="bedno">${esc(bed?bed.no:"—")}</div>
           <div>
-            <div class="patient-name">${esc(p.name)}</div>
+            <div class="patient-name">${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}</div>
             <p class="patient-meta">${p.age||""}${p.sex||""}${p.hospitalNo?` · ${esc(p.hospitalNo)}`:""}</p>
             ${(()=>{const ai=wardAdmissionInfo(p);return ai?`<div class="admission-age ${ai.today?"is-today":""}">${ai.today?'<span class="today-dot"></span>':""}<span>${esc(ai.text)}</span></div>`:""})()}
           </div>
@@ -2208,7 +2217,7 @@ function snapView(){
     <div class="snap-cols">
     <div class="card snap-identity">
       <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span><span class="${rcls(sn.risk)}">${sn.risk||"low"}</span>${ectPlan(p.id)?' <span class="badge r-high">ECT</span>':''}</span></div>
-      <h2>${esc(p.name)}</h2>
+      <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}</h2>
       <p class="tiny" style="margin-top:4px">${p.age}${p.sex} · ${esc(p.hospitalNo||p.code)}</p>
       ${(p.address||p.phone)?`<p class="tiny" style="margin-top:4px">${p.address?esc(p.address):""}${p.address&&p.phone?" · ":""}${p.phone?esc(p.phone):""}</p>`:""}
       <div class="meta">
@@ -2216,6 +2225,16 @@ function snapView(){
         <div><b>Ward days</b>${Math.max(1,Math.round((Date.now()-new Date(p.admittedAt))/86400000))}</div>
       </div>
       <p class="sm" style="margin-top:4px"><b>Diagnosis</b><br>${esc(p.diagnosis)}</p>
+      ${(p.status==="observation")?`<div class="card" style="margin:10px 0 0;padding:10px">
+        <p class="tiny">UNDER OBSERVATION</p>
+        ${canWrite()?`<div class="btns" style="margin-top:8px">
+          <button class="btn sm" onclick="transferForm('${p.id}')">Transfer</button>
+          <button class="btn sm" onclick="obsAdmitAsk('${p.id}')">Admit</button>
+          <button class="btn sm ghost" onclick="obsCloseAsk('${p.id}','referred')">Refer</button>
+          <button class="btn sm ghost" onclick="obsCloseAsk('${p.id}','disposed')">Dispose</button>
+        </div>`:""}
+      </div>`:""}
+
       ${tagHtml(p)}
     </div>
     <div class="card snap-current">
@@ -2371,6 +2390,196 @@ function treatFromChips(){
   if(e) return "ect";
   return "conservative";
 }
+
+function openObsStays(){return (S.patients||[]).filter(p=>p.status==="observation")}
+function obsDraft(){
+  ui.obs=ui.obs||{meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]};
+  const g=id=>document.getElementById(id);
+  if(g("ohosp")) ui.obs.hosp=g("ohosp").value;
+  if(g("oname")) ui.obs.name=g("oname").value;
+  if(g("oage")) ui.obs.age=g("oage").value;
+  if(g("osex")||(ui.fields&&ui.fields.osex!=null)) ui.obs.sex=val("osex")||ui.obs.sex;
+  if(g("oaddr")) ui.obs.addr=g("oaddr").value;
+  if(g("ophone")) ui.obs.phone=g("ophone").value;
+  if(g("odx")) ui.obs.dx=g("odx").value;
+  if(g("obed")||(ui.fields&&ui.fields.obed!=null)) ui.obs.bed=val("obed")||ui.obs.bed;
+  (ui.obs.meds||[]).forEach((m,i)=>{
+    const d=document.getElementById("odrug"+i), ds=document.getElementById("odose"+i);
+    const rt=document.getElementById("oroute"+i), fr=document.getElementById("ofreq"+i);
+    if(d) m.drug=d.value; if(ds) m.dose=ds.value; if(rt) m.route=rt.value; if(fr) m.freq=fr.value;
+  });
+}
+function addObsMed(){obsDraft();ui.obs.meds=ui.obs.meds||[];ui.obs.meds.push({drug:"",dose:"",route:"PO",freq:"OD"});render()}
+function observeView(){
+  const d=ui.obs=ui.obs||{meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]};
+  const empties=emptyBeds();
+  const open=openObsStays();
+  const meds=d.meds&&d.meds.length?d.meds:[{drug:"",dose:"",route:"PO",freq:"OD"}];
+  d.meds=meds;
+  return `<button class="back" onclick="back()">\u2190 Back</button>
+    <h2 class="page-title">Under observation</h2>
+    <div class="card">
+      <p class="tiny">KEEP UNDER OBSERVATION</p>
+      <label class="field"><span>Hospital no.</span><input id="ohosp" value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off"/></label>
+      <label class="field"><span>Name</span><input id="oname" value="${esc(d.name||"")}" placeholder="Full name"/></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <label class="field"><span>Age</span><input id="oage" value="${esc(d.age||"")}" inputmode="numeric"/></label>
+        <label class="field"><span>Sex</span>${picker("osex",[["M","M"],["F","F"],["O","O"]],d.sex||"M","Sex")}</label>
+      </div>
+      <label class="field"><span>Address <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="oaddr" value="${esc(d.addr||"")}" placeholder="Village / town"/></label>
+      <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="ophone" value="${esc(d.phone||"")}" inputmode="tel" placeholder="Mobile number"/></label>
+      <label class="field"><span>Provisional diagnosis</span><input id="odx" value="${esc(d.dx||"")}" placeholder="Working diagnosis"/></label>
+      <label class="field"><span>Bed</span>${picker("obed",(empties.length?empties.map(b=>[b.id,b.no+" \u00b7 "+((S.sections.find(s=>s.id===b.sectionId)||{}).name||"")]):[["","No empty bed"]]),d.bed||(empties[0]&&empties[0].id)||"","Bed")}</label>
+      <p class="tiny" style="margin:10px 0 6px">MEDICATIONS</p>
+      ${meds.map((m,i)=>`<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin-bottom:8px">
+        <input id="odrug${i}" value="${esc(m.drug||"")}" placeholder="Drug"/>
+        <input id="odose${i}" value="${esc(m.dose||"")}" placeholder="Dose"/>
+        <input id="oroute${i}" value="${esc(m.route||"PO")}" placeholder="Route"/>
+        <input id="ofreq${i}" value="${esc(m.freq||"OD")}" placeholder="Freq"/>
+      </div>`).join("")}
+      <button class="btn ghost sm" type="button" onclick="obsDraft();addObsMed()">Add medication</button>
+      <button class="btn block" style="margin-top:12px" ${empties.length?"":"disabled"} onclick="startObservation()">Keep under observation</button>
+    </div>
+    <p class="tiny" style="margin:16px 0 8px">NOW UNDER OBSERVATION \u00b7 ${open.length}</p>
+    ${open.length?open.map(p=>{
+      const b=bedObj(p.id);
+      return `<div class="card">
+        <div class="row"><div class="bedno">${esc(b?b.no:"\u2014")}</div><span class="badge r-moderate">OBS</span></div>
+        <b onclick="go('snap','${p.id}')">${esc(p.name)}</b>
+        <p class="tiny">${esc(p.hospitalNo||p.code)} \u00b7 ${p.age||""}${p.sex||""} \u00b7 ${esc(p.diagnosis||"")}</p>
+        ${canWrite()?`<div class="btns" style="margin-top:8px">
+          <button class="btn sm ghost" onclick="transferForm('${p.id}')">Transfer</button>
+          <button class="btn sm" onclick="obsAdmitAsk('${p.id}')">Admit</button>
+          <button class="btn sm ghost" onclick="obsCloseAsk('${p.id}','referred')">Refer</button>
+          <button class="btn sm ghost" onclick="obsCloseAsk('${p.id}','disposed')">Dispose</button>
+        </div>`:""}
+      </div>`;
+    }).join(""):`<div class="card"><p class="sm">No one is under observation.</p></div>`}`;
+}
+async function startObservation(){
+  if(!needWrite())return;
+  obsDraft();
+  const d=ui.obs||{};
+  const hosp=(d.hosp||"").trim(), name=(d.name||"").trim(), dx=(d.dx||"").trim();
+  const bed=S.beds.find(b=>b.id===d.bed);
+  const meds=(d.meds||[]).map(m=>({drug:(m.drug||"").trim(),dose:(m.dose||"").trim(),route:(m.route||"PO").trim()||"PO",freq:(m.freq||"OD").trim()||"OD"})).filter(m=>m.drug&&m.dose);
+  if(!hosp||!name||!dx||!bed||bed.patientId){toast("Hospital no., name, diagnosis, empty bed and a medication are required.","bad");return}
+  if(!meds.length){toast("Add at least one medication (drug and dose).","bad");return}
+  if(S.patients.some(x=>x.hospitalNo&&x.hospitalNo.toLowerCase()===hosp.toLowerCase()&&x.status!=="discharged")){
+    toast("This hospital number is already on the ward.","bad");return;
+  }
+  if(workflowLocked("observation",bed.id))return;
+  const id=uid("p"), asg=uid("as"), stay=uid("os");
+  const p={id,code:hosp,hospitalNo:hosp,name,age:+(d.age||0),sex:d.sex||"O",diagnosis:dx,address:(d.addr||"").trim(),phone:(d.phone||"").trim(),admittedAt:now(),status:"observation"};
+  setBusy(true,"Saving observation\u2026");
+  try{
+    const {data,error}=await sb.rpc("ward_start_observation",{
+      p_token:sessionTok,
+      p_patient:{id,patient_code:hosp,hospital_no:hosp,name,age:p.age,sex:p.sex,diagnosis:dx,address:p.address||null,phone:p.phone||null},
+      p_bed_id:bed.id,
+      p_assignment:{id:asg},
+      p_stay:{id:stay,reason:"",note:""},
+      p_snapshot:{clinical_state:"Under observation.",risk_level:"moderate",current_plan:dx},
+      p_orders:meds.map((m,i)=>({id:uid("mo"),drug:m.drug,dose:m.dose,route:m.route,frequency:m.freq}))
+    });
+    if(error) throw error;
+    if(!data||data.ok===false) throw new Error((data&&data.error)||"Observation was not saved");
+    S.patients=S.patients.filter(x=>x.id!==id);
+    S.patients.unshift(p);
+    bed.patientId=id;
+    S.assignments.unshift({id:asg,patientId:id,bedId:bed.id,at:now(),released:null,by:S.userId});
+    S.obsStays=S.obsStays||[];
+    S.obsStays.unshift({id:stay,pid:id,bedId:bed.id,at:now(),by:S.userId,endedAt:null});
+    S.snaps[id]={state:"Under observation.",risk:"moderate",plan:dx,tags:[],at:now(),by:S.userId};
+    meds.forEach(m=>S.orders.unshift({id:uid("mo"),pid:id,drug:m.drug,dose:m.dose,route:m.route,freq:m.freq,status:"active",start:now()}));
+    ev(id,"Under observation \u00b7 "+bed.no,true,"note");
+    ui.obs={meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]};
+    toast("Kept under observation","ok");save();render();
+  }catch(e){
+    toast(clinicianCopy(e.message||e)||String(e.message||e),"bad");
+  }finally{workflowUnlock("observation",bed.id);setBusy(false)}
+}
+function obsAdmitAsk(pid){
+  const p=patient(pid);if(!p||p.status!=="observation")return;
+  const bed=S.beds.find(b=>b.patientId===pid);
+  const empties=emptyBeds().filter(b=>!bed||b.id!==bed.id);
+  ui.confirm={fn:"obsAdmit",pid,title:"Admit from observation",ok:"Admit",
+    body:"Admit "+p.name+" on the current bed"+(bed?" ("+bed.no+")":"")+", or choose another empty bed first.",
+    extra:empties.length?empties.map(b=>b.id+"|"+b.no).join(","):""};
+  ui.obsAdmit={pid,mode:"same",to:""};
+  openPanel("obsAdmit",{pid});
+}
+function obsAdmitForm(){
+  const pid=(ui.panel&&ui.panel.pid)||(ui.obsAdmit&&ui.obsAdmit.pid);
+  const p=patient(pid);if(!p)return "";
+  const bed=S.beds.find(b=>b.patientId===pid);
+  const empties=emptyBeds().filter(b=>!bed||b.id!==bed.id);
+  const mode=(ui.obsAdmit&&ui.obsAdmit.mode)||"same";
+  return `<h3 style="margin:0 0 8px">Admit ${esc(p.name)}</h3>
+    <button class="btn ${mode==="same"?"on":"ghost"} block" onclick="ui.obsAdmit.mode='same';render()">Same bed${bed?" \u00b7 "+bed.no:""}</button>
+    <button class="btn ${mode==="other"?"on":"ghost"} block" style="margin-top:8px" onclick="ui.obsAdmit.mode='other';render()">Choose another bed</button>
+    ${mode==="other"?`<label class="field" style="margin-top:10px"><span>Empty bed</span>${picker("oadmitbed",empties.length?empties.map(b=>[b.id,b.no]):[["","No empty bed"]],ui.obsAdmit.to||"","Bed")}</label>`:""}
+    <button class="btn block" style="margin-top:12px" onclick="convertObservation('${pid}')">Confirm admit</button>
+    <button class="btn ghost block" style="margin-top:8px" onclick="closePanel()">Cancel</button>`;
+}
+async function convertObservation(pid){
+  if(!needWrite())return;
+  const p=patient(pid);if(!p||p.status!=="observation")return;
+  const from=S.beds.find(b=>b.patientId===pid);
+  const mode=(ui.obsAdmit&&ui.obsAdmit.mode)||"same";
+  let to=null;
+  if(mode==="other"){
+    to=val("oadmitbed")||(ui.obsAdmit&&ui.obsAdmit.to)||"";
+    const dest=S.beds.find(b=>b.id===to);
+    if(!dest||dest.patientId){toast("Choose an empty bed.","bad");return}
+  }
+  if(workflowLocked("obs-admit",pid))return;
+  setBusy(true,"Admitting\u2026");
+  try{
+    const {data,error}=await sb.rpc("ward_convert_observation",{
+      p_token:sessionTok,p_patient_id:pid,
+      p_to_bed_id:mode==="other"?to:null,
+      p_assignment:mode==="other"?{id:uid("as"),at:now()}:{}
+    });
+    if(error) throw error;
+    p.status="admitted";
+    if(mode==="other"&&to&&from){
+      from.patientId=null;
+      const dest=S.beds.find(b=>b.id===to); if(dest) dest.patientId=pid;
+    }
+    const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.outcome="admitted"}
+    ev(pid,"Admitted from observation",true,"note");
+    closePanel();toast("Admitted "+p.name,"ok");save();render();
+  }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
+  finally{workflowUnlock("obs-admit",pid);setBusy(false)}
+}
+function obsCloseAsk(pid,outcome){
+  const p=patient(pid);if(!p||p.status!=="observation")return;
+  const label=outcome==="referred"?"Refer":"Dispose";
+  ui.confirm={fn:"obsClose",pid,outcome,title:label+" observation",ok:label,
+    body:label+" "+p.name+" and free the bed? This is not a ward discharge of an admitted patient."};
+  render();
+}
+async function closeObservation(pid,outcome){
+  if(!needWrite())return;
+  const p=patient(pid);if(!p||p.status!=="observation")return;
+  const ref=outcome==="referred"?(val("orefto")||"").trim():"";
+  if(workflowLocked("obs-close",pid))return;
+  setBusy(true,"Closing observation\u2026");
+  try{
+    const {data,error}=await sb.rpc("ward_close_observation",{
+      p_token:sessionTok,p_patient_id:pid,p_outcome:outcome,p_referral_to:ref||null
+    });
+    if(error) throw error;
+    const bed=S.beds.find(b=>b.patientId===pid); if(bed) bed.patientId=null;
+    p.status="discharged";p.dischargedAt=now();p.dischargeMode=outcome==="referred"?"transfer":"advice";
+    const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.outcome=outcome}
+    ev(pid,"Observation ended \u00b7 "+outcome,true,"note");
+    toast(outcome==="referred"?"Referred":"Disposed","ok");save();go("observe");
+  }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
+  finally{workflowUnlock("obs-close",pid);setBusy(false)}
+}
+
 function censusView(){
   if(ui.ctab==="ward") ui.ctab="in";
   const tab=ui.ctab||"in";
@@ -2395,7 +2604,7 @@ function censusView(){
       <h2 class="page-title">Discharge</h2>${seg}
       <div class="card">
         <label class="field"><span>Patient</span>
-          ${picker("disel",[["","Select admitted patient"]].concat(occ.map(b=>{const x=onBed(b);return [x.id, b.no+" · "+x.name]})),pid,"Patient")}
+          ${picker("disel",[["","Select admitted patient"]].concat(occ.map(b=>{const x=onBed(b);return x&&x.status==="admitted"?[x.id, b.no+" · "+x.name]:null}).filter(Boolean)),pid,"Patient")}
         </label>
         ${p?`<p class="tiny">${esc(p.hospitalNo||p.code)} · ${p.age}${p.sex} · ${esc(p.diagnosis||"")}</p>`:`<p class="tiny">Choose a patient to enable discharge.</p>`}
       </div>
@@ -2980,10 +3189,11 @@ function livePanels(){
   if(p.kind==="fab") html+=fabFormBody(p.fabKind);
   if(p.kind==="ect") html+=ectFormBody(p.id);
   if(p.kind==="task") html+=taskFormBody(p.id);
+  if(p.kind==="obsAdmit") html+=panelBox("Admit from observation",obsAdmitForm());
   return html;
 }
 function giveHandoverForm(defShift){
-  const occ=occupied();
+  const occ=occupied().filter(b=>{const p=onBed(b);return p&&p.status==="admitted"});
   const tgt=val("hshift")||defShift||nextShift();
   const SHIFTS=[["morning","Morning 08:00–14:00"],["evening","Evening 14:00–22:00"],["night","Night 22:00–08:00"]];
   return `<label class="field"><span>Patient</span>${picker("hp",occ.map(b=>{const p=onBed(b);return [p.id,b.no+" · "+p.name]}),val("hp")||"","Patient")}</label>
@@ -3181,6 +3391,7 @@ function confirmYes(){
   if(c.fn==="stopMed") return stopMedNow(c.id);
   if(c.fn==="removeBed") return removeBedNow(c.id);
   if(c.fn==="clearBeds") return clearSectionBedsNow(c.secId);
+  if(c.fn==="obsClose") return closeObservation(c.pid,c.outcome);
   render();
 }
 async function removeUser(username){
@@ -3287,6 +3498,7 @@ function moreView(){
     <p class="more-section">Ward</p>
     <div class="more-grid">
     ${canWrite()?row("ui.ctab='in';go('census')",ico("census"),"Admit / Discharge","teal"):""}
+    ${canWrite()?row("go('observe')",ico("observe"),"Under observation","amber"):""}
     ${row("go('ect')",ico("ect"),"ECT","violet")}
     ${row("go('tasks')",ico("tasks"),"Task board","blue")}
     ${row("go('activity')",ico("activity"),"Activity log","slate")}
@@ -4414,7 +4626,7 @@ function render(opts){
   const y=main?main.scrollTop:0;
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
-  const pages={home:homeView,patients:patientsView,snap:snapView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,more:moreView,users:usersView,about:aboutView,connection:connectionView};
+  const pages={home:homeView,patients:patientsView,snap:snapView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView};
   syncRoute();
   el.innerHTML=shell((pages[route.page]||patientsView)());
   const main2=document.querySelector(".main");

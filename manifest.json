@@ -40,6 +40,6 @@
       "purpose": "maskable"
     }
   ],
-  "version": "87.4.43",
+  "version": "87.4.44",
   "build": "8.7.4.38 durable outbox + ward_admit_patient"
 }
