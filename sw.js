@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-v87.4.29-multiuser";
+const VERSION = "ward-command-pwa-v87.4.30-clinical-write";
 const PRECACHE = [
   "./",
   "./index.html",

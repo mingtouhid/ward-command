@@ -1047,7 +1047,7 @@ function seed(){
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
 const SETUP_PIN="4829";
-const APP_VERSION="8.7.4.29";
+const APP_VERSION="8.7.4.30";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1100,7 +1100,7 @@ function queue(table,row){
   persistOutbox();
 }
 function qSnap(pid){const sn=S.snaps[pid]||{};queue("patient_snapshots",{id:pid,patient_id:pid,clinical_state:sn.state||"",risk_level:["low","moderate","high","critical"].includes(sn.risk)?sn.risk:"low",sleep_status:sn.sleep||"",watch_points:packWatch(sn),current_plan:sn.plan||"",tags:Array.isArray(sn.tags)?sn.tags:[],updated_by:sn.by||S.userId||null,updated_at:sn.at||now()})}
-function qEvent(e){if(!e)return;queue("activity_log",{id:e.id,patient_id:(e.pid&&S.patients.some(x=>x.id===e.pid))?e.pid:null,kind:e.kind||evKind(e.title),title:e.title||"Event",actor_id:e.by||null,created_at:e.at||now()})}
+function qEvent(e){if(!e)return;queue("activity_log",{id:e.id,patient_id:(e.pid&&S.patients.some(x=>x.id===e.pid))?e.pid:null,kind:e.kind||evKind(e.title),title:e.title||"Event",detail:e.detail||null,actor_id:S.userId||null,created_at:e.at||now()})}
 function qHandover(h){
   if(!h||!h.from)return;
   // Never enqueue another resident's handover — server stamps from_id from the session.
@@ -1157,8 +1157,21 @@ const onBed=b=>b.patientId?patient(b.patientId):null;
 const occupied=()=>S.beds.filter(b=>b.active&&b.patientId).sort((a,b)=>a.no.localeCompare(b.no,undefined,{numeric:true}));
 const dueFor=pid=>S.doses.filter(d=>d.pid===pid&&d.status==="pending");
 const openTasks=pid=>S.tasks.filter(t=>t.pid===pid&&t.status!=="done");
-function ev(pid,title,ok,kind){
-  const e={id:uid("e"),pid:pid||null,title,by:S.userId,at:now(),ok:ok!==false,kind:kind||evKind(title)};
+function ev(pid,title,ok,kind,detail){
+  const p=pid?patient(pid):null;
+  const e={
+    id:uid("e"),
+    pid:pid||null,
+    title,
+    detail:detail||"",
+    by:S.userId||null,
+    actorName:(user()&&(user().displayName||user().username))||rname(S.userId),
+    patientName:p?p.name:"",
+    bed:pid?bedOf(pid):"",
+    at:now(),
+    ok:ok!==false,
+    kind:kind||evKind(title)
+  };
   S.events.unshift(e);
   if(sessionTok) qEvent(e);
   return e
@@ -1488,13 +1501,21 @@ async function upsert(table,rows){
       ({error}=await sb.rpc("ward_upsert_handover_item",{p_session_token:sessionTok,p_row:row}));
     }else if(table==="tasks"){
       ({error}=await sb.rpc("ward_upsert_task",{p_session_token:sessionTok,p_row:row}));
+    }else if(table==="patient_snapshots"){
+      ({error}=await sb.rpc("ward_upsert_snapshot",{p_token:sessionTok,p_row:row}));
+    }else if(table==="ward_sections"){
+      ({error}=await sb.rpc("ward_upsert_section",{p_token:sessionTok,p_row:row}));
+    }else if(table==="unit_consultants"){
+      ({error}=await sb.rpc("ward_upsert_consultant",{p_token:sessionTok,p_row:row}));
+    }else if(table==="unit_settings"){
+      ({error}=await sb.rpc("ward_upsert_unit_settings",{p_token:sessionTok,p_row:row}));
     }else{
-      ({error}=await sb.rpc("ward_write",{p_token:sessionTok,p_table:table,p_row:row}));
+      throw new Error("This action has no approved write path.");
     }
     if(error){
       const msg=error.message||String(error);
       if(sessionDead(msg)) expireSession();
-      throw new Error(table+": "+msg);
+      throw new Error(clinicianCopy(msg, table));
     }
   }
 }
@@ -1538,6 +1559,20 @@ function dropStaleOutbox(){
   if(!c.pending&&!c.retrying&&!c.failed){cloudStatus=liveReady?"live":cloudStatus; if(liveReady) Sync.state="CONNECTED";}
   render();
   return n;
+}
+async function saveWardBackup(){
+  if(!sb||!sessionTok){toast("Sign in again.","bad");return}
+  setBusy(true,"Saving backup...");
+  try{
+    const {data,error}=await sb.rpc("ward_create_nightly_backup",{p_token:sessionTok});
+    if(error) throw error;
+    const summary=(data&&data.summary)||"Backup saved";
+    ui.backupMsg=summary+" \u00b7 "+new Date().toLocaleString();
+    toast("Ward backup saved","ok");
+  }catch(e){
+    ui.backupMsg="";
+    toast(e.message||e,"bad");
+  }finally{setBusy(false);render()}
 }
 async function doFlushPending(){
   if(!sb||!pending.length) return;
@@ -1953,8 +1988,29 @@ function workflowUnlock(kind,key){
   const k=String(kind||"")+":"+String(key||"");
   if(ui.workflowLock===k)ui.workflowLock=null;
 }
+function clinicianCopy(msg,table){
+  const s=String(msg||"");
+  const low=s.toLowerCase();
+  if(/invalid or expired|not signed in|no active ward session/.test(low)) return "Sign in again.";
+  if(/only the receiving resident/.test(low)) return "Already taken by someone else, or not addressed to you.";
+  if(/handover sender must be/.test(low)) return "This handover belongs to another resident.";
+  if(/destination bed is already occupied|already occupied/.test(low)) return "That bed was taken on another phone.";
+  if(/source bed does not contain/.test(low)) return "Patient is no longer on that bed — refresh and try again.";
+  if(/discharged patient cannot/.test(low)) return "This patient is already discharged.";
+  if(/active patient not found|patient not found/.test(low)) return "That patient is no longer on the ward.";
+  if(/consultant is read only|view-only|cannot perform clinical/.test(low)) return "This login is view-only.";
+  if(/admin only/.test(low)) return "Ask an admin to change ward setup.";
+  if(/handover recipient is required/.test(low)) return "Choose who will receive the handover.";
+  if(/duplicate key|already bound/.test(low)) return "Already saved. Pull to refresh if the list looks stale.";
+  if(/permission denied|42501/.test(low)) return "This login cannot do that.";
+  if(/this action has no approved write path/.test(low)) return "This action cannot sync. Update the app.";
+  const clean=s.replace(/^[a-z_]+:\s*/i,"").replace(/\s+/g," ").trim();
+  if(clean.length<=90 && !/postgres|sqlstate|violates|null value/.test(low)) return clean;
+  return "Could not save. Open Connection if it keeps happening.";
+}
 function toast(msg,kind){
   kind=kind||"info";
+  if(kind==="bad"||kind==="error") msg=clinicianCopy(msg);
   if(kind==="bad"||kind==="error") {pushElog(msg,"bad");Feedback.error()}
   else if(kind==="ok") Feedback.success();
   let el=document.getElementById("toast");
@@ -3483,6 +3539,8 @@ function setupView(){
       ${outboxDetailsHtml()}
       ${pending.length?`<button class="btn ghost block" style="margin-top:10px" onclick="flushPending().then(()=>render())">Retry sync</button>
       <button class="btn ghost block" style="margin-top:8px" onclick="dropStaleOutbox()">Drop stale queue items</button>`:""}
+      <button class="btn ghost block" style="margin-top:8px" onclick="saveWardBackup()">Save ward backup now</button>
+      ${ui.backupMsg?`<p class="tiny" style="margin-top:8px">${esc(ui.backupMsg)}</p>`:""}
     </div>
     ${deep?`<div class="card">
       <p class="tiny">DIAGNOSTICS</p>
@@ -3611,7 +3669,7 @@ function activityView(){
           <span class="tiny">${rel(e.at)}</span>
         </div>
         <p class="sm" style="margin-top:6px"><b>${esc(e.title)}</b></p>
-        <p class="tiny">${p?esc(bedOf(p.id))+" · "+esc(p.name)+" · ":""}${esc(rname(e.by))}</p>
+        <p class="tiny">${esc(e.kind||eventKind(e))} · ${p?esc(bedOf(p.id)||e.bed||"—")+" · "+esc(p.name||e.patientName||"Patient")+" · ":e.pid?"Patient missing · ":""}${esc(e.actorName||rname(e.by)||"Unknown")}</p>
       </button>`;
     }).join(""):`<div class="card">No matching activity.</div>`}</div>`;
 }
