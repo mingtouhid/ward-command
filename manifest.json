@@ -40,6 +40,6 @@
       "purpose": "maskable"
     }
   ],
-  "version": "87.4.37",
-  "build": "Named RPCs + audit + backup"
+  "version": "87.4.38",
+  "build": "8.7.4.38 durable outbox + ward_admit_patient"
 }
