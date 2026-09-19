@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.4.42 push icons -->
+<!-- WARD COMMAND RELEASE: v87.4.43 address-phone -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -620,7 +620,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.4.42 push icons -->
+<!-- WARD COMMAND RELEASE: v87.4.43 address-phone -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1046,7 +1046,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.4.42";
+const APP_VERSION="8.7.4.43";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1178,7 +1178,7 @@ function qEct(e){
   queue("ect_plans",{id:e.id,patient_id:e.pid,indication:e.indication||"",sessions_done:e.sessionsDone||0,next_session_at:e.nextAt||null,npo:e.npo!==false,status:["planned","completed","cancelled"].includes(e.status)?e.status:"planned",created_by:e.by||S.userId||null,created_at:e.at||now(),updated_at:now()});
 }
 function qEctSession(x){if(!x||!x.id||!x.planId||!x.pid)return;queue("ect_sessions",{id:x.id,plan_id:x.planId,patient_id:x.pid,session_number:x.sessionNumber,session_at:x.at||now(),anaesthesia:x.anaesthesia||null,stimulus:x.stimulus||null,seizure_seconds:x.seizureSeconds==null?null:x.seizureSeconds,complications:x.complications||null,response:x.response||null,next_plan:x.nextPlan||null,recorded_by:x.by||S.userId||null})}
-function qPatient(p){if(!p)return;queue("patients",{id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,admitted_at:p.admittedAt||now(),discharged_at:p.dischargedAt||null,discharge_mode:p.dischargeMode||null,discharge_outcome:p.dischargeOutcome||null,treatment_mode:p.treatmentMode||null,active_status:p.status||"admitted",updated_by:S.userId||null,created_at:p.admittedAt||now(),updated_at:now()})}
+function qPatient(p){if(!p)return;queue("patients",{id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,admitted_at:p.admittedAt||now(),discharged_at:p.dischargedAt||null,discharge_mode:p.dischargeMode||null,discharge_outcome:p.dischargeOutcome||null,treatment_mode:p.treatmentMode||null,active_status:p.status||"admitted",address:p.address||null,phone:p.phone||null,updated_by:S.userId||null,created_at:p.admittedAt||now(),updated_at:now()})}
 function qBed(b){if(!b)return;queue("beds",{id:b.id,bed_number:b.no,section_id:b.sectionId,active:b.active!==false,current_patient_id:b.patientId||null,created_at:now(),updated_at:now()})}
 function qAssign(a){if(!a)return;queue("patient_bed_assignments",{id:a.id,patient_id:a.patientId,bed_id:a.bedId,assigned_at:a.at||now(),released_at:a.released||null,assigned_by:a.by||S.userId||null})}
 
@@ -1479,7 +1479,7 @@ async function doCloudPull(){
   S.residents=residents.filter(r=>r.active!==false).map(r=>({id:r.id,username:r.username,displayName:r.display_name,role:r.role,active:r.active!==false}));
   S.consultants=(consultants||[]).filter(r=>r.active!==false).map(r=>({id:r.id,name:r.name,designation:r.designation||""}));
   
-  S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted"}));
+  S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||""}));
   S.assignments=assigns.map(r=>({id:r.id,patientId:r.patient_id,bedId:r.bed_id,at:r.assigned_at,released:r.released_at,by:r.assigned_by}));
   S.snaps={}; snaps.forEach(r=>{S.snaps[r.patient_id]=rowSnap(r)});
   S.orders=orders.map(r=>({id:r.id,pid:r.patient_id,drug:r.drug,dose:r.dose,route:r.route,freq:r.frequency,time:r.scheduled_time||"08:00",start:r.start_date,stop:r.stop_date,status:r.status}));
@@ -1703,7 +1703,7 @@ async function cloudPush(includeEct){
   await step("unit_settings",[{id:"unit",unit_name:S.unit.name}]);
   await step("ward_sections",S.sections.map(s=>({id:s.id,name:s.name,active:s.active!==false})));
   await step("residents",S.residents.map(r=>({id:r.id,username:r.username,display_name:r.displayName,role:r.role,active:true})));
-  await step("patients",S.patients.map(p=>({id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,admitted_at:p.admittedAt||now(),active_status:"admitted",updated_by:S.userId||null})));
+  await step("patients",S.patients.map(p=>({id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,admitted_at:p.admittedAt||now(),active_status:p.status||"admitted",address:p.address||null,phone:p.phone||null,updated_by:S.userId||null})));
   await step("beds",S.beds.map(b=>({id:b.id,bed_number:b.no,section_id:b.sectionId,active:b.active!==false,current_patient_id:b.patientId||null})));
   await step("patient_bed_assignments",(S.assignments||[]).map(a=>({id:a.id,patient_id:a.patientId,bed_id:a.bedId,assigned_at:a.at||now(),released_at:a.released||null,assigned_by:a.by||S.userId||null})));
   await step("patient_snapshots",Object.entries(S.snaps||{}).map(([pid,sn])=>({patient_id:pid,clinical_state:sn.state||"",risk_level:["low","moderate","high","critical"].includes(sn.risk)?sn.risk:"low",sleep_status:sn.sleep||"",watch_points:packWatch(sn),current_plan:sn.plan||"",updated_by:sn.by||S.userId||null,updated_at:sn.at||now()})));
@@ -2210,6 +2210,7 @@ function snapView(){
       <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span><span class="${rcls(sn.risk)}">${sn.risk||"low"}</span>${ectPlan(p.id)?' <span class="badge r-high">ECT</span>':''}</span></div>
       <h2>${esc(p.name)}</h2>
       <p class="tiny" style="margin-top:4px">${p.age}${p.sex} · ${esc(p.hospitalNo||p.code)}</p>
+      ${(p.address||p.phone)?`<p class="tiny" style="margin-top:4px">${p.address?esc(p.address):""}${p.address&&p.phone?" · ":""}${p.phone?esc(p.phone):""}</p>`:""}
       <div class="meta">
         <div><b>Admitted</b>${fmt(p.admittedAt)}</div>
         <div><b>Ward days</b>${Math.max(1,Math.round((Date.now()-new Date(p.admittedAt))/86400000))}</div>
@@ -2313,6 +2314,8 @@ function censusDraft(){
   const g=id=>document.getElementById(id);
   if(g("ahosp")) ui.census.hosp=g("ahosp").value;
   if(g("aname")) ui.census.name=g("aname").value;
+  if(g("aaddr")) ui.census.addr=g("aaddr").value;
+  if(g("aphone")) ui.census.phone=g("aphone").value;
   if(g("aage")) ui.census.age=g("aage").value;
   if(g("asex")|| (ui.fields&&ui.fields.asex!=null)) ui.census.sex=val("asex")||ui.census.sex;
   if(g("adx")) ui.census.dx=g("adx").value;
@@ -2423,6 +2426,8 @@ function censusView(){
     <div class="card">
       <label class="field"><span>Hospital no.</span><input id="ahosp" value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off"/></label>
       <label class="field"><span>Name</span><input id="aname" value="${esc(d.name||"")}" placeholder="Full name"/></label>
+      <label class="field"><span>Address <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="aaddr" value="${esc(d.addr||"")}" placeholder="Village / town / ward address" autocomplete="street-address"/></label>
+      <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="aphone" value="${esc(d.phone||"")}" placeholder="Mobile number" inputmode="tel" autocomplete="tel"/></label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <label class="field"><span>Age</span><input id="aage" value="${esc(d.age||"")}" inputmode="numeric"/></label>
         <label class="field"><span>Sex</span>${picker("asex",[["M","M"],["F","F"],["O","O"]],d.sex||"M","Sex")}</label>
@@ -2453,7 +2458,7 @@ function admitFromCensus(){
   if(workflowLocked("admission",bid))return;
   const id=uid("p");
   const reasons=(d.reasons||[]).join(",");
-  const p={id,code:hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:(d.dx||"").trim()||"Diagnosis pending",reason:reasons,referredBy:(d.ref||"").trim(),consultant:(d.con||"").trim(),admittedAt:d.adate?new Date(d.adate).toISOString():now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:null,status:"admitted"};
+  const p={id,code:hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:(d.dx||"").trim()||"Diagnosis pending",reason:reasons,referredBy:(d.ref||"").trim(),consultant:(d.con||"").trim(),admittedAt:d.adate?new Date(d.adate).toISOString():now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:null,status:"admitted",address:(d.addr||"").trim(),phone:(d.phone||"").trim()};
   S.patients.unshift(p);
   S.snaps[id]={state:"Newly admitted.",risk:"moderate",sleep:"slept-well",watch:"",plan:"",by:S.userId,at:now()};
   bed.patientId=id;
@@ -2636,6 +2641,8 @@ function admitFormBody(){
   return `<label class="field"><span>Bed</span>${picker("abed",empties.length?empties.map(b=>[b.id,b.no]):[["","No empty bed"]],d.bed|| (empties[0]&&empties[0].id)||"","Bed")}</label>
     <label class="field"><span>Hospital no.</span><input id="ahosp" placeholder="UHID / IP number" autocomplete="off" value="${esc(val("ahosp"))}" oninput="ui.fields=ui.fields||{};ui.fields.ahosp=this.value"/></label>
     <label class="field"><span>Name</span><input id="aname" placeholder="Full name" value="${esc(val("aname"))}" oninput="ui.fields=ui.fields||{};ui.fields.aname=this.value"/></label>
+    <label class="field"><span>Address (optional)</span><input id="aaddr" placeholder="Village / town / ward address" value="${esc(val("aaddr"))}" oninput="ui.fields=ui.fields||{};ui.fields.aaddr=this.value"/></label>
+    <label class="field"><span>Phone (optional)</span><input id="aphone" placeholder="Mobile number" inputmode="tel" value="${esc(val("aphone"))}" oninput="ui.fields=ui.fields||{};ui.fields.aphone=this.value"/></label>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <label class="field"><span>Age</span><input id="aage" value="${esc(val("aage")||"30")}" oninput="ui.fields=ui.fields||{};ui.fields.aage=this.value"/></label>
       <label class="field"><span>Sex</span>${picker("asex",[["M","M"],["F","F"],["O","O"]],val("asex")||"M","Sex")}</label>
@@ -2651,7 +2658,7 @@ function admitPatient(){
     toast("This hospital number is already in the ward.","bad");return;
   }
   const id=uid("p");
-  const p={id,code:hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",name,age:+val("aage")||0,sex:val("asex")||"O",diagnosis:dx,admittedAt:now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:"conservative",status:"admitted"};
+  const p={id,code:hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",name,age:+val("aage")||0,sex:val("asex")||"O",diagnosis:dx,admittedAt:now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:"conservative",status:"admitted",address:(val("aaddr")||"").trim(),phone:(val("aphone")||"").trim()};
   S.patients.unshift(p);
   S.snaps[id]={state:"Newly admitted.",risk:"moderate",sleep:"slept-well",watch:"",plan:"",by:S.userId,at:now()};
   bed.patientId=id;
