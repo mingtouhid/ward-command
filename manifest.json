@@ -40,6 +40,6 @@
       "purpose": "maskable"
     }
   ],
-  "version": "87.4.36",
+  "version": "87.4.37",
   "build": "Named RPCs + audit + backup"
 }
