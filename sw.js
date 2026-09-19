@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-v87.4.41-stale-task";
+const VERSION = "ward-command-pwa-v87.4.42-push-icons";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -6,7 +6,9 @@ const PRECACHE = [
   "./icon-192.png",
   "./icon-512.png",
   "./apple-touch-icon.png",
-  "./favicon-32.png"
+  "./favicon-32.png",
+  "./icons/badge-96.png",
+  "./icons/icon-notif-192.png"
 ];
 
 self.addEventListener("install", (event) => {
@@ -35,8 +37,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Ward Command";
   const options = {
     body: data.body || "You have a new ward notification.",
-    icon: data.icon || "/icon-192.png",
-    badge: data.badge || "/icon-192.png",
+    icon: data.icon || "./icons/icon-notif-192.png",
+    badge: data.badge || "./icons/badge-96.png",
     tag: data.tag || "ward-command",
     renotify: !!data.renotify,
     requireInteraction: !!data.requireInteraction,
