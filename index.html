@@ -510,7 +510,7 @@ button.pulse{animation:btnpulse .35s ease}
 .snap-current{border-color:rgba(47,158,100,.28);background:linear-gradient(180deg,var(--panel),var(--panel2))}
 .snap-current .tiny,.snap-med .tiny{font-size:10.5px}
 .snap-current .field span{font-size:10px}
-.snap-current #oneline{font-size:16px;font-weight:650}
+.snap-current #oneline{font-size:16px;font-weight:650;width:100%;min-height:72px;resize:vertical;overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap;line-height:1.35}
 .snap-current .chips{margin-top:10px}
 .snap-med .chart{font-size:13px}
 .snap-med .chart th{font-size:10px;letter-spacing:.06em}
@@ -1047,7 +1047,7 @@ function seed(){
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
 const SETUP_PIN="4829";
-const APP_VERSION="8.7.4.27";
+const APP_VERSION="8.7.4.29";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1100,8 +1100,13 @@ function queue(table,row){
   persistOutbox();
 }
 function qSnap(pid){const sn=S.snaps[pid]||{};queue("patient_snapshots",{id:pid,patient_id:pid,clinical_state:sn.state||"",risk_level:["low","moderate","high","critical"].includes(sn.risk)?sn.risk:"low",sleep_status:sn.sleep||"",watch_points:packWatch(sn),current_plan:sn.plan||"",tags:Array.isArray(sn.tags)?sn.tags:[],updated_by:sn.by||S.userId||null,updated_at:sn.at||now()})}
-function qEvent(e){if(!e)return;queue("activity_log",{id:e.id,patient_id:(e.pid&&S.patients.some(x=>x.id===e.pid))?e.pid:null,kind:evKind(e.title),title:e.title||"Event",actor_id:e.by||null,created_at:e.at||now()})}
-function qHandover(h){if(!h||!h.from)return;queue("handovers",{id:h.id,from_id:h.from,to_id:h.to||h.from,shift:["morning","evening","night"].includes(h.shift)?h.shift:"morning",status:h.status||"sent",created_at:h.at||now(),acknowledged_by:h.ackBy||null,acknowledged_at:h.ackAt||null})}
+function qEvent(e){if(!e)return;queue("activity_log",{id:e.id,patient_id:(e.pid&&S.patients.some(x=>x.id===e.pid))?e.pid:null,kind:e.kind||evKind(e.title),title:e.title||"Event",actor_id:e.by||null,created_at:e.at||now()})}
+function qHandover(h){
+  if(!h||!h.from)return;
+  // Never enqueue another resident's handover — server stamps from_id from the session.
+  if(String(h.from)!==String(S.userId) && h.status!=="acknowledged") return;
+  queue("handovers",{id:h.id,from_id:S.userId,to_id:h.to||S.userId,shift:["morning","evening","night"].includes(h.shift)?h.shift:"morning",status:h.status||"sent",created_at:h.at||now(),acknowledged_by:h.ackBy||null,acknowledged_at:h.ackAt||null});
+}
 function qHitem(i){if(!i||!i.hid||!i.pid)return;queue("handover_items",{id:i.id,handover_id:i.hid,patient_id:i.pid,priority:["stat","high","medium","low"].includes(i.pri)?i.pri:"high",problem:i.problem||"",action_required:i.action||"",done:!!i.done})}
 function qTask(x){
   if(!x)return;
@@ -1128,7 +1133,16 @@ function prnStats(oid){
   const today=given.filter(d=>new Date(d.at)>=start).length;
   return {last:given[0]||null, today, total:given.length};
 }
-function qEct(e){if(!e)return;queue("ect_plans",{id:e.id,patient_id:e.pid,indication:e.indication||"",sessions_done:e.sessionsDone||0,next_session_at:e.nextAt||null,npo:e.npo!==false,status:["planned","completed","cancelled"].includes(e.status)?e.status:"planned",created_by:e.by||S.userId||null,created_at:e.at||now(),updated_at:now()})}
+function qEct(e){
+  if(!e)return;
+  const p=e.pid?patient(e.pid):null;
+  if(p&&p.status==="discharged"){
+    pending=pending.filter(op=>!(op.table==="ect_plans"&&op.row&&(op.row.id===e.id||op.row.patient_id===e.pid)));
+    persistOutbox();
+    return;
+  }
+  queue("ect_plans",{id:e.id,patient_id:e.pid,indication:e.indication||"",sessions_done:e.sessionsDone||0,next_session_at:e.nextAt||null,npo:e.npo!==false,status:["planned","completed","cancelled"].includes(e.status)?e.status:"planned",created_by:e.by||S.userId||null,created_at:e.at||now(),updated_at:now()});
+}
 function qEctSession(x){if(!x||!x.id||!x.planId||!x.pid)return;queue("ect_sessions",{id:x.id,plan_id:x.planId,patient_id:x.pid,session_number:x.sessionNumber,session_at:x.at||now(),anaesthesia:x.anaesthesia||null,stimulus:x.stimulus||null,seizure_seconds:x.seizureSeconds==null?null:x.seizureSeconds,complications:x.complications||null,response:x.response||null,next_plan:x.nextPlan||null,recorded_by:x.by||S.userId||null})}
 function qPatient(p){if(!p)return;queue("patients",{id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,admitted_at:p.admittedAt||now(),discharged_at:p.dischargedAt||null,discharge_mode:p.dischargeMode||null,discharge_outcome:p.dischargeOutcome||null,treatment_mode:p.treatmentMode||null,active_status:p.status||"admitted",updated_by:S.userId||null,created_at:p.admittedAt||now(),updated_at:now()})}
 function qBed(b){if(!b)return;queue("beds",{id:b.id,bed_number:b.no,section_id:b.sectionId,active:b.active!==false,current_patient_id:b.patientId||null,created_at:now(),updated_at:now()})}
@@ -1143,8 +1157,8 @@ const onBed=b=>b.patientId?patient(b.patientId):null;
 const occupied=()=>S.beds.filter(b=>b.active&&b.patientId).sort((a,b)=>a.no.localeCompare(b.no,undefined,{numeric:true}));
 const dueFor=pid=>S.doses.filter(d=>d.pid===pid&&d.status==="pending");
 const openTasks=pid=>S.tasks.filter(t=>t.pid===pid&&t.status!=="done");
-function ev(pid,title,ok){
-  const e={id:uid("e"),pid:pid||null,title,by:S.userId,at:now(),ok:ok!==false};
+function ev(pid,title,ok,kind){
+  const e={id:uid("e"),pid:pid||null,title,by:S.userId,at:now(),ok:ok!==false,kind:kind||evKind(title)};
   S.events.unshift(e);
   if(sessionTok) qEvent(e);
   return e
@@ -1207,14 +1221,16 @@ function evFail(pid,action,err){
 }
 function evKind(title){
   const s=(title||"").toLowerCase();
-  if(/ect/.test(s))return "ect";
-  if(/given|held|refused|prn|started |stopped |dose|drug/.test(s))return "med";
+  if(/^failed\b|\bfail\b|error|denied|permission|null value/.test(s))return "fail";
   if(/handover|flagged/.test(s))return "handover";
-  if(/task/.test(s))return "task";
-  if(/fail|failed|error|denied|permission|null value/.test(s))return "fail";
-  if(/status|signed/.test(s))return "status";
+  if(/^task\b|task added|task notification|task assigned/.test(s))return "task";
+  if(/\bect\b|electroconvulsive/.test(s))return "ect";
+  if(/given|held|refused|\bprn\b|started |stopped |resumed |dose|drug|olanzapine|lorazepam/.test(s))return "med";
+  if(/status updated|critical status|signed/.test(s))return "status";
+  if(/admitted|discharged|transferred/.test(s))return "note";
   return "note";
 }
+function eventKind(e){return (e&&e.kind)||evKind(e&&e.title)}
 
 let route={page:"home",id:null};
 let nav={tab:"home",stack:[]};
@@ -1293,23 +1309,23 @@ window.addEventListener("popstate",e=>{
   try{history.pushState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(err){}
 });
 function cloudOn(){return !!(S.supabaseUrl&&S.supabaseAnonKey&&/^https:\/\//i.test(S.supabaseUrl)&&window.supabase)}
+function liveOutboxCount(){return pending.filter(op=>op.status!=="acked"&&op.status!=="failed").length}
+function failedOutboxCount(){return pending.filter(op=>op.status==="failed").length}
 function statusLabel(){
-  const c=outboxCounts();
-  if(!navigator.onLine) return "Offline";
-  if(c.failed) return "Sync issue";
-  if(c.pending||c.retrying) return "Saving · "+(c.pending+c.retrying);
-  if(cloudStatus==="error"&&sessionTok) return "Error";
+  const live=liveOutboxCount(), fail=failedOutboxCount();
+  if(!navigator.onLine) return live?"Offline · "+live:"Offline";
+  if(fail) return "Needs attention · "+fail;
+  if(live) return "Saving · "+live;
   if(Sync.state==="RECONNECTING") return "Reconnecting";
-  if(cloudStatus==="syncing"&&sessionTok) return "Saving…";
   if(sessionTok && (cloudStatus==="live" || Sync.state==="CONNECTED" || liveReady)) return "Live";
   if(sessionTok) return "Connecting";
   return "Connecting";
 }
 function statusClass(){
-  const c=outboxCounts();
-  if(c.failed || (cloudStatus==="error"&&sessionTok)) return "error";
+  if(failedOutboxCount() || (cloudStatus==="error"&&sessionTok&&failedOutboxCount())) return "error";
+  if(failedOutboxCount()) return "error";
   if(!navigator.onLine) return "offline";
-  if(Sync.state==="RECONNECTING"||cloudStatus==="syncing") return "syncing";
+  if(liveOutboxCount() || Sync.state==="RECONNECTING") return "syncing";
   if(sessionTok && (cloudStatus==="live"||Sync.state==="CONNECTED"||liveReady)) return "live";
   if(sessionTok) return "syncing";
   return "offline";
@@ -1496,11 +1512,45 @@ async function flushPending(){
   flushPromise=doFlushPending().finally(()=>{flushPromise=null});
   return flushPromise;
 }
+function outboxPatient(op){
+  const row=op&&op.row||{};
+  return patient(row.patient_id||row.patientId||row.id)||null;
+}
+function isStaleOutbox(op){
+  if(!op) return false;
+  const msg=String(op.lastError||"").toLowerCase();
+  const p=outboxPatient(op);
+  if(op.table==="ect_plans"){
+    if(p&&p.status==="discharged") return true;
+    if(!p && /active patient not found/.test(msg)) return true;
+  }
+  if(/active patient not found/.test(msg) && (!p || p.status==="discharged")) return true;
+  return false;
+}
+function dropStaleOutbox(){
+  const before=pending.length;
+  pending=pending.filter(op=>!isStaleOutbox(op));
+  persistOutbox();
+  const n=before-pending.length;
+  if(n) toast("Dropped "+n+" stale queue item"+(n===1?"":"s"),"ok");
+  else toast("No stale queue items","ok");
+  const c=outboxCounts();
+  if(!c.pending&&!c.retrying&&!c.failed){cloudStatus=liveReady?"live":cloudStatus; if(liveReady) Sync.state="CONNECTED";}
+  render();
+  return n;
+}
 async function doFlushPending(){
   if(!sb||!pending.length) return;
   if(!sessionTok){cloudStatus="error";return}
-  const work=pending.filter(op=>op.status!=="acked");
-  if(!work.length) return;
+  pending.filter(isStaleOutbox).forEach(op=>{
+    Sync.note("drop stale "+op.table);
+    ackOutbox(op.id);
+  });
+  const work=pending.filter(op=>op.status!=="acked"&&!isStaleOutbox(op));
+  if(!work.length){
+    if(!pending.length && liveReady){cloudStatus="live";Sync.state="CONNECTED"}
+    return;
+  }
   cloudStatus="syncing";
   Sync.state="RECONCILING";
   const rank=t=>({patients:0,beds:1,patient_bed_assignments:2,patient_snapshots:3,medication_orders:4,medication_doses:5,ect_plans:6,ect_sessions:7,tasks:8,handovers:7,handover_items:8,ect_plans:9,ward_sections:10,unit_consultants:11,unit_settings:12,activity_log:20}[t]??15);
@@ -1526,6 +1576,11 @@ async function doFlushPending(){
         expireSession();
         patchOutbox(op.id,{status:"failed",lastError:msg});
         hard=true; cloudLastError=msg; break;
+      }
+      if(isStaleOutbox(Object.assign({},op,{lastError:msg}))){
+        Sync.note("drop stale after error "+op.table);
+        ackOutbox(op.id);
+        continue;
       }
       if(tries>=8){
         patchOutbox(op.id,{status:"failed",lastError:msg});
@@ -1588,7 +1643,7 @@ async function cloudPush(includeEct){
     await step("ect_plans",ectRows);
     await step("ect_sessions",(S.ectSessions||[]).map(x=>({id:x.id,plan_id:x.planId,patient_id:x.pid,session_number:x.sessionNumber,session_at:x.at||now(),anaesthesia:x.anaesthesia||null,stimulus:x.stimulus||null,seizure_seconds:x.seizureSeconds==null?null:x.seizureSeconds,complications:x.complications||null,response:x.response||null,next_plan:x.nextPlan||null,recorded_by:x.by||S.userId||null})));
   }
-  await step("activity_log",(S.events||[]).slice(0,300).map(e=>({id:e.id,patient_id:e.pid||null,kind:evKind(e.title),title:e.title||"Event",actor_id:e.by||null,created_at:e.at||now()})));
+  await step("activity_log",(S.events||[]).slice(0,300).map(e=>({id:e.id,patient_id:e.pid||null,kind:e.kind||evKind(e.title),title:e.title||"Event",actor_id:e.by||null,created_at:e.at||now()})));
   if(errs.length){cloudStatus="error";cloudLastError=errs[0];console.warn(errs);toast(errs[0],"bad")}
   else {cloudStatus=liveReady?"live":"offline";cloudLastError=""}
 }
@@ -1848,14 +1903,32 @@ function renderElogEntry(e){
   const kind=elogKindLabel(e.kind,msg);
   return `<div class="elog-entry"><div><span class="elog-kind ${e.kind==="bad"?"bad":""}">${esc(kind)}</span><b>${esc((e.at||"").replace("T"," ").slice(0,19))}</b></div><div style="margin-top:5px;font-size:12px;line-height:1.4">${esc(msg)}</div>${e.kind==="bad"?`<div class="elog-explain">${esc(explainSyncError(msg))}</div>`:""}</div>`;
 }
+function enqueueIntent(job){
+  ui.intentQ=ui.intentQ||[];
+  if(job.coalesce) ui.intentQ=ui.intentQ.filter(x=>!(x.kind===job.kind&&x.key===job.key));
+  ui.intentQ.push(job);
+  toast("Queued — saving previous…","info");
+}
+function drainIntents(){
+  if(ui.busy||ui.workflowLock) return;
+  const job=(ui.intentQ||[]).shift();
+  if(!job) return;
+  try{job.run()}catch(e){console.warn(e)}
+}
+function runWhenReady(kind,key,fn,coalesce){
+  if(ui.busy||ui.workflowLock){enqueueIntent({kind,key,run:fn,coalesce:!!coalesce});return false}
+  return true;
+}
 function setBusy(on,label){
   ui.busy=!!on;
   ui.busyLabel=on?(label||ui.busyLabel||"Saving…"):"";
   if(ui._busyTimer){clearTimeout(ui._busyTimer);ui._busyTimer=null;}
   if(on){
     ui._busyTimer=setTimeout(()=>{
-      if(ui.busy){ui.busy=false;ui.busyLabel="";render({force:true});}
+      if(ui.busy){ui.busy=false;ui.busyLabel="";render({force:true});drainIntents();}
     },20000);
+  }else{
+    setTimeout(drainIntents,30);
   }
   render({force:true});
 }
@@ -2048,7 +2121,7 @@ function snapView(){
     <div class="card snap-current">
       <p class="tiny">CURRENT STATE</p>
       <label class="field" style="margin:8px 0 10px">
-        <input id="oneline" value="${esc(sn.state||"")}" placeholder="This round" onkeydown="if(event.key==='Enter'){event.preventDefault();saveLine('${p.id}')}"/>
+        <textarea id="oneline" rows="3" placeholder="This round" oninput="ui.fields=ui.fields||{};ui.fields.oneline=this.value">${esc(sn.state||"")}</textarea>
       </label>
       <div class="btns" style="margin-top:6px;gap:6px;flex-wrap:wrap">
         <button class="btn sm" onclick="saveLine('${p.id}')">Save</button>
@@ -2328,7 +2401,7 @@ async function admitCommit(id,p,bed,asg,hosp){setBusy(true);
       const ops=pending.splice(0); pending=hold.concat(pending);
       for(const op of ops) await upsert(op.table,[op.row]);
     }
-    ev(id,"Admitted to "+bed.no+(hosp?" · "+hosp:""),true);
+    ev(id,"Admitted to "+bed.no+(hosp?" · "+hosp:""),true,"note");
     try{
       let result;
       if(atomic.used && atomic.data && atomic.data.notification_id){
@@ -2444,7 +2517,7 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore){setBusy(true)
       evFail(p.id,"Discharge notification",ne);
       console.warn("Discharge notification failed",ne);
     }
-    ev(p.id,"Discharged · "+labelOf(DISCHARGE_MODES,p.dischargeMode)+" · "+labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome),true);
+    ev(p.id,"Discharged · "+labelOf(DISCHARGE_MODES,p.dischargeMode)+" · "+labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome),true,"note");
     flashBtn(".btn.danger.block","ok");toast("Discharged "+p.name,"ok");ui.disId="";ui.disForm=false;save();ui.ctab="out";render();
   }catch(e){
     p.status="admitted"; p.dischargedAt=null; p.dischargeMode=null; p.dischargeOutcome=null; p.treatmentMode=null;
@@ -2498,22 +2571,27 @@ function dischargeFormBody(id){
     <button class="btn danger block" onclick="ui.ctab='out';ui.disId='${p.id}';closePanel();go('census')">Confirm discharge</button>`;
 }
 function dischargePatient(id){
+  if(!needWrite())return;
   const p=patient(id);if(!p||p.status==="discharged")return;
+  if(workflowLocked("discharge",id))return;
   const mode=val("dmode")||"advice";
   const outcome=val("dout")||"improved";
   const treat=val("dtrt")||p.treatmentMode||"conservative";
+  const bed=S.beds.find(b=>b.patientId===id);
+  const releasedBefore=(S.assignments||[]).filter(a=>a.patientId===id&&!a.released).map(a=>({id:a.id,released:a.released}));
+  const ect=ectPlan(id);
+  const ectBefore=ect?{status:ect.status,nextAt:ect.nextAt,sessionsDone:ect.sessionsDone}:null;
   p.status="discharged";
   p.dischargedAt=now();
   p.dischargeMode=mode;
   p.dischargeOutcome=outcome;
   p.treatmentMode=treat;
-  const bed=S.beds.find(b=>b.patientId===id);
-  if(bed){bed.patientId=null;qBed(bed)}
-  S.assignments.forEach(a=>{if(a.patientId===id&&!a.released){a.released=now();qAssign(a)}});
-  ev(id,"Discharged · "+labelOf(DISCHARGE_MODES,mode)+" · "+labelOf(DISCHARGE_OUTCOMES,outcome));
-  qPatient(p);
-  const ect=ectPlan(id);if(ect && mode!=="death"){ect.status="cancelled";qEct(ect)}
-  ui.sheet=null;save();go("patients");
+  if(bed) bed.patientId=null;
+  const releasedAt=now();
+  S.assignments.forEach(a=>{if(a.patientId===id&&!a.released)a.released=releasedAt});
+  if(ect && mode!=="death") ect.status="cancelled";
+  ui.sheet=null;ui.panel=null;
+  Promise.resolve(dischargeCommit(p,bed,releasedBefore,ect,ectBefore)).finally(()=>go("patients"));
 }
 
 function openFab(){
@@ -2565,13 +2643,13 @@ function runFab(kind){
     let h=S.handovers.find(x=>x.from===S.userId&&x.shift===toShift&&x.status==="sent");
     if(!h){h={id:uid("h"),from:S.userId,to:S.userId,shift:toShift,status:"sent",at:now()};S.handovers.unshift(h)}
     const it={id:uid("hi"),hid:h.id,pid,pri:"high",problem:note||((S.snaps[pid]||{}).watch||"Review"),action:"See snapshot",done:false};
-    S.hitems.unshift(it);ev(pid,"Handover to "+shiftLabel(toShift),true);qHandover(h);qHitem(it);
+    S.hitems.unshift(it);ev(pid,"Handover to "+shiftLabel(toShift),true,"handover");qHandover(h);qHitem(it);
   }
   if(kind==="ect"){
     let e=ectPlan(pid);
     if(!e){e={id:uid("ect"),pid,sessionsDone:0,nextAt:null,npo:true,status:"planned",by:S.userId,at:now()};S.ect.unshift(e)}
     e.indication=note||e.indication||"ECT planned";e.status="planned";
-    ev(pid,"ECT planned");qEct(e);
+    ev(pid,"ECT planned",true,"ect");qEct(e);
   }
   save();ui.sheet=null;ui.panel=null;go("snap",pid);
 }
@@ -2596,7 +2674,7 @@ function saveEct(pid){
   let e=ectPlan(pid);
   if(!e){e={id:uid("ect"),pid,status:"planned",by:S.userId,at:now()};S.ect.unshift(e)}
   Object.assign(e,{indication,sessionsDone,nextAt,npo,status:"planned",by:S.userId,at:now()});
-  ev(pid,"ECT planned");ui.sheet=null;ui.panel=null;save();render();pushEctNow(ectPlan(pid)||e,"planned");
+  ev(pid,"ECT planned",true,"ect");ui.sheet=null;ui.panel=null;save();render();pushEctNow(ectPlan(pid)||e,"planned");
 }
 async function markEctDone(id){
   if(!needWrite())return;
@@ -2608,7 +2686,7 @@ async function markEctDone(id){
   if(e.nextAt){const d=new Date(e.nextAt);d.setDate(d.getDate()+2);e.nextAt=d.toISOString()}
   if(!(sb&&sessionTok)){
     S.ectSessions=S.ectSessions||[];S.ectSessions.unshift(session);qEctSession(session);
-    ev(e.pid,"ECT session "+sessionNumber);save();render();toast("ECT session queued for sync","ok");return;
+    ev(e.pid,"ECT session "+sessionNumber,true,"ect");save();render();toast("ECT session queued for sync","ok");return;
   }
   setBusy(true);
   try{
@@ -2625,7 +2703,7 @@ async function markEctDone(id){
     session.sessionNumber=ectResult.session_number||sessionNumber;
     const p=patient(e.pid);
     const result=await notifyServerEvent({eventType:"ect",category:"ect",priority:"high",patientId:e.pid,ectPlanId:e.id,title:"ECT session completed",body:(p?p.name:"Patient")+" · Session "+sessionNumber+" completed",targetUrl:"./#/snap/"+encodeURIComponent(e.pid),recipientScope:"active_team",dedupeKey:"ect:"+e.id+":session:"+session.id,metadata:{action:"session",sessions_done:sessionNumber,next_session_at:e.nextAt||null}});
-    ev(e.pid,"ECT session "+sessionNumber,true);
+    ev(e.pid,"ECT session "+sessionNumber,true,"ect");
     ev(e.pid,"ECT notification sent · "+((result.dispatch&&result.dispatch.sent)||0)+" device(s)",true);
     save();render();toast("ECT session recorded · synced","ok");
   }catch(err){
@@ -2637,7 +2715,7 @@ async function markEctDone(id){
 function cancelEct(id){
   const e=(S.ect||[]).find(x=>x.id===id);if(!e)return;
   e.status="cancelled";e.at=now();
-  ev(e.pid,"ECT plan cancelled");qEct(e);ui.sheet=null;save();render();
+  ev(e.pid,"ECT plan cancelled",true,"ect");qEct(e);ui.sheet=null;save();render();
   pushEctNow(e,"cancelled");
 }
 async function pushEctNow(e,action){setBusy(true);
@@ -2694,10 +2772,14 @@ function shiftLabel(s){
 function handoverView(){
   const cur=currentShift();
   const nxt=nextShift(cur);
+  const me=String(S.userId||"");
   const open=S.handovers.filter(h=>h.status==="sent");
-  const forNow=open.filter(h=>h.shift===cur);
-  const forNext=open.filter(h=>h.shift===nxt);
-  const other=open.filter(h=>h.shift!==cur&&h.shift!==nxt);
+  const mineIncoming=h=>String(h.to||"")===me;
+  const mineOutgoing=h=>String(h.from||"")===me && String(h.to||"")!==me;
+  const forNow=open.filter(h=>h.shift===cur && mineIncoming(h));
+  const forNext=open.filter(h=>h.shift===nxt && (mineOutgoing(h)||mineIncoming(h)));
+  const postedByMe=open.filter(h=>mineOutgoing(h) && h.shift!==nxt);
+  const other=open.filter(h=>h.shift!==cur&&h.shift!==nxt && mineIncoming(h));
   const acked=S.handovers.filter(h=>h.status==="acknowledged").slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0)).slice(0,5);
   const takeN=forNow.reduce((n,h)=>n+S.hitems.filter(i=>i.hid===h.id&&!i.done).length,0);
   const head=`<div class="ho-head">
@@ -2709,8 +2791,9 @@ function handoverView(){
     </div>`;
   return head+
     hoSection("Take this shift",forNow,true,!forNow.length?`<p class="tiny ho-empty">Nothing to take for ${esc(shiftLabel(cur))}.</p>`:"")+
-    (forNext.length?hoSection("Posted for "+shiftLabel(nxt),forNext,true,""):"")+
-    (other.length?hoSection("Other shifts",other,true,""):"")+
+    (forNext.length?hoSection("Posted for "+shiftLabel(nxt),forNext,false,""):"")+
+    (postedByMe.length?hoSection("Waiting to be taken",postedByMe,false,""):"")+
+    (other.length?hoSection("Other incoming",other,true,""):"")+
     (acked.length?(ui.hHist?hoSection("Earlier handovers",acked,false,""):`<button class="btn ghost block" style="margin-top:8px" onclick="ui.hHist=true;render()">Earlier handovers · ${acked.length}</button>`):"");
 }
 function hoSection(title,list,canAck,empty){
@@ -2739,7 +2822,7 @@ function hoPack(h,canAck){
       <p class="shoulddo">${esc(i.action||"—")}</p>
       ${i.done?`<p class="tiny">Done</p>`:`<button class="btn sm" style="margin-top:8px" onclick="clearItem('${i.id}')" ${i._busy?"disabled":""}>Done</button>`}
     </div>`).join("")}
-    ${canAck&&h.status==="sent"&&canWrite()?`<button class="btn sm" style="margin-top:10px" onclick="ackH('${h.id}')">Take handover</button>`:(h.status==="acknowledged"?`<p class="tiny" style="margin-top:8px">Taken by ${esc(rname(h.ackBy))} · ${rel(h.ackAt||h.at)}</p>`:"")}
+    ${canAck&&h.status==="sent"&&canWrite()&&(String(h.to)===String(S.userId)||canAdmin())?`<button class="btn sm" style="margin-top:10px" onclick="ackH('${h.id}')">Take handover</button>`:(h.status==="acknowledged"?`<p class="tiny" style="margin-top:8px">Taken by ${esc(rname(h.ackBy))} · ${rel(h.ackAt||h.at)}</p>`:"")}
   </div>`;
 }
 function openGiveHandover(){
@@ -2808,12 +2891,20 @@ async function ackHNow(id){
   h.status="acknowledged";h.ackBy=S.userId;h.ackAt=now(); qHandover(h); save(); render();
   try{
     if(!sessionTok||!sb) throw new Error("Sign in again to sync writes");
-    const {error}=await sb.rpc("ward_ack_handover",{p_session_token:sessionTok,p_handover_id:h.id});
-    if(error){
-      if(!/function .*ward_ack_handover.*does not exist/i.test(error.message||"")) throw error;
-      await upsert("handovers",[{id:h.id,from_id:h.from,to_id:h.to||h.from,shift:h.shift,status:"acknowledged",created_at:h.at||now(),acknowledged_by:h.ackBy,acknowledged_at:h.ackAt}]);
+    let error=null;
+    let take=await sb.rpc("ward_take_handover",{p_session_token:sessionTok,p_handover_id:h.id});
+    error=take.error;
+    if(error && /function .*ward_take_handover.*does not exist/i.test(error.message||"")){
+      take=await sb.rpc("ward_ack_handover",{p_session_token:sessionTok,p_handover_id:h.id});
+      error=take.error;
     }
-    ev(null,"Handover acknowledged · "+shiftLabel(h.shift)+" · "+rname(S.userId),true);
+    if(error){
+      const msg=error.message||"";
+      if(/only the receiving resident/i.test(msg)) throw new Error("Already taken by someone else, or this handover is not addressed to you.");
+      if(!/function .*ward_ack_handover.*does not exist/i.test(msg)) throw error;
+      await upsert("handovers",[{id:h.id,from_id:h.from,to_id:h.to||h.from,shift:h.shift,status:"acknowledged",created_at:h.at||now(),acknowledged_by:S.userId,acknowledged_at:h.ackAt}]);
+    }
+    ev(null,"Handover acknowledged · "+shiftLabel(h.shift)+" · "+rname(S.userId),true,"handover");
     toast("Acknowledged "+shiftLabel(h.shift),"ok");
   }catch(e){
     h.status=prev.status;h.ackBy=prev.ackBy;h.ackAt=prev.ackAt;qHandover(h);save();evFail(null,"Handover acknowledgement",e);toast("Handover was not acknowledged","bad");
@@ -2827,11 +2918,12 @@ async function sendH(){
   if(!toResident){toast("Select the resident who will receive this handover.","bad");return}
   if(!pid||!problem){toast("Choose a patient and write what the next shift must know.","bad");return}
   setBusy(true,"Sending handover…");
-  let h=S.handovers.find(x=>x.from===S.userId&&x.to===toResident&&x.shift===toShift&&x.status==="sent");
+  let h=S.handovers.find(x=>String(x.from)===String(S.userId)&&String(x.to)===String(toResident)&&x.shift===toShift&&x.status==="sent");
   if(!h){
     h={id:uid("h"),from:S.userId,to:toResident,shift:toShift,status:"sent",at:now()};
     S.handovers.unshift(h);
   } else {
+    h.from=S.userId;
     h.to=toResident;
   }
   const it={id:uid("hi"),hid:h.id,pid,pri:"high",problem,action:action||"Review snapshot",done:false,at:now()};
@@ -2840,25 +2932,33 @@ async function sendH(){
   try{
     if(!sessionTok) throw new Error("Sign in again to sync writes");
     let hhErr=null;
-    const hh=await sb.rpc("ward_upsert_handover",{p_session_token:sessionTok,p_row:{id:h.id,from_id:h.from,to_id:h.to||h.from,shift:h.shift,status:h.status,created_at:h.at||now(),acknowledged_by:h.ackBy||null,acknowledged_at:h.ackAt||null}}); hhErr=hh.error;
+    const hh=await sb.rpc("ward_upsert_handover",{p_session_token:sessionTok,p_row:{id:h.id,to_id:h.to,shift:h.shift,status:"sent",created_at:h.at||now()}}); hhErr=hh.error;
     if(hhErr){if(!/function .*ward_upsert_handover.*does not exist/i.test(hhErr.message||"")) throw hhErr; await upsert("handovers",[{id:h.id,from_id:h.from,to_id:h.to||h.from,shift:h.shift,status:h.status,created_at:h.at||now(),acknowledged_by:h.ackBy||null,acknowledged_at:h.ackAt||null}]);}
     const hi=await sb.rpc("ward_upsert_handover_item",{p_session_token:sessionTok,p_row:{id:it.id,handover_id:it.hid,patient_id:it.pid,priority:it.pri,problem:it.problem,action_required:it.action||"Review snapshot",done:!!it.done}});
     if(hi.error){if(!/function .*ward_upsert_handover_item.*does not exist/i.test(hi.error.message||"")) throw hi.error; await upsert("handover_items",[{id:it.id,handover_id:it.hid,patient_id:it.pid,priority:it.pri,problem:it.problem,action_required:it.action||"Review snapshot",done:!!it.done}]);}
-    const p=patient(pid);
-    const result=await notifyServerEvent({
-      eventType:"handover", category:"handovers", priority:"high", patientId:pid, handoverId:h.id,
-      title:"New handover",
-      body:(p?p.name:"Patient")+" · "+shiftLabel(toShift)+" handover\n"+problem+(action?"\nAction: "+action:""),
-      targetUrl:"./#/handover", recipientScope:"handover",
-      dedupeKey:"handover:"+h.id+":"+it.id,
-      metadata:{shift:toShift,to_resident_id:toResident,handover_item_id:it.id,action_required:action||"Review snapshot"}
-    });
-    ev(pid,"Handover notification sent · "+((result.dispatch&&result.dispatch.sent)||0)+" device(s)",true);
+    ev(pid,"Handover to "+shiftLabel(toShift),true,"handover");
+    try{
+      const p=patient(pid);
+      const result=await notifyServerEvent({
+        eventType:"handover", category:"handovers", priority:"high", patientId:pid, handoverId:h.id,
+        title:"New handover",
+        body:(p?p.name:"Patient")+" · "+shiftLabel(toShift)+" handover\n"+problem+(action?"\nAction: "+action:""),
+        targetUrl:"./#/handover", recipientScope:"handover",
+        dedupeKey:"handover:"+h.id+":"+it.id,
+        metadata:{shift:toShift,to_resident_id:toResident,handover_item_id:it.id,action_required:action||"Review snapshot"}
+      });
+      ev(pid,"Handover notification sent · "+((result.dispatch&&result.dispatch.sent)||0)+" device(s)",true,"handover");
+    }catch(ne){
+      evFail(pid,"Handover notification",ne);
+      toast("Posted for "+shiftLabel(toShift)+" · push not delivered","ok");
+      ui.giveOpen=false;ui.sheet=null;ui.htab="board";save();render();
+      return;
+    }
     toast("Posted for "+shiftLabel(toShift),"ok");
     ui.giveOpen=false;ui.sheet=null;ui.htab="board";save();render();
   }catch(e){
-    evFail(pid,"Handover notification",e);
-    toast("Handover saved locally; notification failed","bad");
+    evFail(pid,"Handover",e);
+    toast("Handover was not saved: "+(e.message||e),"bad");
     save();render();
   }finally{
     setBusy(false);
@@ -3381,7 +3481,8 @@ function setupView(){
     <div class="card">
       <div class="row"><div><p class="tiny">QUEUE</p></div><span class="badge ${c.failed?"r-critical":c.retrying?"r-moderate":"r-low"}">${c.failed?c.failed+" failed":c.retrying?c.retrying+" retrying":c.pending+" pending"}</span></div>
       ${outboxDetailsHtml()}
-      ${pending.length?`<button class="btn ghost block" style="margin-top:10px" onclick="flushPending().then(()=>render())">Retry sync</button>`:""}
+      ${pending.length?`<button class="btn ghost block" style="margin-top:10px" onclick="flushPending().then(()=>render())">Retry sync</button>
+      <button class="btn ghost block" style="margin-top:8px" onclick="dropStaleOutbox()">Drop stale queue items</button>`:""}
     </div>
     ${deep?`<div class="card">
       <p class="tiny">DIAGNOSTICS</p>
@@ -3489,7 +3590,7 @@ function activityView(){
   const q=(ui.aq||"").toLowerCase();
   const kind=ui.akind||"all";
   const rows=(S.events||[]).filter(e=>{
-    const k=evKind(e.title);
+    const k=eventKind(e);
     if(kind!=="all"&&k!==kind)return false;
     const p=e.pid?patient(e.pid):null;
     const hay=((e.title||"")+" "+(p?p.name:"")+" "+bedOf(e.pid||"")+" "+rname(e.by)).toLowerCase();
@@ -3503,7 +3604,7 @@ function activityView(){
     <div class="chips">${chips.map(([k,l])=>`<button class="chip ${kind===k?"on":""}" onclick="ui.akind='${k}';render()">${l}</button>`).join("")}</div>
     ${rows.length?rows.map(e=>{
       const p=e.pid?patient(e.pid):null;
-      const k=evKind(e.title);
+      const k=eventKind(e);
       return `<button class="card" style="${k==="fail"?"border-color:#e11d48":""}" onclick="${p?`go('snap','${p.id}')`:""}">
         <div class="row">
           <span class="badge" style="background:${color[k]};color:#082018">${k}</span>${(e.ok===false||k==="fail")?`<span class="badge" style="background:#e11d48;color:#fff">failed</span>`:(e.ok===true?`<span class="badge" style="background:#059669;color:#fff">ok</span>`:"")}
@@ -3653,11 +3754,16 @@ function removeSection(id){
   S.sections=S.sections.filter(s=>s.id!==id);save();render();
 }
 function saveLine(id){
-  if(!needWrite())return;const t=val("oneline").trim();if(!t)return;
-  if(ui.busy)return;
-  S.snaps[id]={...S.snaps[id],state:t,by:S.userId,at:now()};ev(id,"Status updated");qSnap(id);save();
-  setBusy(true,"Saving update…");
-  Promise.resolve(flushPending()).finally(()=>setBusy(false));
+  if(!needWrite())return;
+  const t=val("oneline").trim();if(!t)return;
+  const run=()=>{
+    S.snaps[id]={...S.snaps[id],state:t,by:S.userId,at:now()};
+    ev(id,"Status updated",true,"status");qSnap(id);save();
+    setBusy(true,"Saving update…");
+    Promise.resolve(flushPending()).finally(()=>setBusy(false));
+  };
+  if(!runWhenReady("saveLine",id,run,true)) return;
+  run();
 }
 async function createCriticalStatusRecord(pid,msg){
   if(!sessionTok||!sb) throw new Error("No active ward session");
@@ -3775,7 +3881,7 @@ async function clearItem(id){
       if(!/function .*ward_update_handover_item.*does not exist/i.test(error.message||"")) throw error;
       await upsert("handover_items",[{id:i.id,handover_id:i.hid,patient_id:i.pid,priority:i.pri||"high",problem:i.problem||"",action_required:i.action||"Review snapshot",done:true}]);
     }
-    ev(i.pid,"Handover item completed",true); toast("Handover item done","ok");
+    ev(i.pid,"Handover item completed",true,"handover"); toast("Handover item done","ok");
   }catch(e){
     i.done=prev; qHitem(i); save(); evFail(i.pid,"Handover item",e); toast("Handover item was not updated","bad");
   }finally{i._busy=false;render();}
@@ -3810,7 +3916,7 @@ async function givePrn(oid){
     const ops=pending.splice(0); pending.push(...hold);
     for(const op of ops.filter(x=>x.table==="medication_orders")) await upsert(op.table,[op.row]);
     for(const op of ops.filter(x=>x.table!=="medication_orders")) await upsert(op.table,[op.row]);
-    ev(o.pid,"PRN "+o.drug+" "+o.dose,true);
+    ev(o.pid,"PRN "+o.drug+" "+o.dose,true,"med");
     toast("Given "+o.drug+" "+o.dose,"ok");
     ui.sheet=null;save();render();
   }catch(e){
@@ -3842,12 +3948,16 @@ function taskFormBody(id){
 }
 async function saveQuickTask(id){
   if(!needWrite())return;
-  ui.panel=null;
-  if(ui.busy)return;
-  setBusy(true,"Saving task…");
   const title=(val("tsk_t")||"").trim()||("Review "+bedOf(id));
   const detail=(val("tsk_d")||"").trim();
   const to=val("tsk_to")||S.userId||null;
+  const run=()=>saveQuickTaskNow(id,title,detail,to);
+  if(!runWhenReady("task",id,run,false)) return;
+  return saveQuickTaskNow(id,title,detail,to);
+}
+async function saveQuickTaskNow(id,title,detail,to){
+  ui.panel=null;
+  setBusy(true,"Saving task…");
   const tsk={id:uid("t"),pid:id,title,detail,pri:"high",status:"open",to,at:now()};
   S.tasks.unshift(tsk);qTask(tsk);
   try{
@@ -3867,8 +3977,8 @@ async function saveQuickTask(id){
       dedupeKey:"task:"+tsk.id,
       metadata:{assigned_to:to,assigned_to_name:assignee?assignee.displayName||assignee.username:null}
     });
-    ev(id,"Task added · "+title,true);
-    ev(id,"Task notification sent · "+((result.dispatch&&result.dispatch.sent)||0)+" device(s)",true);
+    ev(id,"Task added · "+title,true,"task");
+    ev(id,"Task notification sent · "+((result.dispatch&&result.dispatch.sent)||0)+" device(s)",true,"task");
     toast("Task added and assigned","ok");ui.sheet=null;save();render();
   }catch(e){
     evFail(id,"Task notification",e);
@@ -3877,12 +3987,12 @@ async function saveQuickTask(id){
     setBusy(false);
   }
 }
-function flagHandover(id){if(!needWrite())return; if(ui.busy)return; setBusy(true,"Saving handover…");
+function flagHandover(id){if(!needWrite())return; if(!runWhenReady("handover",id,()=>flagHandover(id),false)) return; setBusy(true,"Saving handover…");
   const toShift=nextShift();
   let h=S.handovers.find(x=>x.from===S.userId&&x.shift===toShift&&x.status==="sent");
   if(!h){h={id:uid("h"),from:S.userId,to:S.userId,shift:toShift,status:"sent",at:now()};S.handovers.unshift(h)}
   const it={id:uid("hi"),hid:h.id,pid:id,pri:"high",problem:(S.snaps[id]||{}).watch||"Review this shift",action:"See snapshot",done:false};
-  S.hitems.unshift(it);ev(id,"Handover to "+shiftLabel(toShift),true);qHandover(h);qHitem(it);save();ui.htab="board";go("handover");
+  S.hitems.unshift(it);ev(id,"Handover to "+shiftLabel(toShift),true,"handover");qHandover(h);qHitem(it);save();ui.htab="board";go("handover");
   Promise.resolve(flushPending()).finally(()=>setBusy(false));
 }
 function saveSb(){const u=val("sburl").trim();if(u&&!/^https:\/\//i.test(u)){flashBtn(document.querySelector("#sburl")&&document.querySelector(".card .btn.ghost.block"),"bad");toast("The URL must start with https://","bad");return}S.supabaseUrl=u;S.supabaseAnonKey=val("sbkey").trim();save();toast("Keys saved","ok");reconnectCloud()}
@@ -3998,7 +4108,12 @@ function doTransfer(pid,bedId){
   const p=patient(pid);if(!p||p.status==="discharged")return;
   if(workflowLocked("transfer",pid))return;
   const dest=S.beds.find(b=>b.id===bedId);
-  if(!dest||!dest.active||dest.patientId){toast("That bed is already occupied.","bad");return}
+  if(!dest||!dest.active){toast("That bed is not available.","bad");return}
+  if(dest.patientId && dest.patientId!==pid){
+    const occ=patient(dest.patientId);
+    toast("Bed "+dest.no+" is already occupied"+(occ?" by "+occ.name:"")+".","bad");
+    return;
+  }
   const from=S.beds.find(b=>b.patientId===pid);
   if(from&&from.id===dest.id){ui.sheet=null;render();return}
   const when=now();
@@ -4052,14 +4167,15 @@ async function transferCommit(p,from,dest,asg){setBusy(true);
       evFail(p.id,"Transfer notification",ne);
       console.warn("Transfer notification failed",ne);
     }
-    ev(p.id,"Transferred "+(from?from.no:"—")+" → "+dest.no,true);
+    ev(p.id,"Transferred "+(from?from.no:"—")+" → "+dest.no,true,"note");
     toast((from?from.no:"—")+" → "+dest.no,"ok");ui.sheet=null;save();render();
   }catch(e){
     dest.patientId=null;
     if(from) from.patientId=p.id;
     S.assignments=S.assignments.filter(a=>a.id!==asg.id);
     ev(p.id,"Transfer failed · "+(from?from.no:"—")+" → "+dest.no+" · "+(e.message||e),false);
-    toast("Transfer failed","bad");save();render();
+    const msg=String(e.message||e||"");
+    toast(/already occupied/i.test(msg)?"Bed "+dest.no+" was taken on another phone.":"Transfer failed","bad");save();render();
   }finally{workflowUnlock("transfer",p&&p.id);setBusy(false);}
 }
 
@@ -4080,12 +4196,15 @@ function openMedForm(pid){
 }
 function addMed(pid){
   const drug=val("md").trim();if(!drug)return;
-  if(ui.busy)return;
   const parts=val("mds").trim()||"—";
-  const ord={id:uid("o"),pid,drug,dose:parts,route:"PO",freq:"OD",time:"08:00",start:now(),stop:null,status:"active"};S.orders.unshift(ord);
-  ev(pid,"Started "+drug);qOrder(ord);ui.sheet=null;save();
-  setBusy(true,"Saving medication…");
-  Promise.resolve(flushPending()).finally(()=>setBusy(false));
+  const run=()=>{
+    const ord={id:uid("o"),pid,drug,dose:parts,route:"PO",freq:"OD",time:"08:00",start:now(),stop:null,status:"active"};S.orders.unshift(ord);
+    ev(pid,"Started "+drug,true,"med");qOrder(ord);ui.sheet=null;save();
+    setBusy(true,"Saving medication…");
+    Promise.resolve(flushPending()).finally(()=>setBusy(false));
+  };
+  if(!runWhenReady("addMed",pid+"|"+drug,run,false)) return;
+  run();
 }
 function stopMed(id){
   const o=S.orders.find(x=>x.id===id);if(!o)return;
@@ -4102,9 +4221,9 @@ function resumeMed(id){
   ui.confirm={fn:"resumeMed",id,title:"Resume medication",ok:"Resume",danger:false,body:"Resume "+(o.drug||"this drug")+"?"};
   render();
 }
-function stopMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o)return;o.stop=now();o.status="stopped";o.hold=null;ev(o.pid,"Stopped "+o.drug);qOrder(o);ui.sheet=null;save();render()}
-function holdMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="held";o.hold=now();ev(o.pid,"Held "+o.drug);qOrder(o);ui.sheet=null;save();render()}
-function resumeMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="active";o.hold=null;ev(o.pid,"Resumed "+o.drug);qOrder(o);ui.sheet=null;save();render()}
+function stopMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o)return;o.stop=now();o.status="stopped";o.hold=null;ev(o.pid,"Stopped "+o.drug,true,"med");qOrder(o);ui.sheet=null;save();render()}
+function holdMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="held";o.hold=now();ev(o.pid,"Held "+o.drug,true,"med");qOrder(o);ui.sheet=null;save();render()}
+function resumeMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="active";o.hold=null;ev(o.pid,"Resumed "+o.drug,true,"med");qOrder(o);ui.sheet=null;save();render()}
 
 let renderHeld=false;
 function typingTarget(){
