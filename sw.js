@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-v87.5.0-patches";
+const VERSION = "ward-command-pwa-v87.5.1-sec";
 const PRECACHE = [
   "./",
   "./index.html",

@@ -40,6 +40,6 @@
       "purpose": "maskable"
     }
   ],
-  "version": "87.5.0",
-  "build": "8.7.4.38 durable outbox + ward_admit_patient"
+  "version": "87.5.1",
+  "build": "8.7.5.1 named RPCs + IDB outbox + revoked debug RPCs"
 }
