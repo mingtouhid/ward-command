@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.4.57 hero-ui -->
+<!-- WARD COMMAND RELEASE: v87.4.60 sync-audit -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -655,7 +655,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.4.57 hero-ui -->
+<!-- WARD COMMAND RELEASE: v87.4.60 sync-audit -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1081,7 +1081,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.4.57";
+const APP_VERSION="8.7.4.60";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2218,7 +2218,7 @@ function homeView(){
   const inbox=S.hitems.filter(i=>!i.done&&onWard(i.pid)).length;
   const empty=emptyBeds().length;
   tidySectionNames();
-  const wards=S.sections.filter(s=>s.active).map(sec=>({
+  const wards=S.sections.filter(s=>s.active!==false).slice().sort((a,b)=>(a.sort||0)-(b.sort||0)).map(sec=>({
     name:sectionLabel(sec.name),
     n:list.filter(b=>b.sectionId===sec.id).length
   }));
@@ -4132,7 +4132,7 @@ function wardHubPage(){
   return `<button class="back" onclick="back()">← Back</button>
     <div class="row" style="margin-bottom:10px"><h2 class="page-title" style="margin:0">Ward setup</h2><span class="tiny">${nBeds} beds</span></div>
     <div class="setup-hub">
-      ${tile("unit","01","Unit",(ensureUnits().length)+" · "+(S.unit.name||"Name the ward"))}
+      ${tile("unit","01","Unit",S.unit.name||"Name the ward")}
       ${tile("faculty","02","Faculty",(S.consultants||[]).length+" saved")}
       ${tile("sections","03","Sections",S.sections.length+" named")}
       ${tile("beds","04","Beds",nBeds+" on the map")}
@@ -4145,73 +4145,26 @@ function wardPageShell(title,inner){
 }
 function ensureUnits(){
   S.unit=S.unit||{name:"Psychiatry Ward"};
-  if(!Array.isArray(S.units)||!S.units.length){
-    S.units=[{id:S.unitId||("unit-"+Math.random().toString(36).slice(2,8)),name:S.unit.name||"Psychiatry Ward",active:true}];
-  }
-  if(!S.unitId||!S.units.some(u=>u.id===S.unitId)) S.unitId=(S.units.find(u=>u.active)||S.units[0]).id;
-  S.units.forEach(u=>u.active=(u.id===S.unitId));
-  const cur=S.units.find(u=>u.id===S.unitId);
-  if(cur) S.unit.name=cur.name;
+  S.units=[{id:"unit-main",name:S.unit.name,active:true}];
+  S.unitId="unit-main";
   return S.units;
-}
-function setCurrentUnit(id){
-  if(!canCfg(user().role))return;
-  ensureUnits();
-  if(!S.units.some(u=>u.id===id))return;
-  S.unitId=id;
-  ensureUnits();
-  save();toast("Using "+S.unit.name,"ok");render();
-}
-function saveUnitName(id){
-  if(!canCfg(user().role))return;
-  ensureUnits();
-  const name=val("uname_"+id).trim();
-  if(!name){toast("Unit name required","bad");return}
-  const u=S.units.find(x=>x.id===id); if(!u)return;
-  u.name=name;
-  if(u.id===S.unitId) S.unit.name=name;
-  save();toast("Unit saved","ok");render();
-}
-function addUnit(){
-  if(!canCfg(user().role))return;
-  ensureUnits();
-  const name=val("unew").trim();
-  if(!name){toast("Unit name required","bad");return}
-  if(S.units.some(u=>u.name.toLowerCase()===name.toLowerCase())){toast("That unit already exists","bad");return}
-  const u={id:"unit-"+Math.random().toString(36).slice(2,8),name,active:false};
-  S.units.push(u);
-  save();toast("Added "+name,"ok");render();
-}
-function removeUnit(id){
-  if(!canCfg(user().role))return;
-  ensureUnits();
-  if(S.units.length<2){toast("Keep at least one unit","bad");return}
-  S.units=S.units.filter(u=>u.id!==id);
-  if(S.unitId===id) S.unitId=S.units[0].id;
-  ensureUnits();
-  save();toast("Unit removed","ok");render();
 }
 function wardUnitPage(){
   const cfg=canCfg(user().role);
-  const units=ensureUnits();
-  const list=units.map(u=>`<div class="card" style="padding:12px 14px">
-      <div class="row" style="gap:8px;flex-wrap:wrap">
-        <input id="uname_${u.id}" value="${esc(u.name)}" style="flex:1;min-width:140px" ${cfg?"":"disabled"}/>
-        ${u.id===S.unitId?`<span class="badge r-low">Current</span>`:""}
-      </div>
-      ${cfg?`<div class="btns" style="margin-top:8px;grid-template-columns:1fr 1fr">
-        <button class="btn sm ghost" onclick="saveUnitName('${u.id}')">Save</button>
-        ${u.id===S.unitId?"":`<button class="btn sm" onclick="setCurrentUnit('${u.id}')">Use this unit</button>`}
-        ${units.length>1?`<button class="btn sm danger" onclick="removeUnit('${u.id}')">Remove</button>`:""}
-      </div>`:""}
-    </div>`).join("");
-  const add=cfg?`<div class="card">
-      <p class="tiny">ADD UNIT</p>
-      <label class="field"><span>Name</span><input id="unew" placeholder="e.g. De-addiction / Child psychiatry"/></label>
-      <button class="btn block" style="margin-top:10px" onclick="addUnit()">Add unit</button>
-      <p class="tiny" style="margin-top:8px">Extra units are ready for later multi-ward work. The header shows the current unit.</p>
-    </div>`:"";
-  return wardPageShell("Unit", `<div class="setup-split">${add}<div>${list}</div></div>`);
+  return wardPageShell("Unit", `<div class="card">
+      <label class="field"><span>Unit name</span><input id="uname" value="${esc((S.unit&&S.unit.name)||"")}" ${cfg?"":"disabled"}/></label>
+      ${cfg?`<button class="btn block" style="margin-top:10px" onclick="saveUnitName()">Save unit</button>`:`<p class="tiny">View only</p>`}
+    </div>`);
+}
+function saveUnitName(){
+  if(!canCfg(user().role))return;
+  const name=val("uname").trim();
+  if(!name){toast("Unit name required","bad");return}
+  S.unit=S.unit||{};
+  S.unit.name=name;
+  queue("unit_settings",{id:"unit",unit_name:name});
+  toast("Unit saved","ok");save();render();
+  Promise.resolve(flushPending()).catch(()=>{});
 }
 function wardFacultyPage(){
   const cfg=canCfg(user().role);
@@ -4231,7 +4184,7 @@ function wardFacultyPage(){
 }
 function wardSectionsPage(){
   const cfg=canCfg(user().role);
-  const rows=S.sections.map(s=>{
+  const rows=S.sections.filter(s=>s.active!==false).map(s=>{
     const n=S.beds.filter(b=>b.sectionId===s.id&&b.active!==false).length;
     return `<div class="card" style="padding:12px 14px">
       <div class="row" style="gap:8px;flex-wrap:wrap">
@@ -4463,8 +4416,11 @@ function renameSection(id){
   s.name=name;qSection(s);save();render();
 }
 function removeSection(id){
-  if(S.beds.some(b=>b.sectionId===id)){toast("Clear or move beds in this section first.","bad");return}
-  S.sections=S.sections.filter(s=>s.id!==id);save();render();
+  if(S.beds.some(b=>b.sectionId===id&&b.active!==false)){toast("Clear or move beds in this section first.","bad");return}
+  const s=S.sections.find(x=>x.id===id); if(!s)return;
+  s.active=false;
+  qSection(s);
+  toast("Section removed","ok");save();render();
 }
 function saveLine(id){
   if(!needWrite())return;
