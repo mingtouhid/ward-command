@@ -1,0 +1,40 @@
+name: Assemble index.html
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '_b64/**'
+      - '.github/workflows/assemble-index.yml'
+permissions:
+  contents: write
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode b64 parts into index.html
+        run: |
+          python3 <<'PY'
+          import base64
+          from pathlib import Path
+          parts = sorted(Path('_b64').glob('part*.b64'))
+          assert parts, 'no parts'
+          b64 = ''.join(p.read_text(encoding='ascii').strip() for p in parts)
+          data = base64.b64decode(b64)
+          text = data.decode('utf-8')
+          assert text.startswith('<!DOCTYPE html>'), text[:40]
+          assert len(data) > 200000, len(data)
+          Path('index.html').write_bytes(data)
+          print('wrote index.html', len(data), 'bytes')
+          PY
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --staged --quiet; then
+            echo "No change"
+          else
+            git commit -m "v87.4.56 durable outbox + ward_admit_patient (assemble index.html)"
+            git push
+          fi
