@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.4.66 restrain-push -->
+<!-- WARD COMMAND RELEASE: v87.4.67 restrain-pair -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -720,10 +720,18 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
   .nav-in{max-width:none;width:100%;margin:0;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}
 }
 
+
+.restrain-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left}
+.rp-side{min-width:0}
+.rp-side b{display:block;margin-top:6px;font-size:14px}
+.rp-side.is-empty{opacity:.45}
+.rp-pill.on{background:#fb7185;color:#4c0519}
+.rp-pill.off{background:#e2e8f0;color:#334155}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.4.66 restrain-push -->
+<!-- WARD COMMAND RELEASE: v87.4.67 restrain-pair -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1149,7 +1157,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.4.66";
+const APP_VERSION="8.7.4.67";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1384,7 +1392,61 @@ function evKind(title){
   if(/admitted|discharged|transferred/.test(s))return "note";
   return "note";
 }
-function eventKind(e){return (e&&e.kind)||evKind(e&&e.title)}
+function eventKind(e){
+  const title=(e&&e.title)||"";
+  if(/restrain/i.test(title)||(e&&e.kind)==="restrain") return "restrain";
+  if(/pgt note/i.test(title)||/^status updated$/i.test(title)) return "pgt";
+  return (e&&e.kind)||evKind(title);
+}
+function restrainOnEvent(e){
+  const s=((e&&e.title)||"").toLowerCase();
+  return s==="restrained"||(/^flagged restrained$/.test(s));
+}
+function restrainOffEvent(e){
+  const s=((e&&e.title)||"").toLowerCase();
+  return /released/.test(s)||/cleared restrained/.test(s);
+}
+function pairRestrainEvents(events){
+  const list=(events||[]).filter(e=>eventKind(e)==="restrain").slice().sort((a,b)=>new Date(a.at||0)-new Date(b.at||0));
+  const by={};
+  list.forEach(e=>{(by[e.pid||"_"]=by[e.pid||"_"]||[]).push(e)});
+  const pairs=[];
+  Object.keys(by).forEach(pid=>{
+    const open=[];
+    by[pid].forEach(e=>{
+      if(restrainOnEvent(e)) open.push({on:e,off:null});
+      else if(restrainOffEvent(e)){
+        const slot=open.filter(x=>!x.off).pop();
+        if(slot) slot.off=e; else open.push({on:null,off:e});
+      }else{
+        open.push({on:e,off:null});
+      }
+    });
+    pairs.push(...open);
+  });
+  const at=p=>new Date(((p.off||p.on||{}).at)||0).getTime();
+  return pairs.sort((a,b)=>at(b)-at(a));
+}
+function restrainPairCard(pair){
+  const evSide=(e,label,cls)=>{
+    if(!e) return `<div class="rp-side is-empty"><span class="badge rp-pill ${cls} off">${label}</span><p class="tiny">—</p></div>`;
+    const p=e.pid?patient(e.pid):null;
+    const name=p?p.name:(e.patientName||"Patient");
+    const bed=p?bedOf(p.id):(e.bed||"—");
+    return `<div class="rp-side">
+      <span class="badge rp-pill ${cls}">${label}</span>
+      <b>${esc(name)}</b>
+      <p class="tiny">${esc(bed||"—")}</p>
+      <p class="tiny">${esc(e.actorName||rname(e.by)||"—")}</p>
+      <p class="tiny">${esc(stamp(e.at)||rel(e.at))}</p>
+    </div>`;
+  };
+  const pid=(pair.on&&pair.on.pid)||(pair.off&&pair.off.pid);
+  return `<button type="button" class="card restrain-pair" onclick="${pid?`go('snap','${pid}')`:""}">
+    ${evSide(pair.on,"restrained","on")}
+    ${evSide(pair.off,"released","off")}
+  </button>`;
+}
 
 let route={page:"home",id:null};
 let nav={tab:"home",stack:[]};
@@ -4316,34 +4378,53 @@ function wardView(){
 }
 
 function activityView(){
+  if(ui.akind==="status") ui.akind="pgt";
   const q=(ui.aq||"").toLowerCase();
   const kind=ui.akind||"all";
-  const rows=(S.events||[]).filter(e=>{
-    const k=eventKind(e);
-    if(kind!=="all"&&k!==kind)return false;
+  const matchQ=e=>{
     const p=e.pid?patient(e.pid):null;
-    const hay=((e.title||"")+" "+(p?p.name:"")+" "+bedOf(e.pid||"")+" "+rname(e.by)).toLowerCase();
+    const hay=((e.title||"")+" "+(p?p.name:"")+" "+bedOf(e.pid||"")+" "+rname(e.by)+" "+(e.actorName||"")).toLowerCase();
     return !q||hay.includes(q);
+  };
+  const pairs=pairRestrainEvents((S.events||[]).filter(matchQ));
+  const pairIds=new Set();
+  pairs.forEach(pr=>{if(pr.on)pairIds.add(pr.on.id);if(pr.off)pairIds.add(pr.off.id)});
+  const others=(S.events||[]).filter(e=>{
+    if(pairIds.has(e.id)||eventKind(e)==="restrain") return false;
+    const k=eventKind(e);
+    if(kind==="restrain") return false;
+    if(kind!=="all"&&k!==kind) return false;
+    return matchQ(e);
   });
-  const chips=[["all","All"],["fail","Failed"],["status","Status"],["pgt","PGT"],["restrain","Restrain"],["med","Meds"],["ect","ECT"],["handover","Handover"],["task","Tasks"]];
-  const color={fail:"#e11d48",ect:"#a78bfa",med:"#2dd4bf",handover:"#f59e0b",task:"#60a5fa",status:"#34d399",pgt:"#38bdf8",restrain:"#fb7185",note:"#94a3b8"};
-  return `<div class="act-log"><button class="back" onclick="back()">← Back</button>
-    <div class="row" style="margin-bottom:8px"><h2 style="margin:0;min-width:0">Activity log</h2><span class="tiny">${rows.length}</span></div>
-    <input id="aq" placeholder="Search bed, name, action, resident" value="${esc(ui.aq||"")}" oninput="ui.aq=this.value;render({fromInput:1})" style="margin-bottom:8px" enterkeyhint="search" autocomplete="off"/>
-    <div class="chips">${chips.map(([k,l])=>`<button class="chip ${kind===k?"on":""}" onclick="ui.akind='${k}';render()">${l}</button>`).join("")}</div>
-    ${rows.length?rows.map(e=>{
-      const p=e.pid?patient(e.pid):null;
-      const k=eventKind(e);
-      return `<button class="card" style="${k==="fail"?"border-color:#e11d48":""}" onclick="${p?`go('snap','${p.id}')`:""}">
+  const items=[];
+  if(kind==="all"||kind==="restrain"){
+    pairs.forEach(pr=>items.push({t:new Date(((pr.off||pr.on||{}).at)||0).getTime(),html:restrainPairCard(pr)}));
+  }
+  others.forEach(e=>{
+    const p=e.pid?patient(e.pid):null;
+    const k=eventKind(e);
+    items.push({t:new Date(e.at||0).getTime(),html:`<button class="card" style="${k==="fail"?"border-color:#e11d48":""}" onclick="${p?`go('snap','${p.id}')`:""}">
         <div class="row">
-          <span class="badge" style="background:${color[k]};color:#082018">${k}</span>${(e.ok===false||k==="fail")?`<span class="badge" style="background:#e11d48;color:#fff">failed</span>`:(e.ok===true?`<span class="badge" style="background:#059669;color:#fff">ok</span>`:"")}
+          <span class="badge" style="background:${colorSafe(k)};color:#082018">${k}</span>${(e.ok===false||k==="fail")?`<span class="badge" style="background:#e11d48;color:#fff">failed</span>`:""}
           <span class="tiny">${rel(e.at)}</span>
         </div>
         <p class="sm" style="margin-top:6px"><b>${esc(e.title)}</b></p>
-        <p class="tiny">${esc(e.kind||eventKind(e))} · ${p?esc(bedOf(p.id)||e.bed||"—")+" · "+esc(p.name||e.patientName||"Patient")+" · ":e.pid?"Patient missing · ":""}${esc(e.actorName||rname(e.by)||"Unknown")}</p>
-      </button>`;
-    }).join(""):`<div class="card">No matching activity.</div>`}</div>`;
+        <p class="tiny">${p?esc(bedOf(p.id)||e.bed||"—")+" · "+esc(p.name||e.patientName||"Patient")+" · ":e.pid?"Patient missing · ":""}${esc(e.actorName||rname(e.by)||"Unknown")}</p>
+      </button>`});
+  });
+  items.sort((a,b)=>b.t-a.t);
+  const chips=[["all","All"],["fail","Failed"],["pgt","PGT"],["restrain","Restrain"],["med","Meds"],["ect","ECT"],["handover","Handover"],["task","Tasks"]];
+  return `<div class="act-log"><button class="back" onclick="back()">← Back</button>
+    <div class="row" style="margin-bottom:8px"><h2 style="margin:0;min-width:0">Activity log</h2><span class="tiny">${items.length}</span></div>
+    <input id="aq" placeholder="Search bed, name, action, resident" value="${esc(ui.aq||"")}" oninput="ui.aq=this.value;render({fromInput:1})" style="margin-bottom:8px" enterkeyhint="search" autocomplete="off"/>
+    <div class="chips">${chips.map(([k,l])=>`<button class="chip ${kind===k?"on":""}" onclick="ui.akind='${k}';render()">${l}</button>`).join("")}</div>
+    ${items.length?items.map(x=>x.html).join(""):`<div class="card"><p class="sm">No matching events.</p></div>`}
+  </div>`;
 }
+function colorSafe(k){
+  return ({fail:"#e11d48",ect:"#a78bfa",med:"#2dd4bf",handover:"#f59e0b",task:"#60a5fa",status:"#34d399",pgt:"#38bdf8",restrain:"#fb7185",note:"#94a3b8"}[k]||"#94a3b8");
+}
+
 function val(id){
   if(ui.fields&&Object.prototype.hasOwnProperty.call(ui.fields,id)&&ui.fields[id]!=null) return String(ui.fields[id]);
   const el=document.getElementById(id);
@@ -4472,7 +4553,14 @@ function openPgtHistory(id){
 async function toggleRestrain(id){
   if(!needWrite())return;
   const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[],notes:[]});
-  const on=!(sn.tags||[]).includes("restrained");
+  if(sn._restrainBusy)return;
+  const open=pairRestrainEvents((S.events||[]).filter(e=>e.pid===id)).some(pr=>pr.on&&!pr.off);
+  const tagged=(sn.tags||[]).includes("restrained");
+  const held=open||tagged;
+  const on=!held;
+  if(on&&held){toast("Already restrained — release first.","bad");return}
+  if(!on&&!held){toast("Not restrained — restrain first.","bad");return}
+  sn._restrainBusy=true;
   const cur=new Set(sn.tags||[]);
   if(on) cur.add("restrained"); else cur.delete("restrained");
   sn.tags=[...cur];sn.at=now();sn.by=S.userId;
@@ -4493,7 +4581,7 @@ async function toggleRestrain(id){
   }catch(e){
     console.warn(e);
     toast(clinicianCopy(e.message||e)||"Restraint saved. Push did not send.","bad");
-  }finally{setBusy(false)}
+  }finally{sn._restrainBusy=false;setBusy(false)}
 }
 function toggleHighRisk(id){
   if(!needWrite())return;
