@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.4.52 obs-list-first -->
+<!-- WARD COMMAND RELEASE: v87.4.53 high-risk-toggle -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -637,7 +637,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.4.52 obs-list-first -->
+<!-- WARD COMMAND RELEASE: v87.4.53 high-risk-toggle -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1063,7 +1063,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.4.52";
+const APP_VERSION="8.7.4.53";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2223,7 +2223,7 @@ function patientCard(p,bed){
             ${(()=>{const ai=wardAdmissionInfo(p);return ai?`<div class="admission-age ${ai.today?"is-today":""}">${ai.today?'<span class="today-dot"></span>':""}<span>${esc(ai.text)}</span></div>`:""})()}
           </div>
           <div class="patient-priority">
-            ${bed?`<span class="${rcls(f.risk)}">${esc(f.risk||'low')}</span>`:`<span class="badge nobed-tag">No bed</span>`}
+            ${bed?(f.risk==="high"||f.risk==="critical")?`<span class="${rcls("high")}">high</span>`:"":`<span class="badge nobed-tag">No bed</span>`}
             ${priority.map(t=>`<span class="badge tag-${t.id}">${esc(t.label)}</span>`).join('')}
           </div>
         </div>
@@ -2255,7 +2255,7 @@ function snapView(){
   return `<button class="back" onclick="back()">← Back</button>
     <div class="snap-cols">
     <div class="card snap-identity">
-      <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span><span class="${rcls(sn.risk)}">${sn.risk||"low"}</span>${ectPlan(p.id)?' <span class="badge r-high">ECT</span>':''}</span></div>
+      <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span>${(sn.risk==="high"||sn.risk==="critical")?`<span class="${rcls("high")}">high</span>`:""}${ectPlan(p.id)?' <span class="badge r-high">ECT</span>':""}</span></div>
       <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}</h2>
       <p class="tiny" style="margin-top:4px">${p.age}${p.sex} · ${esc(p.hospitalNo||p.code)}</p>
       ${(p.address||p.phone)?`<p class="tiny" style="margin-top:4px">${p.address?esc(p.address):""}${p.address&&p.phone?" · ":""}${p.phone?esc(p.phone):""}</p>`:""}
@@ -2284,11 +2284,12 @@ function snapView(){
       </label>
       <div class="btns" style="margin-top:6px;gap:6px;flex-wrap:wrap">
         <button class="btn sm" onclick="saveLine('${p.id}')">Save</button>
+        <button class="btn sm ${(sn.risk==="high"||sn.risk==="critical")?"danger":"ghost"}" onclick="toggleHighRisk('${p.id}')">${(sn.risk==="high"||sn.risk==="critical")?"High risk on":"High risk"}</button>
         <button class="btn sm danger" onclick="criticalStatusForm('${p.id}')">Critical</button>
       </div>
       <p class="tiny" style="margin:14px 0 8px">WATCH</p>
-      <div class="chips">${TAGS.map(tg=>{
-        const on=(sn.tags||[]).includes(tg.id)||(tg.id==="ect"&&ectPlan(p.id));
+      <div class="chips">${TAGS.filter(tg=>!['ect','obs','leave'].includes(tg.id)).map(tg=>{
+        const on=(sn.tags||[]).includes(tg.id);
         return `<button class="chip ${on?"on":""}" onclick="toggleTag('${p.id}','${tg.id}')">${tg.label}</button>`;
       }).join("")}</div>
     </div>
@@ -2323,11 +2324,11 @@ function snapView(){
     </div>
     <div class="card">
       <p class="tiny">ACTIONS</p>
-      <div class="btns snap-actions" style="margin-top:8px">
+      <div class="btns snap-actions" style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <button class="btn sm ghost" onclick="quickPrn('${p.id}')">PRN</button>
-        <button class="btn sm ghost" onclick="flagHandover('${p.id}')">Handover</button>
         <button class="btn sm ghost" onclick="addQuickTask('${p.id}')">Task</button>
         ${p.status!=="discharged"&&canWrite()?`<button class="btn sm ghost" onclick="transferForm('${p.id}')">Transfer</button>`:""}
+        <button class="btn sm ghost" onclick="flagHandover('${p.id}')">Handover</button>
       </div>
     </div>
     ${p.status==="discharged"?`<div class="card"><p class="tiny">Discharged</p></div>`:""}
@@ -4242,8 +4243,18 @@ function pickOverlay(){
     }).join("")}
   </div></div>`;
 }
+function toggleHighRisk(id){
+  if(!needWrite())return;
+  const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[]});
+  const on=sn.risk==="high"||sn.risk==="critical";
+  sn.risk=on?"low":"high";
+  sn.at=now();sn.by=S.userId;
+  ev(id,on?"High risk cleared":"Flagged high risk",true,"status");
+  qSnap(id);save();render();
+}
 function toggleTag(id,tag){
   if(!needWrite())return;
+  if(tag==="ect"||tag==="obs"||tag==="leave")return;
   const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[]});
   const cur=new Set(sn.tags||[]);
   if(cur.has(tag)) cur.delete(tag); else cur.add(tag);
