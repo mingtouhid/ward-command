@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.4.60 sync-audit -->
+<!-- WARD COMMAND RELEASE: v87.4.61 landscape-nav -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -385,15 +385,38 @@ a{color:var(--teal2);text-decoration:none}
   .snap-cols{grid-template-columns:1fr 1fr;gap:18px}
   .snap-cols > .card{padding:22px 24px;min-height:210px;border-radius:24px}
 }
-@media (min-width:760px){
-  .app{max-width:none;width:100%}
+@media (orientation: landscape){
+  .app{max-width:none;width:100%;margin:0}
   .nav{width:100%}
-  .nav-in{max-width:none;width:100%;padding:0;margin:0}
-  .main{padding:16px 16px 18px;max-width:none;margin:0;width:100%}
-  .top{width:100%;padding-left:16px;padding-right:16px}
+  .nav-in{
+    max-width:none;width:100%;margin:0;
+    padding-left:max(8px,env(safe-area-inset-left,0px));
+    padding-right:max(8px,env(safe-area-inset-right,0px));
+  }
+  .top{
+    padding-left:max(16px,env(safe-area-inset-left,0px));
+    padding-right:max(16px,env(safe-area-inset-right,0px));
+  }
+  .main{
+    padding-left:max(14px,env(safe-area-inset-left,0px));
+    padding-right:max(14px,env(safe-area-inset-right,0px));
+  }
+}
+@media (min-width:760px){
+  .app{max-width:1120px;margin:0 auto;width:100%}
+  .nav{width:100%}
+  .nav-in{
+    max-width:none;width:100%;margin:0;
+    padding-left:max(8px,env(safe-area-inset-left,0px));
+    padding-right:max(8px,env(safe-area-inset-right,0px));
+  }
+  .main{padding:16px 18px 18px;max-width:none;margin:0;width:100%}
+  .top{width:100%;padding-left:18px;padding-right:18px}
   .fab{right:16px;bottom:16px}
   .sheet .box{max-width:560px}
   .top h1{font-size:16px}
+  .snap-cols{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,1fr);gap:12px;align-items:start}
+  .more-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 }
 .seg{display:flex;gap:6px;margin:0 0 10px}
 .seg button{flex:1;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:8px 6px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -644,18 +667,21 @@ html[data-density="compact"] .hero .count{font-size:40px;margin:6px 0}
 html[data-density="compact"] .patient-card{padding:10px}
 html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 @media (min-width:760px){
-  .app{max-width:1200px;margin:0 auto;width:100%}
-  .nav-in{max-width:1200px;margin:0 auto}
   .home-split{display:grid;grid-template-columns:minmax(260px,.9fr) minmax(280px,1.1fr);gap:14px;align-items:stretch}
   .home-split .hero{margin:0;height:100%}
   .plist-grid{grid-template-columns:1fr 1fr}
   .home-priority,.priority-secondary{max-width:none}
 }
+@media (orientation: landscape) and (min-width:640px){
+  .home-split{display:grid;grid-template-columns:minmax(220px,.9fr) minmax(220px,1.1fr);gap:12px;align-items:stretch}
+  .plist-grid{grid-template-columns:1fr 1fr}
+  .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+}
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.4.60 sync-audit -->
+<!-- WARD COMMAND RELEASE: v87.4.61 landscape-nav -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1081,7 +1107,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.4.60";
+const APP_VERSION="8.7.4.61";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
