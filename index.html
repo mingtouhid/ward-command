@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.5.2 drop-qsnap -->
+<!-- WARD COMMAND RELEASE: v87.5.3 status-chip-pgt -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -289,11 +289,14 @@ a{color:var(--teal2);text-decoration:none}
 .stopped{opacity:.45;text-decoration:line-through}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .act-log{min-width:0;max-width:100%;overflow-x:hidden}
+.act-log .card .row{align-items:center;gap:8px}
+.act-log .card .sm,.act-log .card .tiny{text-align:left}
+.act-log h2{letter-spacing:-.02em}
 .act-log input{width:100%;max-width:100%;min-width:0}
 .act-log .card{min-width:0;max-width:100%;overflow:hidden}
 .act-log .row{flex-wrap:wrap;align-items:flex-start;min-width:0}
 .act-log .sm,.act-log .tiny,.act-log b{overflow-wrap:anywhere;word-break:break-word;max-width:100%}
-.act-log .badge{flex:none;max-width:100%}
+.act-log .badge{flex:none;max-width:100%;text-transform:uppercase;letter-spacing:.04em;line-height:1.2;align-self:center}
 .chip{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:6px 10px;font-size:12px}
 .chip.on{background:var(--teal);color:var(--btn-ink);border-color:var(--teal)}
 .back{border:0;background:none;color:var(--teal2);font-size:13px;padding:0 0 10px}
@@ -1157,7 +1160,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.5.2";
+const APP_VERSION="8.7.5.3";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1475,8 +1478,13 @@ function evKind(title){
 function eventKind(e){
   const title=(e&&e.title)||"";
   if(/restrain/i.test(title)||(e&&e.kind)==="restrain") return "restrain";
+  if(/high risk/i.test(title)) return "risk";
   if(/pgt note/i.test(title)||/^status updated$/i.test(title)) return "pgt";
+  if((e&&e.kind)==="status") return /risk/i.test(title)?"risk":"pgt";
   return (e&&e.kind)||evKind(title);
+}
+function kindLabel(k){
+  return ({fail:"Failed",ect:"ECT",med:"Meds",handover:"Handover",task:"Task",status:"PGT",pgt:"PGT",restrain:"Restrain",note:"Note",risk:"Risk"}[k]||k);
 }
 function restrainOnEvent(e){
   const s=((e&&e.title)||"").toLowerCase();
@@ -4533,7 +4541,7 @@ function activityView(){
     const k=eventKind(e);
     items.push({t:new Date(e.at||0).getTime(),html:`<button class="card" style="${k==="fail"?"border-color:#e11d48":""}" onclick="${p?`go('snap','${p.id}')`:""}">
         <div class="row">
-          <span class="badge" style="background:${colorSafe(k)};color:#082018">${k}</span>${(e.ok===false||k==="fail")?`<span class="badge" style="background:#e11d48;color:#fff">failed</span>`:""}
+          <span class="badge" style="background:${colorSafe(k)};color:#082018">${kindLabel(k)}</span>${(e.ok===false||k==="fail")?`<span class="badge" style="background:#e11d48;color:#fff">failed</span>`:""}
           <span class="tiny">${rel(e.at)}</span>
         </div>
         <p class="sm" style="margin-top:6px"><b>${esc(e.title)}</b></p>
@@ -4550,7 +4558,7 @@ function activityView(){
   </div>`;
 }
 function colorSafe(k){
-  return ({fail:"#e11d48",ect:"#a78bfa",med:"#2dd4bf",handover:"#f59e0b",task:"#60a5fa",status:"#34d399",pgt:"#38bdf8",restrain:"#fb7185",note:"#94a3b8"}[k]||"#94a3b8");
+  return ({fail:"#e11d48",ect:"#a78bfa",med:"#2dd4bf",handover:"#f59e0b",task:"#60a5fa",status:"#38bdf8",pgt:"#38bdf8",risk:"#fb7185",restrain:"#fb7185",note:"#94a3b8"}[k]||"#94a3b8");
 }
 
 function val(id){
@@ -4792,7 +4800,7 @@ function saveLine(id){
   const run=()=>{
     const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[],notes:[]});
     const note={id:uid("n"),at:now(),by:S.userId,byName:(user()&&(user().displayName||user().username))||rname(S.userId),text:t};
-    sn.state=t;sn.by=S.userId;sn.at=note.at;
+    sn.by=S.userId;sn.at=note.at;
     sn.notes=(sn.notes||[]).concat([note]).slice(-40);
     S.snaps[id]=sn;
     ev(id,"PGT note",true,"pgt",t);qPgtNote(id,note);save();
