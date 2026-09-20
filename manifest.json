@@ -40,6 +40,6 @@
       "purpose": "maskable"
     }
   ],
-  "version": "87.5.3",
-  "build": "8.7.5.3 PGT chip + note no longer overwrites state"
+  "version": "87.5.4",
+  "build": "8.7.5.4 paper UI + more-tile type"
 }
