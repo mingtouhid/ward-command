@@ -40,6 +40,6 @@
       "purpose": "maskable"
     }
   ],
-  "version": "87.5.1",
-  "build": "8.7.5.1 named RPCs + IDB outbox + revoked debug RPCs"
+  "version": "87.5.2",
+  "build": "8.7.5.2 patch-only snapshots + hardened search_path"
 }
