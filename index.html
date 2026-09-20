@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.4.69 restrain-sync -->
+<!-- WARD COMMAND RELEASE: v87.5.0 sync-patches -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -731,7 +731,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.4.69 restrain-sync -->
+<!-- WARD COMMAND RELEASE: v87.5.0 sync-patches -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1157,7 +1157,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.4.69";
+const APP_VERSION="8.7.5.0";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1234,7 +1234,14 @@ function stampRow(table,row){
   return r;
 }
 function queue(table,row){
-  if(!row||!row.id&&table!=="patient_snapshots")return;
+  if(!row)return;
+  if(!row.id && table!=="patient_snapshots"){
+    if(table==="restrain_toggle") row.id=row.event_id||row.id;
+    else if(table==="snapshot_field") row.id=(row.patient_id||row.pid||"")+"|"+(row.field||"");
+    else if(table==="snapshot_tag") row.id=(row.patient_id||row.pid||"")+"|"+(row.tag||"")+"|"+(row.op||"");
+    else if(table==="pgt_note") row.id=row.note_id||row.id;
+    if(!row.id)return;
+  }
   if(table==="handovers"){
     const from=row.from_id||row.from;
     if(from && S.userId && String(from)!==String(S.userId)) return;
@@ -1244,7 +1251,32 @@ function queue(table,row){
   pending.push(op);
   persistOutbox();
 }
-function packPlan(sn){const notes=Array.isArray(sn.notes)?sn.notes.slice(-40):[];const plan=sn.plan||"";if(!notes.length)return plan;try{return "PGTLOG:"+JSON.stringify(notes)+"\n"+plan}catch(e){return plan}}function unpackPlan(s){const raw=String(s||"");const m=raw.match(/^PGTLOG:(\[[\s\S]*?\])\n?([\s\S]*)$/);if(m){try{return {notes:JSON.parse(m[1]),plan:m[2]||""}}catch(e){}}return {notes:[],plan:raw}}function qSnap(pid){const sn=S.snaps[pid]||{};queue("patient_snapshots",{id:pid,patient_id:pid,clinical_state:sn.state||"",risk_level:["low","moderate","high","critical"].includes(sn.risk)?sn.risk:"low",sleep_status:sn.sleep||"",watch_points:packWatch(sn),current_plan:packPlan(sn),tags:Array.isArray(sn.tags)?sn.tags:[],updated_by:sn.by||S.userId||null,updated_at:sn.at||now()})}
+function packPlan(sn){return (sn&&sn.plan)||""}function unpackPlan(s){const raw=String(s||"");const m=raw.match(/^PGTLOG:(\[[\s\S]*?\])\n?([\s\S]*)$/);if(m){try{return {notes:JSON.parse(m[1]),plan:m[2]||""}}catch(e){}}return {notes:[],plan:raw}}function qSnap(pid){const sn=S.snaps[pid]||{};queue("patient_snapshots",{id:pid,patient_id:pid,clinical_state:sn.state||"",risk_level:["low","moderate","high","critical"].includes(sn.risk)?sn.risk:"low",sleep_status:sn.sleep||"",watch_points:packWatch(sn),current_plan:packPlan(sn),tags:Array.isArray(sn.tags)?sn.tags:[],pgt_notes:Array.isArray(sn.notes)?sn.notes.slice(-40):[],updated_by:sn.by||S.userId||null,updated_at:sn.at||now()})}
+function qSnapField(pid,field,value){queue("snapshot_field",{id:pid+"|"+field,patient_id:pid,field:field,value:value==null?"":String(value),seen_version:(S.snaps[pid]&&S.snaps[pid].ver)||1,updated_at:now()})}
+function qSnapTag(pid,tag,op){queue("snapshot_tag",{id:pid+"|"+tag+"|"+op,patient_id:pid,tag:tag,op:op,updated_at:now()})}
+function qPgtNote(pid,note){queue("pgt_note",{id:note.id,note_id:note.id,patient_id:pid,text:note.text,byName:note.byName||"",at:note.at||now()})}
+function qRestrainToggle(pid,on,eventId,detail){queue("restrain_toggle",{id:eventId,event_id:eventId,patient_id:pid,on:!!on,detail:detail||"",at:now()})}
+function snapshotDirtyPids(){
+  const set={};
+  pending.filter(o=>o.status!=="acked").forEach(op=>{
+    if(["patient_snapshots","snapshot_field","snapshot_tag","pgt_note","restrain_toggle"].includes(op.table)){
+      const pid=(op.row&& (op.row.patient_id||op.row.pid||op.row.id))||"";
+      if(pid) set[pid]=true;
+    }
+  });
+  return set;
+}
+function bedDirtyIds(){
+  const set={};
+  pending.filter(o=>o.status!=="acked").forEach(op=>{
+    if(op.table==="beds"||op.table==="patient_bed_assignments"){
+      const id=(op.row&& (op.row.id||op.row.bed_id))||"";
+      if(id) set[id]=true;
+      if(op.row&&op.row.current_patient_id) set[op.row.current_patient_id]=true;
+    }
+  });
+  return set;
+}
 function qEvent(e){if(!e)return;queue("activity_log",{id:e.id,patient_id:(e.pid&&S.patients.some(x=>x.id===e.pid))?e.pid:null,kind:e.kind||evKind(e.title),title:e.title||"Event",detail:e.detail||null,actor_id:S.userId||null,created_at:e.at||now()})}
 function qHandover(h){
   if(!h||!h.from)return;
@@ -1627,7 +1659,7 @@ async function cloudLogin(username,password){
   if(error) throw error;
   return data;
 }
-function rowSnap(r){const w=unpackWatch(r.watch_points||"");const tags=Array.isArray(r.tags)&&r.tags.length?r.tags:(w.tags||[]);const pl=unpackPlan(r.current_plan||"");return {state:r.clinical_state||"",risk:r.risk_level||"low",sleep:r.sleep_status||"",watch:w.watch,tags:tags,plan:pl.plan,notes:pl.notes,by:r.updated_by||"",at:r.updated_at||now()}}
+function rowSnap(r){const w=unpackWatch(r.watch_points||"");const tags=Array.isArray(r.tags)?r.tags:(w.tags||[]);const pl=unpackPlan(r.current_plan||"");let notes=pl.notes;if(Array.isArray(r.pgt_notes)&&r.pgt_notes.length)notes=r.pgt_notes;return {state:r.clinical_state||"",risk:r.risk_level||"low",sleep:r.sleep_status||"",watch:w.watch,tags:tags,plan:pl.plan,notes:notes||[],ver:r.row_version||1,by:r.updated_by||"",at:r.updated_at||now()}}
 async function cloudReadWardState(){
   const {data,error}=await sb.rpc("ward_read_ward_state",{p_session_token:sessionTok});
   if(error) throw new Error("ward_read_ward_state: "+error.message);
@@ -1654,7 +1686,7 @@ async function cloudPull(opts){
 async function doCloudPull(opts){
   if(!sb)return {ok:false,pulled:false};
   const unresolved=pending.filter(o=>o.status!=="acked");
-  if(unresolved.length && !(opts&&opts.force)){reconciliationNeeded=true;Sync.note("pull deferred, outbox "+unresolved.length);return {ok:true,deferred:true};}
+  const dirtySnaps=snapshotDirtyPids();
   const [wardState,criticalStatusUpdates]=await Promise.all([
     cloudReadWardState(),qCriticalStatusUpdates()
   ]);
@@ -1681,13 +1713,19 @@ async function doCloudPull(opts){
   if(unit[0]){S.unit={name:unit[0].unit_name||(S.unit&&S.unit.name)||"Psychiatry Ward"}; if(unit[0].ward_password) S.wardPassword=unit[0].ward_password}
   ensureUnits();
   S.sections=sections.map(r=>({id:r.id,name:sectionLabel(r.name),active:r.active!==false}));
-  S.beds=beds.map(r=>({id:r.id,no:r.bed_number,sectionId:r.section_id,active:r.active!==false,patientId:r.current_patient_id||null}));
   S.residents=residents.filter(r=>r.active!==false).map(r=>({id:r.id,username:r.username,displayName:r.display_name,role:r.role,active:r.active!==false}));
   S.consultants=(consultants||[]).filter(r=>r.active!==false).map(r=>({id:r.id,name:r.name,designation:r.designation||""}));
-  
-  S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||""}));
-  S.assignments=assigns.map(r=>({id:r.id,patientId:r.patient_id,bedId:r.bed_id,at:r.assigned_at,released:r.released_at,by:r.assigned_by}));
-  S.snaps={}; snaps.forEach(r=>{S.snaps[r.patient_id]=rowSnap(r)});
+  const occupancyHold=unresolved.some(o=>["patients","beds","patient_bed_assignments"].includes(o.table));
+  if(!occupancyHold){
+    S.beds=beds.map(r=>({id:r.id,no:r.bed_number,sectionId:r.section_id,active:r.active!==false,patientId:r.current_patient_id||null}));
+    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||""}));
+    S.assignments=assigns.map(r=>({id:r.id,patientId:r.patient_id,bedId:r.bed_id,at:r.assigned_at,released:r.released_at,by:r.assigned_by}));
+  }
+  const nextSnaps={}; snaps.forEach(r=>{nextSnaps[r.patient_id]=rowSnap(r)});
+  Object.keys(dirtySnaps).forEach(pid=>{
+    if(S.snaps[pid]) nextSnaps[pid]=S.snaps[pid];
+  });
+  S.snaps=nextSnaps;
   S.orders=orders.map(r=>({id:r.id,pid:r.patient_id,drug:r.drug,dose:r.dose,route:r.route,freq:r.frequency,time:r.scheduled_time||"08:00",start:r.start_date,stop:r.stop_date,status:r.status}));
   S.doses=doses.map(r=>({id:r.id,oid:r.order_id,pid:r.patient_id,at:r.scheduled_at,status:r.status,by:r.given_by}));
   S.tasks=tasks.map(r=>({id:r.id,pid:r.patient_id,title:r.title,detail:r.detail||"",pri:r.priority,status:r.status,to:r.assigned_to||null,by:r.created_by||null,at:r.created_at||null,completedAt:r.completed_at||null}));
@@ -1703,8 +1741,12 @@ async function doCloudPull(opts){
   incoming.forEach(e=>byId[e.id]=e);
   S.events=Object.values(byId).sort((a,b)=>new Date(b.at)-new Date(a.at));
   localStorage.setItem(KEY,JSON.stringify(S));
+  if(unresolved.length){
+    reconciliationNeeded=true;
+    Sync.note("partial pull; holding "+Object.keys(dirtySnaps).length+" local snapshot patches");
+  }
   Sync.lastServer=now();
-  return {ok:true,pulled:true};
+  return {ok:true,pulled:true,partial:!!unresolved.length};
   }finally{applyingRemote=false}
 }
 async function upsert(table,rows){
@@ -1751,6 +1793,35 @@ async function upsert(table,rows){
       ({error}=await sb.rpc("ward_upsert_consultant",{p_token:sessionTok,p_row:row}));
     }else if(table==="unit_settings"){
       ({error}=await sb.rpc("ward_upsert_unit_settings",{p_token:sessionTok,p_row:row}));
+    }else if(table==="restrain_toggle"){
+      ({error}=await sb.rpc("ward_toggle_restrain",{
+        p_token:sessionTok,
+        p_patient_id:row.patient_id||row.pid,
+        p_on:!!row.on,
+        p_event_id:row.event_id||row.id||"",
+        p_detail:row.detail||null
+      }));
+    }else if(table==="snapshot_field"){
+      ({error}=await sb.rpc("ward_patch_snapshot_field",{
+        p_token:sessionTok,
+        p_patient_id:row.patient_id||row.pid,
+        p_field:row.field,
+        p_value:row.value==null?"":String(row.value),
+        p_seen_version:row.seen_version==null?null:Number(row.seen_version)
+      }));
+    }else if(table==="snapshot_tag"){
+      ({error}=await sb.rpc("ward_patch_snapshot_tags",{
+        p_token:sessionTok,
+        p_patient_id:row.patient_id||row.pid,
+        p_tag:row.tag,
+        p_op:row.op||"add"
+      }));
+    }else if(table==="pgt_note"){
+      ({error}=await sb.rpc("ward_append_pgt_note",{
+        p_token:sessionTok,
+        p_patient_id:row.patient_id||row.pid,
+        p_note:{id:row.note_id||row.id,text:row.text,byName:row.byName||"",at:row.at||now()}
+      }));
     }else{
       throw new Error("This action has no approved write path.");
     }
@@ -1792,8 +1863,9 @@ function isStaleOutbox(op){
   if(/only the receiving resident/.test(msg)) return true;
   const gone=/no longer on the ward|active patient not found|patient is required|that patient is no longer/.test(msg);
   if(gone) return true;
-  if(p&&p.status==="discharged" && ["tasks","ect_plans","handover_items","medication_orders","medication_doses","patient_snapshots"].includes(op.table)) return true;
-  if(!p && ["tasks","ect_plans","handover_items"].includes(op.table)) return true;
+  if(p&&p.status==="discharged" && ["tasks","ect_plans","handover_items","medication_orders","medication_doses","patient_snapshots","snapshot_field","snapshot_tag","pgt_note","restrain_toggle"].includes(op.table)) return true;
+  if(!p && ["tasks","ect_plans","handover_items","snapshot_field","snapshot_tag","pgt_note","restrain_toggle"].includes(op.table)) return true;
+  if(/already restrained|not restrained|stale/.test(msg) && ["restrain_toggle","snapshot_field"].includes(op.table)) return true;
   return false;
 }
 function dropOutboxItem(id){
@@ -1845,7 +1917,7 @@ async function doFlushPending(){
   }
   cloudStatus="syncing";
   Sync.state="RECONCILING";
-  const rank=t=>({patients:0,beds:1,patient_bed_assignments:2,patient_snapshots:3,medication_orders:4,medication_doses:5,ect_plans:6,ect_sessions:7,tasks:8,handovers:7,handover_items:8,ect_plans:9,ward_sections:10,unit_consultants:11,unit_settings:12,activity_log:20}[t]??15);
+  const rank=t=>({patients:0,beds:1,patient_bed_assignments:2,restrain_toggle:3,snapshot_tag:4,pgt_note:5,snapshot_field:6,patient_snapshots:7,medication_orders:8,medication_doses:9,ect_plans:10,ect_sessions:11,tasks:12,handovers:13,handover_items:14,ward_sections:15,unit_consultants:16,unit_settings:17,activity_log:20}[t]??18);
   work.sort((a,b)=>rank(a.table)-rank(b.table));
   let hard=false;
   for(const op of work){
@@ -2252,6 +2324,9 @@ function clinicianCopy(msg,table){
   if(/provisional diagnosis is required|at least one medication/.test(low)) return "Diagnosis and at least one medicine are required.";
   if(/destination bed is already occupied|already occupied/.test(low)) return "That bed was taken on another phone.";
   if(/source bed does not contain/.test(low)) return "Patient is no longer on that bed — refresh and try again.";
+  if(/already restrained/.test(low)) return "Already restrained — release first.";
+  if(/not restrained/.test(low)) return "Not restrained — restrain first.";
+  if(/stale/.test(low) && /pull and edit/.test(low)) return "Plan was updated on another phone. Showing latest.";
   if(/discharged patient cannot/.test(low)) return "This patient is already discharged.";
   if(/active patient not found|patient not found/.test(low)) return "That patient is no longer on the ward.";
   if(/consultant is read only|view-only|cannot perform clinical/.test(low)) return "This login is view-only.";
@@ -3197,7 +3272,7 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore){setBusy(true)
   }finally{workflowUnlock("discharge",p&&p.id);setBusy(false);}
 }
 
-function emptyBeds(){return S.beds.filter(b=>b.active&&!b.patientId).sort((a,b)=>a.no.localeCompare(b.no,undefined,{numeric:true}))}
+function emptyBeds(){const dirty=bedDirtyIds();return S.beds.filter(b=>b.active&&!b.patientId&&!dirty[b.id]).sort((a,b)=>a.no.localeCompare(b.no,undefined,{numeric:true}))}
 function admitForm(){ openPanel("admit"); }
 function admitFormBody(){
   const empties=emptyBeds();
@@ -3293,7 +3368,7 @@ function fabFormBody(kind){
 function runFab(kind){
   const pid=val("fp"), note=val("ft").trim();
   if(!pid)return;
-  if(kind==="status"){S.snaps[pid]={...S.snaps[pid],state:note||S.snaps[pid].state,by:S.userId,at:now()};ev(pid,"Status updated");qSnap(pid)}
+  if(kind==="status"){S.snaps[pid]={...S.snaps[pid],state:note||S.snaps[pid].state,by:S.userId,at:now()};ev(pid,"Status updated");qSnapField(pid,"state",S.snaps[pid].state)}
   if(kind==="prn"){
     const raw=note||"Lorazepam 1 mg";
     const sp=raw.trim().split(/\s+/);
@@ -4563,43 +4638,50 @@ async function toggleRestrain(id){
   const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[],notes:[]});
   if(sn._restrainBusy)return;
   sn._restrainBusy=true;
+  setBusy(true,"Updating restraint…");
   try{
     if(sessionTok&&navigator.onLine){
-      try{await cloudPull({force:true})}catch(e){}
+      try{
+        const st=await sb.rpc("ward_restrain_state",{p_token:sessionTok,p_patient_id:id});
+        if(st&&st.data&&typeof st.data.held==="boolean"){
+          const cur=new Set(sn.tags||[]);
+          if(st.data.held) cur.add("restrained"); else cur.delete("restrained");
+          sn.tags=[...cur];
+        }
+      }catch(e){}
     }
-  }finally{/* hold busy through write */}
-  const held=restrainHeld(id);
-  const tagged=(sn.tags||[]).includes("restrained");
-  if(held!==tagged){
+    const held=restrainHeld(id);
+    const on=!held;
+    if(on&&held){toast("Already restrained — release first.","bad");render();return}
+    if(!on&&!held){toast("Not restrained — restrain first.","bad");render();return}
     const cur=new Set(sn.tags||[]);
-    if(held) cur.add("restrained"); else cur.delete("restrained");
-    sn.tags=[...cur];
-  }
-  const on=!held;
-  if(on&&held){sn._restrainBusy=false;toast("Already restrained — release first.","bad");render();return}
-  if(!on&&!held){sn._restrainBusy=false;toast("Not restrained — restrain first.","bad");render();return}
-
-  const cur=new Set(sn.tags||[]);
-  if(on) cur.add("restrained"); else cur.delete("restrained");
-  sn.tags=[...cur];sn.at=now();sn.by=S.userId;
-  const p=patient(id);
-  ev(id,on?"Restrained":"Restraint released",true,"restrain",(p?p.name+" · ":"")+(bedOf(id)||""));
-  qSnap(id);save();render();
-  setBusy(true,on?"Notifying team…":"Updating restraint…");
-  try{
-    await notifyServerEvent({
-      eventType:"restrain",category:"clinical",priority:"high",patientId:id,
-      title:on?"Patient restrained":"Restraint released",
-      body:(p?p.name:"Patient")+" · "+(bedOf(id)||"")+" · "+((user()&&user().displayName)||""),
-      targetUrl:"./#/snap/"+encodeURIComponent(id),
-      recipientScope:"active_team",
-      dedupeKey:"restrain-"+id+"-"+(on?"on":"off")+"-"+Date.now(),
-      metadata:{restrained:on}
-    });
-  }catch(e){
-    console.warn(e);
-    toast("Restraint saved. Team push did not send.","bad");
-  }finally{sn._restrainBusy=false;setBusy(false)}
+    if(on) cur.add("restrained"); else cur.delete("restrained");
+    sn.tags=[...cur];sn.at=now();sn.by=S.userId;
+    const p=patient(id);
+    const detail=(p?p.name+" · ":"")+(bedOf(id)||"");
+    const evn=ev(id,on?"Restrained":"Restraint released",true,"restrain",detail);
+    qRestrainToggle(id,on,evn.id,detail);
+    save();render();
+    try{
+      await flushPending();
+    }catch(e){
+      toast(clinicianCopy(e&&e.message||e)||"Could not save restraint.","bad");
+    }
+    try{
+      await notifyServerEvent({
+        eventType:"restrain",category:"clinical",priority:"high",patientId:id,
+        title:on?"Patient restrained":"Restraint released",
+        body:(p?p.name:"Patient")+" · "+(bedOf(id)||"")+" · "+((user()&&user().displayName)||""),
+        targetUrl:"./#/snap/"+encodeURIComponent(id),
+        recipientScope:"active_team",
+        dedupeKey:"restrain-"+id+"-"+(on?"on":"off")+"-"+Date.now(),
+        metadata:{restrained:on}
+      });
+    }catch(e){
+      console.warn(e);
+      toast("Restraint saved. Team push did not send.","bad");
+    }
+  }finally{sn._restrainBusy=false;setBusy(false);render()}
 }
 function toggleHighRisk(id){
   if(!needWrite())return;
@@ -4608,17 +4690,18 @@ function toggleHighRisk(id){
   sn.risk=on?"low":"high";
   sn.at=now();sn.by=S.userId;
   ev(id,on?"High risk cleared":"Flagged high risk",true,"status");
-  qSnap(id);save();render();
+  qSnapField(id,"risk",sn.risk);save();render();
 }
 function toggleTag(id,tag){
   if(!needWrite())return;
   if(tag==="ect"||tag==="obs"||tag==="leave"||tag==="restrained")return;
   const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[]});
   const cur=new Set(sn.tags||[]);
-  if(cur.has(tag)) cur.delete(tag); else cur.add(tag);
+  const adding=!cur.has(tag);
+  if(adding) cur.add(tag); else cur.delete(tag);
   sn.tags=[...cur];sn.at=now();sn.by=S.userId;
-  ev(id,(cur.has(tag)?"Flagged ":"Cleared ")+tag);
-  qSnap(id);save();render();
+  ev(id,(adding?"Flagged ":"Cleared ")+tag);
+  qSnapTag(id,tag,adding?"add":"remove");save();render();
 }
 
 function qConsultant(c){if(!c)return;queue("unit_consultants",{id:c.id,name:c.name,designation:c.designation||"",active:true,sort_order:0,created_at:c.at||now(),updated_at:now()})}
@@ -4663,11 +4746,11 @@ function saveLine(id){
   const t=val("oneline").trim();if(!t)return;
   const run=()=>{
     const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[],notes:[]});
-    const note={at:now(),by:S.userId,byName:(user()&&(user().displayName||user().username))||rname(S.userId),text:t};
+    const note={id:uid("n"),at:now(),by:S.userId,byName:(user()&&(user().displayName||user().username))||rname(S.userId),text:t};
     sn.state=t;sn.by=S.userId;sn.at=note.at;
     sn.notes=(sn.notes||[]).concat([note]).slice(-40);
     S.snaps[id]=sn;
-    ev(id,"PGT note",true,"pgt",t);qSnap(id);save();
+    ev(id,"PGT note",true,"pgt",t);qPgtNote(id,note);save();
     setBusy(true,"Saving update…");
     Promise.resolve(flushPending()).finally(()=>setBusy(false));
   };
@@ -4731,7 +4814,7 @@ function criticalStatusForm(pid){
     <button class="btn danger block btn-danger" onclick="sendCriticalStatusUpdate('${pid}')">Send critical update</button>
   </div></div>`; render();
 }
-function quickState(id,c){const sn=S.snaps[id];sn.state=(sn.state?sn.state+" ":"")+c;sn.at=now();ev(id,"Status · "+c);qSnap(id);save();render()}
+function quickState(id,c){const sn=S.snaps[id];sn.state=(sn.state?sn.state+" ":"")+c;sn.at=now();ev(id,"Status · "+c);qSnapField(id,"state",sn.state);save();render()}
 function markDose(id,st){
   if(!needWrite())return;
   const d=S.doses.find(x=>x.id===id);if(!d)return;
