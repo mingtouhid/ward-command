@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.4.47 more-grid-beds-focus -->
+<!-- WARD COMMAND RELEASE: v87.4.52 obs-list-first -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -302,6 +302,16 @@ a{color:var(--teal2);text-decoration:none}
 .meta b{display:block;font-size:11px;color:var(--muted);font-weight:500}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle;background:#64748b;box-shadow:0 0 0 3px rgba(100,116,139,.2)}
 .dot.live{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.25)}
+.live-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 8px 4px}
+.live-orb{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;position:relative;z-index:1}
+.live-orb svg{width:54px;height:54px;display:block}
+.live-orb.live{background:radial-gradient(circle at 35% 30%,#86efac,#22c55e 58%,#15803d);box-shadow:0 0 0 0 rgba(34,197,94,.55);animation:livepulse 1.8s ease-out infinite}
+.live-orb.saving,.live-orb.syncing{background:radial-gradient(circle at 35% 30%,#fde68a,#f59e0b 58%,#b45309);animation:livepulse 1.1s ease-out infinite}
+.live-orb.offline{background:radial-gradient(circle at 35% 30%,#cbd5e1,#64748b 60%,#334155);animation:none}
+.live-orb.bad,.live-orb.error{background:radial-gradient(circle at 35% 30%,#fca5a5,#ef4444 58%,#b91c1c);animation:livepulse 1.2s ease-out infinite}
+@keyframes livepulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}70%{box-shadow:0 0 0 18px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.live-hero b{margin-top:12px;font-size:20px;letter-spacing:.04em}
+.live-hero .host{margin-top:4px;font-size:11px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 
 .plist-block{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
@@ -326,12 +336,10 @@ a{color:var(--teal2);text-decoration:none}
 .ward-block{margin-bottom:14px}
 .ward-block:last-child{margin-bottom:0}
 .ward-block h3{font-size:13px;margin:0 0 8px}
-.pills{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
-.pills>.pill{grid-column:span 2}
-.pills>.pill:last-child:nth-child(3n+1){grid-column:1/-1}
-.pills>.pill:nth-last-child(2):nth-child(3n+1),
-.pills>.pill:last-child:nth-child(3n+2){grid-column:span 3}
+.pills{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:8px}
+.pills>.pill{grid-column:auto;min-width:0}
 .bed-pick{display:flex;flex-direction:column;gap:10px}
+.bed-sec .pills{grid-template-columns:repeat(auto-fit,minmax(86px,1fr))}
 .pill{border:1px solid var(--line);background:var(--pill);color:var(--ink);border-radius:14px;padding:8px 10px;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left}
 .pill b{font-family:"IBM Plex Mono",monospace;font-size:11px}
 .pill small{font-weight:500;color:var(--muted);font-size:10px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -412,11 +420,9 @@ tr.held td{opacity:.72}
 .top h1{font-size:18px!important;font-weight:700}
 .kicker{font-size:11px!important}
 .more-section{font-size:12px!important;letter-spacing:.12em;margin:18px 2px 10px}
-.more-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:0 0 4px}
-.more-grid>.more-row{grid-column:span 2}
-.more-grid>.more-row:last-child:nth-child(3n+1){grid-column:1/-1}
-.more-grid>.more-row:nth-last-child(2):nth-child(3n+1),
-.more-grid>.more-row:last-child:nth-child(3n+2){grid-column:span 3}
+.more-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:0 0 4px}
+.more-grid>.more-row{grid-column:auto;min-width:0}
+.more-grid .month-span{grid-column:1/-1}
 .more-grid .more-row{flex-direction:column;align-items:flex-start;justify-content:flex-start;margin:0;min-height:97px;padding:12px 12px 14px;gap:8px}
 .more-grid .more-row .go{display:none}
 .more-grid .more-row b{font-size:16px!important;line-height:1.25}
@@ -631,7 +637,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.4.47 more-grid-beds-focus -->
+<!-- WARD COMMAND RELEASE: v87.4.52 obs-list-first -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1057,7 +1063,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.4.47";
+const APP_VERSION="8.7.4.52";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1396,17 +1402,37 @@ function statusDot(){
 function statusChip(){
   return `<span class="status-chip ${statusClass()}">${statusDot()} ${esc(statusLabel())}</span>`;
 }
+function liveOrbFace(){
+  const c=statusClass();
+  if(c==="live") return `<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="10" r="1.35" fill="#fff"/><circle cx="15" cy="10" r="1.35" fill="#fff"/><path d="M8.2 14.2c.9 1.6 2.3 2.4 3.8 2.4s2.9-.8 3.8-2.4" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+  if(c==="offline") return `<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="10" r="1.35" fill="#fff"/><circle cx="15" cy="10" r="1.35" fill="#fff"/><path d="M8.2 16.4c.9-1.5 2.3-2.2 3.8-2.2s2.9.7 3.8 2.2" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+  return `<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="10" r="1.35" fill="#fff"/><circle cx="15" cy="10" r="1.35" fill="#fff"/><path d="M8.4 15.2h7.2" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+}
 function cloudCard(showKeys){
+  const host=S.supabaseUrl?S.supabaseUrl.replace(/^https:\/\//,""):"No project linked";
+  const cls=statusClass();
   return `<div class="card">
-    <p class="tiny">CONNECTION</p>
-    <p class="sm syncbar" style="margin:8px 0">${statusDot()}<b>${statusLabel()}</b><span class="tiny">${S.supabaseUrl?esc(S.supabaseUrl.replace("https://","")):"No project linked"}</span></p>
-    ${showKeys&&canAdmin()&&ui.keysOpen?`<label class="field"><span>Project URL</span><input id="sburl" value="${esc(S.supabaseUrl)}" placeholder="https://xxxx.supabase.co" autocapitalize="none"/></label>
-    <label class="field"><span>Publishable key</span><input id="sbkey" value="${esc(S.supabaseAnonKey)}" placeholder="sb_publishable_..." autocapitalize="none"/></label>
-    <button class="btn ghost block" onclick="saveSb()">Save keys</button>
-    <button class="btn ghost sm" style="margin-top:8px" onclick="ui.keysOpen=false;render()">Hide keys</button>`:showKeys&&canAdmin()?`<button class="btn ghost block" onclick="unlockKeys()">Show project keys</button>`:""}
-    <button class="btn block" style="margin-top:8px" onclick="reconnectCloud()">${sb?"Sync now":"Connect / sync"}</button>
+    <div class="live-hero">
+      <div class="live-orb ${esc(cls)}" aria-label="${esc(statusLabel())}">${liveOrbFace()}</div>
+      <b>${esc(statusLabel())}</b>
+      <span class="host">${esc(host)}</span>
+    </div>
+    <button class="btn block" style="margin-top:14px" onclick="reconnectCloud()">${sb?"Sync now":"Connect / sync"}</button>
     <p class="tiny" style="margin-top:8px" id="cloudmsg">${cloudLastError?esc(cloudLastError):""}</p>
   </div>`;
+}
+function projectKeysCard(){
+  if(!canAdmin()) return "";
+  if(ui.keysOpen){
+    return `<div class="card">
+      <p class="tiny">PROJECT KEYS</p>
+      <label class="field"><span>Project URL</span><input id="sburl" value="${esc(S.supabaseUrl)}" placeholder="https://xxxx.supabase.co" autocapitalize="none"/></label>
+      <label class="field"><span>Publishable key</span><input id="sbkey" value="${esc(S.supabaseAnonKey)}" placeholder="sb_publishable_..." autocapitalize="none"/></label>
+      <button class="btn ghost block" onclick="saveSb()">Save keys</button>
+      <button class="btn ghost sm" style="margin-top:8px" onclick="ui.keysOpen=false;render()">Hide keys</button>
+    </div>`;
+  }
+  return `<button class="btn ghost block" onclick="unlockKeys()">Show project keys</button>`;
 }
 function cloudConnect(){
   if(!cloudOn()){cloudStatus="offline";Sync.state="OFFLINE";return}
@@ -2446,9 +2472,21 @@ function observeView(){
   const open=openObsStays();
   const meds=d.meds&&d.meds.length?d.meds:[{drug:"",dose:"",route:"PO",freq:"OD"}];
   d.meds=meds;
-  return `<button class="back" onclick="back()">\u2190 Back</button>
-    <h2 class="page-title">Under observation</h2>
-    <div class="card">
+  const list=open.length?open.map(p=>{
+      const b=bedObj(p.id);
+      return `<div class="card">
+        <div class="row"><div class="bedno">${esc(b?b.no:"—")}</div><span class="badge r-moderate">OBS</span></div>
+        <b onclick="go('snap','${p.id}')">${esc(p.name)}</b>
+        <p class="tiny">${esc(p.hospitalNo||p.code)} · ${p.age||""}${p.sex||""} · ${esc(p.diagnosis||"")}</p>
+        ${canWrite()?`<div class="btns" style="margin-top:8px">
+          <button class="btn sm ghost" onclick="transferForm('${p.id}')">Transfer</button>
+          <button class="btn sm" onclick="obsAdmitAsk('${p.id}')">Admit</button>
+          <button class="btn sm ghost" onclick="obsCloseAsk('${p.id}','referred')">Refer</button>
+          <button class="btn sm ghost" onclick="obsCloseAsk('${p.id}','disposed')">Dispose</button>
+        </div>`:""}
+      </div>`;
+    }).join(""):`<div class="card"><p class="sm">No one is under observation.</p></div>`;
+  const form=`<div class="card">
       <p class="tiny">KEEP UNDER OBSERVATION</p>
       <label class="field"><span>Hospital no.</span><input id="ohosp" value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off"/></label>
       <label class="field"><span>Name</span><input id="oname" value="${esc(d.name||"")}" placeholder="Full name"/></label>
@@ -2459,7 +2497,7 @@ function observeView(){
       <label class="field"><span>Address <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="oaddr" value="${esc(d.addr||"")}" placeholder="Village / town"/></label>
       <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="ophone" value="${esc(d.phone||"")}" inputmode="tel" placeholder="Mobile number"/></label>
       <label class="field"><span>Provisional diagnosis</span><input id="odx" value="${esc(d.dx||"")}" placeholder="Working diagnosis"/></label>
-      <label class="field"><span>Bed</span>${picker("obed",(empties.length?empties.map(b=>[b.id,b.no+" \u00b7 "+((S.sections.find(s=>s.id===b.sectionId)||{}).name||"")]):[["","No empty bed"]]),d.bed||(empties[0]&&empties[0].id)||"","Bed")}</label>
+      <label class="field"><span>Bed</span>${picker("obed",(empties.length?empties.map(b=>[b.id,b.no+" · "+((S.sections.find(s=>s.id===b.sectionId)||{}).name||"")]):[["","No empty bed"]]),d.bed||(empties[0]&&empties[0].id)||"","Bed")}</label>
       <p class="tiny" style="margin:10px 0 6px">MEDICATIONS</p>
       ${meds.map((m,i)=>`<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin-bottom:8px">
         <input id="odrug${i}" value="${esc(m.drug||"")}" placeholder="Drug"/>
@@ -2469,23 +2507,14 @@ function observeView(){
       </div>`).join("")}
       <button class="btn ghost sm" type="button" onclick="obsDraft();addObsMed()">Add medication</button>
       <button class="btn block" style="margin-top:12px" ${empties.length?"":"disabled"} onclick="startObservation()">Keep under observation</button>
-    </div>
-    <p class="tiny" style="margin:16px 0 8px">NOW UNDER OBSERVATION \u00b7 ${open.length}</p>
-    ${open.length?open.map(p=>{
-      const b=bedObj(p.id);
-      return `<div class="card">
-        <div class="row"><div class="bedno">${esc(b?b.no:"\u2014")}</div><span class="badge r-moderate">OBS</span></div>
-        <b onclick="go('snap','${p.id}')">${esc(p.name)}</b>
-        <p class="tiny">${esc(p.hospitalNo||p.code)} \u00b7 ${p.age||""}${p.sex||""} \u00b7 ${esc(p.diagnosis||"")}</p>
-        ${canWrite()?`<div class="btns" style="margin-top:8px">
-          <button class="btn sm ghost" onclick="transferForm('${p.id}')">Transfer</button>
-          <button class="btn sm" onclick="obsAdmitAsk('${p.id}')">Admit</button>
-          <button class="btn sm ghost" onclick="obsCloseAsk('${p.id}','referred')">Refer</button>
-          <button class="btn sm ghost" onclick="obsCloseAsk('${p.id}','disposed')">Dispose</button>
-        </div>`:""}
-      </div>`;
-    }).join(""):`<div class="card"><p class="sm">No one is under observation.</p></div>`}`;
+    </div>`;
+  return `<button class="back" onclick="back()">← Back</button>
+    <h2 class="page-title">Under observation</h2>
+    <p class="tiny" style="margin:-4px 0 8px">NOW UNDER OBSERVATION · ${open.length}</p>
+    ${list}
+    ${form}`;
 }
+
 async function startObservation(){
   if(!needWrite())return;
   obsDraft();
@@ -3226,8 +3255,8 @@ function handoverView(){
   const nxt=nextShift(cur);
   const me=String(S.userId||"");
   const open=S.handovers.filter(h=>h.status==="sent");
-  const mineIncoming=h=>String(h.to||"")===me;
-  const mineOutgoing=h=>String(h.from||"")===me && String(h.to||"")!==me;
+  const mineIncoming=h=>String(h.to||"")===me && String(h.from||"")!==me;
+  const mineOutgoing=h=>String(h.from||"")===me;
   const forNow=open.filter(h=>h.shift===cur && mineIncoming(h));
   const forNext=open.filter(h=>h.shift===nxt && (mineOutgoing(h)||mineIncoming(h)));
   const postedByMe=open.filter(h=>mineOutgoing(h) && h.shift!==nxt);
@@ -3263,7 +3292,10 @@ function hoPack(h,canAck){
   const items=S.hitems.filter(i=>i.hid===h.id&&onWard(i.pid)).slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
   if(!items.length) return "";
   const open=items.filter(i=>!i.done).length;
-  const mine=String(h.to||"")===String(S.userId||"");
+  const me=String(S.userId||"");
+  const recipient=String(h.to||"")===me;
+  const giver=String(h.from||"")===me;
+  const mine=recipient && !giver;
   const statusLine=h.status==="acknowledged"
     ? `Acknowledged by ${esc(rname(h.ackBy||h.to))} · ${esc(hoWhen(h.ackAt||h.at))}`
     : `Waiting for ${esc(rname(h.to)||"recipient")}`;
@@ -3292,6 +3324,8 @@ function hoPack(h,canAck){
 function openGiveHandover(){
   ui.giveOpen=true;
   ui.sheet=null;
+  ui.fields=ui.fields||{};
+  if(String(ui.fields.hres||"")===String(S.userId||"")) ui.fields.hres="";
   render();
 }
 function closeGiveHandover(){
@@ -3345,6 +3379,7 @@ function giveHandoverForm(defShift){
 function ackH(id){
   if(!needWrite())return;
   const h=S.handovers.find(x=>x.id===id);if(!h)return;
+  if(String(h.from)===String(S.userId)){toast("You cannot take a handover you posted.","bad");return}
   if(String(h.to)!==String(S.userId)){toast("Only "+rname(h.to)+" can take this handover.","bad");return}
   ui.confirm={fn:"ackH",id,title:"Take handover",ok:"Take",danger:false,body:"Take this "+shiftLabel(h.shift)+" handover from "+rname(h.from)+"?"};
   render();
@@ -3383,6 +3418,7 @@ async function sendH(){
   const toShift=val("hshift")||nextShift();
   const toResident=val("hres");
   if(!toResident){toast("Select the resident who will receive this handover.","bad");return}
+  if(String(toResident)===String(S.userId||"")){toast("Pick another resident.","bad");return}
   if(!pid||!problem){toast("Choose a patient and write what the next shift must know.","bad");return}
   setBusy(true,"Sending handover…");
   let h=S.handovers.find(x=>String(x.from)===String(S.userId)&&String(x.to)===String(toResident)&&x.shift===toShift&&x.status==="sent");
@@ -3645,10 +3681,10 @@ function moreView(){
     <div class="more-grid">
     ${canAdmin()?row("go('ward')",ico("setup"),"Ward setup","amber"):""}
     ${canAdmin()?row("go('users')",ico("users"),"Users","indigo"):""}
-    <div class="month-span card" style="padding:14px">
+    </div>
+    <div class="card" style="padding:14px;margin:10px 0 4px">
       <label class="field" style="margin:0"><span>Report month</span><input type="month" id="rmon" value="${esc(ui.reportMonth||new Date().toISOString().slice(0,7))}" oninput="ui.reportMonth=this.value"/></label>
       <button class="btn block" style="margin-top:10px" onclick="exportMonthly()">Export monthly report</button>
-    </div>
     </div>
     <p class="more-section">System</p>
     <div class="more-grid">
@@ -3971,7 +4007,7 @@ function connectionView(){
       <div class="queue-explain">Recorded: ${esc(wf.at?new Date(wf.at).toLocaleString():"—")}</div>
     </div>`:"";
   const deep=!!ui.setupDeep;
-  return `${back}<h2 class="page-title">Connection</h2>`+cloudCard(canAdmin())+wfCard+`
+  return `${back}<h2 class="page-title">Connection</h2>`+cloudCard()+wfCard+`
     <div class="card">
       <div class="row"><div><p class="tiny">QUEUE</p></div><span class="badge ${c.failed?"r-critical":c.retrying?"r-moderate":"r-low"}">${c.failed?c.failed+" failed":c.retrying?c.retrying+" retrying":c.pending+" pending"}</span></div>
       ${outboxDetailsHtml()}
@@ -3988,7 +4024,8 @@ function connectionView(){
     <div class="card">
       <div class="row"><div><p class="tiny">LOG</p></div><button class="btn ghost sm" onclick="clearElog()">Clear</button></div>
       <div class="elog">${elog.length?elog.map(renderElogEntry).join(""):`<p class="tiny">Empty</p>`}</div>
-    </div>`:`<button class="btn ghost block" onclick="ui.setupDeep=true;render()">Show diagnostics</button>`}`;
+    </div>`:`<button class="btn ghost block" onclick="ui.setupDeep=true;render()">Show diagnostics</button>`}
+    ${projectKeysCard()}`;
 }
 
 function foldOpen(key,def){
