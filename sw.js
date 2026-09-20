@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-v87.4.56-units-scroll";
+const VERSION = "ward-command-pwa-v87.4.57-hero-ui";
 const PRECACHE = [
   "./",
   "./index.html",

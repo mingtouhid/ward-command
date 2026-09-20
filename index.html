@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.4.56 units-scroll -->
+<!-- WARD COMMAND RELEASE: v87.4.57 hero-ui -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -401,7 +401,8 @@ a{color:var(--teal2);text-decoration:none}
 .multi{display:flex;flex-wrap:wrap;gap:6px}
 
 .hero{background:var(--hero);color:var(--hero-ink);border:0;border-radius:28px;padding:22px 20px 20px;margin:0 0 14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-.hero-obs{position:absolute;top:14px;right:14px;z-index:2;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:8px 12px;border-radius:14px;background:rgba(245,158,11,.22);border:1px solid rgba(253,230,138,.35);color:#fff7ed;text-align:right}
+.hero-obs{position:absolute;top:12px;right:12px;z-index:3;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:8px 10px;border-radius:14px;background:rgba(245,158,11,.28);border:1px solid rgba(253,230,138,.4);color:#fff7ed;text-align:right;max-width:46%}
+.hero-obs span{white-space:normal;line-height:1.15;text-align:right;max-width:100%}
 .hero-obs span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;opacity:.9}
 .hero-obs b{font-size:20px;line-height:1;font-weight:800}
 .hero .label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--hero-muted);font-weight:600}
@@ -495,7 +496,7 @@ button.pulse{animation:btnpulse .35s ease}
 .pick-opt{display:flex;align-items:center;justify-content:space-between;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 8px;text-align:left;color:inherit}
 .pick-opt.on{border-color:var(--teal);background:var(--nav-on)}
 
-.hero-wards{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:14px;position:relative;z-index:1}
+.hero-wards{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-top:10px;position:relative;z-index:1}
 .hero-ward{display:flex;align-items:baseline;gap:8px;min-width:0}
 .hero-ward b{font-size:20px;font-weight:800;color:var(--hero-ink);letter-spacing:-.03em;line-height:1;flex:none}
 .hero-ward span{font-size:12px;font-weight:600;color:var(--hero-muted);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -654,7 +655,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.4.56 units-scroll -->
+<!-- WARD COMMAND RELEASE: v87.4.57 hero-ui -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1080,7 +1081,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.4.56";
+const APP_VERSION="8.7.4.57";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1540,7 +1541,7 @@ async function doCloudPull(){
   try{
   if(unit[0]){S.unit={name:unit[0].unit_name||(S.unit&&S.unit.name)||"Psychiatry Ward"}; if(unit[0].ward_password) S.wardPassword=unit[0].ward_password}
   ensureUnits();
-  S.sections=sections.map(r=>({id:r.id,name:r.name,active:r.active!==false}));
+  S.sections=sections.map(r=>({id:r.id,name:sectionLabel(r.name),active:r.active!==false}));
   S.beds=beds.map(r=>({id:r.id,no:r.bed_number,sectionId:r.section_id,active:r.active!==false,patientId:r.current_patient_id||null}));
   S.residents=residents.filter(r=>r.active!==false).map(r=>({id:r.id,username:r.username,displayName:r.display_name,role:r.role,active:r.active!==false}));
   S.consultants=(consultants||[]).filter(r=>r.active!==false).map(r=>({id:r.id,name:r.name,designation:r.designation||""}));
@@ -2197,19 +2198,33 @@ function wardTodayDischargeCount(){
   }).length;
 }
 
+function sectionLabel(name){
+  const n=String(name||"").trim();
+  if(/^obs(ervation)?\s*\(\s*e\s*\)/i.test(n) || /^observation\s*\(e\)/i.test(n)) return "E Ward";
+  return n;
+}
+function tidySectionNames(){
+  let dirty=false;
+  (S.sections||[]).forEach(s=>{
+    const next=sectionLabel(s.name);
+    if(next!==s.name){s.name=next;dirty=true;try{qSection(s)}catch(e){}}
+  });
+  if(dirty) try{save()}catch(e){}
+}
 function homeView(){
   const list=occupied();
   const high=list.filter(b=>["high","critical"].includes((S.snaps[b.patientId]||{}).risk)).length;
   const ect=(S.ect||[]).filter(e=>(!e.status||e.status==="planned")&&onWard(e.pid)).length;
   const inbox=S.hitems.filter(i=>!i.done&&onWard(i.pid)).length;
   const empty=emptyBeds().length;
+  tidySectionNames();
   const wards=S.sections.filter(s=>s.active).map(sec=>({
-    name:sec.name,
+    name:sectionLabel(sec.name),
     n:list.filter(b=>b.sectionId===sec.id).length
   }));
   return `<div class="home-split">
     <div class="hero">
-      <button type="button" class="hero-obs" onclick="go('observe')"><span>Under observation</span><b>${(S.patients||[]).filter(p=>p.status==='observation').length}</b></button>
+      <button type="button" class="hero-obs" onclick="go('observe')"><span>Patients under observation</span><b>${(S.patients||[]).filter(p=>p.status==='observation').length}</b></button>
       <div class="label">Patients in ward</div>
       <div class="count">${list.length}</div>
       <div class="hero-wards">${wards.length?wards.map(w=>`<div class="hero-ward"><b>${w.n}</b><span>${esc(w.name)}</span></div>`).join(""):`<p class="sub">No sections yet</p>`}</div>
@@ -2270,7 +2285,7 @@ function patientsView(){
     ${sectionBlock("No bed", loose.map(p=>patientCard(p,null)))}
     ${secs.map(sec=>{
       const cards=occupied().filter(b=>b.sectionId===sec.id && match(onBed(b))).map(b=>patientCard(onBed(b),b));
-      return sectionBlock(sec.name, cards);
+      return sectionBlock(sectionLabel(sec.name), cards);
     }).join("")}
     ${sectionBlock("Other", orphanBeds.map(b=>patientCard(onBed(b),b)))}`;
 }
@@ -2431,7 +2446,7 @@ function groupBeds(shown){
   const groups=[], used=new Set();
   secs.forEach(sec=>{
     const beds=list.filter(b=>b.sectionId===sec.id);
-    if(beds.length){groups.push({name:sec.name,beds});beds.forEach(b=>used.add(b.id))}
+    if(beds.length){groups.push({name:sectionLabel(sec.name),beds});beds.forEach(b=>used.add(b.id))}
   });
   const rest=list.filter(b=>!used.has(b.id));
   if(rest.length) groups.push({name:"Other",beds:rest});
@@ -2536,12 +2551,14 @@ function observeView(){
       </div>`).join("")}
       <button class="btn ghost sm" type="button" onclick="obsDraft();addObsMed()">Add medication</button>
       <button class="btn block" style="margin-top:12px" ${empties.length?"":"disabled"} onclick="startObservation()">Keep under observation</button>
+      <button class="btn ghost block" style="margin-top:8px" onclick="ui.obsForm=false;render()">Cancel</button>
     </div>`;
+  const formCard=ui.obsForm?form:`<button class="btn block" onclick="obsDraft();ui.obsForm=true;render()">Keep someone under observation</button>`;
   return `<button class="back" onclick="back()">← Back</button>
     <h2 class="page-title">Under observation</h2>
     <p class="tiny" style="margin:-4px 0 8px">NOW UNDER OBSERVATION · ${open.length}</p>
     ${list}
-    ${form}`;
+    ${formCard}`;
 }
 
 async function startObservation(){
@@ -2582,7 +2599,7 @@ async function startObservation(){
     meds.forEach(m=>S.orders.unshift({id:uid("mo"),pid:id,drug:m.drug,dose:m.dose,route:m.route,freq:m.freq,status:"active",start:now()}));
     ev(id,"Under observation \u00b7 "+bed.no,true,"note");
     ui.obs={meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]};
-    toast("Kept under observation","ok");save();render();
+    toast("Kept under observation","ok");ui.obsForm=false;save();render();
   }catch(e){
     toast(clinicianCopy(e.message||e)||String(e.message||e),"bad");
   }finally{workflowUnlock("observation",bed.id);setBusy(false)}
@@ -3348,7 +3365,32 @@ function hoPack(h,canAck){
       ${i.done?`<p class="tiny">Done</p>`:(mine?`<button class="btn sm" style="margin-top:8px" onclick="clearItem('${i.id}')" ${i._busy?"disabled":""}>Done</button>`:`<p class="tiny" style="margin-top:8px">Open</p>`)}
     </div>`).join("")}
     ${mine&&canAck&&h.status==="sent"&&canWrite()?`<button class="btn sm" style="margin-top:10px" onclick="ackH('${h.id}')">Take handover</button>`:""}
+    ${giver&&h.status==="sent"&&canWrite()?`<button class="btn ghost sm" style="margin-top:10px" onclick="withdrawHandover('${h.id}')">Withdraw pack</button>`:""}
   </div>`;
+}
+function withdrawHandover(id){
+  if(!needWrite())return;
+  const h=S.handovers.find(x=>x.id===id); if(!h)return;
+  if(String(h.from)!==String(S.userId)){toast("Only the giver can withdraw this pack.","bad");return}
+  if(h.status!=="sent"){toast("Already taken.","bad");return}
+  ui.confirm={fn:"withdrawHandover",id,title:"Withdraw handover",ok:"Withdraw",danger:true,
+    body:"Remove this pack from the incoming board? "+rname(h.to)+" will no longer see Take."};
+  render();
+}
+async function withdrawHandoverNow(id){
+  if(!needWrite())return;
+  const h=S.handovers.find(x=>x.id===id); if(!h)return;
+  setBusy(true,"Withdrawing…");
+  try{
+    h.status="withdrawn";
+    qHandover(h);
+    if(sessionTok&&sb){
+      const {error}=await sb.rpc("ward_upsert_handover",{p_session_token:sessionTok,p_row:{id:h.id,to_id:h.to,shift:h.shift,status:"withdrawn",created_at:h.at||now()}});
+      if(error && !/invalid|check|status/i.test(error.message||"")) throw error;
+    }
+    toast("Handover withdrawn","ok");save();render();
+  }catch(e){h.status="sent";toast(clinicianCopy(e.message||e)||String(e.message||e),"bad");render();}
+  finally{setBusy(false)}
 }
 function openGiveHandover(){
   ui.giveOpen=true;
@@ -3589,6 +3631,7 @@ function confirmYes(){
   if(c.fn==="logout") return doLogout();
   if(c.fn==="setRole") return setUserRoleNow(c.username,c.role);
   if(c.fn==="ackH") return ackHNow(c.id);
+  if(c.fn==="withdrawHandover") return withdrawHandoverNow(c.id);
   if(c.fn==="holdMed") return holdMedNow(c.id);
   if(c.fn==="resumeMed") return resumeMedNow(c.id);
   if(c.fn==="stopMed") return stopMedNow(c.id);
@@ -3941,7 +3984,7 @@ function openNotification(id){
 function setupView(){
   const cfg=canCfg(user().role);
   const theme=currentTheme();
-  const tab=ui.setupTab||"cloud";
+  const tab=ui.setupTab||"theme";
   const back=`<button class="back" onclick="back()">← Back</button>`;
   if(tab==="notify"){
     const np=notifyPrefs();
