@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.4.62 card-dx -->
+<!-- WARD COMMAND RELEASE: v87.4.63 snap-ui -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -679,10 +679,32 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
   .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
 }
 
+
+.patient-head{grid-template-columns:auto minmax(0,1fr) auto}
+.patient-card .bedno{white-space:nowrap;font-size:18px;line-height:1.05;min-width:3.2ch}
+.ect-grid{display:flex;flex-direction:column;gap:10px}
+.hero{display:flex;flex-direction:column;min-height:100%;padding:clamp(18px,3.2cqi,28px) clamp(16px,2.8cqi,24px)}
+.hero .count{font-size:clamp(52px,7.2cqi,76px);margin:8px 0 10px}
+.hero-wards{flex:1;align-content:center;gap:clamp(8px,1.8cqi,16px) clamp(12px,2.4cqi,22px)}
+.hero-ward b{font-size:clamp(18px,2.6cqi,28px)}
+.hero-ward span{font-size:clamp(12px,1.55cqi,16px)}
+.hero-today-stats{margin-top:auto}
+@media (min-width:760px){
+  .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  .snap-identity{grid-column:1;grid-row:1}
+  .snap-current{grid-column:2;grid-row:1}
+  .snap-critical-status{grid-column:1;grid-row:2}
+  .snap-med{grid-column:2;grid-row:2 / span 2}
+  .snap-actions-card{grid-column:1;grid-row:3}
+  .ect-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .app{max-width:none;width:100%;margin:0}
+  .nav-in{max-width:none;width:100%;margin:0;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.4.62 card-dx -->
+<!-- WARD COMMAND RELEASE: v87.4.63 snap-ui -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1108,7 +1130,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.4.62";
+const APP_VERSION="8.7.4.63";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1195,7 +1217,7 @@ function queue(table,row){
   pending.push(op);
   persistOutbox();
 }
-function qSnap(pid){const sn=S.snaps[pid]||{};queue("patient_snapshots",{id:pid,patient_id:pid,clinical_state:sn.state||"",risk_level:["low","moderate","high","critical"].includes(sn.risk)?sn.risk:"low",sleep_status:sn.sleep||"",watch_points:packWatch(sn),current_plan:sn.plan||"",tags:Array.isArray(sn.tags)?sn.tags:[],updated_by:sn.by||S.userId||null,updated_at:sn.at||now()})}
+function packPlan(sn){const notes=Array.isArray(sn.notes)?sn.notes.slice(-40):[];const plan=sn.plan||"";if(!notes.length)return plan;try{return "PGTLOG:"+JSON.stringify(notes)+"\n"+plan}catch(e){return plan}}function unpackPlan(s){const raw=String(s||"");const m=raw.match(/^PGTLOG:(\[[\s\S]*?\])\n?([\s\S]*)$/);if(m){try{return {notes:JSON.parse(m[1]),plan:m[2]||""}}catch(e){}}return {notes:[],plan:raw}}function qSnap(pid){const sn=S.snaps[pid]||{};queue("patient_snapshots",{id:pid,patient_id:pid,clinical_state:sn.state||"",risk_level:["low","moderate","high","critical"].includes(sn.risk)?sn.risk:"low",sleep_status:sn.sleep||"",watch_points:packWatch(sn),current_plan:packPlan(sn),tags:Array.isArray(sn.tags)?sn.tags:[],updated_by:sn.by||S.userId||null,updated_at:sn.at||now()})}
 function qEvent(e){if(!e)return;queue("activity_log",{id:e.id,patient_id:(e.pid&&S.patients.some(x=>x.id===e.pid))?e.pid:null,kind:e.kind||evKind(e.title),title:e.title||"Event",detail:e.detail||null,actor_id:S.userId||null,created_at:e.at||now()})}
 function qHandover(h){
   if(!h||!h.from)return;
@@ -1288,7 +1310,7 @@ async function notifyServerEvent({eventType,category='clinical',priority='normal
   const allowed={
     admission:['clinical','active_team'],discharge:['clinical','active_team'],transfer:['clinical','active_team'],
     handover:['handovers','handover'],task:['tasks','task_assignees'],ect:['ect','active_team'],
-    critical_status_update:['clinical','active_team'],observation:['clinical','active_team']
+    critical_status_update:['clinical','active_team'],observation:['clinical','active_team'],restrain:['clinical','active_team']
   };
   const pair=allowed[eventType];
   if(!pair||pair[0]!==category||pair[1]!==recipientScope) throw new Error("Invalid notification event routing");
@@ -1337,6 +1359,8 @@ function evKind(title){
   if(/^task\b|task added|task notification|task assigned/.test(s))return "task";
   if(/\bect\b|electroconvulsive/.test(s))return "ect";
   if(/given|held|refused|\bprn\b|started |stopped |resumed |dose|drug|olanzapine|lorazepam/.test(s))return "med";
+  if(/\bpgt note\b|pgt-note/.test(s))return "pgt";
+  if(/restrain|restraint/.test(s))return "restrain";
   if(/status updated|critical status|signed/.test(s))return "status";
   if(/admitted|discharged|transferred/.test(s))return "note";
   return "note";
@@ -1515,7 +1539,7 @@ async function cloudLogin(username,password){
   if(error) throw error;
   return data;
 }
-function rowSnap(r){const w=unpackWatch(r.watch_points||"");const tags=Array.isArray(r.tags)&&r.tags.length?r.tags:(w.tags||[]);return {state:r.clinical_state||"",risk:r.risk_level||"low",sleep:r.sleep_status||"",watch:w.watch,tags:tags,plan:r.current_plan||"",by:r.updated_by||"",at:r.updated_at||now()}}
+function rowSnap(r){const w=unpackWatch(r.watch_points||"");const tags=Array.isArray(r.tags)&&r.tags.length?r.tags:(w.tags||[]);const pl=unpackPlan(r.current_plan||"");return {state:r.clinical_state||"",risk:r.risk_level||"low",sleep:r.sleep_status||"",watch:w.watch,tags:tags,plan:pl.plan,notes:pl.notes,by:r.updated_by||"",at:r.updated_at||now()}}
 async function cloudReadWardState(){
   const {data,error}=await sb.rpc("ward_read_ward_state",{p_session_token:sessionTok});
   if(error) throw new Error("ward_read_ward_state: "+error.message);
@@ -2335,6 +2359,7 @@ function snapView(){
         ${(()=>{const st=(S.obsStays||[]).filter(s=>s.pid===p.id).sort((a,b)=>new Date(b.at||0)-new Date(a.at||0))[0];return st?`<div><b>Observed</b>${fmt(st.at)}</div>`:""})()}
       </div>
       <p class="sm" style="margin-top:4px"><b>Diagnosis</b><br>${esc(p.diagnosis)}</p>
+      ${canWrite()?`<div class="btns" style="margin-top:10px;grid-template-columns:1fr"><button class="btn sm danger" onclick="criticalStatusForm('${p.id}')">Critical</button></div>`:""}
       ${(p.status==="observation")?`<div class="card" style="margin:10px 0 0;padding:10px">
         <p class="tiny">UNDER OBSERVATION</p>
         ${canWrite()?`<div class="btns" style="margin-top:8px">
@@ -2348,17 +2373,18 @@ function snapView(){
       ${tagHtml(p)}
     </div>
     <div class="card snap-current">
-      <p class="tiny">CURRENT STATE</p>
+      <p class="tiny">PGT-NOTE</p>
       <label class="field" style="margin:8px 0 10px">
         <textarea id="oneline" rows="3" placeholder="This round" oninput="ui.fields=ui.fields||{};ui.fields.oneline=this.value">${esc(sn.state||"")}</textarea>
       </label>
       <div class="btns" style="margin-top:6px;gap:6px;flex-wrap:wrap">
         <button class="btn sm" onclick="saveLine('${p.id}')">Save</button>
         <button class="btn sm ${(sn.risk==="high"||sn.risk==="critical")?"danger":"ghost"}" onclick="toggleHighRisk('${p.id}')">${(sn.risk==="high"||sn.risk==="critical")?"High risk on":"High risk"}</button>
-        <button class="btn sm danger" onclick="criticalStatusForm('${p.id}')">Critical</button>
+        <button class="btn sm ghost" onclick="openPgtHistory('${p.id}')">History</button>
       </div>
+      ${pgtNotePreview(p.id)}
       <p class="tiny" style="margin:14px 0 8px">WATCH</p>
-      <div class="chips">${TAGS.filter(tg=>!['ect','obs','leave'].includes(tg.id)).map(tg=>{
+      <div class="chips">${TAGS.filter(tg=>!['ect','obs','leave','restrained'].includes(tg.id)).map(tg=>{
         const on=(sn.tags||[]).includes(tg.id);
         return `<button class="chip ${on?"on":""}" onclick="toggleTag('${p.id}','${tg.id}')">${tg.label}</button>`;
       }).join("")}</div>
@@ -2392,13 +2418,14 @@ function snapView(){
         ${ectPlan(p.id)?`<button class="btn sm" onclick="openEctForm('${p.id}')">ECT planned</button>`:`<button class="btn ghost sm" onclick="openEctForm('${p.id}')">Plan for ECT</button>`}
       </div>
     </div>
-    <div class="card">
+    <div class="card snap-actions-card">
       <p class="tiny">ACTIONS</p>
       <div class="btns snap-actions" style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <button class="btn sm ghost" onclick="quickPrn('${p.id}')">PRN</button>
         <button class="btn sm ghost" onclick="addQuickTask('${p.id}')">Task</button>
         ${p.status!=="discharged"&&canWrite()?`<button class="btn sm ghost" onclick="transferForm('${p.id}')">Transfer</button>`:""}
         <button class="btn sm ghost" onclick="flagHandover('${p.id}')">Handover</button>
+        ${canWrite()?`<button class="btn sm ${(sn.tags||[]).includes("restrained")?"danger":"ghost"}" style="grid-column:1/-1" onclick="toggleRestrain('${p.id}')">${(sn.tags||[]).includes("restrained")?"Release restraint":"Restrain"}</button>`:""}
       </div>
     </div>
     ${p.status==="discharged"?`<div class="card"><p class="tiny">Discharged</p></div>`:""}
@@ -2419,7 +2446,7 @@ function ectPlan(pid){return (S.ect||[]).find(e=>e.pid===pid&&e.status==="planne
 function ectView(){
   const list=(S.ect||[]).filter(e=>(!e.status||e.status==="planned")&&onWard(e.pid));
   if(!list.length) return `<button class="back" onclick="back()">← Back</button><h2 class="page-title">ECT</h2><div class="card"><p class="sm">No ECT plans.</p></div>`;
-  return `<button class="back" onclick="back()">← Back</button><h2 class="page-title">ECT</h2><p class="tiny" style="margin:-4px 0 12px">${list.length} planned</p>`+list.map(e=>{
+  return `<button class="back" onclick="back()">← Back</button><h2 class="page-title">ECT</h2><p class="tiny" style="margin:-4px 0 12px">${list.length} planned</p><div class="ect-grid">`+list.map(e=>{
     const p=patient(e.pid);if(!p||p.status==="discharged")return "";
     return `<div class="card">
       <div onclick="go('snap','${p.id}')">
@@ -2434,7 +2461,7 @@ function ectView(){
         <button class="btn sm ghost" onclick="cancelEct('${e.id}')">Cancel plan</button>
       </div>
     </div>`;
-  }).join("");
+  }).join("")+`</div>`;
 }
 
 
@@ -4279,8 +4306,8 @@ function activityView(){
     const hay=((e.title||"")+" "+(p?p.name:"")+" "+bedOf(e.pid||"")+" "+rname(e.by)).toLowerCase();
     return !q||hay.includes(q);
   });
-  const chips=[["all","All"],["fail","Failed"],["status","Status"],["med","Meds"],["ect","ECT"],["handover","Handover"],["task","Tasks"]];
-  const color={fail:"#e11d48",ect:"#a78bfa",med:"#2dd4bf",handover:"#f59e0b",task:"#60a5fa",status:"#34d399",note:"#94a3b8"};
+  const chips=[["all","All"],["fail","Failed"],["status","Status"],["pgt","PGT"],["restrain","Restrain"],["med","Meds"],["ect","ECT"],["handover","Handover"],["task","Tasks"]];
+  const color={fail:"#e11d48",ect:"#a78bfa",med:"#2dd4bf",handover:"#f59e0b",task:"#60a5fa",status:"#34d399",pgt:"#38bdf8",restrain:"#fb7185",note:"#94a3b8"};
   return `<div class="act-log"><button class="back" onclick="back()">← Back</button>
     <div class="row" style="margin-bottom:8px"><h2 style="margin:0;min-width:0">Activity log</h2><span class="tiny">${rows.length}</span></div>
     <input id="aq" placeholder="Search bed, name, action, resident" value="${esc(ui.aq||"")}" oninput="ui.aq=this.value;render({fromInput:1})" style="margin-bottom:8px" enterkeyhint="search" autocomplete="off"/>
@@ -4392,6 +4419,70 @@ function pickOverlay(){
     }).join("")}
   </div></div>`;
 }
+function pgtNotes(id){
+  const sn=S.snaps[id]||{};
+  const fromSnap=Array.isArray(sn.notes)?sn.notes.slice():[];
+  const fromLog=(S.events||[]).filter(e=>e.pid===id&&(e.kind==="pgt"||/^pgt note/i.test(e.title||""))).map(e=>({
+    at:e.at,by:e.by,byName:e.actorName||rname(e.by),text:e.detail||e.title||""
+  }));
+  const seen=new Set();
+  const all=fromSnap.concat(fromLog).filter(n=>{
+    const k=(n.at||"")+"|"+(n.text||"");
+    if(seen.has(k)||!(n.text||"").trim())return false;
+    seen.add(k);return true;
+  }).sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
+  return all;
+}
+function pgtNotePreview(id){
+  const last=pgtNotes(id)[0];
+  if(!last)return "";
+  return `<p class="tiny" style="margin:10px 0 0">${esc(last.byName||rname(last.by))} · ${esc(stamp(last.at)||fmt(last.at))}</p>`;
+}
+function openPgtHistory(id){
+  const rows=pgtNotes(id);
+  const body=rows.length?rows.map(n=>`<div class="card" style="padding:10px 12px;margin:0 0 8px">
+      <p class="tiny">${esc(n.byName||rname(n.by))} · ${esc(stamp(n.at)||fmt(n.at))}</p>
+      <p class="sm" style="margin-top:4px">${esc(n.text)}</p>
+    </div>`).join(""):`<p class="sm">No PGT notes yet.</p>`;
+  ui.sheet=`<div class="sheet mid"><button class="mask" onclick="ui.sheet=null;render()"></button><div class="box">
+    <div class="row"><h2>PGT notes</h2><button class="btn ghost sm" onclick="ui.sheet=null;render()">Close</button></div>
+    <div style="margin-top:10px;max-height:60vh;overflow:auto">${body}</div>
+  </div></div>`;
+  render();
+}
+function toggleRestrain(id){
+  if(!needWrite())return;
+  const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[],notes:[]});
+  const on=!(sn.tags||[]).includes("restrained");
+  const cur=new Set(sn.tags||[]);
+  if(on) cur.add("restrained"); else cur.delete("restrained");
+  sn.tags=[...cur];sn.at=now();sn.by=S.userId;
+  const p=patient(id);
+  ev(id,on?"Restrained":"Restraint released",true,"restrain",(p?p.name+" · ":"")+(bedOf(id)||""));
+  qSnap(id);save();render();
+  try{
+    notifyServerEvent({
+      eventType:"restrain",category:"clinical",priority:"high",patientId:id,
+      title:on?"Patient restrained":"Restraint released",
+      body:(p?p.name:"Patient")+" · "+(bedOf(id)||"")+" · "+((user()&&user().displayName)||""),
+      targetUrl:"./#/snap/"+encodeURIComponent(id),
+      recipientScope:"active_team",
+      dedupeKey:"restrain-"+id+"-"+Date.now(),
+      metadata:{restrained:on}
+    });
+  }catch(e){
+    try{
+      notifyServerEvent({
+        eventType:"critical_status_update",category:"clinical",priority:"high",patientId:id,
+        title:on?"Patient restrained":"Restraint released",
+        body:(p?p.name:"Patient")+" · "+(bedOf(id)||""),
+        targetUrl:"./#/snap/"+encodeURIComponent(id),
+        recipientScope:"active_team",
+        dedupeKey:"restrain-"+id+"-"+Date.now()
+      });
+    }catch(err){}
+  }
+}
 function toggleHighRisk(id){
   if(!needWrite())return;
   const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[]});
@@ -4403,7 +4494,7 @@ function toggleHighRisk(id){
 }
 function toggleTag(id,tag){
   if(!needWrite())return;
-  if(tag==="ect"||tag==="obs"||tag==="leave")return;
+  if(tag==="ect"||tag==="obs"||tag==="leave"||tag==="restrained")return;
   const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[]});
   const cur=new Set(sn.tags||[]);
   if(cur.has(tag)) cur.delete(tag); else cur.add(tag);
@@ -4453,8 +4544,12 @@ function saveLine(id){
   if(!needWrite())return;
   const t=val("oneline").trim();if(!t)return;
   const run=()=>{
-    S.snaps[id]={...S.snaps[id],state:t,by:S.userId,at:now()};
-    ev(id,"Status updated",true,"status");qSnap(id);save();
+    const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[],notes:[]});
+    const note={at:now(),by:S.userId,byName:(user()&&(user().displayName||user().username))||rname(S.userId),text:t};
+    sn.state=t;sn.by=S.userId;sn.at=note.at;
+    sn.notes=(sn.notes||[]).concat([note]).slice(-40);
+    S.snaps[id]=sn;
+    ev(id,"PGT note",true,"pgt",t);qSnap(id);save();
     setBusy(true,"Saving update…");
     Promise.resolve(flushPending()).finally(()=>setBusy(false));
   };
