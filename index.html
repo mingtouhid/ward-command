@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.5.1 security-outbox -->
+<!-- WARD COMMAND RELEASE: v87.5.2 drop-qsnap -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -731,7 +731,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.5.1 security-outbox -->
+<!-- WARD COMMAND RELEASE: v87.5.2 drop-qsnap -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1157,7 +1157,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.5.1";
+const APP_VERSION="8.7.5.2";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1300,8 +1300,7 @@ function queue(table,row){
   pending.push(op);
   persistOutbox();
 }
-function packPlan(sn){return (sn&&sn.plan)||""}function unpackPlan(s){const raw=String(s||"");const m=raw.match(/^PGTLOG:(\[[\s\S]*?\])\n?([\s\S]*)$/);if(m){try{return {notes:JSON.parse(m[1]),plan:m[2]||""}}catch(e){}}return {notes:[],plan:raw}}function qSnap(pid){const sn=S.snaps[pid]||{};queue("patient_snapshots",{id:pid,patient_id:pid,clinical_state:sn.state||"",risk_level:["low","moderate","high","critical"].includes(sn.risk)?sn.risk:"low",sleep_status:sn.sleep||"",watch_points:packWatch(sn),current_plan:packPlan(sn),tags:Array.isArray(sn.tags)?sn.tags:[],pgt_notes:Array.isArray(sn.notes)?sn.notes.slice(-40):[],updated_by:sn.by||S.userId||null,updated_at:sn.at||now()})}
-function qSnapField(pid,field,value){queue("snapshot_field",{id:pid+"|"+field,patient_id:pid,field:field,value:value==null?"":String(value),seen_version:(S.snaps[pid]&&S.snaps[pid].ver)||1,updated_at:now()})}
+function packPlan(sn){return (sn&&sn.plan)||""}function unpackPlan(s){const raw=String(s||"");const m=raw.match(/^PGTLOG:(\[[\s\S]*?\])\n?([\s\S]*)$/);if(m){try{return {notes:JSON.parse(m[1]),plan:m[2]||""}}catch(e){}}return {notes:[],plan:raw}}function qSnapField(pid,field,value){queue("snapshot_field",{id:pid+"|"+field,patient_id:pid,field:field,value:value==null?"":String(value),seen_version:(S.snaps[pid]&&S.snaps[pid].ver)||1,updated_at:now()})}
 function qSnapTag(pid,tag,op){queue("snapshot_tag",{id:pid+"|"+tag+"|"+op,patient_id:pid,tag:tag,op:op,updated_at:now()})}
 function qPgtNote(pid,note){queue("pgt_note",{id:note.id,note_id:note.id,patient_id:pid,text:note.text,byName:note.byName||"",at:note.at||now()})}
 function qRestrainToggle(pid,on,eventId,detail){queue("restrain_toggle",{id:eventId,event_id:eventId,patient_id:pid,on:!!on,detail:detail||"",at:now()})}
@@ -1834,8 +1833,6 @@ async function upsert(table,rows){
       ({error}=await sb.rpc("ward_upsert_handover_item",{p_session_token:sessionTok,p_row:row}));
     }else if(table==="tasks"){
       ({error}=await sb.rpc("ward_upsert_task",{p_session_token:sessionTok,p_row:row}));
-    }else if(table==="patient_snapshots"){
-      ({error}=await sb.rpc("ward_upsert_snapshot",{p_token:sessionTok,p_row:row}));
     }else if(table==="ward_sections"){
       ({error}=await sb.rpc("ward_upsert_section",{p_token:sessionTok,p_row:row}));
     }else if(table==="unit_consultants"){
@@ -2034,7 +2031,6 @@ async function cloudPush(includeEct){
   await step("patients",S.patients.map(p=>({id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,admitted_at:p.admittedAt||now(),active_status:p.status||"admitted",address:p.address||null,phone:p.phone||null,updated_by:S.userId||null})));
   await step("beds",S.beds.map(b=>({id:b.id,bed_number:b.no,section_id:b.sectionId,active:b.active!==false,current_patient_id:b.patientId||null})));
   await step("patient_bed_assignments",(S.assignments||[]).map(a=>({id:a.id,patient_id:a.patientId,bed_id:a.bedId,assigned_at:a.at||now(),released_at:a.released||null,assigned_by:a.by||S.userId||null})));
-  await step("patient_snapshots",Object.entries(S.snaps||{}).map(([pid,sn])=>({patient_id:pid,clinical_state:sn.state||"",risk_level:["low","moderate","high","critical"].includes(sn.risk)?sn.risk:"low",sleep_status:sn.sleep||"",watch_points:packWatch(sn),current_plan:sn.plan||"",updated_by:sn.by||S.userId||null,updated_at:sn.at||now()})));
   await step("medication_orders",(S.orders||[]).map(o=>({id:o.id,patient_id:o.pid,drug:o.drug,dose:o.dose,route:o.route||"PO",frequency:o.freq||"OD",scheduled_time:o.time||null,start_date:asDate(o.start)||asDate(now()),stop_date:asDate(o.stop),status:o.status||"active"})));
   await step("medication_doses",(S.doses||[]).filter(d=>d.oid&&d.pid).map(d=>({id:d.id,order_id:d.oid,patient_id:d.pid,scheduled_at:d.at||now(),status:d.status||"pending",given_by:d.by||null})));
   await step("tasks",(S.tasks||[]).map(x=>({id:x.id,patient_id:x.pid,title:x.title,detail:x.detail||"",priority:["stat","high","medium","low"].includes(x.pri)?x.pri:"high",status:x.status||"open",assigned_to:x.to||null,created_by:S.userId||null})));
@@ -3189,7 +3185,7 @@ async function admitCommit(id,p,bed,asg,hosp){setBusy(true);
     });
     if(!atomic.used){
       const hold=pending.slice(); pending.length=0;
-      qPatient(p);qSnap(id);qBed(bed);qAssign(asg);
+      qPatient(p);qSnapField(id,"state","Newly admitted.");qSnapField(id,"risk","moderate");qSnapField(id,"sleep","slept-well");qBed(bed);qAssign(asg);
       const ops=pending.splice(0); pending=hold.concat(pending);
       for(const op of ops) await upsert(op.table,[op.row]);
     }
