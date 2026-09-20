@@ -40,6 +40,6 @@
       "purpose": "maskable"
     }
   ],
-  "version": "87.5.2",
-  "build": "8.7.5.2 patch-only snapshots + hardened search_path"
+  "version": "87.5.3",
+  "build": "8.7.5.3 PGT chip + note no longer overwrites state"
 }
