@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: v87.4.63 snap-ui -->
+<!-- WARD COMMAND RELEASE: v87.4.65 risk-pill -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#eef2f7"/>
@@ -330,7 +330,15 @@ a{color:var(--teal2);text-decoration:none}
 
 
 .plist-grid{display:grid;grid-template-columns:1fr;gap:var(--gap)}
-.snap-cols{display:flex;flex-direction:column;gap:0}
+.snap-cols{display:grid;gap:12px;grid-template-columns:1fr;grid-template-areas:"id" "pgt" "crit" "med" "act"}
+.snap-identity{grid-area:id}
+.snap-current{grid-area:pgt}
+.snap-critical-status{grid-area:crit}
+.snap-med{grid-area:med}
+.snap-actions-card{grid-area:act}
+.snap-identity{position:relative;padding-bottom:44px}
+.risk-toggle{position:absolute;right:14px;bottom:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:750;line-height:1;box-shadow:var(--shadow)}
+.risk-toggle.on{background:#fecaca;border-color:#f87171;color:#9f1239}
 .ward-wrap{display:flex;flex-direction:column;gap:8px}
 .ward-board{background:var(--panel2);border:1px dashed var(--line);border-radius:16px;padding:12px;min-height:140px}
 .ward-block{margin-bottom:14px}
@@ -368,8 +376,9 @@ a{color:var(--teal2);text-decoration:none}
    so split-screen / iPad Stage Manager still get the right number of cards. */
 @container ward (min-width: 620px){
   .plist-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,max(240px,28cqi)),1fr))}
-  .snap-cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;align-items:stretch}
-  .snap-cols > .card{margin:0;padding:18px 20px;min-height:180px;display:flex;flex-direction:column}
+  .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;
+    grid-template-areas:"id pgt" "crit med" "act med"}
+  .snap-cols > .card{margin:0;padding:18px 20px;min-height:0;display:flex;flex-direction:column}
   .snap-cols .bedno{font-size:clamp(20px,2.6cqi,28px)}
   .snap-cols h2{font-size:clamp(20px,2.4cqi,26px);font-weight:700}
   .snap-cols .sm{font-size:15px;line-height:1.45}
@@ -382,8 +391,9 @@ a{color:var(--teal2);text-decoration:none}
 }
 @container ward (min-width: 980px){
   .plist-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
-  .snap-cols{grid-template-columns:1fr 1fr;gap:18px}
-  .snap-cols > .card{padding:22px 24px;min-height:210px;border-radius:24px}
+  .snap-cols{grid-template-columns:1fr 1fr;gap:18px;align-items:start;
+    grid-template-areas:"id pgt" "crit med" "act med"}
+  .snap-cols > .card{padding:22px 24px;min-height:0;border-radius:24px}
 }
 @media (orientation: landscape){
   .app{max-width:none;width:100%;margin:0}
@@ -415,7 +425,8 @@ a{color:var(--teal2);text-decoration:none}
   .fab{right:16px;bottom:16px}
   .sheet .box{max-width:560px}
   .top h1{font-size:16px}
-  .snap-cols{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,1fr);gap:12px;align-items:start}
+  .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;
+    grid-template-areas:"id pgt" "crit med" "act med"}
   .more-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 }
 .seg{display:flex;gap:6px;margin:0 0 10px}
@@ -676,7 +687,8 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 @media (orientation: landscape) and (min-width:640px){
   .home-split{display:grid;grid-template-columns:minmax(220px,.9fr) minmax(220px,1.1fr);gap:12px;align-items:stretch}
   .plist-grid{grid-template-columns:1fr 1fr}
-  .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;
+    grid-template-areas:"id pgt" "crit med" "act med"}
 }
 
 
@@ -690,12 +702,19 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 .hero-ward span{font-size:clamp(12px,1.55cqi,16px)}
 .hero-today-stats{margin-top:auto}
 @media (min-width:760px){
-  .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
-  .snap-identity{grid-column:1;grid-row:1}
-  .snap-current{grid-column:2;grid-row:1}
-  .snap-critical-status{grid-column:1;grid-row:2}
-  .snap-med{grid-column:2;grid-row:2 / span 2}
-  .snap-actions-card{grid-column:1;grid-row:3}
+  .snap-cols{
+    display:grid;gap:12px;align-items:start;
+    grid-template-columns:1fr 1fr;
+    grid-template-areas:
+      "id pgt"
+      "crit med"
+      "act med";
+  }
+  .snap-identity{grid-area:id}
+  .snap-current{grid-area:pgt}
+  .snap-critical-status{grid-area:crit}
+  .snap-med{grid-area:med}
+  .snap-actions-card{grid-area:act}
   .ect-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .app{max-width:none;width:100%;margin:0}
   .nav-in{max-width:none;width:100%;margin:0;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}
@@ -704,7 +723,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<!-- WARD COMMAND RELEASE: v87.4.63 snap-ui -->
+<!-- WARD COMMAND RELEASE: v87.4.65 risk-pill -->
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -1130,7 +1149,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="8.7.4.63";
+const APP_VERSION="8.7.4.65";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2349,7 +2368,7 @@ function snapView(){
   return `<button class="back" onclick="back()">← Back</button>
     <div class="snap-cols">
     <div class="card snap-identity">
-      <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span>${(sn.risk==="high"||sn.risk==="critical")?`<span class="${rcls("high")}">high</span>`:""}${ectPlan(p.id)?' <span class="badge r-high">ECT</span>':""}</span></div>
+      <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span>${ectPlan(p.id)?'<span class="badge r-high">ECT</span>':""}${(sn.risk==="high"||sn.risk==="critical")?` <span class="${rcls("high")}">high</span>`:""}</span></div>
       <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}</h2>
       <p class="tiny" style="margin-top:4px">${p.age}${p.sex} · ${esc(p.hospitalNo||p.code)}</p>
       ${(p.address||p.phone)?`<p class="tiny" style="margin-top:4px">${p.address?esc(p.address):""}${p.address&&p.phone?" · ":""}${p.phone?esc(p.phone):""}</p>`:""}
@@ -2359,7 +2378,6 @@ function snapView(){
         ${(()=>{const st=(S.obsStays||[]).filter(s=>s.pid===p.id).sort((a,b)=>new Date(b.at||0)-new Date(a.at||0))[0];return st?`<div><b>Observed</b>${fmt(st.at)}</div>`:""})()}
       </div>
       <p class="sm" style="margin-top:4px"><b>Diagnosis</b><br>${esc(p.diagnosis)}</p>
-      ${canWrite()?`<div class="btns" style="margin-top:10px;grid-template-columns:1fr"><button class="btn sm danger" onclick="criticalStatusForm('${p.id}')">Critical</button></div>`:""}
       ${(p.status==="observation")?`<div class="card" style="margin:10px 0 0;padding:10px">
         <p class="tiny">UNDER OBSERVATION</p>
         ${canWrite()?`<div class="btns" style="margin-top:8px">
@@ -2371,6 +2389,7 @@ function snapView(){
       </div>`:""}
 
       ${tagHtml(p)}
+      ${canWrite()?`<button type="button" class="risk-toggle ${(sn.risk==="high"||sn.risk==="critical")?"on":""}" onclick="toggleHighRisk('${p.id}')">High risk</button>`:""}
     </div>
     <div class="card snap-current">
       <p class="tiny">PGT-NOTE</p>
@@ -2379,7 +2398,7 @@ function snapView(){
       </label>
       <div class="btns" style="margin-top:6px;gap:6px;flex-wrap:wrap">
         <button class="btn sm" onclick="saveLine('${p.id}')">Save</button>
-        <button class="btn sm ${(sn.risk==="high"||sn.risk==="critical")?"danger":"ghost"}" onclick="toggleHighRisk('${p.id}')">${(sn.risk==="high"||sn.risk==="critical")?"High risk on":"High risk"}</button>
+        <button class="btn sm danger" onclick="criticalStatusForm('${p.id}')">Critical</button>
         <button class="btn sm ghost" onclick="openPgtHistory('${p.id}')">History</button>
       </div>
       ${pgtNotePreview(p.id)}
