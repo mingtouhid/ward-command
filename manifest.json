@@ -2,7 +2,7 @@
   "id": ".",
   "name": "Ward Command",
   "short_name": "Ward",
-  "description": "Psychiatry ward command centre for residents \u2014 beds, snapshots, handover, ECT.",
+  "description": "Psychiatry ward command centre for residents — beds, snapshots, handover, ECT.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -40,6 +40,6 @@
       "purpose": "maskable"
     }
   ],
-  "version": "87.5.4",
-  "build": "8.7.5.4 paper UI + more-tile type"
+  "version": "87.5.7",
+  "build": "8.7.5.7 report skips observation-only"
 }
