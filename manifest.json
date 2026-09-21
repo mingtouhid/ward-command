@@ -2,13 +2,13 @@
   "id": ".",
   "name": "Ward Command",
   "short_name": "Ward",
-  "description": "Psychiatry ward command centre for residents \u2014 beds, snapshots, handover, ECT.",
+  "description": "Psychiatry ward command centre for residents — beds, snapshots, handover, ECT.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0b1220",
-  "theme_color": "#0b1220",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
   "lang": "en",
   "categories": [
     "medical",
@@ -40,6 +40,6 @@
       "purpose": "maskable"
     }
   ],
-  "version": "87.5.7",
-  "build": "8.7.5.7 report skips observation-only"
+  "version": "87.5.10",
+  "build": "8.7.5.10 obs meds + spinner"
 }
