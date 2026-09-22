@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.2.6 med-sheet-fix -->
+<!-- WARD COMMAND RELEASE: R1.3.0 clinical-record -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1139,6 +1139,32 @@ html[data-theme="dark"] .notify-item.tone-slate .notify-head{background:linear-g
 .med-sec .tiny{margin:0 0 6px}
 .chart td{vertical-align:top}
 
+
+.record-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 12px}
+.record-list{position:relative;padding:0 0 24px}
+.rec-item{display:grid;grid-template-columns:16px 1fr;gap:10px;margin:0 0 10px}
+.rec-rail{position:relative}
+.rec-rail:before{content:"";position:absolute;left:6px;top:6px;bottom:-16px;width:2px;background:rgba(15,23,42,.08)}
+.rec-item:last-child .rec-rail:before{display:none}
+.rec-dot{width:12px;height:12px;border-radius:50%;margin-top:8px;background:#14b8a6;box-shadow:0 0 0 4px rgba(20,184,166,.12)}
+.rec-item.rec-med .rec-dot{background:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.12)}
+.rec-item.rec-ect .rec-dot{background:#7c3aed;box-shadow:0 0 0 4px rgba(124,58,237,.12)}
+.rec-item.rec-pgt .rec-dot{background:#0f766e;box-shadow:0 0 0 4px rgba(15,118,110,.12)}
+.rec-item.rec-crit .rec-dot{background:#e11d48;box-shadow:0 0 0 4px rgba(225,29,72,.12)}
+.rec-item.rec-obs .rec-dot{background:#d97706;box-shadow:0 0 0 4px rgba(217,119,6,.12)}
+.rec-item.rec-xfer .rec-dot{background:#0284c7;box-shadow:0 0 0 4px rgba(2,132,199,.12)}
+.rec-item.rec-dis .rec-dot{background:#334155;box-shadow:0 0 0 4px rgba(51,65,85,.12)}
+.rec-item.rec-restrain .rec-dot{background:#be123c;box-shadow:0 0 0 4px rgba(190,18,60,.12)}
+.rec-card{background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:16px;padding:12px 14px;box-shadow:0 8px 24px rgba(15,23,42,.04)}
+.rec-kicker{font-size:10px;letter-spacing:.12em;font-weight:700;color:#64748b;margin:0 0 4px}
+.rec-card h3{margin:0;font-size:15px;line-height:1.35}
+.rec-card .sm{margin:4px 0 0;white-space:pre-wrap}
+.rec-card .tiny{margin:8px 0 0}
+@media print{
+  .nav,.hdr,.back,.record-actions,button.back{display:none!important}
+  .rec-card{box-shadow:none;break-inside:avoid}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1571,7 +1597,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.2.6";
+const APP_VERSION="R1.3.0";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1995,7 +2021,7 @@ let navDir="fwd";
 let navAnim=false;
 let navScroll={};
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
-const PAGE_TAB={home:"home",patients:"patients",snap:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more"};
+const PAGE_TAB={home:"home",patients:"patients",snap:"patients",record:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more"};
 function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more")?tab:"home"}
 function syncRoute(){
   if(nav.stack.length){
@@ -3045,7 +3071,7 @@ function snapView(){
       </label>
       <div class="btns pgt-actions">
         <button class="btn sm" onclick="saveLine('${p.id}')">Save</button>
-        <button class="btn sm ghost" onclick="openPgtHistory('${p.id}')">History</button>
+        <button class="btn sm ghost" onclick="go('record','${p.id}')">History</button>
         <button class="btn sm danger pgt-critical" onclick="criticalStatusForm('${p.id}')">Update critical value</button>
       </div>
       ${pgtNotePreview(p.id)}
@@ -5348,6 +5374,140 @@ function pgtNotePreview(id){
   if(!last)return "";
   return `<p class="tiny" style="margin:10px 0 0">${esc(last.byName||rname(last.by))} · ${esc(stamp(last.at)||fmt(last.at))}</p>`;
 }
+
+function recKindLabel(k){
+  return ({admit:"ADMISSION",obs:"OBSERVATION",med:"MEDICATION",ect:"ECT",pgt:"PGT NOTE",crit:"CRITICAL",xfer:"TRANSFER",dis:"DISCHARGE",restrain:"RESTRAINT",handover:"HANDOVER",task:"TASK",note:"EVENT"}[k]||"EVENT");
+}
+function recCss(k){return ({admit:"admit",obs:"obs",med:"med",ect:"ect",pgt:"pgt",crit:"crit",xfer:"xfer",dis:"dis",restrain:"restrain"}[k]||"note")}
+function recActor(it){return it.byName||rname(it.by)||""}
+function recSkipEventTitle(title){
+  const s=(title||"").toLowerCase();
+  return /notification (dispatched|sent)/.test(s) || /^failed\b/.test(s) || /^admission notification|^discharge notification|^transfer notification|^ect notification|^task notification|^handover notification|^critical status update sent/.test(s);
+}
+function patientRecordItems(pid){
+  const p=patient(pid); if(!p) return [];
+  const items=[];
+  const seen=new Set();
+  const mark=function(title,at){
+    const key=String(title||"").toLowerCase().replace(/\s+/g," ")+"|"+String(at||"").slice(0,16);
+    if(seen.has(key)) return true;
+    seen.add(key); return false;
+  };
+  const add=function(it){
+    if(!it||!it.at) return;
+    if(mark(it.title,it.at)) return;
+    items.push(it);
+  };
+  (S.obsStays||[]).filter(s=>s.pid===pid).forEach(s=>{
+    add({kind:"obs",title:"Kept under observation",at:s.at,by:s.by,body:[s.reason,s.note].filter(Boolean).join(" · ")});
+    if(s.endedAt){
+      let title="Observation ended";
+      if(s.outcome==="admitted") title="Admitted from observation";
+      else if(s.outcome==="referred") title="Referred"+(s.referralTo?" to "+s.referralTo:"");
+      else if(s.outcome==="disposed") title="Disposed from observation";
+      else if(s.outcome) title="Observation ended · "+s.outcome;
+      add({kind:"obs",title:title,at:s.endedAt,by:s.endedBy,body:s.referralReason||""});
+    }
+  });
+  if(p.admittedAt && p.status!=="observation"){
+    const bits=[];
+    if(p.diagnosis) bits.push("Diagnosis: "+p.diagnosis);
+    if(p.consultant) bits.push("Consultant: "+p.consultant);
+    if(p.referredBy) bits.push("Source: "+p.referredBy);
+    if(p.reason) bits.push("Reason: "+p.reason);
+    if(p.address||p.phone) bits.push([p.address,p.phone].filter(Boolean).join(" · "));
+    add({kind:"admit",title:"Admission",at:p.admittedAt,by:p.by,body:bits.join("\n")});
+  }
+  (S.orders||[]).filter(o=>o.pid===pid && !isPrn(o)).forEach(o=>{
+    const label=[o.drug,o.dose,o.route||"PO",o.freq||"OD"].filter(Boolean).join(" · ");
+    add({kind:"med",title:"Medication started · "+(o.drug||""),at:o.start||o.at,by:o.by,body:label+"\nGiven as prescribed until paused or stopped."});
+    if(o.hold) add({kind:"med",title:"Medication paused · "+(o.drug||""),at:o.hold,body:label});
+    if(o.stop) add({kind:"med",title:"Medication stopped · "+(o.drug||""),at:o.stop,body:label});
+  });
+  (S.ect||[]).filter(e=>e.pid===pid).forEach(e=>{
+    add({kind:"ect",title:"ECT planned",at:e.at||e.nextAt,by:e.by,body:[e.indication, (e.sessionsDone?e.sessionsDone+" session(s) recorded":"")].filter(Boolean).join(" · ")});
+  });
+  (S.ectSessions||[]).filter(s=>s.pid===pid).forEach(s=>{
+    add({kind:"ect",title:"ECT session "+(s.sessionNumber||""),at:s.at,by:s.by,body:""});
+  });
+  pgtNotes(pid).forEach(n=>{
+    add({kind:"pgt",title:"PGT note",at:n.at,by:n.by,byName:n.byName,body:n.text||""});
+  });
+  (S.criticalStatusUpdates||[]).filter(x=>String(x.pid)===String(pid)).forEach(c=>{
+    add({kind:"crit",title:"Critical status",at:c.at||c.created_at||c.updated_at,by:c.by||c.actor,byName:c.byName||c.actorName,body:c.text||c.value||c.note||c.body||""});
+  });
+  if(p.dischargedAt){
+    const mode=p.dischargeMode||"";
+    const out=p.dischargeOutcome||"";
+    add({kind:"dis",title:"Discharge",at:p.dischargedAt,body:[mode,out].filter(Boolean).join(" · ")});
+  }
+  (S.events||[]).filter(e=>e.pid===pid).forEach(e=>{
+    if(recSkipEventTitle(e.title)) return;
+    const title=e.title||"Event";
+    const low=title.toLowerCase();
+    if(/^(started |stopped |paused |resumed |pgt note|ect planned|ect session|admitted from observation|under observation|kept under observation|observation ended|admission\b)/.test(low)) return;
+    let kind=e.kind||evKind(title);
+    if(/transfer/.test(low)) kind="xfer";
+    else if(/discharg/.test(low)) kind="dis";
+    else if(/restrain/.test(low)) kind="restrain";
+    else if(kind==="status") kind="crit";
+    add({kind:kind||"note",title:title,at:e.at,by:e.by,byName:e.actorName,body:e.detail||""});
+  });
+  items.sort((a,b)=>Date.parse(a.at||0)-Date.parse(b.at||0));
+  return items;
+}
+function recordItemHtml(it){
+  const who=recActor(it);
+  return `<div class="rec-item rec-${recCss(it.kind)}">
+    <div class="rec-rail"><div class="rec-dot"></div></div>
+    <div class="rec-card">
+      <p class="rec-kicker">${esc(recKindLabel(it.kind))}</p>
+      <h3>${esc(it.title||"")}</h3>
+      ${it.body?`<p class="sm">${esc(it.body)}</p>`:""}
+      <p class="tiny">${esc(who)}${who?" · ":""}${esc(stamp(it.at)||fmt(it.at)||"")}</p>
+    </div>
+  </div>`;
+}
+function recordView(){
+  const p=patient(route.id); if(!p) return `<div class="card">Not found.</div>`;
+  const b=bedObj(p.id);
+  const items=patientRecordItems(p.id);
+  return `<button class="back" onclick="back()">← Back</button>
+    <div class="record-head">
+      <div>
+        <h2 class="page-title">Clinical record</h2>
+        <p class="tiny" style="margin-top:2px">${esc(p.name)} · ${esc(b?b.no:"—")} · ${esc(p.hospitalNo||p.code||"")}</p>
+      </div>
+      <div class="record-actions"><button class="btn sm ghost" onclick="exportPatientRecord('${p.id}')">Export PDF</button></div>
+    </div>
+    ${items.length?`<div class="record-list">${items.map(recordItemHtml).join("")}</div>`:`<div class="card"><p class="sm">No clinical events recorded yet.</p></div>`}`;
+}
+function exportPatientRecord(pid){
+  const p=patient(pid); if(!p) return;
+  const b=bedObj(pid);
+  const items=patientRecordItems(pid);
+  const rows=items.map(it=>{
+    const who=recActor(it);
+    return `<div style="border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin:0 0 8px">
+      <div style="font-size:10px;letter-spacing:.12em;font-weight:700;color:#64748b">${esc(recKindLabel(it.kind))}</div>
+      <div style="font-size:14px;font-weight:700;margin-top:2px">${esc(it.title||"")}</div>
+      ${it.body?`<div style="font-size:13px;margin-top:4px;white-space:pre-wrap">${esc(it.body)}</div>`:""}
+      <div style="font-size:11px;color:#64748b;margin-top:6px">${esc(who)}${who?" · ":""}${esc(stamp(it.at)||fmt(it.at)||"")}</div>
+    </div>`;
+  }).join("")||"<p>No events.</p>";
+  const w=window.open("","_blank","noopener,noreferrer");
+  if(!w){toast("Allow pop-ups to export the record.","bad");return;}
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Clinical record · ${esc(p.name)}</title>
+    <style>body{font-family:Inter,system-ui,sans-serif;color:#0f172a;padding:24px;max-width:720px;margin:0 auto}h1{font-size:20px;margin:0}p{margin:4px 0 16px;color:#64748b}</style>
+    </head><body>
+    <h1>Clinical record</h1>
+    <p>${esc(p.name)} · ${esc(p.age||"")}${esc(p.sex||"")} · ${esc(p.hospitalNo||p.code||"")} · Bed ${esc(b?b.no:"—")}<br>Ward Command · ${esc(APP_VERSION)}</p>
+    ${rows}
+    <script>setTimeout(function(){window.print()},250)<`+`/script>
+    </body></html>`);
+  w.document.close();
+}
+
 function openPgtHistory(id){
   const rows=pgtNotes(id);
   const body=rows.length?rows.map(n=>`<div class="card" style="padding:10px 12px;margin:0 0 8px">
@@ -6008,7 +6168,7 @@ function render(opts){
   const y=main?main.scrollTop:0;
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
-  const pages={home:homeView,patients:patientsView,snap:snapView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView};
+  const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView};
   syncRoute();
   el.innerHTML=shell((pages[route.page]||patientsView)());
   if(sessionTok&&!ui.notifyInboxLoading&&(!ui.notifyInboxLoadedAt||Date.now()-ui.notifyInboxLoadedAt>60000)){

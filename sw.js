@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-r1.2.6-boot";
+const VERSION = "ward-command-pwa-r1.3.0-record";
 const PRECACHE = [
   "./",
   "./index.html",
