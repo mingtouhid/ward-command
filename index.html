@@ -4414,6 +4414,16 @@ async function sendBroadcast(){
       p_patient_id:tag.id,p_patient_label:tag.label
     });
     if(error) throw error;
+    const nid=data&&data.notification_id;
+    if(nid){
+      try{
+        await fetch(S.supabaseUrl.replace(/\/$/,"")+"/functions/v1/dispatch-notification",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","apikey":S.supabaseAnonKey,"Authorization":"Bearer "+S.supabaseAnonKey},
+          body:JSON.stringify({notification_id:nid,session_token:sessionTok})
+        });
+      }catch(e){}
+    }
     ui.bcast={aud,text:""};
     await loadBroadcasts();
     toast("Broadcast sent","ok");
