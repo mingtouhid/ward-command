@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.2.3 tint-icons -->
+<!-- WARD COMMAND RELEASE: R1.2.4 med-fields -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1134,6 +1134,11 @@ html[data-theme="dark"] .notify-item.tone-slate .notify-head{background:linear-g
 .notify-head,.notify-body{display:block;width:100%;box-sizing:border-box;}
 .notify-head{border-radius:15px 15px 0 0;}
 
+
+.med-sec{margin:0 0 10px}
+.med-sec .tiny{margin:0 0 6px}
+.chart td{vertical-align:top}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1566,7 +1571,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.2";
+const APP_VERSION="R1.2.4";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1758,7 +1763,42 @@ function qTask(x){
   });
 }
 function qDose(d){if(!d||!d.oid)return;queue("medication_doses",{id:d.id,order_id:d.oid,patient_id:d.pid,scheduled_at:d.at||now(),status:d.status||"pending",given_by:d.by||S.userId||null,given_at:d.status==="given"?(d.givenAt||d.at||now()):null})}
-function qOrder(o){if(!o)return;queue("medication_orders",{id:o.id,patient_id:o.pid,drug:o.drug,dose:o.dose,route:o.route||"PO",frequency:o.freq||"OD",scheduled_time:o.time||null,start_date:asDate(o.start)||asDate(now()),stop_date:asDate(o.stop),status:o.status||"active",created_at:o.at||o.start||now(),updated_at:now()})}
+function qOrder(o){if(!o)return;queue("medication_orders",{id:o.id,patient_id:o.pid,drug:o.drug,dose:o.dose,route:o.route||"PO",frequency:o.freq||"OD",scheduled_time:o.time||null,start_date:asDate(o.start)||asDate(now()),stop_date:asDate(o.stop),status:o.status||"active",hold_at:o.hold||null,created_at:o.at||o.start||now(),updated_at:now()})}
+const MED_ROUTES=[["PO","PO"],["IM","IM"],["IV","IV"],["SC","SC"],["SL","SL"],["PR","PR"],["inhale","Inhale"],["topical","Topical"]];
+const MED_FREQS=[["OD","OD"],["BD","BD"],["TDS","TDS"],["QID","QID"],["HS","HS"],["SOS","SOS"],["PRN","PRN"],["weekly","Weekly"]];
+function medRowHtml(prefix,i,m){
+  m=m||{};
+  return `<div class="obs-med-block">
+      <div class="med-sec"><p class="tiny">DRUG + DOSE</p>
+        <div class="obs-med-grid">
+          <input id="${prefix}drug${i}" value="${esc(m.drug||"")}" placeholder="Drug" autocomplete="off"/>
+          <input id="${prefix}dose${i}" value="${esc(m.dose||"")}" placeholder="Dose" autocomplete="off"/>
+        </div>
+      </div>
+      <div class="med-sec"><p class="tiny">ROUTE</p>${picker(prefix+"route"+i,MED_ROUTES,m.route||"PO","Route")}</div>
+      <div class="med-sec"><p class="tiny">FREQUENCY</p>${picker(prefix+"freq"+i,MED_FREQS,m.freq||"OD","Frequency")}</div>
+    </div>`;
+}
+function readMedRows(prefix,list){
+  return (list||[]).map((m,i)=>{
+    const d=document.getElementById(prefix+"drug"+i);
+    const ds=document.getElementById(prefix+"dose"+i);
+    return {
+      drug:d?d.value:m.drug||"",
+      dose:ds?ds.value:m.dose||"",
+      route:val(prefix+"route"+i)||m.route||"PO",
+      freq:val(prefix+"freq"+i)||m.freq||"OD"
+    };
+  });
+}
+function commitOrders(pid,meds){
+  (meds||[]).filter(m=>(m.drug||"").trim()).forEach(m=>{
+    const ord={id:uid("o"),pid,drug:m.drug.trim(),dose:(m.dose||"").trim()||"—",route:(m.route||"PO").trim()||"PO",freq:(m.freq||"OD").trim()||"OD",time:"08:00",start:now(),stop:null,hold:null,status:"active"};
+    S.orders.unshift(ord);
+    ev(pid,"Started "+ord.drug+" "+ord.dose+" "+ord.route+" "+ord.freq,true,"med");
+    qOrder(ord);
+  });
+}
 function isPrn(o){return o&&!o.stop&&(o.status||"active")==="active"&&/prn/i.test(o.freq||"")}
 function prnOrders(pid){return (S.orders||[]).filter(o=>o.pid===pid&&isPrn(o))}
 function prnStats(oid){
@@ -2189,7 +2229,7 @@ async function doCloudPull(opts){
     if(S.snaps[pid]) nextSnaps[pid]=S.snaps[pid];
   });
   S.snaps=nextSnaps;
-  S.orders=orders.map(r=>({id:r.id,pid:r.patient_id,drug:r.drug,dose:r.dose,route:r.route,freq:r.frequency,time:r.scheduled_time||"08:00",start:r.start_date,stop:r.stop_date,status:r.status}));
+  S.orders=orders.map(r=>({id:r.id,pid:r.patient_id,drug:r.drug,dose:r.dose,route:r.route,freq:r.frequency,time:r.scheduled_time||"08:00",start:r.start_date,stop:r.stop_date,status:r.status,hold:r.hold_at||null}));
   S.doses=doses.map(r=>({id:r.id,oid:r.order_id,pid:r.patient_id,at:r.scheduled_at,status:r.status,by:r.given_by}));
   S.tasks=tasks.map(r=>({id:r.id,pid:r.patient_id,title:r.title,detail:r.detail||"",pri:r.priority,status:r.status,to:r.assigned_to||null,by:r.created_by||null,at:r.created_at||null,completedAt:r.completed_at||null}));
   S.handovers=handovers.map(r=>({id:r.id,from:r.from_id,to:r.to_id,shift:r.shift,status:r.status,at:r.created_at,ackBy:r.acknowledged_by||null,ackAt:r.acknowledged_at||null}));
@@ -3022,20 +3062,25 @@ function snapView(){
     <div class="card snap-med">
       <div class="row"><div><p class="tiny">MEDICATION CHART</p></div><span class="badge">${meds.filter(o=>!o.stop).length} active</span></div>
       <table class="chart">
-        <tr><th>Medication</th><th>Dose</th><th>Start</th><th>Stop</th></tr>
+        <tr><th>Drug + dose</th><th>Route</th><th>Freq</th><th>Status</th></tr>
         ${meds.map(o=>{
           const prn=isPrn(o);
           const ds=prn?prnStats(o.id):null;
+          const statusLine=o.stop
+            ? "Stopped · "+(stamp(o.stop)||fmt(o.stop))
+            : o.status==="held"
+              ? "Paused · "+(stamp(o.hold)||fmt(o.hold)||"")
+              : prn ? "PRN as needed" : "Ongoing since "+(fmt(o.start)||"");
           return `<tr class="${o.stop?"stopped":(o.status==="held"?"held":"")}">
-          <td><div class="med-primary">${esc(o.drug)}${o.status==="held"?" <span class='tiny'>held</span>":""}</div><div class="med-meta">${esc(o.route||"PO")} · ${esc(o.freq||"OD")}${ds&&ds.last?" · last "+rel(ds.last.at)+" · "+ds.today+" today":""}</div>
+          <td><div class="med-primary">${esc(o.drug)}</div><div class="med-meta">${esc(o.dose||"—")}${ds&&ds.last?" · last "+rel(ds.last.at):""}</div>
             ${!o.stop&&canWrite()?`<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
-              ${o.status==="held"?`<button class="btn ghost sm" onclick="resumeMed('${o.id}')">Resume</button>`:`<button class="btn ghost sm" onclick="holdMed('${o.id}')">Hold</button>`}
+              ${o.status==="held"?`<button class="btn ghost sm" onclick="resumeMed('${o.id}')">Resume</button>`:`<button class="btn ghost sm" onclick="holdMed('${o.id}')">Pause</button>`}
               <button class="btn ghost sm" onclick="stopMed('${o.id}')">Stop</button>
             </div>`:""}
           </td>
-          <td>${esc(o.dose)}</td>
-          <td>${fmt(o.start)}</td>
-          <td>${o.stop?fmt(o.stop):o.status==="held"?"<span class='tiny'>held</span>":prn?"<span class='tiny'>PRN</span>":"<span class='tiny'>ongoing</span>"}</td>
+          <td>${esc(o.route||"PO")}</td>
+          <td>${esc(o.freq||"OD")}</td>
+          <td><span class="tiny">${statusLine}</span></td>
         </tr>`;
         }).join("")}
       </table>
@@ -3092,8 +3137,11 @@ function ectView(){
 
 
 
+function addCensusMed(){censusDraft();ui.census.meds=ui.census.meds||[];ui.census.meds.push({drug:"",dose:"",route:"PO",freq:"OD"});render()}
 function censusDraft(){
-  ui.census=ui.census||{reasons:[],treat:["conservative"],mode:"advice",outcome:"improved"};
+  ui.census=ui.census||{reasons:[],treat:["conservative"],mode:"advice",outcome:"improved",meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]};
+  if(!ui.census.meds) ui.census.meds=[{drug:"",dose:"",route:"PO",freq:"OD"}];
+  ui.census.meds=readMedRows("a",ui.census.meds);
   const g=id=>document.getElementById(id);
   if(g("ahosp")) ui.census.hosp=g("ahosp").value;
   if(g("aname")) ui.census.name=g("aname").value;
@@ -3183,11 +3231,7 @@ function obsDraft(){
   if(g("ophone")) ui.obs.phone=g("ophone").value;
   if(g("odx")) ui.obs.dx=g("odx").value;
   if(g("obed")||(ui.fields&&ui.fields.obed!=null)) ui.obs.bed=val("obed")||ui.obs.bed;
-  (ui.obs.meds||[]).forEach((m,i)=>{
-    const d=document.getElementById("odrug"+i), ds=document.getElementById("odose"+i);
-    const rt=document.getElementById("oroute"+i), fr=document.getElementById("ofreq"+i);
-    if(d) m.drug=d.value; if(ds) m.dose=ds.value; if(rt) m.route=rt.value; if(fr) m.freq=fr.value;
-  });
+  ui.obs.meds=readMedRows("o",ui.obs.meds||[{drug:"",dose:"",route:"PO",freq:"OD"}]);
 }
 function addObsMed(){obsDraft();ui.obs.meds=ui.obs.meds||[];ui.obs.meds.push({drug:"",dose:"",route:"PO",freq:"OD"});render()}
 function observeView(){
@@ -3223,14 +3267,7 @@ function observeView(){
       <label class="field"><span>Provisional diagnosis</span><input id="odx" value="${esc(d.dx||"")}" placeholder="Working diagnosis"/></label>
       <label class="field"><span>Bed</span>${picker("obed",(empties.length?empties.map(b=>[b.id,b.no+" · "+((S.sections.find(s=>s.id===b.sectionId)||{}).name||"")]):[["","No empty bed"]]),d.bed||(empties[0]&&empties[0].id)||"","Bed")}</label>
       <p class="tiny" style="margin:10px 0 6px">MEDICATIONS</p>
-      ${meds.map((m,i)=>`<div class="obs-med-block">
-        <div class="obs-med-grid">
-          <input id="odrug${i}" value="${esc(m.drug||"")}" placeholder="Drug"/>
-          <input id="odose${i}" value="${esc(m.dose||"")}" placeholder="Dose"/>
-          <input id="oroute${i}" value="${esc(m.route||"PO")}" placeholder="Route"/>
-          <input id="ofreq${i}" value="${esc(m.freq||"OD")}" placeholder="Freq"/>
-        </div>
-      </div>`).join("")}
+      ${meds.map((m,i)=>medRowHtml("o",i,m)).join("")}
       <button class="btn ghost sm" type="button" onclick="obsDraft();addObsMed()">Add medication</button>
       <button class="btn block" style="margin-top:12px" ${empties.length?"":"disabled"} onclick="startObservation()">Keep under observation</button>
       <button class="btn ghost block" style="margin-top:8px" onclick="ui.obsForm=false;render()">Cancel</button>
@@ -3546,6 +3583,9 @@ function censusView(){
         <input id="bq" value="${esc(d.bq||"")}" placeholder="Search bed or ward" oninput="filterBedPills(this.value)" autocomplete="off"/>
       </label>
       <div class="pills" id="bedpills" style="margin:8px 0 12px">${bedPillsHtml(shown,d.bed,false)}</div>
+      <p class="tiny" style="margin:10px 0 6px">MEDICATIONS <em style="font-style:normal;opacity:.6">(optional)</em></p>
+      ${(d.meds&&d.meds.length?d.meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]).map((m,i)=>medRowHtml("a",i,m)).join("")}
+      <button class="btn ghost sm" type="button" onclick="addCensusMed()">Add medication</button>
       <button class="btn block" ${empties.length?"":"disabled"} onclick="censusDraft();admitFromCensus()">Admit to bed</button>
     </div>`;
 }
@@ -3609,6 +3649,8 @@ async function admitCommit(id,p,bed,asg,hosp){setBusy(true);
       for(const op of ops) await upsert(op.table,[op.row]);
     }
     ev(id,"Admitted to "+bed.no+(hosp?" · "+hosp:""),true,"note");
+    commitOrders(id,((ui.census||{}).meds||[]).filter(m=>(m.drug||"").trim()));
+    if(ui.census) ui.census.meds=[{drug:"",dose:"",route:"PO",freq:"OD"}];
     try{
       let result;
       if(atomic.used && atomic.data && atomic.data.notification_id){
@@ -5858,12 +5900,18 @@ function openMedForm(pid){
   if(!needWrite())return;
   ui.sheet=`<div class="sheet mid"><button class="mask" onclick="ui.sheet=null;render()"></button><div class="box">
     <div class="row"><b>Medication</b><button class="btn ghost sm" onclick="ui.sheet=null;render()">Close</button></div>
-    <label class="field"><span>Drug</span><input id="md"/></label>
-    <label class="field"><span>Dose / route / freq</span><input id="mds" placeholder="5 mg PO HS"/></label>
+    <div class="med-sec"><p class="tiny">DRUG + DOSE</p>
+      <div class="obs-med-grid">
+        <input id="md" placeholder="Drug" autocomplete="off"/>
+        <input id="mds" placeholder="Dose" autocomplete="off"/>
+      </div>
+    </div>
+    <div class="med-sec"><p class="tiny">ROUTE</p>${picker("mroute",MED_ROUTES,"PO","Route")}</div>
+    <div class="med-sec"><p class="tiny">FREQUENCY</p>${picker("mfreq",MED_FREQS,"OD","Frequency")}</div>
     <button class="btn block" onclick="addMed('${pid}')">Start today</button>
     <h2 class="sec">Stop an ongoing drug</h2>
     ${S.orders.filter(o=>o.pid===pid&&!o.stop).map(o=>`<div style="display:flex;gap:6px;margin-bottom:6px">
-      ${o.status==="held"?`<button class="btn ghost block" onclick="resumeMed('${o.id}')">Resume ${esc(o.drug)}</button>`:`<button class="btn ghost block" onclick="holdMed('${o.id}')">Hold ${esc(o.drug)}</button>`}
+      ${o.status==="held"?`<button class="btn ghost block" onclick="resumeMed('${o.id}')">Resume ${esc(o.drug)}</button>`:`<button class="btn ghost block" onclick="holdMed('${o.id}')" >Pause ${esc(o.drug)}</button>`}
       <button class="btn ghost block" onclick="stopMed('${o.id}')">Stop</button>
     </div>`).join("")}
   </div></div>`;
@@ -5871,10 +5919,12 @@ function openMedForm(pid){
 }
 function addMed(pid){
   const drug=val("md").trim();if(!drug)return;
-  const parts=val("mds").trim()||"—";
+  const dose=val("mds").trim()||"—";
+  const route=val("mroute")||"PO";
+  const freq=val("mfreq")||"OD";
   const run=()=>{
-    const ord={id:uid("o"),pid,drug,dose:parts,route:"PO",freq:"OD",time:"08:00",start:now(),stop:null,status:"active"};S.orders.unshift(ord);
-    ev(pid,"Started "+drug,true,"med");qOrder(ord);ui.sheet=null;save();
+    const ord={id:uid("o"),pid,drug,dose,route,freq,time:"08:00",start:now(),stop:null,hold:null,status:"active"};S.orders.unshift(ord);
+    ev(pid,"Started "+drug+" "+dose+" "+route+" "+freq,true,"med");qOrder(ord);ui.sheet=null;save();
     setBusy(true,"Saving medication…");
     Promise.resolve(flushPending()).finally(()=>setBusy(false));
   };
@@ -5888,7 +5938,7 @@ function stopMed(id){
 }
 function holdMed(id){
   const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;
-  ui.confirm={fn:"holdMed",id,title:"Hold medication",ok:"Hold",danger:false,body:"Hold "+(o.drug||"this drug")+" temporarily? You can resume it later."};
+  ui.confirm={fn:"holdMed",id,title:"Pause medication",ok:"Pause",danger:false,body:"Pause "+(o.drug||"this drug")+"? It stays on the chart until you resume or stop it."};
   render();
 }
 function resumeMed(id){
@@ -5897,7 +5947,7 @@ function resumeMed(id){
   render();
 }
 function stopMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o)return;o.stop=now();o.status="stopped";o.hold=null;ev(o.pid,"Stopped "+o.drug,true,"med");qOrder(o);ui.sheet=null;save();render()}
-function holdMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="held";o.hold=now();ev(o.pid,"Held "+o.drug,true,"med");qOrder(o);ui.sheet=null;save();render()}
+function holdMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="held";o.hold=now();ev(o.pid,"Paused "+o.drug,true,"med");qOrder(o);ui.sheet=null;save();render()}
 function resumeMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="active";o.hold=null;ev(o.pid,"Resumed "+o.drug,true,"med");qOrder(o);ui.sheet=null;save();render()}
 
 let renderHeld=false;
