@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.0 bdft-pages -->
+<!-- WARD COMMAND RELEASE: R1.1 broadcast -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1063,6 +1063,20 @@ html[data-theme="light"] .about-dev{color:#0f172a}
 html[data-theme="light"] .about-ver{color:#0e7490}
 html[data-theme="light"] .about-kicker{color:#0f766e}
 
+
+.bcast-compose{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-card,20px);padding:14px;margin:0 0 16px;box-shadow:var(--shadow)}
+.bcast-aud{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:0 0 12px}
+.bcast-aud .seg-btn,.seg-btn{
+  border:1px solid var(--line);background:var(--ghost);color:var(--ink);
+  border-radius:12px;padding:10px 8px;font-size:13px;font-weight:650
+}
+.bcast-aud .seg-btn.on{background:var(--teal);color:var(--btn-ink);border-color:var(--teal)}
+.bcast-compose textarea{min-height:120px;width:100%;margin:0 0 8px}
+.bcast-msg{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 8px}
+.bcast-msg.mine{border-color:color-mix(in srgb,var(--teal) 40%,var(--line))}
+.bcast-body{margin:8px 0;font-size:15px;line-height:1.4;white-space:pre-wrap}
+.bcast-chip{display:inline-flex;margin:6px 0 0;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;background:color-mix(in srgb,var(--teal) 16%,transparent);color:var(--ink);border:1px solid var(--teal)}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1188,13 +1202,14 @@ function notifyPrefs(){
       handovers:p.handovers!==false,
       ect:p.ect!==false,
       clinical:p.clinical!==false,
+      broadcasts:p.broadcasts!==false,
       sound:p.sound===true,
       vapidPublicKey:VAPID_PUBLIC_KEY
     };
-  }catch(e){return {enabled:false,tasks:true,handovers:true,ect:true,clinical:true,sound:false,vapidPublicKey:VAPID_PUBLIC_KEY}}
+  }catch(e){return {enabled:false,tasks:true,handovers:true,ect:true,clinical:true,broadcasts:true,sound:false,vapidPublicKey:VAPID_PUBLIC_KEY}}
 }
 function saveNotifyPrefs(p){
-  const n={enabled:!!p.enabled,tasks:p.tasks!==false,handovers:p.handovers!==false,ect:p.ect!==false,clinical:p.clinical!==false,sound:!!p.sound,vapidPublicKey:VAPID_PUBLIC_KEY};
+  const n={enabled:!!p.enabled,tasks:p.tasks!==false,handovers:p.handovers!==false,ect:p.ect!==false,clinical:p.clinical!==false,broadcasts:p.broadcasts!==false,sound:!!p.sound,vapidPublicKey:VAPID_PUBLIC_KEY};
   try{localStorage.setItem(NOTIFY_KEY,JSON.stringify(n))}catch(e){}
   return n;
 }
@@ -1208,6 +1223,7 @@ async function loadServerNotifyPrefs(){
     p.handovers=data.handovers!==false;
     p.ect=data.ect!==false;
     p.clinical=data.clinical_alerts!==false;
+    p.broadcasts=data.broadcasts!==false;
     p.sound=data.alert_sound===true;
     saveNotifyPrefs(p);
     return p;
@@ -1221,7 +1237,8 @@ async function saveServerNotifyPrefs(p){
     p_tasks:p.tasks!==false,
     p_handovers:p.handovers!==false,
     p_ect:p.ect!==false,
-    p_alert_sound:p.sound===true
+    p_alert_sound:p.sound===true,
+    p_broadcasts:p.broadcasts!==false
   });
   if(error)throw error;
   if(!data||data.ok!==true)throw new Error("Notification preferences were not saved on the server.");
@@ -1492,7 +1509,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.0";
+const APP_VERSION="R1.1";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -1881,7 +1898,7 @@ let navDir="fwd";
 let navAnim=false;
 let navScroll={};
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
-const PAGE_TAB={home:"home",patients:"patients",snap:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more"};
+const PAGE_TAB={home:"home",patients:"patients",snap:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more"};
 function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more")?tab:"home"}
 function syncRoute(){
   if(nav.stack.length){
@@ -1935,6 +1952,7 @@ function go(page,id){
   ui.sheet=null;
   ui.panel=null;
   ui.giveOpen=false;
+  if(page!=="broadcast") ui._bcastHydrated=0;
   if(ui.busy){ui.busy=false;ui.busyLabel="";}
   navDir="fwd";navAnim=true;
   syncRoute();
@@ -2549,6 +2567,7 @@ function ico(name){
     tasks:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="#2563eb"/><rect x="7" y="8" width="10" height="2" rx="1" fill="#dbeafe"/><rect x="7" y="12" width="7" height="2" rx="1" fill="#93c5fd"/><circle cx="16.2" cy="16.2" r="3.1" fill="#22c55e"/><path d="M14.8 16.2l.9.9 1.8-1.8" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>',
     activity:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="#0f766e"/><path d="M7 15.5l3-3.5 2.4 2.2 4.6-5.4" stroke="#99f6e4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16.8" cy="8.8" r="1.3" fill="#fbbf24"/></svg>',
     about:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 2.6l8.2 4.7v9.4L12 21.4 3.8 16.7V7.3L12 2.6z" fill="#0f172a" stroke="#22d3ee" stroke-width="1.5"/><circle cx="12" cy="10.2" r="2.1" fill="#22d3ee"/><path d="M8.6 16.2c.9-1.5 2.1-2.2 3.4-2.2s2.5.7 3.4 2.2" stroke="#67e8f9" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    broadcast:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#0f172a" stroke="#22d3ee" stroke-width="1.5"/><path d="M8 12.5c1.6 2 3.2 3 4 3s2.4-1 4-3" stroke="#67e8f9" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="9.2" r="1.5" fill="#22d3ee"/><path d="M6.2 9.2c.4-2 2.6-3.4 5.8-3.4s5.4 1.4 5.8 3.4" stroke="#22d3ee" stroke-width="1.3" stroke-linecap="round"/></svg>',
     theme:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#1e293b"/><path d="M12 5.2a6.8 6.8 0 1 0 6.8 6.8A5.2 5.2 0 0 1 12 5.2z" fill="#f8fafc"/></svg>',
     notify:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 4.2a5.2 5.2 0 0 1 5.2 5.2c0 3.1 1.1 4.6 1.6 5.4H5.2c.5-.8 1.6-2.3 1.6-5.4A5.2 5.2 0 0 1 12 4.2z" fill="#38bdf8"/><path d="M9.6 17.4a2.4 2.4 0 0 0 4.8 0" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round"/></svg>',
     cloud:'<svg viewBox="0 0 24 24" fill="none"><path d="M8.2 17.4h8.1A3.7 3.7 0 0 0 20 13.8c0-1.8-1.3-3.3-3-3.6A5 5 0 0 0 7.4 11 3.6 3.6 0 0 0 8.2 17.4z" fill="#64748b"/></svg>',
@@ -2559,7 +2578,7 @@ function ico(name){
 }
 function shell(inner){
   const u=user();
-  const on=p=>route.page===p||(p==="patients"&&route.page==="snap")||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection"].includes(route.page))?"on":"";
+  const on=p=>route.page===p||(p==="patients"&&route.page==="snap")||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast"].includes(route.page))?"on":"";
   return `<header class="top"><div><p class="kicker">${greet()}</p><h1>${esc(S.unit.name)}</h1></div>
     <div class="who">${statusChip()}<b style="display:block;margin-top:4px">${esc(u.displayName)}</b></div></header>
     <main class="main">${inner}</main>
@@ -4339,6 +4358,115 @@ function aboutView(){
       </div>
     </div>`;
 }
+
+function broadcastAudience(){return (ui.bcast&&ui.bcast.aud)||"everyone";}
+function resolveBroadcastTag(text){
+  const raw=String(text||"");
+  const bedm=raw.match(/#([A-Za-z]{1,4}-?\d{1,3})\b/);
+  if(bedm){
+    const key=bedm[1].replace(/-/g,"").toUpperCase();
+    const bed=(S.beds||[]).find(b=>String(b.no||"").replace(/-/g,"").toUpperCase()===key || String(b.no||"").toUpperCase()===bedm[1].toUpperCase());
+    if(bed&&bed.patientId){
+      const p=patient(bed.patientId);
+      if(p) return {id:p.id,label:(bed.no||"")+" \u00b7 "+(p.name||"Patient")};
+    }
+  }
+  const namem=raw.match(/@([A-Za-z][A-Za-z .]{1,40})/);
+  if(namem){
+    const q=namem[1].trim().toLowerCase();
+    const p=(S.patients||[]).find(x=>(x.status==="admitted"||x.status==="observation") && String(x.name||"").toLowerCase().includes(q));
+    if(p){
+      const b=(S.beds||[]).find(x=>x.patientId===p.id);
+      return {id:p.id,label:(b?b.no+" \u00b7 ":"")+(p.name||"Patient")};
+    }
+  }
+  return {id:null,label:null};
+}
+async function loadBroadcasts(){
+  if(!sb||!sessionTok) return;
+  try{
+    const {data,error}=await sb.rpc("ward_broadcast_list",{p_session_token:sessionTok});
+    if(error) throw error;
+    S.broadcasts=(data&&data.rows)||[];
+  }catch(e){ /* keep last */ }
+}
+async function markBroadcastsRead(){
+  const mine=S.userId;
+  const ids=(S.broadcasts||[]).filter(m=>m.sender_id!==mine && !m.seen_by_me).map(m=>m.id);
+  if(!ids.length||!sb||!sessionTok) return;
+  try{
+    await sb.rpc("ward_broadcast_mark_read",{p_session_token:sessionTok,p_ids:ids});
+    (S.broadcasts||[]).forEach(m=>{if(ids.includes(m.id)) m.seen_by_me=true});
+  }catch(e){}
+}
+async function sendBroadcast(){
+  if(!needWrite())return;
+  const body=(ui.bcast&&ui.bcast.text||"").trim();
+  if(!body){toast("Write a message first","bad");return;}
+  if(body.length>400){toast("Keep it under 400 characters","bad");return;}
+  const aud=broadcastAudience();
+  const tag=resolveBroadcastTag(body);
+  const id=uid("bc");
+  setBusy(true,"Sending\u2026");
+  try{
+    const {data,error}=await sb.rpc("ward_broadcast_send",{
+      p_session_token:sessionTok,p_id:id,p_body:body,p_audience:aud,
+      p_patient_id:tag.id,p_patient_label:tag.label
+    });
+    if(error) throw error;
+    ui.bcast={aud,text:""};
+    await loadBroadcasts();
+    toast("Broadcast sent","ok");
+  }catch(e){toast(clinicianCopy?clinicianCopy(e.message||e): (e.message||"Could not send"),"bad");}
+  finally{setBusy(false);render();}
+}
+async function deleteBroadcast(id){
+  if(!needWrite())return;
+  setBusy(true,"Removing\u2026");
+  try{
+    const {error}=await sb.rpc("ward_broadcast_delete",{p_session_token:sessionTok,p_id:id});
+    if(error) throw error;
+    S.broadcasts=(S.broadcasts||[]).filter(m=>m.id!==id);
+    toast("Broadcast removed","ok");
+  }catch(e){toast(e.message||"Cannot delete","bad");}
+  finally{setBusy(false);render();}
+}
+function broadcastView(){
+  ui.bcast=ui.bcast||{aud:"everyone",text:""};
+  if(!ui._bcastHydrated){
+    ui._bcastHydrated=1;
+    loadBroadcasts().then(()=>{render();setTimeout(markBroadcastsRead,900)}).catch(()=>{});
+  }
+  const aud=broadcastAudience();
+  const seg=(id,lab)=>`<button class="seg-btn ${aud===id?"on":""}" onclick="ui.bcast.aud='${id}';render()">${lab}</button>`;
+  const list=(S.broadcasts||[]).slice();
+  const now=Date.now();
+  const cards=list.length?list.map(m=>{
+    const mine=m.sender_id===S.userId;
+    const age=now-new Date(m.created_at).getTime();
+    const canDel=mine && age<=5*60*1000;
+    const tag=m.patient_label?`<button class="bcast-chip" ${m.patient_id?`onclick="go('snap','${m.patient_id}')"`:""}>${esc(m.patient_label)}</button>`:"";
+    const seen=mine?`<span class="tiny">Seen \u00b7 ${Number(m.seen_count||0)}</span>`:"";
+    return `<div class="bcast-msg ${mine?"mine":""}">
+      <div class="row"><b>${esc(m.sender_name||"Resident")}</b><span class="tiny">${esc(rel(m.created_at))} \u00b7 ${esc(m.audience)}</span></div>
+      ${tag}
+      <p class="bcast-body">${esc(m.body)}</p>
+      <div class="row">${seen}${canDel?`<button class="btn ghost sm" onclick="deleteBroadcast('${m.id}')">Delete</button>`:""}</div>
+    </div>`;
+  }).join(""):`<p class="tiny" style="text-align:center;margin:18px 0">No broadcasts this shift.</p>`;
+  return `<button class="back" onclick="back()">\u2190 Back</button>
+    <h2 class="page-title">Broadcast</h2>
+    <div class="bcast-compose">
+      <div class="seg bcast-aud">${seg("residents","Residents")}${seg("faculty","Faculty")}${seg("everyone","Everyone")}</div>
+      <textarea id="bcasttxt" maxlength="400" placeholder="Write for the ward\u2026  Use #D-03 or @Name to tag a patient"
+        oninput="ui.bcast=ui.bcast||{};ui.bcast.text=this.value">${esc(ui.bcast.text||"")}</textarea>
+      <div class="row"><span class="tiny">${(ui.bcast.text||"").length}/400 \u00b7 #bed or @name</span></div>
+      <button class="btn block" onclick="sendBroadcast()">Send</button>
+    </div>
+    <p class="more-section">Inbox</p>
+    <div class="bcast-inbox">${cards}</div>`;
+}
+
 function moreView(){
   const cfg=canCfg(user().role);
   const row=(go,icon,title,tone,danger="")=>`<button class="more-row tone-${tone}" onclick="${go}">
@@ -4355,6 +4483,7 @@ function moreView(){
     ${row("go('ect')",ico("ect"),"ECT","violet")}
     ${row("go('tasks')",ico("tasks"),"Task board","blue")}
     ${row("go('activity')",ico("activity"),"Activity log","slate")}
+    ${canWrite()?row("go('broadcast')",ico("broadcast"),"Broadcast","cyan"):""}
     </div>
     <p class="more-section">Administration</p>
     <div class="more-grid">
@@ -4641,6 +4770,7 @@ function setupView(){
         ${notifyToggle("Tasks","Assigned tasks",np.tasks,"tasks")}
         ${notifyToggle("Handovers","Handover posts",np.handovers,"handovers")}
         ${notifyToggle("ECT","ECT plans and sessions",np.ect,"ect")}
+        ${notifyToggle("Broadcasts","Ward tannoy messages",np.broadcasts,"broadcasts")}
         ${notifyToggle("Sound","Play a tone on test alerts",np.sound,"sound")}
       </div>
       <div class="card notify-card">
@@ -5672,7 +5802,7 @@ function render(opts){
   const y=main?main.scrollTop:0;
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
-  const pages={home:homeView,patients:patientsView,snap:snapView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView};
+  const pages={home:homeView,patients:patientsView,snap:snapView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView};
   syncRoute();
   el.innerHTML=shell((pages[route.page]||patientsView)());
   const main2=document.querySelector(".main");
