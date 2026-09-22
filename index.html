@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.2 notify-tag -->
+<!-- WARD COMMAND RELEASE: R1.2.1 notify-layout -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1086,6 +1086,17 @@ html[data-theme="light"] .about-kicker{color:#0f766e}
 .bcast-suggest{margin:0 0 8px;border:1px solid var(--line);border-radius:14px;overflow:auto;max-height:168px;background:var(--panel)}
 .bcast-suggest button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;padding:10px 12px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink)}
 .bcast-suggest button:last-child{border-bottom:0}
+
+
+.who{display:flex;flex-direction:column;align-items:flex-end;gap:2px;max-width:46%}
+.who b{font-size:12px;font-weight:650;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who-tools{display:flex;align-items:center;gap:6px}
+.top-bell{width:34px;height:34px;border-radius:11px}
+.notify-tools{display:flex;gap:6px;flex:none}
+.notify-item{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 14px}
+.notify-when{margin:0;font-size:11px;color:var(--muted);font-weight:600}
+.notify-title{margin:0;font-size:15px;line-height:1.25}
+.notify-body{margin:0;color:var(--ink);opacity:.88}
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -4783,10 +4794,16 @@ function isLocalToday(iso){
   const n=new Date();
   return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();
 }
+function notifyDisplayTitle(n){
+  const kind=String(n.event_type||n.category||"").toLowerCase();
+  if(kind==="broadcast") return "Broadcast";
+  return String(n.title||"Ward notification").replace(/\s*·\s*(Everyone|Residents|Faculty)\s*$/i,"");
+}
 function notifyCardHtml(n){
   return `<button type="button" class="card notify-item" onclick="openNotification('${esc(n.id)}')">
-      <div class="row"><b>${esc(n.title||"Ward notification")}</b><span class="tiny">${esc(n.created_at?stamp(n.created_at):"—")}</span></div>
-      <p class="sm" style="margin:5px 0 0">${esc(n.body||"")}</p>
+      <p class="notify-when">${esc(n.created_at?stamp(n.created_at):"—")}</p>
+      <b class="notify-title">${esc(notifyDisplayTitle(n))}</b>
+      <p class="sm notify-body">${esc(n.body||"")}</p>
     </button>`;
 }
 function openNotification(id){
@@ -4847,12 +4864,10 @@ function setupView(){
       <div class="row"><h2>Notification settings</h2><button class="btn ghost sm" onclick="ui.notifySet=false;render()">Close</button></div>
       ${settings}
     </div></div>`:"";
-    return `<div class="row" style="align-items:flex-start;margin:0 0 12px">
-        <div style="flex:1;min-width:0">${back}<h2 class="page-title" style="margin:4px 0 0">Notifications</h2></div>
-        <button class="btn ghost sm" onclick="ui.notifySet=true;render()" aria-label="Notification settings">Settings</button>
-      </div>
+    return `${back}
+      <h2 class="page-title">Notifications</h2>
       <div class="card notify-card">
-        <div class="row"><div><p class="tiny">INBOX</p></div><button class="btn ghost sm" onclick="loadNotificationInbox()">Refresh</button></div>
+        <div class="row"><p class="tiny">INBOX</p><div class="notify-tools"><button class="btn ghost sm" onclick="loadNotificationInbox()">Refresh</button><button class="btn ghost sm" onclick="ui.notifySet=true;render()">Settings</button></div></div>
         <div style="margin-top:10px">${inboxHtml}</div>
         ${ui.notifyInboxError?`<p class="tiny" style="margin-top:8px">${esc(ui.notifyInboxError)}</p>`:""}
       </div>${setSheet}`;
