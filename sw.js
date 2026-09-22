@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-r1.1-push";
+const VERSION = "ward-command-pwa-r1.2-notify";
 const PRECACHE = [
   "./",
   "./index.html",
