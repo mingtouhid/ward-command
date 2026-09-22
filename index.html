@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.2.1 notify-layout -->
+<!-- WARD COMMAND RELEASE: R1.2.2 header-cards -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1097,6 +1097,28 @@ html[data-theme="light"] .about-kicker{color:#0f766e}
 .notify-when{margin:0;font-size:11px;color:var(--muted);font-weight:600}
 .notify-title{margin:0;font-size:15px;line-height:1.25}
 .notify-body{margin:0;color:var(--ink);opacity:.88}
+
+
+.who-inline{font-weight:700;letter-spacing:.04em;color:var(--ink);text-transform:none}
+.kicker .who-inline{margin-left:6px}
+.notify-item{width:100%;text-align:left;margin-top:8px;padding:0;overflow:hidden;border-radius:16px;border:1px solid var(--line);background:var(--panel)}
+.notify-head{padding:10px 14px 8px}
+.notify-item.tone-teal .notify-head{background:linear-gradient(90deg,#99f6e4,#ccfbf1)}
+.notify-item.tone-violet .notify-head{background:linear-gradient(90deg,#ddd6fe,#ede9fe)}
+.notify-item.tone-amber .notify-head{background:linear-gradient(90deg,#fde68a,#fef3c7)}
+.notify-item.tone-blue .notify-head{background:linear-gradient(90deg,#bfdbfe,#dbeafe)}
+.notify-item.tone-rose .notify-head{background:linear-gradient(90deg,#fecaca,#fee2e2)}
+.notify-item.tone-slate .notify-head{background:linear-gradient(90deg,#e2e8f0,#f1f5f9)}
+html[data-theme="dark"] .notify-item.tone-teal .notify-head{background:linear-gradient(90deg,#134e4a,#115e59)}
+html[data-theme="dark"] .notify-item.tone-violet .notify-head{background:linear-gradient(90deg,#4c1d95,#5b21b6)}
+html[data-theme="dark"] .notify-item.tone-amber .notify-head{background:linear-gradient(90deg,#78350f,#92400e)}
+html[data-theme="dark"] .notify-item.tone-blue .notify-head{background:linear-gradient(90deg,#1e3a8a,#1d4ed8)}
+html[data-theme="dark"] .notify-item.tone-rose .notify-head{background:linear-gradient(90deg,#7f1d1d,#991b1b)}
+html[data-theme="dark"] .notify-item.tone-slate .notify-head{background:linear-gradient(90deg,#1e293b,#334155)}
+.notify-when{margin:0;font-size:11px;color:var(--muted);font-weight:600}
+.notify-title{margin:4px 0 0;font-size:15px;font-weight:750;line-height:1.25;color:var(--ink)}
+.notify-by{font-weight:600;color:var(--muted);font-size:13px}
+.notify-body{margin:0;padding:12px 14px 14px;font-size:14px;line-height:1.4}
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -2600,11 +2622,8 @@ function ico(name){
 function shell(inner){
   const u=user();
   const on=p=>route.page===p||(p==="patients"&&route.page==="snap")||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast"].includes(route.page))?"on":"";
-  return `<header class="top"><div><p class="kicker">${greet()}</p><h1>${esc(S.unit.name)}</h1></div>
-    <div class="who">
-      <div class="who-tools">${statusChip()}<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications">${ico("notify")}${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button></div>
-      <b style="display:block;margin-top:4px">${esc(u.displayName)}</b>
-    </div></header>
+  return `<header class="top"><div><p class="kicker">${greet()} <span class="who-inline">${esc(u.displayName)}</span></p><h1>${esc(S.unit.name)}</h1></div>
+    <div class="who-tools">${statusChip()}<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications">${ico("notify")}${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button></div></header>
     <main class="main">${inner}</main>
     
     <nav class="nav"><div class="nav-in">
@@ -4799,11 +4818,31 @@ function notifyDisplayTitle(n){
   if(kind==="broadcast") return "Broadcast";
   return String(n.title||"Ward notification").replace(/\s*·\s*(Everyone|Residents|Faculty)\s*$/i,"");
 }
+function notifyTone(n){
+  const k=String(n.event_type||n.category||"").toLowerCase();
+  if(k==="broadcast") return "teal";
+  if(k==="ect") return "violet";
+  if(k==="handover") return "amber";
+  if(k==="task") return "blue";
+  if(k==="restrain") return "rose";
+  if(k==="critical_status_update") return "rose";
+  return "slate";
+}
+function notifyActorName(n){
+  if(n.actor_name) return n.actor_name;
+  const id=n.actor_id;
+  if(!id) return "";
+  const r=(S.residents||[]).find(x=>x.id===id);
+  return r&& (r.displayName||r.name||r.display_name) || "";
+}
 function notifyCardHtml(n){
-  return `<button type="button" class="card notify-item" onclick="openNotification('${esc(n.id)}')">
-      <p class="notify-when">${esc(n.created_at?stamp(n.created_at):"—")}</p>
-      <b class="notify-title">${esc(notifyDisplayTitle(n))}</b>
-      <p class="sm notify-body">${esc(n.body||"")}</p>
+  const by=notifyActorName(n);
+  return `<button type="button" class="notify-item tone-${notifyTone(n)}" onclick="openNotification('${esc(n.id)}')">
+      <div class="notify-head">
+        <p class="notify-when">${esc(n.created_at?stamp(n.created_at):"—")}</p>
+        <p class="notify-title">${esc(notifyDisplayTitle(n))}${by?` <span class="notify-by">— By ${esc(by)}</span>`:""}</p>
+      </div>
+      <p class="notify-body">${esc(n.body||"")}</p>
     </button>`;
 }
 function openNotification(id){
