@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.1 broadcast -->
+<!-- WARD COMMAND RELEASE: R1.2 notify-tag -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1077,6 +1077,16 @@ html[data-theme="light"] .about-kicker{color:#0f766e}
 .bcast-body{margin:8px 0;font-size:15px;line-height:1.4;white-space:pre-wrap}
 .bcast-chip{display:inline-flex;margin:6px 0 0;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;background:color-mix(in srgb,var(--teal) 16%,transparent);color:var(--ink);border:1px solid var(--teal)}
 
+
+.who-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.top-bell{position:relative;width:36px;height:36px;border-radius:12px;border:1px solid var(--line);background:var(--panel);display:flex;align-items:center;justify-content:center;padding:0}
+.top-bell svg{width:18px;height:18px}
+.top-bell-n{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.notify-item{width:100%;text-align:left;margin-top:7px}
+.bcast-suggest{margin:0 0 8px;border:1px solid var(--line);border-radius:14px;overflow:auto;max-height:168px;background:var(--panel)}
+.bcast-suggest button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;padding:10px 12px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink)}
+.bcast-suggest button:last-child{border-bottom:0}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1509,7 +1519,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.1";
+const APP_VERSION="R1.2";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2580,7 +2590,10 @@ function shell(inner){
   const u=user();
   const on=p=>route.page===p||(p==="patients"&&route.page==="snap")||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast"].includes(route.page))?"on":"";
   return `<header class="top"><div><p class="kicker">${greet()}</p><h1>${esc(S.unit.name)}</h1></div>
-    <div class="who">${statusChip()}<b style="display:block;margin-top:4px">${esc(u.displayName)}</b></div></header>
+    <div class="who">
+      <div class="who-tools">${statusChip()}<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications">${ico("notify")}${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button></div>
+      <b style="display:block;margin-top:4px">${esc(u.displayName)}</b>
+    </div></header>
     <main class="main">${inner}</main>
     
     <nav class="nav"><div class="nav-in">
@@ -4360,6 +4373,32 @@ function aboutView(){
 }
 
 function broadcastAudience(){return (ui.bcast&&ui.bcast.aud)||"everyone";}
+function broadcastSuggest(text){
+  const m=String(text||"").match(/(^|\s)([#@])([A-Za-z0-9][A-Za-z0-9 .\-]{0,24})$/);
+  if(!m) return [];
+  const kind=m[2], q=m[3].trim().toLowerCase();
+  if(!q) return [];
+  if(kind==="#"){
+    return (S.beds||[]).filter(b=>b.active!==false && String(b.no||"").toLowerCase().includes(q))
+      .slice(0,8).map(b=>{
+        const p=b.patientId?patient(b.patientId):null;
+        return {kind:"#", token:String(b.no), pid:p&&p.id||null, label:b.no+(p?" · "+p.name:" · empty")};
+      });
+  }
+  return (S.patients||[]).filter(p=>(p.status==="admitted"||p.status==="observation") && String(p.name||"").toLowerCase().includes(q))
+    .slice(0,8).map(p=>{
+      const b=(S.beds||[]).find(x=>x.patientId===p.id);
+      return {kind:"@", token:p.name, pid:p.id, label:(b?b.no+" · ":"")+p.name};
+    });
+}
+function pickBroadcastTag(kind,token,pid,label){
+  const t=(ui.bcast&&ui.bcast.text)||"";
+  ui.bcast=ui.bcast||{};
+  ui.bcast.text=t.replace(/(^|\s)([#@])([A-Za-z0-9][A-Za-z0-9 .\-]{0,24})$/, `$1${kind}${token} `);
+  ui.bcast.tag={id:pid||null,label:label||token};
+  render();
+  setTimeout(()=>{const el=document.getElementById("bcasttxt"); if(el){el.focus(); el.selectionStart=el.selectionEnd=el.value.length;}},30);
+}
 function resolveBroadcastTag(text){
   const raw=String(text||"");
   const bedm=raw.match(/#([A-Za-z]{1,4}-?\d{1,3})\b/);
@@ -4468,9 +4507,10 @@ function broadcastView(){
     <h2 class="page-title">Broadcast</h2>
     <div class="bcast-compose">
       <div class="seg bcast-aud">${seg("residents","Residents")}${seg("faculty","Faculty")}${seg("everyone","Everyone")}</div>
-      <textarea id="bcasttxt" maxlength="400" placeholder="Write for the ward\u2026  Use #D-03 or @Name to tag a patient"
-        oninput="ui.bcast=ui.bcast||{};ui.bcast.text=this.value">${esc(ui.bcast.text||"")}</textarea>
-      <div class="row"><span class="tiny">${(ui.bcast.text||"").length}/400 \u00b7 #bed or @name</span></div>
+            <textarea id="bcasttxt" maxlength="400" placeholder="Write for the ward…  Type #bed or @name"
+        oninput="ui.bcast=ui.bcast||{};ui.bcast.text=this.value;render()">${esc(ui.bcast.text||"")}</textarea>
+      ${(()=>{const hits=broadcastSuggest(ui.bcast.text||""); if(!hits.length) return ""; return `<div class="bcast-suggest">${hits.map(h=>`<button type="button" onclick="pickBroadcastTag('${h.kind}','${esc(h.token)}','${esc(h.pid||"")}','${esc(h.label)}')"><b>${esc(h.kind+h.token)}</b><span class="tiny">${esc(h.label)}</span></button>`).join("")}</div>`;})()}
+      <div class="row"><span class="tiny">${(ui.bcast.text||"").length}/400</span></div>
       <button class="btn block" onclick="sendBroadcast()">Send</button>
     </div>
     <p class="more-section">Inbox</p>
@@ -4737,17 +4777,29 @@ async function markNotificationRead(id){
     render();
   }catch(e){toast(e.message||String(e),"bad")}
 }
+function isLocalToday(iso){
+  if(!iso)return false;
+  const d=new Date(iso); if(isNaN(d))return false;
+  const n=new Date();
+  return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();
+}
+function notifyCardHtml(n){
+  return `<button type="button" class="card notify-item" onclick="openNotification('${esc(n.id)}')">
+      <div class="row"><b>${esc(n.title||"Ward notification")}</b><span class="tiny">${esc(n.created_at?stamp(n.created_at):"—")}</span></div>
+      <p class="sm" style="margin:5px 0 0">${esc(n.body||"")}</p>
+    </button>`;
+}
 function openNotification(id){
   const n=(ui.notifyInbox||[]).find(x=>x.id===id);
   if(!n)return;
-  markNotificationRead(id).catch(()=>{});
-  const u=String(n.target_url||"./#/home");
-  if(/^\.\/#\/(home|snap|handover)(\/[^?#]*)?$/.test(u)){
-    ui.sheet=null;
-    location.hash=u.slice(1);
-  }else{
-    go("home");
-  }
+  ui.sheet=null;
+  const kind=String(n.event_type||n.category||"").toLowerCase();
+  if(kind==="broadcast"){go("broadcast");return;}
+  if(kind==="ect"){go("ect");return;}
+  if(kind==="handover"){go("handover");return;}
+  if(kind==="task"){ if(n.patient_id) go("snap",n.patient_id); else go("tasks"); return; }
+  if(n.patient_id){go("snap",n.patient_id);return;}
+  go("home");
 }
 function setupView(){
   const cfg=canCfg(user().role);
@@ -4761,11 +4813,15 @@ function setupView(){
       loadNotificationInbox().catch(()=>{});
     }
     const inbox=Array.isArray(ui.notifyInbox)?ui.notifyInbox:[];
+    const today=inbox.filter(n=>isLocalToday(n.created_at));
+    const older=inbox.filter(n=>!isLocalToday(n.created_at));
     const inboxHtml=ui.notifyInboxLoading&&!inbox.length
       ? `<p class="tiny">Loading recent notifications…</p>`
-      : inbox.length
-        ? inbox.map(n=>`<button type="button" class="card" style="width:100%;text-align:left;margin-top:7px;border:1px solid var(--line);${n.read_at?'opacity:.72;':''}" onclick="openNotification('${esc(n.id)}')"><div class="row"><b>${esc(n.title||"Ward notification")}</b><span class="tiny">${n.priority==='high'?'HIGH':''}</span></div><p class="sm" style="margin:5px 0">${esc(n.body||"")}</p><p class="tiny">${esc(n.created_at?stamp(n.created_at):"—")}${n.read_at?" · Read":""}</p></button>`).join("")
-        : `<p class="tiny">No notifications yet.</p>`;
+      : (!inbox.length)
+        ? `<p class="tiny">No notifications yet.</p>`
+        : `${today.length?today.map(notifyCardHtml).join(""):`<p class="tiny">Nothing today.</p>`}
+           ${older.length?`<button type="button" class="btn ghost block" style="margin-top:10px" onclick="ui.notifyOlder=!ui.notifyOlder;render()">${ui.notifyOlder?"Hide earlier":"Earlier · "+older.length}</button>`:""}
+           ${ui.notifyOlder?older.map(notifyCardHtml).join(""):""}`;
     const settings=`<div class="card notify-card">
         <p class="tiny">THIS PHONE</p>
         <p class="notify-status"><span class="status-dot-mini ${perm==='granted'?'ok':perm==='denied'?'bad':''}"></span>${esc(Notifications.status())}</p>
@@ -5815,6 +5871,9 @@ function render(opts){
   const pages={home:homeView,patients:patientsView,snap:snapView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView};
   syncRoute();
   el.innerHTML=shell((pages[route.page]||patientsView)());
+  if(sessionTok&&!ui.notifyInboxLoading&&(!ui.notifyInboxLoadedAt||Date.now()-ui.notifyInboxLoadedAt>60000)){
+    loadNotificationInbox().catch(()=>{});
+  }
   const main2=document.querySelector(".main");
   if(main2){
     if(opts.nav){
