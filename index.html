@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.3.5 restore-prior-icons -->
+<!-- WARD COMMAND RELEASE: R1.3.6 more-tile-icons -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -443,7 +443,7 @@ a{color:var(--teal2);text-decoration:none}
   .top h1{font-size:16px}
   .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;
     grid-template-areas:"id pgt" "crit med" "act med"}
-  .more-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+  .more-grid{grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:12px}
 }
 .seg{display:flex;gap:6px;margin:0 0 10px}
 .seg button{flex:1;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:8px 6px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -488,22 +488,24 @@ tr.held td{opacity:.72}
 .top h1{font-size:18px!important;font-weight:700}
 .kicker{font-size:11px!important}
 .more-section{font-size:12px!important;font-weight:750;letter-spacing:.06em;margin:18px 2px 10px;color:var(--muted)}
-.more-grid{display:flex;flex-direction:column;gap:8px;margin:0 0 4px}
+.more-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px;margin:0 0 4px}
 .more-grid>.more-row{grid-column:auto;min-width:0}
 .more-grid .month-span{grid-column:1/-1}
 .more-grid .more-row{
-  flex-direction:row;align-items:center;justify-content:flex-start;
-  margin:0;min-height:56px;padding:12px 14px;gap:12px;
-  text-align:left;border-radius:16px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  margin:0;min-height:108px;padding:16px 10px 14px;gap:10px;
+  text-align:center;border-radius:var(--radius-card,18px);
+  background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);
 }
-.more-grid .more-row .go{display:inline;margin-left:auto;color:var(--muted);font-size:18px}
-.more-grid .more-ico{margin:0;flex:none}
+.more-grid .more-row .go{display:none}
+.more-grid .more-ico{margin:0;flex:none;width:36px;height:36px;color:var(--ink,#111827)}
+.more-grid .more-ico svg{width:36px;height:36px;display:block}
 .more-grid .more-label{
-  display:block;width:auto;max-width:none;margin:0;
+  display:block;width:100%;max-width:11em;margin:0;
   font-family:Inter,system-ui,-apple-system,sans-serif;
-  font-size:14px;font-weight:650;font-style:normal;
-  letter-spacing:-.015em;line-height:1.3;
-  text-align:left;text-wrap:pretty;
+  font-size:12.5px;font-weight:600;font-style:normal;
+  letter-spacing:-.015em;line-height:1.28;
+  text-align:center;text-wrap:balance;
 }
 .more-grid .month-span{grid-column:1/-1}
 
@@ -1608,7 +1610,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.5";
+const APP_VERSION="R1.3.6";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2710,20 +2712,20 @@ function ico(name){
     home:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="7.2" height="7.2" rx="2.2" fill="#14b8a6"/><rect x="13.3" y="3.5" width="7.2" height="7.2" rx="2.2" fill="#38bdf8"/><rect x="3.5" y="13.3" width="7.2" height="7.2" rx="2.2" fill="#34d399"/><rect x="13.3" y="13.3" width="7.2" height="7.2" rx="2.2" fill="#f59e0b"/></svg>',
     patients:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.1" fill="#0ea5e9"/><path d="M5.2 18.8c.6-3.4 3.2-5.2 6.8-5.2s6.2 1.8 6.8 5.2" stroke="#0ea5e9" stroke-width="2.1" stroke-linecap="round"/><circle cx="18.2" cy="9.2" r="1.7" fill="#67e8f9"/></svg>',
     handover:'<svg viewBox="0 0 24 24" fill="none"><rect x="4.5" y="3.5" width="11.5" height="15" rx="2.4" fill="#f59e0b"/><path d="M7.2 8h6.2M7.2 11.2h6.2M7.2 14.4h3.6" stroke="#fff7ed" stroke-width="1.7" stroke-linecap="round"/><rect x="12.2" y="12.2" width="7.4" height="7.4" rx="2.2" fill="#fb7185"/><path d="M14.2 15.9h3.4M15.9 14.2v3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>',
-    ect:'<svg viewBox="0 0 24 24" fill="none"><path d="M12.8 3.2L6 13.2h5.1L9.8 20.8 18 10.6h-5.1L12.8 3.2z" fill="#8b5cf6"/><path d="M12.8 3.2L6 13.2h5.1L9.8 20.8 18 10.6h-5.1L12.8 3.2z" stroke="#c4b5fd" stroke-width="1.2" stroke-linejoin="round"/></svg>',
+    ect:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/> </g> </svg>',
     more:'<svg viewBox="0 0 24 24" fill="none"><circle cx="6.5" cy="12" r="2" fill="#94a3b8"/><circle cx="12" cy="12" r="2" fill="#38bdf8"/><circle cx="17.5" cy="12" r="2" fill="#14b8a6"/></svg>',
-    observe:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.2" fill="#f59e0b"/><circle cx="12" cy="12" r="3.2" fill="#fff7ed"/><path d="M12 4.6v2.2M12 17.2v2.2M4.6 12h2.2M17.2 12h2.2" stroke="#fff7ed" stroke-width="1.6" stroke-linecap="round"/></svg>',
-    census:'<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="13" rx="2.4" fill="#14b8a6"/><path d="M8 6V5.2A2.2 2.2 0 0 1 10.2 3h3.6A2.2 2.2 0 0 1 16 5.2V6" stroke="#99f6e4" stroke-width="1.7"/><path d="M9 12h6M12 9v6" stroke="#ecfdf5" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    setup:'<svg viewBox="0 0 24 24" fill="none"><path fill="#f59e0b" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96c-.5-.4-1.04-.71-1.63-.95l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.59.24-1.13.55-1.63.95l-2.39-.96a.5.5 0 0 0-.6.22L2.8 8.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.92 14.16a.5.5 0 0 0-.12.64l1.92 3.32c.13.23.4.32.64.22l2.39-.96c.5.4 1.04.71 1.63.95l.36 2.54c.05.24.25.42.49.42h3.8c.24 0 .45-.18.5-.42l.36-2.54c.59-.24 1.13-.55 1.63-.95l2.39.96c.24.1.51 0 .64-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58z"/><circle cx="12" cy="12" r="3.15" fill="#fff7ed"/></svg>',
-    tasks:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="#2563eb"/><rect x="7" y="8" width="10" height="2" rx="1" fill="#dbeafe"/><rect x="7" y="12" width="7" height="2" rx="1" fill="#93c5fd"/><circle cx="16.2" cy="16.2" r="3.1" fill="#22c55e"/><path d="M14.8 16.2l.9.9 1.8-1.8" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>',
-    activity:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="#0f766e"/><path d="M7 15.5l3-3.5 2.4 2.2 4.6-5.4" stroke="#99f6e4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16.8" cy="8.8" r="1.3" fill="#fbbf24"/></svg>',
-    about:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="#6366f1"/><circle cx="12" cy="8.3" r="1.25" fill="#eef2ff"/><path d="M12 11.1v5.6" stroke="#eef2ff" stroke-width="2.1" stroke-linecap="round"/></svg>',
-    broadcast:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="#06b6d4"/><path d="M8.2 10.1v3.8h2.1L15 16.6V7.4l-4.7 2.7H8.2z" fill="#ecfeff"/><path d="M16.3 9.3c.8.7.8 3.1 0 3.8" stroke="#ecfeff" stroke-width="1.6" stroke-linecap="round"/></svg>',
-    theme:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#1e293b"/><path d="M12 5.2a6.8 6.8 0 1 0 6.8 6.8A5.2 5.2 0 0 1 12 5.2z" fill="#f8fafc"/></svg>',
-    notify:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 4.2a5.2 5.2 0 0 1 5.2 5.2c0 3.1 1.1 4.6 1.6 5.4H5.2c.5-.8 1.6-2.3 1.6-5.4A5.2 5.2 0 0 1 12 4.2z" fill="#38bdf8"/><path d="M9.6 17.4a2.4 2.4 0 0 0 4.8 0" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    cloud:'<svg viewBox="0 0 24 24" fill="none"><path d="M8.2 17.4h8.1A3.7 3.7 0 0 0 20 13.8c0-1.8-1.3-3.3-3-3.6A5 5 0 0 0 7.4 11 3.6 3.6 0 0 0 8.2 17.4z" fill="#64748b"/></svg>',
-    users:'<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" fill="#0ea5e9"/><path d="M4.2 18.2c.6-2.8 2.6-4.2 4.8-4.2s4.2 1.4 4.8 4.2" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round"/><circle cx="16.4" cy="9.4" r="2.2" fill="#38bdf8"/><path d="M15.2 18.2c.4-1.6 1.5-2.6 2.8-2.6" stroke="#38bdf8" stroke-width="1.6" stroke-linecap="round"/></svg>',
-    logout:'<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4.5" width="10" height="15" rx="2.2" fill="#e11d48"/><path d="M12.5 12H20M17.2 9.2L20 12l-2.8 2.8" stroke="#fb7185" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    observe:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/> <circle cx="12" cy="12" r="3"/> </g> </svg>',
+    census:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M8 7h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/> <path d="M10 7V6a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v1"/> <path d="M12 11v5M9.5 13.5h5"/> </g> </svg>',
+    setup:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <circle cx="12" cy="12" r="3"/> <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.86 1 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/> </g> </svg>',
+    tasks:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <rect x="6" y="4" width="12" height="16" rx="2"/> <path d="M9 2h6v2H9z"/> <path d="M9 10h6M9 14h4"/> </g> </svg>',
+    activity:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <rect x="3" y="3" width="18" height="18" rx="3"/> <path d="M7 15l3.5-4.5L14 13.5 17 8"/> </g> </svg>',
+    about:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <circle cx="12" cy="12" r="10"/> <path d="M12 16v-4"/> <path d="M12 8h.01"/> </g> </svg>',
+    broadcast:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M3 11v2a1 1 0 0 0 1 1h1.5l3 4a1 1 0 0 0 1.7-.7V7.7A1 1 0 0 0 8.5 7L5.5 11H4a1 1 0 0 0-1 1z"/> <path d="M15.5 8.5a4 4 0 0 1 0 7"/> <path d="M18 6a7 7 0 0 1 0 12"/> </g> </svg>',
+    theme:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <circle cx="12" cy="12" r="9"/> <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/> </g> </svg>',
+    notify:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/> <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/> </g> </svg>',
+    cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M8 17h8.5a3.2 3.2 0 0 0 .2-6.4 4.8 4.8 0 0 0-9.1-1.3A3.3 3.3 0 0 0 8 17z"/> <g stroke-width="1.1"> <path d="M12 17v2"/> <rect x="10.2" y="19" width="3.6" height="2.4" rx="0.7"/> <path d="M11 21.4v.8M13 21.4v.8"/> </g> </g> </svg>',
+    users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/> <circle cx="9" cy="7" r="4"/> <path d="M22 21v-2a4 4 0 0 0-3-3.87"/> <path d="M16 3.13a4 4 0 0 1 0 7.75"/> </g> </svg>',
+    logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/> <polyline points="16 17 21 12 16 7"/> <line x1="21" y1="12" x2="9" y2="12"/> </g> </svg>'
   };
   return `<span class="ico">${s[name]||""}</span>`;
 }
@@ -4800,7 +4802,6 @@ function moreView(){
   const row=(go,icon,title,tone,danger="")=>`<button class="more-row tone-${tone}" onclick="${go}">
       <span class="more-ico">${icon}</span>
       <span class="more-label" style="${danger}">${title}</span>
-      <span class="go">›</span>
     </button>`;
   return `<h2 class="page-title">More</h2>
     <p class="tiny" style="margin:-4px 0 14px;opacity:.55">Build ${esc(APP_VERSION)}</p>
