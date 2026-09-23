@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-r1.3.2-users-duty";
+const VERSION = "ward-command-pwa-r1.3.7-icon-transparent";
 const PRECACHE = [
   "./",
   "./index.html",
