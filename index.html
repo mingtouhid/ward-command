@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.3.4 richer-icons -->
+<!-- WARD COMMAND RELEASE: R1.3.5 restore-prior-icons -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -268,7 +268,7 @@ input,textarea,select{scroll-margin-bottom:140px;scroll-margin-top:80px}
 .nav button.on{color:#062616;background:#b7e4c7}
 html[data-theme="dark"] .nav button.on{color:#042f2f;background:#5eead4}
 .nav button.on .ico{transform:none;color:inherit}
-.nav button.on .ico svg{filter:none}
+.nav button.on .ico svg{stroke:#062616}
 
 a{color:var(--teal2);text-decoration:none}
 .strips{display:flex;gap:4px;margin-top:8px}
@@ -464,8 +464,8 @@ a{color:var(--teal2);text-decoration:none}
 .stat b{display:block;font-size:22px;margin-top:6px}
 .stat span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
 .more-row{display:flex;align-items:center;gap:12px;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px;margin:0 0 10px;text-align:left;color:inherit;box-shadow:var(--shadow)}
-.more-ico{width:36px;height:36px;border-radius:10px;background:none;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 4px 12px rgba(15,23,42,.08)}
-.more-ico svg{width:36px;height:36px;display:block;border-radius:10px}
+.more-ico{width:32px;height:32px;border-radius:0;background:none;display:flex;align-items:center;justify-content:center;flex:none}
+.more-ico svg{width:32px;height:32px;display:block}
 .more-row .go{color:var(--muted);font-size:18px}
 .greet{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
 .ho-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 14px}
@@ -1608,7 +1608,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.4";
+const APP_VERSION="R1.3.5";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2707,23 +2707,23 @@ async function doLogin(e){
 
 function ico(name){
   const s={
-    home:'<svg viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="8.2" height="8.2" rx="2.6" fill="#14b8a6"/><rect x="13.3" y="2.5" width="8.2" height="8.2" rx="2.6" fill="#38bdf8"/><rect x="2.5" y="13.3" width="8.2" height="8.2" rx="2.6" fill="#34d399"/><rect x="13.3" y="13.3" width="8.2" height="8.2" rx="2.6" fill="#f59e0b"/><path d="M5.2 6.6h2.8M6.6 5.2v2.8M15.9 6.6h2.8M5.2 17.4h2.8M15.9 15.9v3.1M17.45 17.45h3.1" stroke="#fff" stroke-width="1.35" stroke-linecap="round" opacity=".55"/></svg>',
-    patients:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#0284c7"/><circle cx="12" cy="9.2" r="3.2" fill="#e0f2fe"/><path d="M6.2 18.6c.7-3.2 3.1-4.8 5.8-4.8s5.1 1.6 5.8 4.8" stroke="#e0f2fe" stroke-width="2.1" stroke-linecap="round"/><circle cx="17.4" cy="8.6" r="2" fill="#7dd3fc"/><path d="M16.4 18.2c.35-1.3 1.2-2.1 2.3-2.1" stroke="#7dd3fc" stroke-width="1.5" stroke-linecap="round"/></svg>',
-    handover:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#d97706"/><rect x="5.2" y="4.8" width="10.2" height="13.2" rx="2.2" fill="#fff7ed"/><path d="M7.6 8.2h5.4M7.6 11h5.4M7.6 13.8h3.2" stroke="#d97706" stroke-width="1.55" stroke-linecap="round"/><rect x="11.4" y="12.2" width="7.4" height="7.4" rx="2.3" fill="#fb7185"/><path d="M13.5 15.9h3.2M15.1 14.3v3.2" stroke="#fff" stroke-width="1.55" stroke-linecap="round"/></svg>',
-    ect:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#7c3aed"/><path d="M13.1 5.2L7.2 13.1h4.5L10.4 18.8l5.9-7.9h-4.5L13.1 5.2z" fill="#ede9fe"/><path d="M13.1 5.2L7.2 13.1h4.5L10.4 18.8l5.9-7.9h-4.5L13.1 5.2z" stroke="#c4b5fd" stroke-width="1" stroke-linejoin="round" opacity=".7"/></svg>',
-    more:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#334155"/><circle cx="7.2" cy="12" r="2.05" fill="#94a3b8"/><circle cx="12" cy="12" r="2.05" fill="#38bdf8"/><circle cx="16.8" cy="12" r="2.05" fill="#2dd4bf"/></svg>',
-    observe:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#ea580c"/><circle cx="12" cy="12" r="6.4" fill="#ffedd5"/><circle cx="12" cy="12" r="2.7" fill="#ea580c"/><path d="M12 6.8v1.5M12 15.7v1.5M6.8 12h1.5M15.7 12h1.5" stroke="#ea580c" stroke-width="1.45" stroke-linecap="round"/></svg>',
-    census:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#0f766e"/><rect x="6" y="7.2" width="12" height="10.2" rx="2" fill="#ccfbf1"/><path d="M9 7.2V6.4A1.6 1.6 0 0 1 10.6 4.8h2.8A1.6 1.6 0 0 1 15 6.4v.8" stroke="#5eead4" stroke-width="1.5"/><path d="M9.4 12.3h5.2M12 9.7v5.2" stroke="#0f766e" stroke-width="1.7" stroke-linecap="round"/></svg>',
-    setup:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#b45309"/><path fill="#ffedd5" d="M16.95 12.7c.03-.23.05-.46.05-.7s-.02-.47-.05-.7l1.52-1.18a.38.38 0 0 0 .09-.48l-1.44-2.49a.38.38 0 0 0-.45-.17l-1.79.72c-.37-.3-.78-.53-1.22-.71l-.27-1.9A.38.38 0 0 0 13 5.2h-2a.38.38 0 0 0-.37.31l-.27 1.9c-.44.18-.85.41-1.22.71l-1.79-.72a.38.38 0 0 0-.45.17L6.46 9.06a.38.38 0 0 0 .09.48l1.52 1.18c-.03.23-.05.46-.05.7s.02.47.05.7L6.55 14.3a.38.38 0 0 0-.09.48l1.44 2.49c.1.17.3.24.48.17l1.79-.72c.37.3.78.53 1.22.71l.27 1.9c.04.18.19.31.37.31h2c.18 0 .34-.13.37-.31l.27-1.9c.44-.18.85-.41 1.22-.71l1.79.72c.18.07.38 0 .48-.17l1.44-2.49a.38.38 0 0 0-.09-.48l-1.52-1.18z"/><circle cx="12" cy="12" r="2.35" fill="#b45309"/></svg>',
-    tasks:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#1d4ed8"/><rect x="6.2" y="7.2" width="8.8" height="1.9" rx=".95" fill="#bfdbfe"/><rect x="6.2" y="11" width="6.2" height="1.9" rx=".95" fill="#93c5fd"/><circle cx="16.3" cy="15.8" r="3.35" fill="#22c55e"/><path d="M14.85 15.8l.95.95 1.9-1.95" stroke="#fff" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    activity:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#115e59"/><path d="M6.6 15.2l2.9-3.4 2.3 2.1 4.5-5.3" stroke="#5eead4" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16.3" cy="8.5" r="1.55" fill="#fbbf24"/></svg>',
-    about:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#4f46e5"/><circle cx="12" cy="8.1" r="1.45" fill="#e0e7ff"/><path d="M12 11.2v5.8" stroke="#e0e7ff" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="12" r="8.2" stroke="#a5b4fc" stroke-width="1.1" opacity=".35"/></svg>',
-    broadcast:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#0891b2"/><path d="M7.4 10v4h2.1L14.6 16.8V7.2L9.5 10H7.4z" fill="#ecfeff"/><path d="M16.2 9.1c.85.75.85 3.15 0 3.9M17.8 7.7c1.55 1.35 1.55 5.35 0 6.7" stroke="#a5f3fc" stroke-width="1.45" stroke-linecap="round"/></svg>',
-    theme:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#0f172a"/><circle cx="12" cy="12" r="6.6" fill="#f8fafc"/><path d="M12 5.8a6.2 6.2 0 0 0 0 12.4 5 5 0 0 1 0-12.4z" fill="#1e293b"/></svg>',
-    notify:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#0369a1"/><path d="M12 5.6a4.6 4.6 0 0 1 4.6 4.6c0 2.7 1 4.1 1.45 4.85H5.95C6.4 14.3 7.4 12.9 7.4 10.2A4.6 4.6 0 0 1 12 5.6z" fill="#e0f2fe"/><path d="M9.7 17.35a2.3 2.3 0 0 0 4.6 0" stroke="#7dd3fc" stroke-width="1.7" stroke-linecap="round"/><circle cx="16.6" cy="7.2" r="2.05" fill="#f43f5e"/></svg>',
-    cloud:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#475569"/><path d="M8.1 16.3h8.2A3.4 3.4 0 0 0 19.7 13c0-1.65-1.2-3-2.75-3.3A4.55 4.55 0 0 0 7.35 10.4 3.3 3.3 0 0 0 8.1 16.3z" fill="#e2e8f0"/><path d="M9.2 12.6l1.6 1.6 3.3-3.4" stroke="#475569" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    users:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#0369a1"/><circle cx="9.2" cy="9.1" r="2.7" fill="#e0f2fe"/><path d="M4.8 17.8c.55-2.5 2.35-3.75 4.4-3.75s3.85 1.25 4.4 3.75" stroke="#e0f2fe" stroke-width="1.7" stroke-linecap="round"/><circle cx="16.2" cy="9.4" r="2.15" fill="#7dd3fc"/><path d="M14.9 17.8c.4-1.55 1.45-2.45 2.7-2.45" stroke="#7dd3fc" stroke-width="1.55" stroke-linecap="round"/></svg>',
-    logout:'<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#be123c"/><rect x="5.2" y="5.4" width="8.2" height="13.2" rx="2" fill="#ffe4e6"/><path d="M12.4 12H19M16.2 9.3L19 12l-2.8 2.7" stroke="#fb7185" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    home:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="7.2" height="7.2" rx="2.2" fill="#14b8a6"/><rect x="13.3" y="3.5" width="7.2" height="7.2" rx="2.2" fill="#38bdf8"/><rect x="3.5" y="13.3" width="7.2" height="7.2" rx="2.2" fill="#34d399"/><rect x="13.3" y="13.3" width="7.2" height="7.2" rx="2.2" fill="#f59e0b"/></svg>',
+    patients:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.1" fill="#0ea5e9"/><path d="M5.2 18.8c.6-3.4 3.2-5.2 6.8-5.2s6.2 1.8 6.8 5.2" stroke="#0ea5e9" stroke-width="2.1" stroke-linecap="round"/><circle cx="18.2" cy="9.2" r="1.7" fill="#67e8f9"/></svg>',
+    handover:'<svg viewBox="0 0 24 24" fill="none"><rect x="4.5" y="3.5" width="11.5" height="15" rx="2.4" fill="#f59e0b"/><path d="M7.2 8h6.2M7.2 11.2h6.2M7.2 14.4h3.6" stroke="#fff7ed" stroke-width="1.7" stroke-linecap="round"/><rect x="12.2" y="12.2" width="7.4" height="7.4" rx="2.2" fill="#fb7185"/><path d="M14.2 15.9h3.4M15.9 14.2v3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    ect:'<svg viewBox="0 0 24 24" fill="none"><path d="M12.8 3.2L6 13.2h5.1L9.8 20.8 18 10.6h-5.1L12.8 3.2z" fill="#8b5cf6"/><path d="M12.8 3.2L6 13.2h5.1L9.8 20.8 18 10.6h-5.1L12.8 3.2z" stroke="#c4b5fd" stroke-width="1.2" stroke-linejoin="round"/></svg>',
+    more:'<svg viewBox="0 0 24 24" fill="none"><circle cx="6.5" cy="12" r="2" fill="#94a3b8"/><circle cx="12" cy="12" r="2" fill="#38bdf8"/><circle cx="17.5" cy="12" r="2" fill="#14b8a6"/></svg>',
+    observe:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.2" fill="#f59e0b"/><circle cx="12" cy="12" r="3.2" fill="#fff7ed"/><path d="M12 4.6v2.2M12 17.2v2.2M4.6 12h2.2M17.2 12h2.2" stroke="#fff7ed" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    census:'<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="13" rx="2.4" fill="#14b8a6"/><path d="M8 6V5.2A2.2 2.2 0 0 1 10.2 3h3.6A2.2 2.2 0 0 1 16 5.2V6" stroke="#99f6e4" stroke-width="1.7"/><path d="M9 12h6M12 9v6" stroke="#ecfdf5" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    setup:'<svg viewBox="0 0 24 24" fill="none"><path fill="#f59e0b" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96c-.5-.4-1.04-.71-1.63-.95l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.59.24-1.13.55-1.63.95l-2.39-.96a.5.5 0 0 0-.6.22L2.8 8.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.92 14.16a.5.5 0 0 0-.12.64l1.92 3.32c.13.23.4.32.64.22l2.39-.96c.5.4 1.04.71 1.63.95l.36 2.54c.05.24.25.42.49.42h3.8c.24 0 .45-.18.5-.42l.36-2.54c.59-.24 1.13-.55 1.63-.95l2.39.96c.24.1.51 0 .64-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58z"/><circle cx="12" cy="12" r="3.15" fill="#fff7ed"/></svg>',
+    tasks:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="#2563eb"/><rect x="7" y="8" width="10" height="2" rx="1" fill="#dbeafe"/><rect x="7" y="12" width="7" height="2" rx="1" fill="#93c5fd"/><circle cx="16.2" cy="16.2" r="3.1" fill="#22c55e"/><path d="M14.8 16.2l.9.9 1.8-1.8" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    activity:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="#0f766e"/><path d="M7 15.5l3-3.5 2.4 2.2 4.6-5.4" stroke="#99f6e4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16.8" cy="8.8" r="1.3" fill="#fbbf24"/></svg>',
+    about:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="#6366f1"/><circle cx="12" cy="8.3" r="1.25" fill="#eef2ff"/><path d="M12 11.1v5.6" stroke="#eef2ff" stroke-width="2.1" stroke-linecap="round"/></svg>',
+    broadcast:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="#06b6d4"/><path d="M8.2 10.1v3.8h2.1L15 16.6V7.4l-4.7 2.7H8.2z" fill="#ecfeff"/><path d="M16.3 9.3c.8.7.8 3.1 0 3.8" stroke="#ecfeff" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    theme:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#1e293b"/><path d="M12 5.2a6.8 6.8 0 1 0 6.8 6.8A5.2 5.2 0 0 1 12 5.2z" fill="#f8fafc"/></svg>',
+    notify:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 4.2a5.2 5.2 0 0 1 5.2 5.2c0 3.1 1.1 4.6 1.6 5.4H5.2c.5-.8 1.6-2.3 1.6-5.4A5.2 5.2 0 0 1 12 4.2z" fill="#38bdf8"/><path d="M9.6 17.4a2.4 2.4 0 0 0 4.8 0" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    cloud:'<svg viewBox="0 0 24 24" fill="none"><path d="M8.2 17.4h8.1A3.7 3.7 0 0 0 20 13.8c0-1.8-1.3-3.3-3-3.6A5 5 0 0 0 7.4 11 3.6 3.6 0 0 0 8.2 17.4z" fill="#64748b"/></svg>',
+    users:'<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" fill="#0ea5e9"/><path d="M4.2 18.2c.6-2.8 2.6-4.2 4.8-4.2s4.2 1.4 4.8 4.2" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round"/><circle cx="16.4" cy="9.4" r="2.2" fill="#38bdf8"/><path d="M15.2 18.2c.4-1.6 1.5-2.6 2.8-2.6" stroke="#38bdf8" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    logout:'<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4.5" width="10" height="15" rx="2.2" fill="#e11d48"/><path d="M12.5 12H20M17.2 9.2L20 12l-2.8 2.8" stroke="#fb7185" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
   };
   return `<span class="ico">${s[name]||""}</span>`;
 }
