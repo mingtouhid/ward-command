@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.3.7 top-bell-icon -->
+<!-- WARD COMMAND RELEASE: R1.3.8 handover-obs-name -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1196,7 +1196,7 @@ const DISCHARGE_OUTCOMES=[["improved","Improved"],["partial","Partially improved
 const ADMIT_REASONS=[["dx_mgmt","Diagnosis & management"],["deaddiction","De-addiction therapy"],["opinion","Opinion"],["mh_cert","Mental health certificate"]];
 const TREATMENT_MODES=[["conservative","Conservative"],["ect","ECT"],["conservative_ect","Conservative + ECT"]];
 function optList(rows,sel){return rows.map(([id,lb])=>`<option value="${id}" ${sel===id?"selected":""}>${lb}</option>`).join("")}
-function labelOf(rows,id){const h=rows.find(r=>r[0]===id);return h?h[1]:(id||"—")}
+function labelOf(rows,id){const h=(rows||[]).find(r=>String(r[0])===String(id));if(h)return h[1];try{const p=typeof patient==="function"?patient(id):null;if(p&&p.name){const bed=typeof bedOf==="function"?bedOf(p.id):"";const pref=bed&&bed!=="—"?bed+" · ":"";return pref+p.name+(p.status==="observation"?" (OBS)":"")}}catch(e){}return id||"—"}
 
 const DENSITY_KEY="ward-command-density-v1";
 function currentTheme(){
@@ -1610,7 +1610,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.7";
+const APP_VERSION="R1.3.8";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2988,7 +2988,7 @@ function homeView(){
   const list=occupied();
   const high=list.filter(b=>["high","critical"].includes((S.snaps[b.patientId]||{}).risk)).length;
   const ect=(S.ect||[]).filter(e=>(!e.status||e.status==="planned")&&onWard(e.pid)).length;
-  const inbox=S.hitems.filter(i=>!i.done&&onWard(i.pid)).length;
+  const inbox=S.hitems.filter(i=>!i.done&&(onWard(i.pid)||underObs(i.pid))).length;
   const empty=emptyBeds().length;
   tidySectionNames();
   const wards=S.sections.filter(s=>s.active!==false).slice().sort((a,b)=>(a.sort||0)-(b.sort||0)).map(sec=>({
@@ -4130,7 +4130,7 @@ function hoWhen(v){
   return d.toLocaleString([], {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
 }
 function hoPack(h,canAck){
-  const items=S.hitems.filter(i=>i.hid===h.id&&onWard(i.pid)).slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
+  const items=S.hitems.filter(i=>i.hid===h.id&&(onWard(i.pid)||underObs(i.pid))).slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
   if(!items.length) return "";
   const open=items.filter(i=>!i.done).length;
   const me=String(S.userId||"");
@@ -4232,10 +4232,10 @@ function livePanels(){
   return html;
 }
 function giveHandoverForm(defShift){
-  const occ=occupied().filter(b=>{const p=onBed(b);return p&&p.status==="admitted"});
+  const occ=occupied().filter(b=>{const p=onBed(b);return p&&(p.status==="admitted"||p.status==="observation")});
   const tgt=val("hshift")||defShift||nextShift();
   const SHIFTS=[["morning","Morning 08:00–14:00"],["evening","Evening 14:00–22:00"],["night","Night 22:00–08:00"]];
-  return `<label class="field"><span>Patient</span>${picker("hp",occ.map(b=>{const p=onBed(b);return [p.id,b.no+" · "+p.name]}),val("hp")||"","Patient")}</label>
+  return `<label class="field"><span>Patient</span>${picker("hp",occ.map(b=>{const p=onBed(b);return [p.id,b.no+" · "+p.name+(p.status==="observation"?" (OBS)":"")]}),val("hp")||"","Patient")}</label>
       <label class="field"><span>Key risk</span><input id="hpr" placeholder="What the next shift must know first" value="${esc(val("hpr"))}" oninput="ui.fields=ui.fields||{};ui.fields.hpr=this.value;refreshGivePost()" required/></label>
       <label class="field"><span>Action for incoming shift</span><textarea id="hac" placeholder="What should they do?" oninput="ui.fields=ui.fields||{};ui.fields.hac=this.value">${esc(val("hac"))}</textarea></label>
       <label class="field"><span>To shift</span>${picker("hshift",SHIFTS,tgt,"Shift")}</label>
