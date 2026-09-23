@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-r1.3.0-record";
+const VERSION = "ward-command-pwa-r1.3.1-withdraw";
 const PRECACHE = [
   "./",
   "./index.html",
