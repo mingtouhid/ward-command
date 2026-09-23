@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.3.1 withdraw-invite -->
+<!-- WARD COMMAND RELEASE: R1.3.2 users-filter-duty -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -319,6 +319,12 @@ a{color:var(--teal2);text-decoration:none}
 .live-hero .host{margin-top:4px;font-size:11px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 
+
+.user-mini{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.user-mini .user-meta{min-width:0}
+.ptag-row{display:flex;gap:8px;overflow-x:auto;padding:0 0 10px;margin:-2px 0 2px;-webkit-overflow-scrolling:touch}
+.ptag-row .chip{flex:0 0 auto;white-space:nowrap}
+.duty-card .duty-actions{margin-top:10px}
 .plist-block{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .card.nobed{border:1.5px solid #eab308;background:color-mix(in srgb, #eab308 12%, var(--panel))}
 .badge.nobed-tag{background:#eab308;color:#1c1503;font-weight:800}
@@ -1597,7 +1603,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.1";
+const APP_VERSION="R1.3.2";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2715,7 +2721,7 @@ function shell(inner){
       <button class="${on("patients")}" onclick="go('patients')">${ico('patients')}<span class="lbl">Patients</span></button>
       <button class="${on("handover")}" onclick="go('handover')" ${ui.busy?"disabled":""}>${ico('handover')}<span class="lbl">Handovers</span></button>
       <button class="${on("more")}" onclick="go('more')">${ico('more')}<span class="lbl">More</span></button>
-    </div></nav>${livePanels()}${ui.sheet||""}${pickOverlay()}${confirmOverlay()}${busyVeil()}`;
+    </div></nav>${livePanels()}${ui.sheet||""}${userEditOverlay()}${pickOverlay()}${confirmOverlay()}${busyVeil()}`;
 }
 
 /* HOME: occupied beds only, current status */
@@ -2987,10 +2993,9 @@ function homeView(){
       <button class="stat" onclick="go('ect')"><span>ECT planned</span><b>${ect}</b></button>
       <button class="stat" onclick="ui.ctab='in';go('census')"><span>Empty beds</span><b>${empty}</b></button>
     </div>
-    <div class="card">
+    <div class="card duty-card">
       <p class="tiny">On duty</p>
-      <p class="sm" style="margin-top:8px">${esc(user().displayName)} · ${shift()}</p>
-      <p class="tiny" style="margin-top:8px">${S.beds.filter(b=>b.active).length} beds</p>
+      ${dutyCardBody()}
     </div>
     </div>
     </div>`;
@@ -3023,12 +3028,28 @@ function patientCard(p,bed){
 }
 function patientsView(){
   const q=(ui.q||"").toLowerCase();
-  const match=p=>!q||(p.name+" "+(p.diagnosis||"")+" "+bedOf(p.id)).toLowerCase().includes(q);
+  const tag=ui.ptag||"";
+  const match=p=>{
+    const text=!q||(p.name+" "+(p.diagnosis||"")+" "+bedOf(p.id)).toLowerCase().includes(q);
+    if(!text) return false;
+    if(!tag) return true;
+    const sn=S.snaps[p.id]||{};
+    if(tag==="ect") return !!(ectPlan(p.id)||(sn.tags||[]).includes("ect"));
+    if(tag==="restrain") return restrainHeld(p.id);
+    if(tag==="high") return ["high","critical"].includes(sn.risk);
+    return true;
+  };
   const loose=unplacedPatients().filter(match);
   const secs=(S.sections||[]).filter(s=>s.active!==false);
   const orphanBeds=occupied().filter(b=>!secs.some(s=>s.id===b.sectionId) && match(onBed(b)));
   const sectionBlock=(title,cards)=>!cards.length?"":`<section class="plist-block"><h3 class="sec-sticky">${esc(title)}</h3><div class="plist-grid">${cards.join("")}</div></section>`;
   return `<input id="pq" placeholder="Bed, name, diagnosis" value="${esc(ui.q||"")}" oninput="ui.q=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>
+    <div class="ptag-row">
+      <button class="chip ${tag?"":"on"}" onclick="ui.ptag='';render()">All</button>
+      <button class="chip ${tag==="ect"?"on":""}" onclick="ui.ptag=ui.ptag==='ect'?'':'ect';render()">ECT</button>
+      <button class="chip ${tag==="restrain"?"on":""}" onclick="ui.ptag=ui.ptag==='restrain'?'':'restrain';render()">Restrain</button>
+      <button class="chip ${tag==="high"?"on":""}" onclick="ui.ptag=ui.ptag==='high'?'':'high';render()">High risk</button>
+    </div>
     ${sectionBlock("No bed", loose.map(p=>patientCard(p,null)))}
     ${secs.map(sec=>{
       const cards=occupied().filter(b=>b.sectionId===sec.id && match(onBed(b))).map(b=>patientCard(onBed(b),b));
@@ -4294,6 +4315,116 @@ async function sendH(){
   }
 }
 
+
+function dutyRecord(){
+  const d=S.duty||null;
+  if(!d||String(d.userId)!==String(S.userId)) return null;
+  if(d.shift!==currentShift()) return null;
+  return d;
+}
+function dutyCardBody(){
+  const d=dutyRecord();
+  const sh=currentShift();
+  const beds=S.beds.filter(b=>b.active).length;
+  if(d){
+    return `<p class="sm" style="margin-top:8px">${esc(user().displayName)} · ${esc(shiftLabel(d.shift))}</p>
+      <p class="tiny" style="margin-top:6px">Signed in ${esc(hoWhen(d.at))} · ${beds} beds</p>
+      <div class="duty-actions"><button class="btn ghost block" onclick="endDuty()">End shift</button></div>`;
+  }
+  return `<p class="sm" style="margin-top:8px">Not signed in for ${esc(shiftLabel(sh))}</p>
+    <p class="tiny" style="margin-top:6px">${beds} beds · login is not duty</p>
+    <div class="duty-actions"><button class="btn block" onclick="signDuty()">Sign in for ${esc(shiftLabel(sh))}</button></div>`;
+}
+function signDuty(){
+  const sh=currentShift();
+  ui.confirm={fn:"signDuty",title:"Sign in for shift",ok:"Sign in",
+    body:"Sign in as on duty for "+shiftLabel(sh)+" ("+shiftHours(sh)+")? This does not block anyone who stays off duty."};
+  render();
+}
+function signDutyNow(){
+  S.duty={userId:S.userId,shift:currentShift(),at:now()};
+  ev(null,"On duty · "+shiftLabel(S.duty.shift),true);
+  toast("On duty · "+shiftLabel(S.duty.shift),"ok");
+  save();render();
+}
+function endDuty(){
+  const d=dutyRecord();
+  ui.confirm={fn:"endDuty",title:"End shift",ok:"End shift",danger:true,
+    body:"End on-duty for "+(d?shiftLabel(d.shift):"this shift")+"?"};
+  render();
+}
+function endDutyNow(){
+  S.duty=null;
+  ev(null,"Off duty",true);
+  toast("Shift ended","ok");
+  save();render();
+}
+function openUserEdit(username){
+  const r=(S.residents||[]).find(x=>x.username===username);
+  if(!r){toast("User not found","bad");return}
+  ui.userEdit=username;
+  ui.fields=ui.fields||{};
+  ui.fields.eu=r.username;
+  ui.fields.ed=r.displayName||"";
+  ui.fields.ep="";
+  ui.fields.erole=normRole(r.role)||"resident";
+  render();
+}
+function closeUserEdit(){ui.userEdit=null;render()}
+function userEditOverlay(){
+  const username=ui.userEdit;
+  if(!username) return "";
+  const r=(S.residents||[]).find(x=>x.username===username);
+  if(!r) return "";
+  const self=username===user().username;
+  const ROLES=[["resident","Resident"],["admin","Admin"],["consultant","Consultant"]];
+  return `<div class="sheet mid"><button class="mask" onclick="closeUserEdit()"></button><div class="box" style="border-radius:24px;max-width:400px">
+    <h2 class="page-title" style="margin:0 0 4px">${esc(r.displayName)}</h2>
+    <p class="tiny" style="margin:0 0 12px">${esc(r.username)} · ${esc(normRole(r.role))}${self?" · you":""}</p>
+    <label class="field"><span>Username</span><input id="eu" autocapitalize="none" value="${esc(val("eu"))}" oninput="ui.fields=ui.fields||{};ui.fields.eu=this.value"/></label>
+    <label class="field"><span>Display name</span><input id="ed" value="${esc(val("ed"))}" oninput="ui.fields=ui.fields||{};ui.fields.ed=this.value"/></label>
+    <label class="field"><span>New password</span><input id="ep" type="password" placeholder="Leave blank to keep" value="${esc(val("ep"))}" oninput="ui.fields=ui.fields||{};ui.fields.ep=this.value"/></label>
+    ${self?`<p class="tiny" style="margin:8px 0 12px">Your role stays admin. Ask another admin to change it.</p>`:`<label class="field"><span>Role</span>${picker("erole",ROLES,val("erole")||normRole(r.role),"Role")}</label>`}
+    <button class="btn block" onclick="saveUserEdit()">Save changes</button>
+    ${self?"":`<button class="btn danger block" style="margin-top:8px" onclick="closeUserEdit();removeUser('${username}')">Remove account</button>`}
+    <button class="btn ghost block" style="margin-top:8px" onclick="closeUserEdit()">Close</button>
+  </div></div>`;
+}
+async function saveUserEdit(){
+  if(!canAdmin()){toast("Admin only","bad");return}
+  const old=ui.userEdit; if(!old)return;
+  const username=(val("eu")||"").trim().toLowerCase();
+  const name=(val("ed")||"").trim();
+  const pw=val("ep")||"";
+  const role=val("erole")||"resident";
+  if(!username||!name){toast("Username and display name are required.","bad");return}
+  if(pw && pw.length<6){toast("Password must be at least 6 characters.","bad");return}
+  if(!sessionTok||!sb){toast("Sign in again as admin.","bad");return}
+  setBusy(true,"Saving user…");
+  try{
+    const {data,error}=await sb.rpc("ward_update_user",{
+      p_token:sessionTok,p_username:old,p_new_username:username,p_display:name,p_password:pw,p_role:role
+    });
+    if(error) throw error;
+    if(!data) throw new Error("Update did not apply. Sign in again as admin.");
+    const r=(S.residents||[]).find(x=>x.username===old);
+    if(r){
+      r.username=username;
+      r.displayName=name;
+      if(old!==user().username) r.role=role;
+    }
+    if(old===user().username){
+      const me=user();
+      if(me){me.username=username;me.displayName=name}
+    }
+    ui.userEdit=username;
+    ui.fields.ep="";
+    ev(null,"User updated · "+name+" ("+username+")",true);
+    toast("Saved "+name,"ok");save();render();
+  }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
+  finally{setBusy(false)}
+}
+
 function usersView(){
   if(!canAdmin()) return `<div class="card"><p class="sm">Admin only.</p></div>`;
   const ROLES=[["resident","Resident"],["admin","Admin"],["consultant","Consultant"]];
@@ -4310,14 +4441,13 @@ function usersView(){
       <button class="btn block" onclick="inviteUser()">Create account</button>
     </div>
     ${list.map(r=>`<div class="card">
-      <div class="row"><b>${esc(r.displayName)}</b><span class="tiny">${esc(normRole(r.role))}</span></div>
-      <p class="tiny">${esc(r.username)}${r.active===false?" · inactive":""}</p>
-      ${r.username===user().username?`<p class="tiny" style="margin-top:8px">This is you · ${esc(normRole(r.role))} (cannot change own role)</p>`:`<div class="btns" style="grid-template-columns:1fr 1fr 1fr;margin-top:8px">
-        <button class="btn ghost sm" onclick="setUserRole('${r.username}','admin')">Admin</button>
-        <button class="btn ghost sm" onclick="setUserRole('${r.username}','resident')">Resident</button>
-        <button class="btn ghost sm" onclick="setUserRole('${r.username}','consultant')">Consultant</button>
+      <div class="user-mini">
+        <div class="user-meta">
+          <div class="row" style="margin:0"><b>${esc(r.displayName)}</b><span class="tiny">${esc(normRole(r.role))}</span></div>
+          <p class="tiny">${esc(r.username)}${r.username===user().username?" · you":""}</p>
+        </div>
+        <button class="btn ghost sm" onclick="openUserEdit('${r.username}')">Settings</button>
       </div>
-      <button class="btn danger block" style="margin-top:8px" onclick="removeUser('${r.username}')">Remove</button>`}
     </div>`).join("")}`;
 }
 async function inviteUser(){setBusy(true);
@@ -4393,6 +4523,8 @@ function confirmYes(){
   if(c.fn==="removeBed") return removeBedNow(c.id);
   if(c.fn==="clearBeds") return clearSectionBedsNow(c.secId);
   if(c.fn==="obsClose") return closeObservation(c.pid,c.outcome);
+  if(c.fn==="signDuty") return signDutyNow();
+  if(c.fn==="endDuty") return endDutyNow();
   render();
 }
 async function removeUser(username){
