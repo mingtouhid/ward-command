@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.3.10 med-actions -->
+<!-- WARD COMMAND RELEASE: R1.3.11 sheet-above-nav -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -252,10 +252,12 @@ input,textarea,select{scroll-margin-bottom:140px;scroll-margin-top:80px}
 .sheet.mid{align-items:center}
 .sheet .mask{position:absolute;inset:0;background:var(--mask);border:0;animation:none}
 .sheet .box{position:relative;width:100%;max-width:min(420px,calc(100vw - 32px));max-height:min(86dvh,720px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:var(--shadow);animation:none;overscroll-behavior:contain}
-.sheet.sheet-enter .mask{animation:fadein .2s ease}
-.sheet.sheet-enter .box{animation:sheetup .26s ease}
+.sheet.sheet-enter .mask{animation:sheetMaskIn .32s ease-out both}
+.sheet.sheet-enter .box{animation:sheetRise .42s cubic-bezier(.22,1,.36,1) both}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 @keyframes sheetup{from{transform:translate3d(0,18px,0);opacity:.7}to{transform:none;opacity:1}}
+@keyframes sheetMaskIn{from{opacity:0}to{opacity:.92}}
+@keyframes sheetRise{from{transform:translate3d(0,36px,0) scale(.985);opacity:0}to{transform:none;opacity:1}}
 .login{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px;box-sizing:border-box}
 .login-card{width:100%;max-width:400px;margin:0 auto;padding:28px 22px 24px;border-radius:24px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}
 .login-card h1{font-size:30px;margin:10px 0 4px;letter-spacing:-.04em}
@@ -1209,11 +1211,59 @@ html[data-theme="dark"] .rec-rail:before{background:rgba(241,245,249,.12)}
 .main{padding-bottom:max(28px, calc(12px + env(safe-area-inset-bottom, 0px)))}
 .plist-block{padding-bottom:4px}
 .home-priority,.priority-secondary{margin-bottom:8px}
+/* R1.3.11 sheet-above-nav: modals sit above bottom nav + smoother enter */
+:root{--nav-h:78px}
+.sheet{
+  position:fixed;
+  left:0;right:0;top:0;
+  bottom:var(--nav-h);
+  z-index:50;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding:12px 12px 10px;
+  padding-top:max(12px, env(safe-area-inset-top, 0px));
+  box-sizing:border-box;
+}
+.sheet.mid{align-items:flex-end}
+.sheet .mask{
+  position:absolute;inset:0;
+  background:var(--mask);
+  border:0;
+  animation:none;
+  opacity:.92;
+}
+.sheet .box{
+  position:relative;
+  width:100%;
+  max-width:min(420px, calc(100vw - 24px));
+  max-height:min(86dvh, calc(100% - 4px));
+  overflow:auto;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:24px;
+  padding:18px 16px 16px;
+  box-shadow:0 -8px 32px rgba(15,23,42,.18), var(--shadow);
+  animation:none;
+  overscroll-behavior:contain;
+  will-change:transform,opacity;
+}
+.sheet.sheet-enter .mask{animation:sheetMaskIn .32s ease-out both}
+.sheet.sheet-enter .box{animation:sheetRise .42s cubic-bezier(.22,1,.36,1) both}
+@keyframes sheetMaskIn{from{opacity:0}to{opacity:.92}}
+@keyframes sheetRise{
+  from{transform:translate3d(0,36px,0) scale(.985);opacity:0}
+  to{transform:none;opacity:1}
+}
+.pick-layer .box{max-height:min(78dvh, calc(100% - 4px))}
+.nav{z-index:55}
 @media (max-width:520px){
-  .sheet{align-items:flex-end;justify-content:flex-end;padding:12px 0 0;padding-top:max(12px, env(safe-area-inset-top, 0px))}
-  .sheet.mid{align-items:flex-end}
-  .sheet .box{max-width:100%;max-height:min(92dvh, 860px);border-radius:24px 24px 0 0;padding-bottom:max(18px, env(safe-area-inset-bottom, 0px))}
-  .pick-layer .box{max-height:min(85dvh, 760px)}
+  .sheet{padding:10px 10px 8px;padding-top:max(10px, env(safe-area-inset-top, 0px))}
+  .sheet .box{max-width:100%;max-height:min(88dvh, calc(100% - 4px));border-radius:22px;padding:18px 14px 14px}
+  .pick-layer .box{max-height:min(82dvh, calc(100% - 4px))}
+}
+@media (min-width:900px){
+  .sheet .box{max-width:min(520px, calc(100vw - 48px))}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1647,7 +1697,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.10";
+const APP_VERSION="R1.3.11";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -6427,6 +6477,14 @@ function render(opts){
   if(ui._sheetEnter) _html=stampSheetEnter(_html);
   el.innerHTML=_html;
   ui._sheetEnter=false;
+  (function syncNavClearance(){
+    try{
+      const nav=el.querySelector(".nav");
+      if(!nav) return;
+      const h=Math.ceil(nav.getBoundingClientRect().height);
+      if(h>40) document.documentElement.style.setProperty("--nav-h", h+"px");
+    }catch(e){}
+  })();
   if(sessionTok&&!ui.notifyInboxLoading&&(!ui.notifyInboxLoadedAt||Date.now()-ui.notifyInboxLoadedAt>60000)){
     loadNotificationInbox().catch(()=>{});
   }
