@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.3.13 sheet-zoom -->
+<!-- WARD COMMAND RELEASE: R1.3.14 pick-stack -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1216,7 +1216,7 @@ html[data-theme="dark"] .rec-rail:before{background:rgba(241,245,249,.12)}
 .main{padding-bottom:max(28px, calc(12px + env(safe-area-inset-bottom, 0px)))}
 .plist-block{padding-bottom:4px}
 .home-priority,.priority-secondary{margin-bottom:8px}
-/* R1.3.13 sheet-zoom: zoom+fade in/out; full-screen dim+freeze; panel above nav */
+/* R1.3.14 pick-stack: stacked overlays close one layer; pickers zoom+fade */
 :root{--nav-h:78px}
 .sheet{
   position:fixed;
@@ -1276,6 +1276,7 @@ html[data-theme="dark"] .rec-rail:before{background:rgba(241,245,249,.12)}
   from{transform:translate3d(0,36px,0) scale(.985);opacity:0}
   to{transform:none;opacity:1}
 }
+.sheet.pick-layer{z-index:70}
 .pick-layer .box{max-height:min(78dvh, calc(100% - 4px))}
 /* Freeze chrome under an open modal (belt-and-suspenders with full mask) */
 html.sheet-open .top,
@@ -1727,7 +1728,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.13";
+const APP_VERSION="R1.3.14";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2850,6 +2851,15 @@ function ico(name){
 function overlayOpen(){
   return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit);
 }
+function overlayDepth(){
+  let n=0;
+  if(ui.sheet||ui.panel||ui.giveOpen) n++;
+  if(ui.userEdit) n++;
+  if(ui.notifySet) n++;
+  if(ui.pick) n++;
+  if(ui.confirm) n++;
+  return n;
+}
 function prefersReduceMotion(){
   try{return window.matchMedia("(prefers-reduced-motion:reduce)").matches}catch(e){return false}
 }
@@ -2862,6 +2872,28 @@ function clearOverlayState(extra){
     if(ui.fields){try{delete ui.fields.md;delete ui.fields.mds}catch(e){}}
   }
 }
+function popTopOverlay(extra){
+  extra=extra||{};
+  if(ui.confirm){ ui.confirm=null; return "confirm"; }
+  if(ui.pick){ ui.pick=null; return "pick"; }
+  if(ui.notifySet){ ui.notifySet=false; return "notifySet"; }
+  if(ui.userEdit){ ui.userEdit=null; return "userEdit"; }
+  if(ui.panel){ ui.panel=null; return "panel"; }
+  if(ui.giveOpen){ ui.giveOpen=false; return "give"; }
+  if(ui.sheet){
+    ui.sheet=null;
+    if(extra.med){
+      ui.medPid=null;
+      if(ui.fields){try{delete ui.fields.md;delete ui.fields.mds}catch(e){}}
+    }
+    return "sheet";
+  }
+  return "";
+}
+function topSheetNode(){
+  const nodes=document.querySelectorAll("#app .sheet");
+  return nodes.length?nodes[nodes.length-1]:null;
+}
 function dismissOverlay(extra){
   extra=extra||{};
   if(ui._sheetLeaving) return;
@@ -2870,11 +2902,13 @@ function dismissOverlay(extra){
     else if(extra.render!==false) render(Object.assign({force:1}, extra.renderOpts||{}));
     return;
   }
-  const node=document.querySelector("#app .sheet");
+  const node=topSheetNode();
   const finish=()=>{
     ui._sheetLeaving=false;
-    clearOverlayState(extra);
-    try{document.documentElement.classList.remove("sheet-open")}catch(e){}
+    if(extra.all) clearOverlayState(extra);
+    else popTopOverlay(extra);
+    const still=overlayOpen();
+    try{document.documentElement.classList.toggle("sheet-open", !!still)}catch(e){}
     if(typeof extra.after==="function") extra.after();
     else render(Object.assign({force:1}, extra.renderOpts||{}));
   };
@@ -2897,7 +2931,11 @@ function dismissOverlay(extra){
 }
 function stampSheetEnter(html){
   if(!html || !ui._sheetEnter) return html || "";
-  return String(html).replace(/class="sheet\b/g, 'class="sheet sheet-enter');
+  const marker='class="sheet';
+  const idx=String(html).lastIndexOf(marker);
+  if(idx<0) return html || "";
+  if(String(html).slice(idx, idx+28).indexOf("sheet-enter")>=0) return html || "";
+  return String(html).slice(0,idx)+'class="sheet sheet-enter'+String(html).slice(idx+marker.length);
 }
 function shell(inner){
   const u=user();
@@ -5634,51 +5672,45 @@ function patchFrozenSheetPick(id,v){
 function setPick(id,v){
   ui.fields=ui.fields||{};
   ui.fields[id]=v;
-  ui.pick=null;
-  if(ui.medPid) ui.sheet=medSheetHtml(ui.medPid);
-  else patchFrozenSheetPick(id,v);
   if(id==="disel"){ui.disId=v;ui.disForm=false}
-  if(id==="dmode"||id==="dout"||id==="asex"||id==="abed"){
+  if(id==="dmode"||id==="dout"||id==="asex"||id==="abed"||id==="acon"||id==="hshift"){
     ui.census=ui.census||{};
     if(id==="dmode") ui.census.mode=v;
     if(id==="dout") ui.census.outcome=v;
     if(id==="asex") ui.census.sex=v;
     if(id==="acon") ui.census.con=v;
-    if(id==="hshift") ui.fields=ui.fields||{},ui.fields.hshift=v;
+    if(id==="hshift") ui.fields.hshift=v;
     if(id==="abed") ui.census.bed=v;
   }
-
-  /* Task sheets are stored as a static HTML string while the picker overlay is open.
-     Update the underlying task assignee button in place so the selected resident
-     is immediately visible and val("tsk_to") reads the new value. */
-  if(id==="tsk_to"){
-    const def=(ui.pickDefs||{})[id];
-    const row=(def&&def.rows||[]).find(r=>String(r[0])===String(v));
-    if(!row)return;
-
-    ui.fields=ui.fields||{};
-    ui.fields[id]=v;
-
-    // ui.sheet is pre-rendered HTML. Update the stored assignee picker
-    // before rendering, otherwise the sheet would show the old resident.
-    if(ui.sheet){
-      const safeId=String(v).replace(/&/g,"&amp;").replace(/"/g,"&quot;")
-        .replace(/</g,"&lt;").replace(/>/g,"&gt;");
-      const safeLabel=String(row[1]||"Select").replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;").replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-      const re=/(<button\b[^>]*\bid="tsk_to"[^>]*data-val=")[^"]*("[^>]*>)(\s*<span>)[\s\S]*?(<\/span>)/i;
-      if(re.test(ui.sheet)){
-        ui.sheet=ui.sheet.replace(re,"$1"+safeId+"$2$3"+safeLabel+"$4");
+  const applyParent=()=>{
+    if(id==="tsk_to"){
+      const def=(ui.pickDefs||{})[id];
+      const row=(def&&def.rows||[]).find(r=>String(r[0])===String(v));
+      if(row && ui.sheet){
+        const safeId=String(v).replace(/&/g,"&amp;").replace(/"/g,"&quot;")
+          .replace(/</g,"&lt;").replace(/>/g,"&gt;");
+        const safeLabel=String(row[1]||"Select").replace(/&/g,"&amp;")
+          .replace(/</g,"&lt;").replace(/>/g,"&gt;")
+          .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+        const re=/(<button\b[^>]*\bid="tsk_to"[^>]*data-val=")[^"]*("[^>]*>)(\s*<span>)[\s\S]*?(<\/span>)/i;
+        if(re.test(ui.sheet)){
+          ui.sheet=ui.sheet.replace(re,"$1"+safeId+"$2$3"+safeLabel+"$4");
+        }
       }
+    }else if(ui.medPid){
+      ui.sheet=medSheetHtml(ui.medPid);
+    }else{
+      patchFrozenSheetPick(id,v);
     }
-
-    ui.pick=null;
-    render();
+    render({force:1});
+  };
+  if(ui.pick){
+    dismissOverlay({after:applyParent});
     return;
   }
-  render();
+  applyParent();
 }
+
 
 function pickOverlay(){
   if(!ui.pick)return "";
@@ -6546,7 +6578,9 @@ function render(opts){
   const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView};
   syncRoute();
   const sheetOpen=overlayOpen();
-  ui._sheetEnter=sheetOpen && !ui._sheetWasOpen;
+  const depth=overlayDepth();
+  ui._sheetEnter=sheetOpen && depth>(ui._overlayDepthWas||0);
+  ui._overlayDepthWas=depth;
   ui._sheetWasOpen=sheetOpen;
   try{document.documentElement.classList.toggle("sheet-open", !!sheetOpen)}catch(e){}
   let _html=shell((pages[route.page]||patientsView)());

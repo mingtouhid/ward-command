@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-r1.3.13-sheet-zoom";
+const VERSION = "ward-command-pwa-r1.3.14-pick-stack";
 const PRECACHE = [
   "./",
   "./index.html",
