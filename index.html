@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.3.12 sheet-freeze -->
+<!-- WARD COMMAND RELEASE: R1.3.13 sheet-zoom -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -252,11 +252,16 @@ input,textarea,select{scroll-margin-bottom:140px;scroll-margin-top:80px}
 .sheet.mid{align-items:center}
 .sheet .mask{position:absolute;inset:0;background:var(--mask);border:0;animation:none}
 .sheet .box{position:relative;width:100%;max-width:min(420px,calc(100vw - 32px));max-height:min(86dvh,720px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:var(--shadow);animation:none;overscroll-behavior:contain}
-.sheet.sheet-enter .mask{animation:sheetMaskIn .32s ease-out both}
-.sheet.sheet-enter .box{animation:sheetRise .42s cubic-bezier(.22,1,.36,1) both}
+.sheet.sheet-enter .mask{animation:sheetMaskIn .28s ease-out both}
+.sheet.sheet-enter .box{animation:sheetZoomIn .34s cubic-bezier(.22,1,.36,1) both}
+.sheet.sheet-leave .mask{animation:sheetMaskOut .22s ease-in both}
+.sheet.sheet-leave .box{animation:sheetZoomOut .24s cubic-bezier(.4,0,1,1) both}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 @keyframes sheetup{from{transform:translate3d(0,18px,0);opacity:.7}to{transform:none;opacity:1}}
 @keyframes sheetMaskIn{from{opacity:0}to{opacity:.92}}
+@keyframes sheetMaskOut{from{opacity:.92}to{opacity:0}}
+@keyframes sheetZoomIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes sheetZoomOut{from{transform:scale(1);opacity:1}to{transform:scale(.92);opacity:0}}
 @keyframes sheetRise{from{transform:translate3d(0,36px,0) scale(.985);opacity:0}to{transform:none;opacity:1}}
 .login{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px;box-sizing:border-box}
 .login-card{width:100%;max-width:400px;margin:0 auto;padding:28px 22px 24px;border-radius:24px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}
@@ -561,7 +566,7 @@ button.pulse{animation:btnpulse .35s ease}
 @keyframes pagefwd{from{opacity:.55}to{opacity:1}}
 @keyframes pageback{from{opacity:.55}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){
-  .main.fwd,.main.back,button.pulse,.btn.ok,.btn.bad,.sheet .mask,.sheet .box,.sheet.sheet-enter .mask,.sheet.sheet-enter .box,.card.enter,
+  .main.fwd,.main.back,button.pulse,.btn.ok,.btn.bad,.sheet .mask,.sheet .box,.sheet.sheet-enter .mask,.sheet.sheet-enter .box,.sheet.sheet-leave .mask,.sheet.sheet-leave .box,.card.enter,
   .live-orb.live,.live-orb.saving,.live-orb.syncing,.live-orb.bad,.live-orb.error,
   .dot.syncing,.busy-spin::after,
   .nav button.pulse,.more-row.pulse,.chip.pulse,.pill.pulse{animation:none !important}
@@ -1211,7 +1216,7 @@ html[data-theme="dark"] .rec-rail:before{background:rgba(241,245,249,.12)}
 .main{padding-bottom:max(28px, calc(12px + env(safe-area-inset-bottom, 0px)))}
 .plist-block{padding-bottom:4px}
 .home-priority,.priority-secondary{margin-bottom:8px}
-/* R1.3.12 sheet-freeze: full-screen dim+freeze; panel still above nav */
+/* R1.3.13 sheet-zoom: zoom+fade in/out; full-screen dim+freeze; panel above nav */
 :root{--nav-h:78px}
 .sheet{
   position:fixed;
@@ -1256,10 +1261,17 @@ html[data-theme="dark"] .rec-rail:before{background:rgba(241,245,249,.12)}
   will-change:transform,opacity;
   touch-action:pan-y;
   margin:0 12px 10px;
+  transform-origin:50% 100%;
 }
-.sheet.sheet-enter .mask{animation:sheetMaskIn .32s ease-out both}
-.sheet.sheet-enter .box{animation:sheetRise .42s cubic-bezier(.22,1,.36,1) both}
+.sheet.sheet-enter .mask{animation:sheetMaskIn .28s ease-out both}
+.sheet.sheet-enter .box{animation:sheetZoomIn .34s cubic-bezier(.22,1,.36,1) both}
+.sheet.sheet-leave{pointer-events:none}
+.sheet.sheet-leave .mask{animation:sheetMaskOut .22s ease-in both}
+.sheet.sheet-leave .box{animation:sheetZoomOut .24s cubic-bezier(.4,0,1,1) both}
 @keyframes sheetMaskIn{from{opacity:0}to{opacity:.92}}
+@keyframes sheetMaskOut{from{opacity:.92}to{opacity:0}}
+@keyframes sheetZoomIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes sheetZoomOut{from{transform:scale(1);opacity:1}to{transform:scale(.92);opacity:0}}
 @keyframes sheetRise{
   from{transform:translate3d(0,36px,0) scale(.985);opacity:0}
   to{transform:none;opacity:1}
@@ -1715,7 +1727,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.12";
+const APP_VERSION="R1.3.13";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2181,6 +2193,7 @@ function snapshotScroll(){
   navScroll[routeKey(route.page,route.id)]=m.scrollTop;
 }
 function go(page,id){
+  if(ui._sheetLeaving){ui._sheetLeaving=false;try{document.documentElement.classList.remove("sheet-open")}catch(e){}}
   snapshotScroll();
   id=id||null;
   const tab=PAGE_TAB[page]||"home";
@@ -2201,8 +2214,7 @@ function go(page,id){
   render({force:1,nav:1});
 }
 function back(){
-  if(ui.pick){ui.pick=null;render();return}
-  if(ui.sheet){ui.sheet=null;render();return}
+  if(ui.pick||ui.sheet||ui.confirm||ui.panel||ui.giveOpen||ui.notifySet||ui.userEdit){dismissOverlay();return}
   snapshotScroll();
   if(nav.stack.length){
     nav.stack=nav.stack.slice(0,-1);
@@ -2217,7 +2229,7 @@ function back(){
 }
 window.addEventListener("popstate",e=>{
   snapshotScroll();
-  if(applyNavState(e.state)){ui.sheet=null;render({force:1,nav:1});return}
+  if(applyNavState(e.state)){if(ui._sheetLeaving)ui._sheetLeaving=false;clearOverlayState();render({force:1,nav:1});return}
   try{history.pushState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(err){}
 });
 function cloudOn(){return !!(S.supabaseUrl&&S.supabaseAnonKey&&/^https:\/\//i.test(S.supabaseUrl)&&window.supabase)}
@@ -2838,6 +2850,51 @@ function ico(name){
 function overlayOpen(){
   return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit);
 }
+function prefersReduceMotion(){
+  try{return window.matchMedia("(prefers-reduced-motion:reduce)").matches}catch(e){return false}
+}
+function clearOverlayState(extra){
+  extra=extra||{};
+  ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null;
+  ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null;
+  if(extra.med){
+    ui.medPid=null;
+    if(ui.fields){try{delete ui.fields.md;delete ui.fields.mds}catch(e){}}
+  }
+}
+function dismissOverlay(extra){
+  extra=extra||{};
+  if(ui._sheetLeaving) return;
+  if(!overlayOpen()){
+    if(typeof extra.after==="function") extra.after();
+    else if(extra.render!==false) render(Object.assign({force:1}, extra.renderOpts||{}));
+    return;
+  }
+  const node=document.querySelector("#app .sheet");
+  const finish=()=>{
+    ui._sheetLeaving=false;
+    clearOverlayState(extra);
+    try{document.documentElement.classList.remove("sheet-open")}catch(e){}
+    if(typeof extra.after==="function") extra.after();
+    else render(Object.assign({force:1}, extra.renderOpts||{}));
+  };
+  if(prefersReduceMotion()||!node||extra.instant){ finish(); return; }
+  ui._sheetLeaving=true;
+  try{
+    node.classList.remove("sheet-enter");
+    node.classList.add("sheet-leave");
+    node.style.pointerEvents="none";
+  }catch(e){}
+  let done=false;
+  const end=()=>{ if(done)return; done=true; try{node.removeEventListener("animationend",onAnim)}catch(e){} finish(); };
+  const onAnim=(e)=>{
+    const t=e&&e.target;
+    if(!t) return;
+    if(t===node||(t.classList&&(t.classList.contains("box")||t.classList.contains("mask")))) end();
+  };
+  try{node.addEventListener("animationend", onAnim)}catch(e){}
+  setTimeout(end, 340);
+}
 function stampSheetEnter(html){
   if(!html || !ui._sheetEnter) return html || "";
   return String(html).replace(/class="sheet\b/g, 'class="sheet sheet-enter');
@@ -3288,8 +3345,8 @@ function snapView(){
 }
 function openCriticalHistory(pid){
   const body=(window._criticalRowsHtml&&window._criticalRowsHtml(pid))||"<p class='sm'>None yet</p>";
-  ui.sheet=`<div class="sheet mid"><button class="mask" onclick="ui.sheet=null;render()"></button><div class="box">
-    <div class="row"><h2>Critical status</h2><button class="btn ghost sm" onclick="ui.sheet=null;render()">Close</button></div>
+  ui.sheet=`<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
+    <div class="row"><h2>Critical status</h2><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
     ${body}
   </div></div>`;
   render();
@@ -4032,8 +4089,8 @@ function dischargePatient(id){
 function openFab(){
   if(!needWrite())return;
   const occ=occupied();
-  ui.sheet=`<div class="sheet mid"><button class="mask" onclick="ui.sheet=null;render()"></button><div class="box">
-    <div class="row"><h2>Quick action</h2><button class="btn ghost sm" onclick="ui.sheet=null;render()">Close</button></div>
+  ui.sheet=`<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
+    <div class="row"><h2>Quick action</h2><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
     
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <button class="card" onclick="fabForm('status')"><b>Status</b><p class="tiny">One-line state</p></button>
@@ -4109,7 +4166,7 @@ function saveEct(pid){
   let e=ectPlan(pid);
   if(!e){e={id:uid("ect"),pid,status:"planned",by:S.userId,at:now()};S.ect.unshift(e)}
   Object.assign(e,{indication,sessionsDone,nextAt,npo,status:"planned",by:S.userId,at:now()});
-  ev(pid,"ECT planned",true,"ect");ui.sheet=null;ui.panel=null;save();render();pushEctNow(ectPlan(pid)||e,"planned");
+  ev(pid,"ECT planned",true,"ect");save();dismissOverlay({after:()=>{pushEctNow(ectPlan(pid)||e,"planned");}});
 }
 async function markEctDone(id){
   if(!needWrite())return;
@@ -4150,7 +4207,7 @@ async function markEctDone(id){
 function cancelEct(id){
   const e=(S.ect||[]).find(x=>x.id===id);if(!e)return;
   e.status="cancelled";e.at=now();
-  ev(e.pid,"ECT plan cancelled",true,"ect");qEct(e);ui.sheet=null;save();render();
+  ev(e.pid,"ECT plan cancelled",true,"ect");qEct(e);save();dismissOverlay();
   pushEctNow(e,"cancelled");
 }
 async function pushEctNow(e,action){setBusy(true);
@@ -4308,10 +4365,7 @@ function openGiveHandover(){
   if(String(ui.fields.hres||"")===String(S.userId||"")) ui.fields.hres="";
   render();
 }
-function closeGiveHandover(){
-  ui.giveOpen=false;
-  render();
-}
+function closeGiveHandover(){ dismissOverlay(); }
 function giveSheet(){
   if(!ui.giveOpen) return "";
   return `<div class="sheet mid"><button class="mask" onclick="closeGiveHandover()"></button><div class="box">
@@ -4324,7 +4378,7 @@ function openPanel(kind,extra){
   ui.sheet=null;
   render();
 }
-function closePanel(){ ui.panel=null; render(); }
+function closePanel(){ dismissOverlay(); }
 function panelBox(title,inner){
   return `<div class="sheet mid"><button class="mask" onclick="closePanel()"></button><div class="box">
     <div class="row"><h2>${title}</h2><button class="btn ghost sm" onclick="closePanel()">Close</button></div>
@@ -4441,11 +4495,11 @@ async function sendH(){
     }catch(ne){
       evFail(pid,"Handover notification",ne);
       toast("Posted for "+shiftLabel(toShift)+" · push not delivered","ok");
-      ui.giveOpen=false;ui.sheet=null;ui.htab="board";save();render();
+      ui.htab="board";save();dismissOverlay();
       return;
     }
     toast("Posted for "+shiftLabel(toShift),"ok");
-    ui.giveOpen=false;ui.sheet=null;ui.htab="board";save();render();
+    ui.htab="board";save();dismissOverlay();
   }catch(e){
     evFail(pid,"Handover",e);
     toast("Handover was not saved: "+(e.message||e),"bad");
@@ -4510,7 +4564,7 @@ function openUserEdit(username){
   ui.fields.erole=normRole(r.role)||"resident";
   render();
 }
-function closeUserEdit(){ui.userEdit=null;render()}
+function closeUserEdit(){dismissOverlay()}
 function userEditOverlay(){
   const username=ui.userEdit;
   if(!username) return "";
@@ -4633,11 +4687,11 @@ async function setUserRoleNow(username,role){
 function confirmOverlay(){
   const c=ui.confirm;
   if(!c)return "";
-  return `<div class="sheet mid"><button class="mask" onclick="ui.confirm=null;render()"></button><div class="box" style="border-radius:24px;max-width:360px">
+  return `<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box" style="border-radius:24px;max-width:360px">
     <h2 class="page-title" style="margin:0 0 8px">${esc(c.title||"Confirm")}</h2>
     <p class="sm" style="margin:0 0 16px">${esc(c.body||"")}</p>
     <div class="btns" style="grid-template-columns:1fr 1fr">
-      <button class="btn" onclick="ui.confirm=null;render()">Cancel</button>
+      <button class="btn" onclick="dismissOverlay()">Cancel</button>
       <button class="btn ${c.danger===false?"":"danger"}" onclick="confirmYes()">${esc(c.ok||"Confirm")}</button>
     </div>
   </div></div>`;
@@ -4651,7 +4705,7 @@ function doLogout(){
 }
 function confirmYes(){
   const c=ui.confirm; if(!c)return;
-  ui.confirm=null;
+  const run=()=>{
   if(c.fn==="removeUser") return removeUserNow(c.username);
   if(c.fn==="logout") return doLogout();
   if(c.fn==="setRole") return setUserRoleNow(c.username,c.role);
@@ -4670,6 +4724,8 @@ function confirmYes(){
   if(c.fn==="toggleTag") return toggleTagNow(c.id,c.tag,c.adding);
   if(c.fn==="sendCritical") return sendCriticalStatusUpdate(c.pid);
   render();
+  };
+  dismissOverlay({after:run});
 }
 async function removeUser(username){
   if(!canAdmin()){toast("Admin only","bad");return}
@@ -5261,8 +5317,8 @@ function setupView(){
         <p class="tiny">PUSH</p>
         <button class="btn block" style="margin-top:10px" onclick="preparePushSubscription()">${perm==='granted'?'Register this phone':'Enable push'}</button>
       </div>`;
-    const setSheet=ui.notifySet?`<div class="sheet mid"><button class="mask" onclick="ui.notifySet=false;render()"></button><div class="box">
-      <div class="row"><h2>Notification settings</h2><button class="btn ghost sm" onclick="ui.notifySet=false;render()">Close</button></div>
+    const setSheet=ui.notifySet?`<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
+      <div class="row"><h2>Notification settings</h2><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
       ${settings}
     </div></div>`:"";
     return `${back}
@@ -5627,8 +5683,8 @@ function setPick(id,v){
 function pickOverlay(){
   if(!ui.pick)return "";
   const p=ui.pick;
-  return `<div class="sheet mid pick-layer"><button class="mask" onclick="ui.pick=null;render()"></button><div class="box">
-    <div class="row"><h2>${esc(p.title||"Choose")}</h2><button class="btn ghost sm" onclick="ui.pick=null;render()">Close</button></div>
+  return `<div class="sheet mid pick-layer"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
+    <div class="row"><h2>${esc(p.title||"Choose")}</h2><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
     ${p.rows.map(r=>{
       const v=r[0],lb=r[1];
       return `<button type="button" class="pick-opt ${String(p.cur)===String(v)?"on":""}" onclick="setPick('${p.id}','${String(v).replace(/'/g,"\'")}')"><span>${esc(lb)}</span>${String(p.cur)===String(v)?"✓":""}</button>`;
@@ -5794,8 +5850,8 @@ function openPgtHistory(id){
       <p class="tiny">${esc(n.byName||rname(n.by))} · ${esc(stamp(n.at)||fmt(n.at))}</p>
       <p class="sm" style="margin-top:4px">${esc(n.text)}</p>
     </div>`).join(""):`<p class="sm">No PGT notes yet.</p>`;
-  ui.sheet=`<div class="sheet mid"><button class="mask" onclick="ui.sheet=null;render()"></button><div class="box">
-    <div class="row"><h2>PGT notes</h2><button class="btn ghost sm" onclick="ui.sheet=null;render()">Close</button></div>
+  ui.sheet=`<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
+    <div class="row"><h2>PGT notes</h2><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
     <div style="margin-top:10px;max-height:60dvh;overflow:auto">${body}</div>
   </div></div>`;
   render();
@@ -6002,7 +6058,7 @@ async function sendCriticalStatusUpdate(pid){
       metadata:{bed_id:b?b.id:null,bed_number:b?b.no:null,message:msg,critical_status_update_id:criticalRecord.id||criticalRecord.update_id||null}
     });
     ev(pid,"Critical status update sent · "+((result.dispatch&&result.dispatch.sent)||0)+" device(s)",true);
-    toast("Critical update sent to the ward team.","ok"); ui.sheet=null;save();render();
+    toast("Critical update sent to the ward team.","ok"); save();dismissOverlay();
   }catch(e){
     evFail(pid,"Critical status notification",e);
     toast("Critical update failed: "+(e.message||"error"),"bad");
@@ -6011,8 +6067,8 @@ async function sendCriticalStatusUpdate(pid){
 }
 function criticalStatusForm(pid){
   const p=patient(pid); if(!p)return; const b=bedObj(pid);
-  ui.sheet=`<div class="sheet mid" id="criticalStatusSheet"><button class="mask" onclick="ui.sheet=null;render()"></button><div class="box">
-    <div class="row"><h2>Critical Status Update</h2><button class="btn ghost sm" onclick="ui.sheet=null;render()">Close</button></div>
+  ui.sheet=`<div class="sheet mid" id="criticalStatusSheet"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
+    <div class="row"><h2>Critical Status Update</h2><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
     <p class="sm" style="margin:8px 0"><b>${esc(p.name)}</b> · Bed ${esc(b?b.no:"—")}</p>
     <p class="tiny" style="margin-bottom:8px">Notifies the whole team.</p>
     <label class="field"><span>Critical update</span><textarea id="criticalStatusNote" rows="5" maxlength="500" placeholder="e.g. Acute agitation with attempted absconding; close observation required."></textarea></label>
@@ -6094,8 +6150,8 @@ function quickPrn(id){
     const s=prnStats(o.id);
     return `<button class="btn block" style="margin-top:8px" onclick="givePrn('${o.id}')">${esc(o.drug)} ${esc(o.dose)}${s.last?" · last "+rel(s.last.at):""}${s.today?" · "+s.today+" today":""}</button>`;
   }).join("");
-  ui.sheet=`<div class="sheet mid"><button class="mask" onclick="ui.sheet=null;render()"></button><div class="box">
-    <div class="row"><b>Give PRN</b><button class="btn ghost sm" onclick="ui.sheet=null;render()">Close</button></div>
+  ui.sheet=`<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
+    <div class="row"><b>Give PRN</b><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
     <p class="sm" style="margin:8px 0">Tap a PRN to record a dose.</p>
     ${chips||`<p class="tiny">No PRN orders yet.</p>`}
     <p class="tiny" style="margin:14px 0 6px">OTHER</p>
@@ -6119,7 +6175,7 @@ async function givePrn(oid){
     for(const op of ops.filter(x=>x.table!=="medication_orders")) await upsert(op.table,[op.row]);
     ev(o.pid,"PRN "+o.drug+" "+o.dose,true,"med");
     toast("Given "+o.drug+" "+o.dose,"ok");
-    ui.sheet=null;save();render();
+    save();dismissOverlay();
   }catch(e){
     S.doses=S.doses.filter(x=>x.id!==d.id);
     evFail(o.pid,"PRN",e);
@@ -6180,10 +6236,10 @@ async function saveQuickTaskNow(id,title,detail,to){
     });
     ev(id,"Task added · "+title,true,"task");
     ev(id,"Task notification sent · "+((result.dispatch&&result.dispatch.sent)||0)+" device(s)",true,"task");
-    toast("Task added and assigned","ok");ui.sheet=null;save();render();
+    toast("Task added and assigned","ok");save();dismissOverlay();
   }catch(e){
     evFail(id,"Task notification",e);
-    toast("Task saved locally; notification failed","bad");ui.sheet=null;save();render();
+    toast("Task saved locally; notification failed","bad");save();dismissOverlay();
   }finally{
     setBusy(false);
   }
@@ -6287,8 +6343,8 @@ function transferForm(pid){
   const from=S.beds.find(b=>b.patientId===pid);
   ui.xfer={pid,bq:""};
   const empties=emptyBeds();
-  ui.sheet=`<div class="sheet mid"><button class="mask" onclick="ui.sheet=null;render()"></button><div class="box">
-    <div class="row"><h2>Transfer</h2><button class="btn ghost sm" onclick="ui.sheet=null;render()">Close</button></div>
+  ui.sheet=`<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
+    <div class="row"><h2>Transfer</h2><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
     <p class="sm" style="margin:8px 0">${esc(p.name)} · now ${esc(from?from.no:"unassigned")}</p>
     <label class="field"><span>Empty bed</span>
       <input id="xq" placeholder="Search bed or ward" oninput="filterXferPills(this.value)" autocomplete="off"/>
@@ -6320,7 +6376,7 @@ function doTransfer(pid,bedId){
     return;
   }
   const from=S.beds.find(b=>b.patientId===pid);
-  if(from&&from.id===dest.id){ui.sheet=null;render();return}
+  if(from&&from.id===dest.id){dismissOverlay();return}
   const when=now();
   if(from){
     from.patientId=null;
@@ -6373,7 +6429,7 @@ async function transferCommit(p,from,dest,asg){setBusy(true);
       console.warn("Transfer notification failed",ne);
     }
     ev(p.id,"Transferred "+(from?from.no:"—")+" → "+dest.no,true,"note");
-    toast((from?from.no:"—")+" → "+dest.no,"ok");ui.sheet=null;save();render();
+    toast((from?from.no:"—")+" → "+dest.no,"ok");save();dismissOverlay();
   }catch(e){
     dest.patientId=null;
     if(from) from.patientId=p.id;
@@ -6384,7 +6440,7 @@ async function transferCommit(p,from,dest,asg){setBusy(true);
   }finally{workflowUnlock("transfer",p&&p.id);setBusy(false);}
 }
 
-function closeMedForm(){ui.sheet=null;ui.medPid=null;if(ui.fields){delete ui.fields.md;delete ui.fields.mds}render()}
+function closeMedForm(){dismissOverlay({med:1})}
 function medSheetHtml(pid){
   ui.fields=ui.fields||{};
   const drug=esc(ui.fields.md||"");
@@ -6446,9 +6502,9 @@ function resumeMed(id){
   ui.confirm={fn:"resumeMed",id,title:"Resume medication",ok:"Resume",danger:false,body:"Resume "+(o.drug||"this drug")+"?"};
   render();
 }
-function stopMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o)return;o.stop=now();o.status="stopped";o.hold=null;ev(o.pid,"Stopped "+o.drug,true,"med");qOrder(o);ui.sheet=null;save();render()}
-function holdMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="held";o.hold=now();ev(o.pid,"Paused "+o.drug,true,"med");qOrder(o);ui.sheet=null;save();render()}
-function resumeMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="active";o.hold=null;ev(o.pid,"Resumed "+o.drug,true,"med");qOrder(o);ui.sheet=null;save();render()}
+function stopMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o)return;o.stop=now();o.status="stopped";o.hold=null;ev(o.pid,"Stopped "+o.drug,true,"med");qOrder(o);save();dismissOverlay()}
+function holdMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="held";o.hold=now();ev(o.pid,"Paused "+o.drug,true,"med");qOrder(o);save();dismissOverlay()}
+function resumeMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="active";o.hold=null;ev(o.pid,"Resumed "+o.drug,true,"med");qOrder(o);save();dismissOverlay()}
 
 let renderHeld=false;
 function typingTarget(){
@@ -6475,6 +6531,7 @@ function restoreTyping(keep){
 }
 function render(opts){
   opts=opts||{};
+  if(ui._sheetLeaving && !opts.forceLeave) return;
   const scroller=document.querySelector("main")||document.querySelector(".page");
   const keepY=scroller?scroller.scrollTop:0;
   const keep=typingTarget();

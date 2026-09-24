@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-r1.3.12-sheet-freeze";
+const VERSION = "ward-command-pwa-r1.3.13-sheet-zoom";
 const PRECACHE = [
   "./",
   "./index.html",
