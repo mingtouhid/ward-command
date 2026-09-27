@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-r1.3.17-faculty-settings";
+const VERSION = "ward-sync-pwa-r1.3.19-icons";
 const PRECACHE = [
   "./",
   "./index.html",

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.3.17 faculty-settings -->
+<!-- WARD SYNC RELEASE: R1.3.19 icons -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -128,11 +128,11 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="Ward"/>
-<meta name="application-name" content="Ward Command"/>
-<meta name="description" content="Psychiatry ward command centre for residents."/>
+<meta name="apple-mobile-web-app-title" content="Ward Sync"/>
+<meta name="application-name" content="Ward Sync"/>
+<meta name="description" content="Psychiatry ward board for residents."/>
 <meta name="format-detection" content="telephone=no"/>
-<title>Ward Command</title>
+<title>Ward Sync</title>
 <link rel="manifest" href="manifest.json"/>
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"/>
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png"/>
@@ -479,6 +479,7 @@ a{color:var(--teal2);text-decoration:none}
 .greet{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
 .ho-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 14px}
 .ho-empty{padding:8px 2px 4px}
+.ho-empty-hero{margin:28px 12px 8px;text-align:center;font-size:22px;font-weight:800;letter-spacing:.01em;color:var(--ink)}
 .ho-item{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
 .ho-item.done{opacity:.62}
 button.linkish{background:none;border:0;padding:0;color:inherit;text-align:left}
@@ -1325,20 +1326,19 @@ const DENSITY_KEY="ward-command-density-v1";
 function currentTheme(){
   try{
     const t=localStorage.getItem(THEME_KEY)||"light";
-    return ["light","dark","night","ot"].includes(t)?t:"light";
+    return t==="light"?"light":"ot";
   }catch(e){return "light"}
 }
 function applyTheme(theme){
-  const t=currentTheme();
-  const next=["light","dark","night","ot"].includes(theme)?theme:t;
+  const next=theme==="light"?"light":"ot";
   document.documentElement.setAttribute("data-theme",next);
-  document.documentElement.style.colorScheme=(next==="light")?"light":"dark";
+  document.documentElement.style.colorScheme=next==="light"?"light":"dark";
   const meta=document.querySelector('meta[name="theme-color"]');
-  const colors={light:"#e8eef5",dark:"#0b1220",night:"#070b14",ot:"#05080f"};
+  const colors={light:"#e8eef5",ot:"#05080f"};
   if(meta) meta.setAttribute("content", colors[next]||colors.light);
 }
 function setTheme(theme){
-  const t=["light","dark","night","ot"].includes(theme)?theme:"light";
+  const t=theme==="light"?"light":"ot";
   localStorage.setItem(THEME_KEY,t);applyTheme(t);render();
 }
 function currentDensity(){
@@ -1519,7 +1519,7 @@ const Notifications={
     await this.request();
     const reg=await this.registration();
     const opts={body:"Notifications are working on this device.",icon:"./icons/icon-notif-192.png",badge:"./icons/badge-96.png",tag:"ward-command-test",data:{url:"./#/home"}};
-    if(reg) await reg.showNotification("Ward Command",opts); else new Notification("Ward Command",opts);
+    if(reg) await reg.showNotification("Ward Sync",opts); else new Notification("Ward Sync",opts);
     if(notifyPrefs().sound)Feedback.tone("success");
   },
   status(){
@@ -1733,7 +1733,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.17";
+const APP_VERSION="R1.3.19";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2776,7 +2776,7 @@ function loginView(){
   const busy=!!ui.loginBusy;
   return `<div class="login"><div class="login-card">
     <p class="kicker">${statusDot()} ${esc(statusLabel())}</p>
-    <h1>Ward Command</h1>
+    <h1>Ward Sync</h1>
     ${S.userId&&!sessionTok?`<p class="muted" style="margin:8px 0 18px">Session expired. Sign in again.</p>`:`<div style="height:14px"></div>`}
     <form onsubmit="doLogin(event)">
       <label class="field"><span>Username</span><input id="u" autocapitalize="none" autocomplete="username" ${busy?"disabled":""} value="${esc((S.residents||[]).find(r=>r.id===S.userId)?.username||"")}"/></label>
@@ -3201,10 +3201,10 @@ function tidySectionNames(){
 }
 function homeView(){
   const list=occupied();
-  const high=list.filter(b=>["high","critical"].includes((S.snaps[b.patientId]||{}).risk)).length;
+  const high=list.filter(b=>isDelirium(b.patientId)).length;
   const ect=(S.ect||[]).filter(e=>(!e.status||e.status==="planned")&&onWard(e.pid)).length;
   const inbox=S.hitems.filter(i=>!i.done&&(onWard(i.pid)||underObs(i.pid))).length;
-  const empty=emptyBeds().length;
+  const restrainedN=list.filter(b=>restrainHeld(b.patientId)).length;
   tidySectionNames();
   const wards=S.sections.filter(s=>s.active!==false).slice().sort((a,b)=>(a.sort||0)-(b.sort||0)).map(sec=>({
     name:sectionLabel(sec.name),
@@ -3223,10 +3223,10 @@ function homeView(){
     </div>
     <div class="home-side">
     <div class="home-stats">
-      <button class="stat urgent" onclick="go('patients')"><span>High risk</span><b>${high}</b></button>
+      <button class="stat urgent" onclick="ui.ptag='delirium';go('patients')"><span>Delirium</span><b>${high}</b></button>
       <button class="stat attn" onclick="go('handover')"><span>Handover</span><b>${inbox}</b></button>
       <button class="stat" onclick="go('ect')"><span>ECT planned</span><b>${ect}</b></button>
-      <button class="stat" onclick="ui.ctab='in';go('census')"><span>Empty beds</span><b>${empty}</b></button>
+      <button class="stat" onclick="ui.ptag='restrain';go('patients')"><span>Restrained</span><b>${restrainedN}</b></button>
     </div>
     <div class="card duty-card">
       <p class="tiny">On duty</p>
@@ -3271,7 +3271,7 @@ function patientsView(){
     const sn=S.snaps[p.id]||{};
     if(tag==="ect") return !!(ectPlan(p.id)||(sn.tags||[]).includes("ect"));
     if(tag==="restrain") return restrainHeld(p.id);
-    if(tag==="high") return ["high","critical"].includes(sn.risk);
+    if(tag==="delirium"||tag==="high") return isDelirium(p.id);
     return true;
   };
   const loose=unplacedPatients().filter(match);
@@ -3283,7 +3283,7 @@ function patientsView(){
       <button class="chip ${tag?"":"on"}" onclick="ui.ptag='';render()">All</button>
       <button class="chip ${tag==="ect"?"on":""}" onclick="ui.ptag=ui.ptag==='ect'?'':'ect';render()">ECT</button>
       <button class="chip ${tag==="restrain"?"on":""}" onclick="ui.ptag=ui.ptag==='restrain'?'':'restrain';render()">Restrain</button>
-      <button class="chip ${tag==="high"?"on":""}" onclick="ui.ptag=ui.ptag==='high'?'':'high';render()">High risk</button>
+      <button class="chip ${tag==="delirium"||tag==="high"?"on":""}" onclick="ui.ptag=(ui.ptag==='delirium'||ui.ptag==='high')?'':'delirium';render()">Delirium</button>
     </div>
     ${sectionBlock("No bed", loose.map(p=>patientCard(p,null)))}
     ${secs.map(sec=>{
@@ -3301,7 +3301,7 @@ function snapView(){
   return `<button class="back" onclick="back()">← Back</button>
     <div class="snap-cols">
     <div class="card snap-identity">
-      <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span>${ectPlan(p.id)?'<span class="badge r-high">ECT</span>':""}${(sn.risk==="high"||sn.risk==="critical")?` <span class="${rcls("high")}">high</span>`:""}</span></div>
+      <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span>${ectPlan(p.id)?'<span class="badge r-high">ECT</span>':""}${isDelirium(p.id)?` <span class="${rcls("high")}">delirium</span>`:""}</span></div>
       <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}</h2>
       <p class="tiny" style="margin-top:4px">${p.age}${p.sex} · ${esc(p.hospitalNo||p.code)}</p>
       ${(p.address||p.phone)?`<p class="tiny" style="margin-top:4px">${p.address?esc(p.address):""}${p.address&&p.phone?" · ":""}${p.phone?esc(p.phone):""}</p>`:""}
@@ -3322,7 +3322,7 @@ function snapView(){
       </div>`:""}
 
       ${tagHtml(p)}
-      ${canWrite()?`<button type="button" class="risk-toggle ${(sn.risk==="high"||sn.risk==="critical")?"on":""}" onclick="toggleHighRisk('${p.id}')">High risk</button>`:""}
+      ${canWrite()?`<button type="button" class="risk-toggle ${isDelirium(p.id)?"on":""}" onclick="toggleHighRisk('${p.id}')">Delirium</button>`:""}
     </div>
     <div class="card snap-current">
       <p class="tiny">PGT-NOTE</p>
@@ -4327,7 +4327,7 @@ function handoverView(){
       ${canWrite()?`<button class="btn sm" onclick="openGiveHandover()">Give</button>`:""}
     </div>`;
   return head+
-    hoSection("Take this shift",forNow,true,!forNow.length?`<p class="tiny ho-empty">No handovers waiting for ${esc(shiftLabel(cur))}. Tap Give when you have something the next shift must know.</p>`:"")+
+    hoSection("Take this shift",forNow,true,!forNow.length?`<p class="ho-empty-hero">No handovers yet</p>`:"")+
     (forNext.length?hoSection("Posted for "+shiftLabel(nxt),forNext,false,""):"")+
     (postedByMe.length?hoSection("Waiting to be taken",postedByMe,false,""):"")+
     (other.length?hoSection("Other incoming",other,true,""):"")+
@@ -4852,9 +4852,9 @@ function aboutView(){
     <div class="about-stage">
       <div class="about-card">
         <p class="about-kicker">System</p>
-        <h1 class="about-name">WARD COMMAND</h1>
+        <h1 class="about-name">WARD SYNC</h1>
         <p class="about-tag">Psychiatric inpatient duty board</p>
-        <p class="about-blurb">Beds · snapshot · medicines · ECT · tasks · handover · discharge. Built for residents on duty.</p>
+        <p class="about-blurb">Built for residents on duty.</p>
         <div class="about-rule"></div>
         <p class="about-kicker">Version</p>
         <p class="about-ver">${esc(APP_VERSION)}</p>
@@ -5388,9 +5388,7 @@ function setupView(){
         <p class="tiny">APPEARANCE</p>
         <div class="btns" style="grid-template-columns:1fr 1fr">
           <button class="btn ${theme==="light"?"":"ghost"}" onclick="setTheme('light')">Day</button>
-          <button class="btn ${theme==="dark"?"":"ghost"}" onclick="setTheme('dark')">Dark</button>
-          <button class="btn ${theme==="night"?"":"ghost"}" onclick="setTheme('night')">Night duty</button>
-          <button class="btn ${theme==="ot"?"":"ghost"}" onclick="setTheme('ot')">OT</button>
+          <button class="btn ${theme!=="light"?"":"ghost"}" onclick="setTheme('ot')">Night</button>
         </div>
       </div>
       <div class="card">
@@ -5803,7 +5801,7 @@ function patientRecordItems(pid){
   }
   (S.orders||[]).filter(o=>o.pid===pid && !isPrn(o)).forEach(o=>{
     const label=[o.drug,o.dose,o.route||"PO",o.freq||"OD"].filter(Boolean).join(" · ");
-    add({kind:"med",title:"Medication started · "+(o.drug||""),at:o.start||o.at,by:o.by,body:label+"\nGiven as prescribed until paused or stopped."});
+    add({kind:"med",title:"Medication started · "+(o.drug||""),at:o.start||o.at,by:o.by,body:label+""});
     if(o.hold) add({kind:"med",title:"Medication paused · "+(o.drug||""),at:o.hold,body:label});
     if(o.stop) add({kind:"med",title:"Medication stopped · "+(o.drug||""),at:o.stop,body:label});
   });
@@ -5884,7 +5882,7 @@ function exportPatientRecord(pid){
     <style>body{font-family:Inter,system-ui,sans-serif;color:#0f172a;padding:24px;max-width:720px;margin:0 auto}h1{font-size:20px;margin:0}p{margin:4px 0 16px;color:#64748b}</style>
     </head><body>
     <h1>Clinical record</h1>
-    <p>${esc(p.name)} · ${esc(p.age||"")}${esc(p.sex||"")} · ${esc(p.hospitalNo||p.code||"")} · Bed ${esc(b?b.no:"—")}<br>Ward Command · ${esc(APP_VERSION)}</p>
+    <p>${esc(p.name)} · ${esc(p.age||"")}${esc(p.sex||"")} · ${esc(p.hospitalNo||p.code||"")} · Bed ${esc(b?b.no:"—")}<br>Ward Sync · ${esc(APP_VERSION)}</p>
     ${rows}
     <script>setTimeout(function(){window.print()},250)<`+`/script>
     </body></html>`);
@@ -5960,22 +5958,30 @@ async function toggleRestrainNow(id){
     }
   }finally{sn._restrainBusy=false;setBusy(false);render()}
 }
+function isDelirium(pid){
+  const sn=S.snaps[pid]||{};
+  return (sn.tags||[]).includes("delirium") || sn.risk==="high" || sn.risk==="critical";
+}
 function toggleHighRisk(id){
   if(!needWrite())return;
-  const sn0=S.snaps[id]||{};
-  const on0=sn0.risk==="high"||sn0.risk==="critical";
-  ui.confirm={fn:"toggleHighRisk",id,title:on0?"Clear high risk?":"Flag high risk?",ok:on0?"Clear":"Flag",danger:!on0,
-    body:on0?"Remove the high-risk flag for this patient?":"Mark this patient as high risk? The ward list will highlight them."};
+  const on0=isDelirium(id);
+  ui.confirm={fn:"toggleHighRisk",id,title:on0?"Clear delirium?":"Flag delirium?",ok:on0?"Clear":"Flag",danger:!on0,
+    body:on0?"Remove the delirium tag for this patient?":"Tag this patient as delirium? The home tile will include them."};
   render();
 }
 function toggleHighRiskNow(id){
   if(!needWrite())return;
   const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[]});
-  const on=sn.risk==="high"||sn.risk==="critical";
+  const on=isDelirium(id);
+  const tags=new Set(sn.tags||[]);
+  if(on) tags.delete("delirium"); else tags.add("delirium");
+  sn.tags=[...tags];
   sn.risk=on?"low":"high";
   sn.at=now();sn.by=S.userId;
-  ev(id,on?"High risk cleared":"Flagged high risk",true,"status");
-  qSnapField(id,"risk",sn.risk);save();render();
+  ev(id,on?"Delirium cleared":"Flagged delirium",true,"status");
+  qSnapField(id,"risk",sn.risk);
+  if(typeof qSnapTag==="function") qSnapTag(id,"delirium",on?"remove":"add");
+  save();render();
 }
 function toggleTag(id,tag){
   if(!needWrite())return;
