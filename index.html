@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD COMMAND RELEASE: R1.3.16 notify-settings-unfreeze -->
+<!-- WARD COMMAND RELEASE: R1.3.17 faculty-settings -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1733,7 +1733,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.16";
+const APP_VERSION="R1.3.17";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2220,7 +2220,7 @@ function go(page,id){
   render({force:1,nav:1});
 }
 function back(){
-  if(ui.pick||ui.sheet||ui.confirm||ui.panel||ui.giveOpen||ui.notifySet||ui.userEdit){dismissOverlay();return}
+  if(ui.pick||ui.sheet||ui.confirm||ui.panel||ui.giveOpen||ui.notifySet||ui.userEdit||ui.consEdit){dismissOverlay();return}
   snapshotScroll();
   if(nav.stack.length){
     nav.stack=nav.stack.slice(0,-1);
@@ -2854,12 +2854,13 @@ function ico(name){
 }
 
 function overlayOpen(){
-  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit);
+  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit);
 }
 function overlayDepth(){
   let n=0;
   if(ui.sheet||ui.panel||ui.giveOpen) n++;
   if(ui.userEdit) n++;
+  if(ui.consEdit) n++;
   if(ui.notifySet) n++;
   if(ui.pick) n++;
   if(ui.confirm) n++;
@@ -2871,7 +2872,7 @@ function prefersReduceMotion(){
 function clearOverlayState(extra){
   extra=extra||{};
   ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null;
-  ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null;
+  ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null;
   if(extra.med){
     ui.medPid=null;
     if(ui.fields){try{delete ui.fields.md;delete ui.fields.mds}catch(e){}}
@@ -2883,6 +2884,7 @@ function popTopOverlay(extra){
   if(ui.pick){ ui.pick=null; return "pick"; }
   if(ui.notifySet){ ui.notifySet=false; return "notifySet"; }
   if(ui.userEdit){ ui.userEdit=null; return "userEdit"; }
+  if(ui.consEdit){ ui.consEdit=null; return "consEdit"; }
   if(ui.panel){ ui.panel=null; return "panel"; }
   if(ui.giveOpen){ ui.giveOpen=false; return "give"; }
   if(ui.sheet){
@@ -2954,7 +2956,7 @@ function shell(inner){
       <button class="${on("patients")}" onclick="go('patients')">${ico('patients')}<span class="lbl">Patients</span></button>
       <button class="${on("handover")}" onclick="go('handover')" ${ui.busy?"disabled":""}>${ico('handover')}<span class="lbl">Handovers</span></button>
       <button class="${on("more")}" onclick="go('more')">${ico('more')}<span class="lbl">More</span></button>
-    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||""))}${busyVeil()}`;
+    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||""))}${busyVeil()}`;
 }
 
 /* HOME: occupied beds only, current status */
@@ -4762,6 +4764,7 @@ function confirmYes(){
   if(c.fn==="obsClose") return closeObservation(c.pid,c.outcome);
   if(c.fn==="signDuty") return signDutyNow();
   if(c.fn==="endDuty") return endDutyNow();
+  if(c.fn==="removeConsultant") return removeConsultantNow(c.id);
   if(c.fn==="toggleRestrain") return toggleRestrainNow(c.id);
   if(c.fn==="toggleHighRisk") return toggleHighRiskNow(c.id);
   if(c.fn==="toggleTag") return toggleTagNow(c.id,c.tag,c.adding);
@@ -5517,7 +5520,7 @@ function wardFacultyPage(){
   const cfg=canCfg(user().role);
   const list=(S.consultants||[]).map(c=>`<div class="card" style="padding:12px 14px">
       <div class="row"><div><b class="sm">${esc(c.name)}</b><p class="tiny">${esc(c.designation||"—")}</p></div>
-      ${cfg?`<button class="btn danger sm" onclick="removeConsultant('${c.id}')">Remove</button>`:""}
+      ${cfg?`<button class="btn ghost sm" onclick="openConsEdit('${c.id}')">Settings</button>`:""}
       </div></div>`).join("")||`<div class="card"><p class="sm">No faculty saved yet.</p></div>`;
   const form=cfg?`<div class="card">
       <p class="tiny">ADD FACULTY</p>
@@ -6010,11 +6013,113 @@ function addConsultant(){
   S.consultants.push(c);
   qConsultant(c);ev(null,"Consultant "+name);toast("Saved "+name,"ok");save();render();
 }
+function linkedResidentForConsultant(c){
+  const list=S.residents||[];
+  if(c&&c.username){
+    const u=String(c.username).toLowerCase();
+    const byUser=list.find(r=>String(r.username||"").toLowerCase()===u);
+    if(byUser) return byUser;
+  }
+  const name=String((c&&c.name)||"").trim().toLowerCase();
+  if(!name) return null;
+  return list.find(r=>String(r.displayName||"").trim().toLowerCase()===name)||null;
+}
+function openConsEdit(id){
+  if(!canAdmin()){toast("Admin only","bad");return}
+  const c=(S.consultants||[]).find(x=>x.id===id);
+  if(!c){toast("Consultant not found","bad");return}
+  const linked=linkedResidentForConsultant(c);
+  ui.consEdit=id;
+  ui.fields=ui.fields||{};
+  ui.fields.cu=c.username||(linked&&linked.username)||"";
+  ui.fields.cd=c.name||"";
+  ui.fields.cdeg=c.designation||"";
+  ui.fields.cp="";
+  ui.fields.crole=normRole((linked&&linked.role)||"consultant")||"consultant";
+  render();
+}
+function consEditOverlay(){
+  const id=ui.consEdit; if(!id) return "";
+  const c=(S.consultants||[]).find(x=>x.id===id); if(!c) return "";
+  const ROLES=[["consultant","Consultant"],["resident","Resident"],["admin","Admin"]];
+  return `<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box" style="border-radius:24px;max-width:400px">
+    <h2 class="page-title" style="margin:0 0 4px">${esc(c.name)}</h2>
+    <p class="tiny" style="margin:0 0 12px">${esc(c.designation||"Faculty")}</p>
+    <label class="field"><span>Display name</span><input id="cd" value="${esc(val("cd"))}" oninput="ui.fields=ui.fields||{};ui.fields.cd=this.value"/></label>
+    <label class="field"><span>Designation</span><input id="cdeg" value="${esc(val("cdeg"))}" oninput="ui.fields=ui.fields||{};ui.fields.cdeg=this.value"/></label>
+    <label class="field"><span>Username</span><input id="cu" autocapitalize="none" value="${esc(val("cu"))}" oninput="ui.fields=ui.fields||{};ui.fields.cu=this.value"/></label>
+    <label class="field"><span>New password</span><input id="cp" type="password" placeholder="Leave blank to keep" value="${esc(val("cp"))}" oninput="ui.fields=ui.fields||{};ui.fields.cp=this.value"/></label>
+    <label class="field"><span>Role</span>${picker("crole",ROLES,val("crole")||"consultant","Role")}</label>
+    <button class="btn block" onclick="saveConsEdit()">Save changes</button>
+    <button class="btn danger block" style="margin-top:8px" onclick="removeConsultant('${c.id}')">Remove</button>
+    <button class="btn ghost block" style="margin-top:8px" onclick="dismissOverlay()">Close</button>
+  </div></div>`;
+}
+async function saveConsEdit(){
+  if(!canAdmin()){toast("Admin only","bad");return}
+  const id=ui.consEdit; if(!id)return;
+  const c=(S.consultants||[]).find(x=>x.id===id); if(!c)return;
+  const name=(val("cd")||"").trim();
+  const designation=(val("cdeg")||"").trim();
+  const username=(val("cu")||"").trim().toLowerCase();
+  const pw=val("cp")||"";
+  const role=val("crole")||"consultant";
+  if(!name){toast("Name required","bad");return}
+  if(pw && pw.length<6){toast("Password must be at least 6 characters.","bad");return}
+  c.name=name;
+  c.designation=designation;
+  c.username=username||c.username||"";
+  qConsultant(c);
+  const linked=linkedResidentForConsultant(c);
+  if(username && sessionTok && sb){
+    setBusy(true,"Saving…");
+    try{
+      if(linked){
+        const {data,error}=await sb.rpc("ward_update_user",{
+          p_token:sessionTok,p_username:linked.username,p_new_username:username,p_display:name,p_password:pw,p_role:role
+        });
+        if(error) throw error;
+        if(!data) throw new Error("Account did not update.");
+        linked.username=username; linked.displayName=name; linked.role=role;
+      }else if(pw){
+        const {data,error}=await sb.rpc("ward_invite_user",{
+          p_token:sessionTok,p_username:username,p_password:pw,p_display:name,p_role:role
+        });
+        if(error) throw error;
+        if(!data) throw new Error("Could not create login.");
+        S.residents=S.residents||[];
+        S.residents.unshift({id:uid("r"),username:username,displayName:name,role:role,active:true});
+      }else if(!linked){
+        toast("Password needed to create a login for this consultant.","bad");
+        setBusy(false);
+        save();render();
+        return;
+      }
+    }catch(e){
+      toast(clinicianCopy(e.message||e)||String(e.message||e),"bad");
+      setBusy(false);
+      save();render();
+      return;
+    }
+    setBusy(false);
+  }
+  ev(null,"Faculty updated · "+name,true);
+  toast("Saved "+name,"ok");save();render();
+}
 function removeConsultant(id){
+  if(!canAdmin())return;
+  const c=(S.consultants||[]).find(x=>x.id===id);
+  const label=c&&c.name?c.name:"this consultant";
+  ui.confirm={fn:"removeConsultant",id,title:"Remove consultant",ok:"Remove",danger:true,
+    body:"Remove "+label+" from faculty? This does not delete their login if they have one."};
+  render();
+}
+function removeConsultantNow(id){
   if(!canAdmin())return;
   const c=(S.consultants||[]).find(x=>x.id===id);
   S.consultants=(S.consultants||[]).filter(x=>x.id!==id);
   if(c) queue("unit_consultants",{id:c.id,name:c.name,designation:c.designation||"",active:false,sort_order:0});
+  ui.consEdit=null;
   toast("Removed","ok");save();render();
 }
 function qSection(s){if(!s)return;queue("ward_sections",{id:s.id,name:s.name,active:s.active!==false,sort_order:s.sort||0,created_at:s.at||now(),updated_at:now()})}

@@ -1,4 +1,4 @@
-const VERSION = "ward-command-pwa-r1.3.16-notify-unfreeze";
+const VERSION = "ward-command-pwa-r1.3.17-faculty-settings";
 const PRECACHE = [
   "./",
   "./index.html",
