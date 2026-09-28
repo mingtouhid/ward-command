@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.40 consultant-inbox -->
+<!-- WARD SYNC RELEASE: R1.3.41 no-pinch-zoom -->
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
 <meta name="color-scheme" content="light dark"/>
 <script>
@@ -166,7 +166,7 @@ html[data-theme="dark"]{
 button,a,.nav,.card,.fold-head,.more-row,.pick,.pill,.chip,.seg{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 button{cursor:pointer;touch-action:manipulation}
 input,select,textarea{color:inherit;touch-action:manipulation;-webkit-user-select:text;user-select:text}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation;overscroll-behavior:none;text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 .app{max-width:430px;margin:0 auto;height:100svh;max-height:100svh;background:var(--bg);position:relative;display:flex;flex-direction:column;overflow:hidden;}
 .main{container-type:inline-size;container-name:ward;
   --gutter:12px;--gutter:clamp(12px,2.6cqi,22px);
@@ -1779,7 +1779,10 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.40";
+const APP_VERSION="R1.3.41";
+document.addEventListener("gesturestart",e=>e.preventDefault());
+document.addEventListener("gesturechange",e=>e.preventDefault());
+document.addEventListener("gestureend",e=>e.preventDefault());
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];

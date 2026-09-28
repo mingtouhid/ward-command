@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.40-consultant-inbox";
+const VERSION = "ward-sync-pwa-r1.3.41-no-pinch-zoom";
 const PRECACHE = [
   "./",
   "./index.html",
