@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.35-consultant-broadcast";
+const VERSION = "ward-sync-pwa-r1.3.36-ios-push-gesture";
 const PRECACHE = [
   "./",
   "./index.html",

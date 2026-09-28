@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.35 consultant-broadcast -->
+<!-- WARD SYNC RELEASE: R1.3.36 ios-push-gesture -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1519,8 +1519,11 @@ const Notifications={
   },
   async request(){
     if(!("Notification" in window))throw new Error("Browser notifications are not supported on this device.");
+    if(Notification.permission==="granted"){
+      const p=notifyPrefs(); p.enabled=true; saveNotifyPrefs(p); return "granted";
+    }
     const r=await Notification.requestPermission();
-    if(r!=="granted")throw new Error(r==="denied"?"Notifications are blocked for this site.":"Notification permission was not granted.");
+    if(r!=="granted")throw new Error(r==="denied"?"Notifications are blocked for this site. Open iOS Settings → Notifications and allow Ward Sync, then try again.":"Notification permission was not granted.");
     const p=notifyPrefs(); p.enabled=true; saveNotifyPrefs(p); return r;
   },
   async registration(){
@@ -1530,7 +1533,8 @@ const Notifications={
   async subscribe(){
     const p=notifyPrefs();
     if(!p.vapidPublicKey)throw new Error("Push server public key is not configured yet.");
-    await this.request();
+    if(!("Notification" in window))throw new Error("Browser notifications are not supported on this device.");
+    if(Notification.permission!=="granted") await this.request();
     const reg=await this.registration();
     if(!reg||!reg.pushManager)throw new Error("Push notifications are not supported by this browser.");
     let sub=await reg.pushManager.getSubscription();
@@ -1772,7 +1776,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.35";
+const APP_VERSION="R1.3.36";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -5427,9 +5431,13 @@ async function toggleNotify(key){
   }
 }
 async function enableNotifications(){
-  setBusy(true,"Setting up notifications…");
   try{
-    await Notifications.request();
+    if(!("Notification" in window))throw new Error("Browser notifications are not supported on this device. On iPhone/iPad add Ward Sync to the Home Screen and open that icon.");
+    if(Notification.permission!=="granted"){
+      const r=await Notification.requestPermission();
+      if(r!=="granted")throw new Error(r==="denied"?"Notifications are blocked for this site. Open iOS Settings → Notifications and allow Ward Sync, then try again.":"Notification permission was not granted.");
+    }
+    setBusy(true,"Setting up notifications…");
     const sub=await Notifications.subscribe();
     await Notifications.registerServerSubscription(sub);
     await loadServerNotifyPrefs().catch(()=>{});
