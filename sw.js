@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.33-consultant-ui";
+const VERSION = "ward-sync-pwa-r1.3.35-consultant-broadcast";
 const PRECACHE = [
   "./",
   "./index.html",
