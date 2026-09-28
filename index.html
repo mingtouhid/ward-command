@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.30 about-nav-theme -->
+<!-- WARD SYNC RELEASE: R1.3.31 ho-status -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1769,7 +1769,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.30";
+const APP_VERSION="R1.3.31";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -4435,32 +4435,44 @@ function shiftHours(s){
 function shiftLabel(s){
   return {morning:"Morning",evening:"Evening",night:"Night"}[s]||s||"";
 }
+function hoAgeMs(h){return Date.now()-(Date.parse(h&&h.at||0)||0)}
+function hoIsFresh(h){return hoAgeMs(h)<24*60*60*1000}
+function hoPendingLine(n){
+  if(!n) return "No pending handovers for you";
+  if(n===1) return "1 handover for you";
+  return n+" handovers for you";
+}
 function handoverView(){
   const cur=currentShift();
   const nxt=nextShift(cur);
   const me=String(S.userId||"");
-  const open=S.handovers.filter(h=>h.status==="sent");
   const mineIncoming=h=>String(h.to||"")===me && String(h.from||"")!==me;
   const mineOutgoing=h=>String(h.from||"")===me;
-  const forNow=open.filter(h=>h.shift===cur && mineIncoming(h));
-  const forNext=open.filter(h=>h.shift===nxt && (mineOutgoing(h)||mineIncoming(h)));
-  const postedByMe=open.filter(h=>mineOutgoing(h) && h.shift!==nxt);
-  const other=open.filter(h=>h.shift!==cur&&h.shift!==nxt && mineIncoming(h));
-  const acked=S.handovers.filter(h=>h.status==="acknowledged").slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0)).slice(0,5);
-  const takeN=forNow.reduce((n,h)=>n+S.hitems.filter(i=>i.hid===h.id&&!i.done).length,0);
+  const open=(S.handovers||[]).filter(h=>h.status==="sent");
+  const pending=open.filter(mineIncoming);
+  const fresh=open.filter(hoIsFresh);
+  const forNow=fresh.filter(h=>h.shift===cur && mineIncoming(h));
+  const forNext=fresh.filter(h=>h.shift===nxt && (mineOutgoing(h)||mineIncoming(h)));
+  const postedByMe=fresh.filter(h=>mineOutgoing(h) && h.shift!==nxt);
+  const other=fresh.filter(h=>h.shift!==cur&&h.shift!==nxt && mineIncoming(h));
+  const stale=open.filter(h=>!hoIsFresh(h) && (mineIncoming(h)||mineOutgoing(h)));
+  const acked=(S.handovers||[]).filter(h=>h.status==="acknowledged").slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
+  const earlier=stale.concat(acked.filter(h=>!stale.some(s=>s.id===h.id))).slice(0,12);
+  const takeN=pending.reduce((n,h)=>n+S.hitems.filter(i=>i.hid===h.id&&!i.done).length,0);
   const head=`<div class="ho-head">
       <div>
         <h2 class="page-title" style="margin:0">${esc(shiftLabel(cur))}</h2>
         <p class="tiny">${esc(shiftHours(cur))} · ${takeN} to take · next ${esc(shiftLabel(nxt))} ${esc(shiftHours(nxt))}</p>
       </div>
       ${canWrite()?`<button class="btn sm" onclick="openGiveHandover()">Give</button>`:""}
-    </div>`;
+    </div>
+    <p class="ho-empty-hero">${esc(hoPendingLine(pending.length))}</p>`;
   return head+
-    hoSection("Take this shift",forNow,true,!forNow.length?`<p class="ho-empty-hero">No handovers yet</p>`:"")+
-    (forNext.length?hoSection("Posted for "+shiftLabel(nxt),forNext,false,""):"")+
+    hoSection("Take this shift",forNow,true,"")+
+    (forNext.length?hoSection("Posted for "+shiftLabel(nxt),forNext,mineIncoming(forNext[0]),""):"")+
     (postedByMe.length?hoSection("Waiting to be taken",postedByMe,false,""):"")+
     (other.length?hoSection("Other incoming",other,true,""):"")+
-    (acked.length?(ui.hHist?hoSection("Earlier handovers",acked,false,""):`<button class="btn ghost block" style="margin-top:8px" onclick="ui.hHist=true;render()">Earlier handovers · ${acked.length}</button>`):"");
+    (earlier.length?(ui.hHist?hoSection("Earlier handovers",earlier,true,""):`<button class="btn ghost block" style="margin-top:8px" onclick="ui.hHist=true;render()">Earlier handovers · ${earlier.length}</button>`):"");
 }
 function hoSection(title,list,canAck,empty){
   list=list.slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
