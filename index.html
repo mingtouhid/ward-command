@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.24 ect-live-sched -->
+<!-- WARD SYNC RELEASE: R1.3.25 record-hierarchy -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1767,7 +1767,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.24";
+const APP_VERSION="R1.3.25";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2420,7 +2420,7 @@ async function doCloudPull(opts){
   const occupancyHold=unresolved.some(o=>["patients","beds","patient_bed_assignments"].includes(o.table));
   if(!occupancyHold){
     S.beds=beds.map(r=>({id:r.id,no:r.bed_number,sectionId:r.section_id,active:r.active!==false,patientId:r.current_patient_id||null}));
-    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||""}));
+    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",by:r.created_by||r.admitted_by||r.by||null}));
     S.assignments=assigns.map(r=>({id:r.id,patientId:r.patient_id,bedId:r.bed_id,at:r.assigned_at,released:r.released_at,by:r.assigned_by}));
   }
   const nextSnaps={}; snaps.forEach(r=>{nextSnaps[r.patient_id]=rowSnap(r)});
@@ -5893,7 +5893,7 @@ function recKindLabel(k){
   return ({admit:"ADMISSION",obs:"OBSERVATION",med:"MEDICATION",ect:"ECT",pgt:"PGT NOTE",crit:"CRITICAL",xfer:"TRANSFER",dis:"DISCHARGE",restrain:"RESTRAINT",handover:"HANDOVER",task:"TASK",note:"EVENT"}[k]||"EVENT");
 }
 function recCss(k){return ({admit:"admit",obs:"obs",med:"med",ect:"ect",pgt:"pgt",crit:"crit",xfer:"xfer",dis:"dis",restrain:"restrain"}[k]||"note")}
-function recActor(it){return it.byName||rname(it.by)||""}
+function recActor(it){const n=it.byName||rname(it.by)||"";return n==="?"?"":n}
 
 function medEventActor(pid,drug,at,verbs){
   const d=String(drug||"").toLowerCase();
@@ -5942,18 +5942,31 @@ function patientRecordItems(pid){
     }
   });
   if(p.admittedAt && p.status!=="observation"){
+    const assigns=(S.assignments||[]).filter(a=>String(a.patientId)===String(pid)).slice().sort((a,b)=>Date.parse(a.at||0)-Date.parse(b.at||0));
+    const firstA=assigns[0];
+    const bed=firstA?((S.beds||[]).find(x=>x.id===firstA.bedId)||{}).no:bedOf(pid);
     const bits=[];
+    if(p.hospitalNo||p.code) bits.push("Hospital no: "+(p.hospitalNo||p.code));
     if(p.diagnosis) bits.push("Diagnosis: "+p.diagnosis);
     if(p.consultant) bits.push("Consultant: "+p.consultant);
     if(p.referredBy) bits.push("Source: "+p.referredBy);
     if(p.reason) bits.push("Reason: "+p.reason);
     if(p.address||p.phone) bits.push([p.address,p.phone].filter(Boolean).join(" · "));
-    add({kind:"admit",title:"Admission",at:p.admittedAt,by:p.by,body:bits.join("\n")});
+    const evAct=((S.events||[]).filter(e=>String(e.pid)===String(pid)&&/admitted to|admission\b|admitted from/i.test(e.title||"")).sort((a,b)=>Math.abs(Date.parse(a.at||0)-Date.parse(p.admittedAt||0))-Math.abs(Date.parse(b.at||0)-Date.parse(p.admittedAt||0)))[0])||{};
+    const by=p.by||evAct.by||(firstA&&firstA.by)||null;
+    const byName=(evAct.actorName&&evAct.actorName!=="?")?evAct.actorName:"";
+    add({kind:"admit",title:bed?("Admitted to "+bed):"Admitted",at:p.admittedAt||(firstA&&firstA.at),by:by,byName:byName,body:bits.join("\n")});
   }
-  (S.orders||[]).filter(o=>o.pid===pid && !isPrn(o)).forEach(o=>{
+  const meds=(S.orders||[]).filter(o=>o.pid===pid && !isPrn(o));
+  const starts=meds.filter(o=>o.start||o.at).slice().sort((a,b)=>Date.parse(a.start||a.at||0)-Date.parse(b.start||b.at||0));
+  if(starts.length){
+    const first=starts[0];
+    const started=medEventActor(pid,first.drug,first.start||first.at,["started ","medication started"]);
+    const lines=starts.map(o=>[o.drug,o.dose,o.route||"PO",o.freq||"OD"].filter(Boolean).join(" · "));
+    add({kind:"med",title:"Medications started",at:first.start||first.at,by:first.by||started.by,byName:first.byName||started.byName,body:lines.join("\n")});
+  }
+  meds.forEach(o=>{
     const label=[o.drug,o.dose,o.route||"PO",o.freq||"OD"].filter(Boolean).join(" · ");
-    const started=medEventActor(pid,o.drug,o.start||o.at,["started ","medication started"]);
-    add({kind:"med",title:"Medication started · "+(o.drug||""),at:o.start||o.at,by:o.by||started.by,byName:o.byName||started.byName,body:label});
     if(o.hold){
       const paused=medEventActor(pid,o.drug,o.hold,["paused ","medication paused"]);
       add({kind:"med",title:"Medication paused · "+(o.drug||""),at:o.hold,by:paused.by,byName:paused.byName,body:label});
@@ -5984,7 +5997,7 @@ function patientRecordItems(pid){
     if(recSkipEventTitle(e.title)) return;
     const title=e.title||"Event";
     const low=title.toLowerCase();
-    if(/^(started |stopped |paused |resumed |pgt note|ect planned|ect session|admitted from observation|under observation|kept under observation|observation ended|admission\b)/.test(low)) return;
+    if(/^(started |stopped |paused |resumed |pgt note|ect planned|ect session|admitted from observation|under observation|kept under observation|observation ended|admission\b|admitted to\b)/.test(low)) return;
     let kind=e.kind||evKind(title);
     if(/transfer/.test(low)) kind="xfer";
     else if(/discharg/.test(low)) kind="dis";
@@ -5992,7 +6005,12 @@ function patientRecordItems(pid){
     else if(kind==="status") kind="crit";
     add({kind:kind||"note",title:title,at:e.at,by:e.by,byName:e.actorName,body:e.detail||""});
   });
-  items.sort((a,b)=>Date.parse(a.at||0)-Date.parse(b.at||0));
+  items.sort((a,b)=>{
+    const rank=it=>it.kind==="admit"?0:(it.title==="Medications started"?1:2);
+    const ra=rank(a), rb=rank(b);
+    if(ra!==rb) return ra-rb;
+    return Date.parse(a.at||0)-Date.parse(b.at||0);
+  });
   return items;
 }
 function recordItemHtml(it){
@@ -6000,7 +6018,7 @@ function recordItemHtml(it){
   return `<div class="rec-item rec-${recCss(it.kind)}">
     <div class="rec-rail"><div class="rec-dot"></div></div>
     <div class="rec-card">
-      <p class="rec-kicker">${esc(recKindLabel(it.kind))}</p>
+      <p class="rec-kicker">${esc(it.kind==="admit"?"WARD":recKindLabel(it.kind))}</p>
       <h3>${esc(it.title||"")}</h3>
       ${it.body?`<p class="sm">${esc(it.body)}</p>`:""}
       <p class="tiny">${esc(who)}${who?" · ":""}${esc(stamp(it.at)||fmt(it.at)||"")}</p>
