@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.22 med-actor -->
+<!-- WARD SYNC RELEASE: R1.3.24 ect-live-sched -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1767,7 +1767,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.22";
+const APP_VERSION="R1.3.24";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -3435,16 +3435,29 @@ function openCriticalHistory(pid){
 
 function ectPlan(pid){return (S.ect||[]).find(e=>e.pid===pid&&e.status==="planned")}
 
+function normalizeEctDays(raw){
+  const days=(Array.isArray(raw)?raw:[]).map(Number).filter(d=>d>=0&&d<=6);
+  return days.length?[...new Set(days)].sort():[2,6];
+}
 function ectDays(){
+  if(Array.isArray(S.ectDays)&&S.ectDays.length) return normalizeEctDays(S.ectDays);
   try{
     const raw=JSON.parse(localStorage.getItem("ward-sync-ect-days")||"[2,6]");
-    const days=(Array.isArray(raw)?raw:[]).map(Number).filter(d=>d>=0&&d<=6);
-    return days.length?days.slice().sort():[2,6];
-  }catch(e){return [2,6]}
+    S.ectDays=normalizeEctDays(raw);
+    return S.ectDays.slice();
+  }catch(e){
+    S.ectDays=[2,6];
+    return [2,6];
+  }
 }
 function ectDayNames(days){
   const names=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   return (days||ectDays()).map(d=>names[d]).join(" · ");
+}
+function isEctDay(iso){
+  const d=iso?new Date(iso):new Date();
+  if(isNaN(d)) return false;
+  return ectDays().includes(d.getDay());
 }
 function nextEctAt(afterIso){
   const days=ectDays();
@@ -3461,6 +3474,12 @@ function nextEctAt(afterIso){
   }
   return null;
 }
+
+function ectSchedTick(){
+  if(route&&route.page==="ect") render();
+}
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) ectSchedTick(); });
+window.addEventListener("focus",ectSchedTick);
 function openEctSched(){
   ui.ectDaysDraft=ectDays().slice();
   ui.panel={kind:"ectSched"};
@@ -3473,12 +3492,13 @@ function toggleEctDay(d){
   render();
 }
 function saveEctSched(){
-  const days=(ui.ectDaysDraft||[]).map(Number).filter(d=>d>=0&&d<=6);
-  if(!days.length){toast("Pick at least one ECT day","err");return;}
+  const days=normalizeEctDays(ui.ectDaysDraft||[]);
+  if(!days.length){toast("Pick at least one ECT day","bad");return;}
+  S.ectDays=days.slice();
   try{localStorage.setItem("ward-sync-ect-days",JSON.stringify(days));}catch(e){}
   ui.panel=null;ui.ectDaysDraft=null;
-  toast("ECT schedule updated","ok");
-  render();
+  toast("ECT days: "+ectDayNames(days),"ok");
+  render({force:1});
 }
 function ectSchedForm(){
   const names=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -3499,10 +3519,12 @@ function ectPageHead(listN){
 }
 function ectView(){
   const list=(S.ect||[]).filter(e=>(!e.status||e.status==="planned")&&onWard(e.pid));
+  const ectToday=isEctDay();
+  const nextIso=nextEctAt(now());
   if(!list.length) return ectPageHead(0)+`<div class="card"><p class="sm">No ECT plans.</p></div>`;
   return ectPageHead(list.length)+`<div class="ect-grid">`+list.map(e=>{
     const p=patient(e.pid);if(!p||p.status==="discharged")return "";
-    const nextIso=nextEctAt(now())||e.nextAt;
+    const nextShow=nextIso||e.nextAt;
     return `<div class="card">
       <div class="ect-card" onclick="go('snap','${p.id}')">
         <div class="ect-main">
@@ -3510,14 +3532,15 @@ function ectView(){
           <b>${esc(p.name)}</b>
           <p class="tiny">${p.age}${p.sex} · ${esc(p.diagnosis)}</p>
           <p class="sm" style="margin-top:6px">${esc(e.indication||"")}</p>
-          <p class="tiny" style="margin-top:6px">Next ${nextIso?fmt(nextIso):"—"} ${e.npo?"· NPO":""}</p>
+          <p class="tiny" style="margin-top:6px">Next ${nextShow?fmt(nextShow):"—"} ${e.npo?"· NPO":""}</p>
         </div>
         <div class="ect-sess"><b>${e.sessionsDone||0}</b><span>done</span></div>
       </div>
       <div class="btns" style="margin-top:8px">
-        <button class="btn sm" onclick="markEctDone('${e.id}')">Session done</button>
+        <button class="btn sm" ${ectToday?"":"disabled"} onclick="markEctDone('${e.id}')">Session done</button>
         <button class="btn sm ghost" onclick="cancelEct('${e.id}')">Cancel plan</button>
       </div>
+      ${ectToday?"":`<p class="tiny" style="margin-top:6px">Session done opens on ${esc(ectDayNames())}.</p>`}
     </div>`;
   }).join("")+`</div>`;
 }
@@ -4316,6 +4339,7 @@ function saveEct(pid){
 }
 async function markEctDone(id){
   if(!needWrite())return;
+  if(!isEctDay()){toast("Sessions can only be recorded on ECT days ("+ectDayNames()+").","bad");return;}
   const e=(S.ect||[]).find(x=>x.id===id);if(!e)return;
   const sessionNumber=(e.sessionsDone||0)+1;
   const session={id:uid("ects"),planId:e.id,pid:e.pid,sessionNumber,at:now(),by:S.userId};
@@ -4554,15 +4578,22 @@ function giveHandoverForm(defShift){
       <label class="field"><span>Action for incoming shift</span><textarea id="hac" placeholder="What should they do?" oninput="ui.fields=ui.fields||{};ui.fields.hac=this.value">${esc(val("hac"))}</textarea></label>
       <label class="field"><span>To shift</span>${picker("hshift",SHIFTS,tgt,"Shift")}</label>
       <label class="field"><span>Receiving resident</span>${picker("hres",(S.residents||[]).filter(r=>r.active!==false&&String(r.id)!==String(S.userId)).slice().sort((a,b)=>(a.displayName||a.username||"").localeCompare(b.displayName||b.username||"")).map(r=>[r.id,r.displayName||r.username||r.id]),val("hres")||"","Receiving resident")}</label>
-      <button class="btn block" id="givePostBtn" onclick="sendH()" disabled>Post handover</button>
-      <p class="tiny" style="margin-top:8px">Choose a patient and key risk before posting.</p>`;
+      <button class="btn block" id="givePostBtn" onclick="sendH()" ${giveReady()?"":"disabled"}>Post handover</button>
+      <p class="tiny" id="giveHint" style="margin-top:8px">${giveReady()?"":"Choose a patient, key risk and receiving resident before posting."}</p>`;
 }
 
+function giveReady(){
+  const pid=String(val("hp")||"").trim();
+  const risk=String(val("hpr")||"").trim();
+  const to=String(val("hres")||"").trim();
+  return !!(pid&&risk&&to);
+}
 function refreshGivePost(){
-  const btn=document.getElementById("givePostBtn"); if(!btn) return;
-  const pid=(document.getElementById("hp")&&document.getElementById("hp").value)||val("hp")||"";
-  const risk=((document.getElementById("hpr")&&document.getElementById("hpr").value)||val("hpr")||"").trim();
-  btn.disabled=!(pid&&risk);
+  const ready=giveReady();
+  const btn=document.getElementById("givePostBtn");
+  if(btn) btn.disabled=!ready;
+  const hint=document.getElementById("giveHint");
+  if(hint) hint.textContent=ready?"":"Choose a patient, key risk and receiving resident before posting.";
 }
 function ackH(id){
   if(!needWrite())return;
@@ -6831,6 +6862,7 @@ function render(opts){
   if(ui._sheetEnter) _html=stampSheetEnter(_html);
   el.innerHTML=_html;
   ui._sheetEnter=false;
+  try{ if(ui.giveOpen) refreshGivePost(); }catch(e){}
   (function syncNavClearance(){
     try{
       const nav=el.querySelector(".nav");
