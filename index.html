@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.28 hosp-required -->
+<!-- WARD SYNC RELEASE: R1.3.29 notify-setup -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1767,7 +1767,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.28";
+const APP_VERSION="R1.3.29";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -5372,7 +5372,7 @@ function notifySettingsHtml(){
         <p class="tiny">THIS PHONE</p>
         <p class="notify-status"><span class="status-dot-mini ${perm==='granted'?'ok':perm==='denied'?'bad':''}"></span>${esc(Notifications.status())}</p>
         <div class="btns" style="grid-template-columns:1fr 1fr;margin-top:12px">
-          <button class="btn" onclick="enableNotifications()">${perm==='granted'?'Enable':'Allow'}</button>
+          <button class="btn" onclick="enableNotifications()">${perm==='granted'?'Confirm on this phone':'Allow'}</button>
           <button class="btn ghost" onclick="testNotification()">Test</button>
         </div>
       </div>
@@ -5385,10 +5385,7 @@ function notifySettingsHtml(){
         ${notifyToggle("Broadcasts","Ward tannoy messages",np.broadcasts,"broadcasts")}
         ${notifyToggle("Sound","Play a tone on test alerts",np.sound,"sound")}
       </div>
-      <div class="card notify-card">
-        <p class="tiny">PUSH</p>
-        <button class="btn block" style="margin-top:10px" onclick="preparePushSubscription()">${perm==='granted'?'Register this phone':'Enable push'}</button>
-      </div>`;
+`;
 }
 function notifySetOverlay(){
   if(!ui.notifySet) return "";
@@ -5409,7 +5406,18 @@ async function toggleNotify(key){
     p[key]=!p[key];saveNotifyPrefs(p);toast("Could not save notification preference","bad");render();
   }
 }
-async function enableNotifications(){try{await Notifications.request();toast("Notifications enabled","ok")}catch(e){toast(e.message||String(e),"bad")}finally{render()}}
+async function enableNotifications(){
+  setBusy(true,"Setting up notifications…");
+  try{
+    await Notifications.request();
+    const sub=await Notifications.subscribe();
+    await Notifications.registerServerSubscription(sub);
+    await loadServerNotifyPrefs().catch(()=>{});
+    try{localStorage.setItem("ward-command-push-subscription",JSON.stringify(sub.toJSON()))}catch(e){}
+    toast("Notifications on. This phone is registered.","ok");
+  }catch(e){toast(e.message||String(e),"bad")}
+  finally{setBusy(false);render()}
+}
 async function testNotification(){try{await Notifications.test();toast("Test notification sent","ok")}catch(e){toast(e.message||String(e),"bad")}finally{render()}}
 async function preparePushSubscription(){try{const sub=await Notifications.subscribe();await Notifications.registerServerSubscription(sub);await loadServerNotifyPrefs().catch(()=>{});try{localStorage.setItem("ward-command-push-subscription",JSON.stringify(sub.toJSON()))}catch(e){}toast("This device is registered for push","ok")}catch(e){toast(e.message||String(e),"bad")}finally{render()}}
 async function loadNotificationInbox(){
