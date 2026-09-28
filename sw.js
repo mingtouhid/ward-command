@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.29-notify-setup";
+const VERSION = "ward-sync-pwa-r1.3.30-about-nav-theme";
 const PRECACHE = [
   "./",
   "./index.html",
