@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.38 ho-tile-split -->
+<!-- WARD SYNC RELEASE: R1.3.39 consultant-welcome -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -887,6 +887,9 @@ input,select,textarea{border-radius:14px}
 .pgt-actions .pgt-critical{grid-column:1/-1;min-height:42px}
 .pgt-history-only{display:flex;justify-content:center;margin-top:8px}
 .pgt-history-only .btn{width:70%;min-height:42px}
+.consultant-welcome{text-align:center;padding:10px 8px 4px}
+.consultant-welcome .tiny{letter-spacing:.14em;text-transform:uppercase}
+.consultant-hello{margin-top:6px;font-size:20px;font-weight:800;color:var(--ink)}
 
 
 /* BDFT occupied-beds language */
@@ -1776,7 +1779,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.38";
+const APP_VERSION="R1.3.39";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2990,7 +2993,7 @@ function stampSheetEnter(html){
 function shell(inner){
   const u=user();
   const on=p=>route.page===p||(p==="patients"&&route.page==="snap")||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast"].includes(route.page))?"on":"";
-  return `<header class="top"><div><p class="kicker">${greet()} <span class="who-inline">${esc(u.displayName)}</span></p><h1>${esc(S.unit.name)}</h1></div>
+  return `<header class="top"><div><p class="kicker">${greet()}${canWrite()?` <span class="who-inline">${esc(u.displayName)}</span>`:""}</p><h1>${esc(S.unit.name)}</h1></div>
     <div class="who-tools">${statusChip()}<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button></div></header>
     <main class="main">${inner}</main>
     
@@ -3281,7 +3284,7 @@ function homeView(){
     </div>
     <div class="card duty-card">
       <p class="tiny">On duty</p>
-      ${canWrite()?dutyCardBody():`<p class="sm" style="margin-top:8px">View only</p><p class="tiny" style="margin-top:6px">Consultants are not signed on duty.</p>`}
+      ${canWrite()?dutyCardBody():`<div class="consultant-welcome"><p class="tiny">Welcome</p><p class="consultant-hello">${esc((user()||{}).displayName||"Consultant")}</p></div>`}
     </div>
     </div>
     </div>`;
