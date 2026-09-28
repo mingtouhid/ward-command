@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.32 consultant-view -->
+<!-- WARD SYNC RELEASE: R1.3.33 consultant-ui -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -885,6 +885,8 @@ input,select,textarea{border-radius:14px}
 
 .pgt-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .pgt-actions .pgt-critical{grid-column:1/-1;min-height:42px}
+.pgt-history-only{display:flex;justify-content:center;margin-top:8px}
+.pgt-history-only .btn{width:70%;min-height:42px}
 
 
 /* BDFT occupied-beds language */
@@ -1769,7 +1771,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.32";
+const APP_VERSION="R1.3.33";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -3365,11 +3367,11 @@ function snapView(){
       ${canWrite()?`<label class="field" style="margin:8px 0 10px">
         <textarea id="oneline" rows="3" placeholder="This round" oninput="ui.fields=ui.fields||{};ui.fields.oneline=this.value">${esc(sn.state||"")}</textarea>
       </label>`:""}
-      <div class="btns pgt-actions">
-        ${canWrite()?`<button class="btn sm" onclick="saveLine('${p.id}')">Save</button>`:""}
+      ${canWrite()?`<div class="btns pgt-actions">
+        <button class="btn sm" onclick="saveLine('${p.id}')">Save</button>
         <button class="btn sm ghost" onclick="go('record','${p.id}')">History</button>
-        ${canWrite()?`<button class="btn sm danger pgt-critical" onclick="criticalStatusForm('${p.id}')">Update critical value</button>`:""}
-      </div>
+        <button class="btn sm danger pgt-critical" onclick="criticalStatusForm('${p.id}')">Update critical value</button>
+      </div>`:`<div class="pgt-history-only"><button class="btn sm ghost" onclick="go('record','${p.id}')">History</button></div>`}
       ${pgtNotePreview(p.id)}
       ${canWrite()?`<p class="tiny" style="margin:14px 0 8px">WATCH</p>
       <div class="chips">${TAGS.filter(tg=>!['ect','obs','leave','restrained','delirium'].includes(tg.id)).map(tg=>{
@@ -4468,7 +4470,7 @@ function handoverView(){
       </div>
       ${canWrite()?`<button class="btn sm" onclick="openGiveHandover()">Give</button>`:""}
     </div>
-    <p class="ho-empty-hero">${esc(hoPendingLine(pending.length))}</p>`;
+    ${canWrite()?`<p class="ho-empty-hero">${esc(hoPendingLine(pending.length))}</p>`:""}`;
   return head+
     hoSection("Take this shift",forNow,true,"")+
     (forNext.length?hoSection("Posted for "+shiftLabel(nxt),forNext,mineIncoming(forNext[0]),""):"")+
