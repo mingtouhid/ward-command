@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.21 ect-sched -->
+<!-- WARD SYNC RELEASE: R1.3.22 med-actor -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1767,7 +1767,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.21";
+const APP_VERSION="R1.3.22";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -2428,7 +2428,7 @@ async function doCloudPull(opts){
     if(S.snaps[pid]) nextSnaps[pid]=S.snaps[pid];
   });
   S.snaps=nextSnaps;
-  S.orders=orders.map(r=>({id:r.id,pid:r.patient_id,drug:r.drug,dose:r.dose,route:r.route,freq:r.frequency,time:r.scheduled_time||"08:00",start:r.start_date,stop:r.stop_date,status:r.status,hold:r.hold_at||null}));
+  S.orders=orders.map(r=>({id:r.id,pid:r.patient_id,drug:r.drug,dose:r.dose,route:r.route,freq:r.frequency,time:r.scheduled_time||"08:00",start:r.start_date,stop:r.stop_date,status:r.status,hold:r.hold_at||null,by:r.created_by||r.by||null}));
   S.doses=doses.map(r=>({id:r.id,oid:r.order_id,pid:r.patient_id,at:r.scheduled_at,status:r.status,by:r.given_by}));
   S.tasks=tasks.map(r=>({id:r.id,pid:r.patient_id,title:r.title,detail:r.detail||"",pri:r.priority,status:r.status,to:r.assigned_to||null,by:r.created_by||null,at:r.created_at||null,completedAt:r.completed_at||null}));
   S.handovers=handovers.map(r=>({id:r.id,from:r.from_id,to:r.to_id,shift:r.shift,status:r.status,at:r.created_at,ackBy:r.acknowledged_by||null,ackAt:r.acknowledged_at||null}));
@@ -5863,6 +5863,24 @@ function recKindLabel(k){
 }
 function recCss(k){return ({admit:"admit",obs:"obs",med:"med",ect:"ect",pgt:"pgt",crit:"crit",xfer:"xfer",dis:"dis",restrain:"restrain"}[k]||"note")}
 function recActor(it){return it.byName||rname(it.by)||""}
+
+function medEventActor(pid,drug,at,verbs){
+  const d=String(drug||"").toLowerCase();
+  const ts=Date.parse(at||0)||0;
+  const verbsL=(verbs||[]).map(v=>v.toLowerCase());
+  let best=null,bestDt=1e15;
+  (S.events||[]).forEach(e=>{
+    if(String(e.pid)!==String(pid)) return;
+    const title=String(e.title||"").toLowerCase();
+    if(d && title.indexOf(d)<0) return;
+    if(!verbsL.some(v=>title.startsWith(v)||title.indexOf(v)>=0)) return;
+    const dt=Math.abs((Date.parse(e.at||0)||0)-ts);
+    if(dt<bestDt){bestDt=dt;best=e;}
+  });
+  if(!best) return {by:null,byName:""};
+  return {by:best.by||null,byName:best.actorName||""};
+}
+
 function recSkipEventTitle(title){
   const s=(title||"").toLowerCase();
   return /notification (dispatched|sent)/.test(s) || /^failed\b/.test(s) || /^admission notification|^discharge notification|^transfer notification|^ect notification|^task notification|^handover notification|^critical status update sent/.test(s);
@@ -5903,9 +5921,16 @@ function patientRecordItems(pid){
   }
   (S.orders||[]).filter(o=>o.pid===pid && !isPrn(o)).forEach(o=>{
     const label=[o.drug,o.dose,o.route||"PO",o.freq||"OD"].filter(Boolean).join(" · ");
-    add({kind:"med",title:"Medication started · "+(o.drug||""),at:o.start||o.at,by:o.by,body:label+""});
-    if(o.hold) add({kind:"med",title:"Medication paused · "+(o.drug||""),at:o.hold,body:label});
-    if(o.stop) add({kind:"med",title:"Medication stopped · "+(o.drug||""),at:o.stop,body:label});
+    const started=medEventActor(pid,o.drug,o.start||o.at,["started ","medication started"]);
+    add({kind:"med",title:"Medication started · "+(o.drug||""),at:o.start||o.at,by:o.by||started.by,byName:o.byName||started.byName,body:label});
+    if(o.hold){
+      const paused=medEventActor(pid,o.drug,o.hold,["paused ","medication paused"]);
+      add({kind:"med",title:"Medication paused · "+(o.drug||""),at:o.hold,by:paused.by,byName:paused.byName,body:label});
+    }
+    if(o.stop){
+      const stopped=medEventActor(pid,o.drug,o.stop,["stopped ","medication stopped"]);
+      add({kind:"med",title:"Medication stopped · "+(o.drug||""),at:o.stop,by:stopped.by,byName:stopped.byName,body:label});
+    }
   });
   (S.ect||[]).filter(e=>e.pid===pid).forEach(e=>{
     add({kind:"ect",title:"ECT planned",at:e.at||e.nextAt,by:e.by,body:[e.indication, (e.sessionsDone?e.sessionsDone+" session(s) recorded":"")].filter(Boolean).join(" · ")});
@@ -6730,7 +6755,7 @@ function addMed(pid){
   const route=val("mroute")||"PO";
   const freq=val("mfreq")||"OD";
   const run=()=>{
-    const ord={id:uid("o"),pid,drug,dose,route,freq,time:"08:00",start:now(),stop:null,hold:null,status:"active"};S.orders.unshift(ord);
+    const ord={id:uid("o"),pid,drug,dose,route,freq,time:"08:00",start:now(),stop:null,hold:null,status:"active",by:S.userId||null};S.orders.unshift(ord);
     ev(pid,"Started "+drug+" "+dose+" "+route+" "+freq,true,"med");qOrder(ord);ui.medPid=null;if(ui.fields){delete ui.fields.md;delete ui.fields.mds}ui.sheet=null;save();
     setBusy(true,"Saving medication…");
     Promise.resolve(flushPending()).finally(()=>setBusy(false));
