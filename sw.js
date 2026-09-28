@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.36-ios-push-gesture";
+const VERSION = "ward-sync-pwa-r1.3.38-ho-tile-split";
 const PRECACHE = [
   "./",
   "./index.html",

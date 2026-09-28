@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.36 ios-push-gesture -->
+<!-- WARD SYNC RELEASE: R1.3.38 ho-tile-split -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1776,7 +1776,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.36";
+const APP_VERSION="R1.3.38";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return seed()})();
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
@@ -3242,11 +3242,19 @@ function tidySectionNames(){
   });
   if(dirty) try{save()}catch(e){}
 }
+function handoverTileCount(){
+  const live=i=>onWard(i.pid)||underObs(i.pid);
+  const items=S.hitems||[];
+  if(!canWrite()) return items.filter(live).length;
+  const me=String(S.userId||"");
+  const incoming=new Set((S.handovers||[]).filter(h=>h.status==="sent"&&String(h.to||"")===me&&String(h.from||"")!==me).map(h=>h.id));
+  return items.filter(i=>!i.done&&live(i)&&incoming.has(i.hid)).length;
+}
 function homeView(){
   const list=occupied();
   const high=list.filter(b=>isDelirium(b.patientId)).length;
   const ect=(S.ect||[]).filter(e=>(!e.status||e.status==="planned")&&onWard(e.pid)).length;
-  const inbox=S.hitems.filter(i=>!i.done&&(onWard(i.pid)||underObs(i.pid))).length;
+  const inbox=handoverTileCount();
   const restrainedN=list.filter(b=>restrainHeld(b.patientId)).length;
   tidySectionNames();
   const wards=S.sections.filter(s=>s.active!==false).slice().sort((a,b)=>(a.sort||0)-(b.sort||0)).map(sec=>({
@@ -4455,33 +4463,36 @@ function handoverView(){
   const cur=currentShift();
   const nxt=nextShift(cur);
   const me=String(S.userId||"");
+  const write=canWrite();
   const mineIncoming=h=>String(h.to||"")===me && String(h.from||"")!==me;
   const mineOutgoing=h=>String(h.from||"")===me;
-  const open=(S.handovers||[]).filter(h=>h.status==="sent");
+  const all=(S.handovers||[]).slice();
+  const open=all.filter(h=>h.status==="sent");
   const pending=open.filter(mineIncoming);
   const fresh=open.filter(hoIsFresh);
-  const forNow=fresh.filter(h=>h.shift===cur && mineIncoming(h));
-  const forNext=fresh.filter(h=>h.shift===nxt && (mineOutgoing(h)||mineIncoming(h)));
-  const postedByMe=fresh.filter(h=>mineOutgoing(h) && h.shift!==nxt);
-  const other=fresh.filter(h=>h.shift!==cur&&h.shift!==nxt && mineIncoming(h));
-  const stale=open.filter(h=>!hoIsFresh(h) && (mineIncoming(h)||mineOutgoing(h)));
-  const acked=(S.handovers||[]).filter(h=>h.status==="acknowledged").slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
+  const forNow=write?fresh.filter(h=>h.shift===cur && mineIncoming(h)):all.filter(h=>h.shift===cur);
+  const forNext=write?fresh.filter(h=>h.shift===nxt && (mineOutgoing(h)||mineIncoming(h))):all.filter(h=>h.shift===nxt);
+  const postedByMe=write?fresh.filter(h=>mineOutgoing(h) && h.shift!==nxt):[];
+  const other=write?fresh.filter(h=>h.shift!==cur&&h.shift!==nxt && mineIncoming(h)):all.filter(h=>h.shift!==cur&&h.shift!==nxt);
+  const stale=write?open.filter(h=>!hoIsFresh(h) && (mineIncoming(h)||mineOutgoing(h))):[];
+  const acked=write?all.filter(h=>h.status==="acknowledged").slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0)):[];
   const earlier=stale.concat(acked.filter(h=>!stale.some(s=>s.id===h.id))).slice(0,12);
-  const takeN=pending.reduce((n,h)=>n+S.hitems.filter(i=>i.hid===h.id&&!i.done).length,0);
+  const openN=write?pending.reduce((n,h)=>n+S.hitems.filter(i=>i.hid===h.id&&!i.done).length,0):(S.hitems||[]).filter(i=>onWard(i.pid)||underObs(i.pid)).length;
+  const takeN=openN;
   const head=`<div class="ho-head">
       <div>
         <h2 class="page-title" style="margin:0">${esc(shiftLabel(cur))}</h2>
-        <p class="tiny">${esc(shiftHours(cur))} · ${takeN} to take · next ${esc(shiftLabel(nxt))} ${esc(shiftHours(nxt))}</p>
+        <p class="tiny">${esc(shiftHours(cur))} · ${write?takeN+" to take":openN+" lines"} · next ${esc(shiftLabel(nxt))} ${esc(shiftHours(nxt))}</p>
       </div>
-      ${canWrite()?`<button class="btn sm" onclick="openGiveHandover()">Give</button>`:""}
+      ${write?`<button class="btn sm" onclick="openGiveHandover()">Give</button>`:""}
     </div>
-    ${canWrite()?`<p class="ho-empty-hero">${esc(hoPendingLine(pending.length))}</p>`:""}`;
+    ${write?`<p class="ho-empty-hero">${esc(hoPendingLine(pending.length))}</p>`:""}`;
   return head+
-    hoSection("Take this shift",forNow,true,"")+
-    (forNext.length?hoSection("Posted for "+shiftLabel(nxt),forNext,mineIncoming(forNext[0]),""):"")+
+    hoSection(write?"Take this shift":shiftLabel(cur),forNow,write,"")+
+    (forNext.length?hoSection("Posted for "+shiftLabel(nxt),forNext,write&&mineIncoming(forNext[0]),""):"")+
     (postedByMe.length?hoSection("Waiting to be taken",postedByMe,false,""):"")+
-    (other.length?hoSection("Other incoming",other,true,""):"")+
-    (earlier.length?(ui.hHist?hoSection("Earlier handovers",earlier,true,""):`<button class="btn ghost block" style="margin-top:8px" onclick="ui.hHist=true;render()">Earlier handovers · ${earlier.length}</button>`):"");
+    (other.length?hoSection(write?"Other incoming":"Other shifts",other,write,""):"")+
+    (earlier.length?(ui.hHist?hoSection("Earlier handovers",earlier,write,""):`<button class="btn ghost block" style="margin-top:8px" onclick="ui.hHist=true;render()">Earlier handovers · ${earlier.length}</button>`):"");
 }
 function hoSection(title,list,canAck,empty){
   list=list.slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
@@ -4522,7 +4533,7 @@ function hoPack(h,canAck){
       <p class="mustknow">${i.done?"✓ ":""}${esc(i.problem||"")}</p>
       <p class="tiny" style="margin:8px 0 2px">Do</p>
       <p class="shoulddo">${esc(i.action||"—")}</p>
-      ${i.done?`<p class="tiny">Done</p>`:(mine?`<button class="btn sm" style="margin-top:8px" onclick="clearItem('${i.id}')" ${i._busy?"disabled":""}>Done</button>`:`<p class="tiny" style="margin-top:8px">Open</p>`)}
+      ${i.done?`<p class="tiny">Done</p>`:(mine&&canWrite()?`<button class="btn sm" style="margin-top:8px" onclick="clearItem('${i.id}')" ${i._busy?"disabled":""}>Done</button>`:`<p class="tiny" style="margin-top:8px">${i.done?"Done":"Open"}</p>`)}
     </div>`).join("")}
     ${mine&&canAck&&h.status==="sent"&&canWrite()?`<button class="btn sm" style="margin-top:10px" onclick="ackH('${h.id}')">Take handover</button>`:""}
     ${giver&&h.status==="sent"&&canWrite()?`<button class="btn ghost sm" style="margin-top:10px" onclick="withdrawHandover('${h.id}')">Withdraw pack</button>`:""}
