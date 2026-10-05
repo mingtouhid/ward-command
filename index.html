@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.41 no-pinch-zoom -->
+<!-- WARD SYNC RELEASE: R1.3.42 expired-session-login -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1633,12 +1633,16 @@ let sessionPw=null;
 let sessionTok=null;
 try{sessionTok=sessionStorage.getItem("wc_tok")||localStorage.getItem("wc_tok")||null}catch(e){}
 function sessionDead(err){
-  const m=String(err&&err.message||err||"");
-  return /not signed in/i.test(m);
+  const m=String(err&&err.message||err||"").toLowerCase();
+  return /not signed in|invalid or expired|no active ward session|expired ward session/.test(m);
 }
 function expireSession(){
   setSessionTok(null);
   sessionPw=null;
+  ui.loginErr="";
+  cloudLastError="";
+  cloudStatus="offline";
+  try{Sync.state="CONNECTING";Sync.note("session expired")}catch(e){}
 }
 function setSessionTok(tok){
   sessionTok=tok||null;
@@ -1779,7 +1783,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.41";
+const APP_VERSION="R1.3.42";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2813,6 +2817,12 @@ async function doCloudBoot(){
     return true;
   }catch(e){
     cloudLastError=e.message||String(e);
+    if(sessionDead(cloudLastError)){
+      expireSession();
+      cloudLastError="";
+      Sync.note("session expired — login");
+      return false;
+    }
     cloudStatus="error";
     Sync.state="ERROR";
     Sync.note("boot fail "+cloudLastError);
@@ -6683,6 +6693,7 @@ async function reconnectCloud(){
     localStorage.setItem(KEY,JSON.stringify(S));
   }
   await cloudBoot();
+  if(!sessionTok){render();return;}
   if(cloudStatus==="error") toast(cloudLastError||"Sync failed","bad");
   else toast(cloudStatus==="live"||cloudStatus==="syncing"?"Connected":"Offline",cloudStatus==="offline"?"info":"ok");
   render();
