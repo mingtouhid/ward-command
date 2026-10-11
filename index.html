@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.45 duty-pgt-label -->
+<!-- WARD SYNC RELEASE: R1.3.47 setup-confirm-fixes -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1783,7 +1783,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.45";
+const APP_VERSION="R1.3.47";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -4853,7 +4853,7 @@ function userEditOverlay(){
     <label class="field"><span>New password</span><input id="ep" type="password" placeholder="Leave blank to keep" value="${esc(val("ep"))}" oninput="ui.fields=ui.fields||{};ui.fields.ep=this.value"/></label>
     ${self?`<p class="tiny" style="margin:8px 0 12px">Your role stays admin. Ask another admin to change it.</p>`:`<label class="field"><span>Role</span>${picker("erole",ROLES,val("erole")||normRole(r.role),"Role")}</label>`}
     <button class="btn block" onclick="saveUserEdit()">Save changes</button>
-    ${self?"":`<button class="btn danger block" style="margin-top:8px" onclick="closeUserEdit();removeUser('${username}')">Remove account</button>`}
+    ${self?"":`<button class="btn danger block" style="margin-top:8px" onclick="removeUser('${username}')">Remove account</button>`}
     <button class="btn ghost block" style="margin-top:8px" onclick="closeUserEdit()">Close</button>
   </div></div>`;
 }
@@ -4917,12 +4917,13 @@ function usersView(){
       </div>
     </div>`).join("")}`;
 }
-async function inviteUser(){setBusy(true);
+async function inviteUser(){
   if(!canAdmin()){toast("Admin only","bad");return}
   const username=(val("nu")||"").trim(), name=(val("nd")||"").trim(), pw=val("np")||"", role=val("nrole")||"resident";
   if(!username||!name||!pw){toast("Username, display name and password are required.","bad");return}
   if(!sessionTok){toast("Sign in again to add a user.","bad");return}
   if(!sb){toast("Connect to the project first.","bad");return}
+  setBusy(true,"Creating account…");
   try{
     const {data,error}=await sb.rpc("ward_invite_user",{
       p_token:sessionTok,p_username:username,p_password:pw,p_display:name,p_role:role
@@ -5006,8 +5007,10 @@ async function removeUser(username){
   if(username===user().username){toast("You cannot remove your own account.","bad");return}
   const r=(S.residents||[]).find(x=>x.username===username);
   const label=r&&r.displayName?r.displayName:username;
+  ui._sheetLeaving=false;
+  ui.userEdit=null;
   ui.confirm={fn:"removeUser",username,title:"Remove user",body:"Remove "+label+" ("+username+")? They will not be able to sign in. Notes they already wrote stay in the log."};
-  render();
+  render({force:1});
 }
 async function removeUserNow(username){setBusy(true);
   const r=(S.residents||[]).find(x=>x.username===username);
@@ -5018,7 +5021,7 @@ async function removeUserNow(username){setBusy(true);
       p_token:sessionTok, p_username:username
     });
     if(error) throw error;
-    if(!data) throw new Error("Remove did not apply. Sign in again as admin.");
+    if(!data) throw new Error("That account was not found, or this login is not admin.");
     S.residents=(S.residents||[]).filter(x=>x.username!==username);
     ev(null,"User removed · "+label+" ("+username+")",true);
     toast("Removed "+label,"ok");save();render();
@@ -6427,12 +6430,14 @@ async function saveConsEdit(){
   toast("Saved "+name,"ok");save();render();
 }
 function removeConsultant(id){
-  if(!canAdmin())return;
+  if(!canAdmin()){toast("Admin only","bad");return}
   const c=(S.consultants||[]).find(x=>x.id===id);
   const label=c&&c.name?c.name:"this consultant";
+  ui._sheetLeaving=false;
+  ui.consEdit=null;
   ui.confirm={fn:"removeConsultant",id,title:"Remove consultant",ok:"Remove",danger:true,
     body:"Remove "+label+" from faculty? This does not delete their login if they have one."};
-  render();
+  render({force:1});
 }
 function removeConsultantNow(id){
   if(!canAdmin())return;
@@ -6778,8 +6783,9 @@ function removeBed(id){
   if(!needWrite())return;
   const bed=S.beds.find(b=>b.id===id);if(!bed)return;
   if(bed.patientId){go("snap",bed.patientId);return}
+  ui._sheetLeaving=false;
   ui.confirm={fn:"removeBed",id,title:"Remove bed",ok:"Remove",body:"Remove empty bed "+bed.no+"?"};
-  render();
+  render({force:1});
 }
 function removeBedNow(id){
   const bed=S.beds.find(b=>b.id===id);if(!bed||bed.patientId)return;
@@ -6797,8 +6803,9 @@ function clearSectionBeds(secId){
     toast(occ?"Occupied beds stay. Transfer patients first.":"No beds to clear in this ward.","bad");
     return;
   }
+  ui._sheetLeaving=false;
   ui.confirm={fn:"clearBeds",secId,title:"Clear empty beds",ok:"Clear",body:"Clear "+empty.length+" empty bed"+(empty.length===1?"":"s")+" in "+(sec?sec.name:"this ward")+"?"+(occ?" "+occ+" occupied bed(s) will stay.":"")};
-  render();
+  render({force:1});
 }
 function clearSectionBedsNow(secId){
   const sec=S.sections.find(s=>s.id===secId);
