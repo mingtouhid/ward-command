@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.50-today-monthly";
+const VERSION = "ward-sync-pwa-r1.3.51-splash";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -97,8 +97,12 @@ self.addEventListener("fetch", (event) => {
 
 async function networkFirst(req) {
   const cache = await caches.open(VERSION);
+  const isNav = req.mode === "navigate";
   try {
-    const fresh = await fetch(req);
+    const fresh = await Promise.race([
+      fetch(req),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("nav-timeout")), isNav ? 4000 : 12000))
+    ]);
     if (fresh && fresh.ok) cache.put(req, fresh.clone());
     return fresh;
   } catch (err) {
