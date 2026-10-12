@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.54 chip-fade-both -->
+<!-- WARD SYNC RELEASE: R1.3.55 chip-scroll-keep -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1784,7 +1784,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.54";
+const APP_VERSION="R1.3.55";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -7008,6 +7008,8 @@ function render(opts){
   }
   const main=document.querySelector(".main");
   const y=main?main.scrollTop:0;
+  const chipRow=document.querySelector(".ptag-row");
+  const chipX=chipRow?chipRow.scrollLeft:0;
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
   const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView};
@@ -7022,6 +7024,8 @@ function render(opts){
   if(ui._sheetEnter) _html=stampSheetEnter(_html);
   el.innerHTML=_html;
   ui._sheetEnter=false;
+  const chipRow2=document.querySelector(".ptag-row");
+  if(chipRow2 && chipX) chipRow2.scrollLeft=chipX;
   try{ if(ui.giveOpen) refreshGivePost(); }catch(e){}
   (function syncNavClearance(){
     try{
