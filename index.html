@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.55 chip-scroll-keep -->
+<!-- WARD SYNC RELEASE: R1.3.56 hospital-number -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1784,7 +1784,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.55";
+const APP_VERSION="R1.3.56";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -4258,7 +4258,7 @@ function admitPatient(){
   const id=uid("p");
   const c1=((ui.census&&ui.census.con)||val("acon")||"").trim();
   const c2=((ui.census&&ui.census.con2)||val("acon2")||"").trim();
-  const p={id,code:hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",name,age:+val("aage")||0,sex:val("asex")||"O",diagnosis:dx,admittedAt:now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:"conservative",status:"admitted",address:(val("aaddr")||"").trim(),phone:(val("aphone")||"").trim(),consultant:c1,consultant2:c2,consultant_name:c1||null,consultant_name_2:c2||null,reason:(ui.census&&ui.census.reason)||"",referredBy:((ui.census&&ui.census.ref)||val("aref")||"").trim()};
+  const p={id,code:hosp||("PSY-"+id.slice(-6).toUpperCase()),patient_code:hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",hospital_no:hosp||null,name,age:+val("aage")||0,sex:val("asex")||"O",diagnosis:dx,admittedAt:now(),admitted_at:now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:"conservative",status:"admitted",address:(val("aaddr")||"").trim(),phone:(val("aphone")||"").trim(),consultant:c1,consultant2:c2,consultant_name:c1||null,consultant_name_2:c2||null,reason:(ui.census&&ui.census.reason)||"",reason_for_admission:(ui.census&&ui.census.reason)||null,referredBy:((ui.census&&ui.census.ref)||val("aref")||"").trim(),referred_by:((ui.census&&ui.census.ref)||val("aref")||"").trim()||null};
   S.patients.unshift(p);
   S.snaps[id]={state:"Newly admitted.",risk:"moderate",sleep:"slept-well",watch:"",plan:"",by:S.userId,at:now()};
   bed.patientId=id;
