@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.58-visual";
+const VERSION = "ward-sync-pwa-r1.3.59-sticky-motion";
 const PRECACHE = [
   "./",
   "./index.html",

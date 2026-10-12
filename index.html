@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.58 visual-pass -->
+<!-- WARD SYNC RELEASE: R1.3.59 sticky-motion -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -220,8 +220,6 @@ textarea{min-height:76px;resize:vertical}
 .btn:active,.more-row:active,.pick-opt:active{opacity:.72}
 .btn[disabled]{pointer-events:none}
 .chip.on,.seg button.on,.pick-opt.on{transition:background .12s,transform .12s,border-color .12s}
-.chip.on,.seg button.on{transform:none}
-.sec-sticky{box-shadow:0 1px 0 var(--line)}
 input,textarea,select{scroll-margin-bottom:140px;scroll-margin-top:80px}
 
 .fold-card,.ward-block,.main,.app{overflow-anchor:none}
@@ -314,8 +312,8 @@ a{color:var(--teal2);text-decoration:none}
 .act-log .row{flex-wrap:wrap;align-items:flex-start;min-width:0}
 .act-log .sm,.act-log .tiny,.act-log b{overflow-wrap:anywhere;word-break:break-word;max-width:100%}
 .act-log .badge{flex:none;max-width:100%;text-transform:uppercase;letter-spacing:.04em;line-height:1.2;align-self:center}
-.chip{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:6px 10px;font-size:12px}
-.chip.on{background:var(--teal);color:var(--btn-ink);border-color:var(--teal)}
+.chip{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:6px 10px;font-size:12px;transition:transform .18s ease,background-color .18s ease,color .18s ease,box-shadow .18s ease}
+.chip.on{background:var(--teal);color:var(--btn-ink);border-color:var(--teal);transform:scale(1.04);box-shadow:0 6px 14px -8px color-mix(in srgb,var(--teal) 70%,transparent)}
 .back{border:0;background:none;color:var(--teal2);font-size:13px;padding:0 0 10px}
 .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
 .meta div{background:var(--panel2);border-radius:12px;padding:8px 10px}
@@ -342,9 +340,12 @@ a{color:var(--teal2);text-decoration:none}
 .ptag-row .chip{flex:0 0 auto;white-space:nowrap;padding:11px 16px;font-size:13px;font-weight:650;min-height:42px}
 .duty-card .duty-actions{margin-top:10px}
 .plist-block{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.plist-grid{animation:listin .28s ease both}
+@keyframes listin{from{opacity:.35;transform:translateY(8px)}to{opacity:1;transform:none}}
 .card.nobed{border:1.5px solid #eab308;background:color-mix(in srgb, #eab308 12%, var(--panel))}
 .badge.nobed-tag{background:#eab308;color:#1c1503;font-weight:800}
-.sec-sticky{position:sticky;top:0;z-index:2;background:var(--bg);padding:12px 0 10px;margin:0 0 2px;font-size:13px;font-weight:750;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);box-shadow:0 8px 16px -12px rgba(0,0,0,.45)}
+.sec-sticky{position:sticky;top:calc(var(--gutter) * -1);z-index:4;background:var(--bg);margin:0 calc(var(--gutter) * -1) 2px;padding:calc(var(--gutter) + 4px) var(--gutter) 8px;font-size:13px;font-weight:750;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);box-shadow:0 10px 16px -14px rgba(0,0,0,.4)}
+.sec-sticky::after{content:"";position:absolute;left:0;right:0;top:-1px;height:1px;background:var(--bg)}
 @media (min-width:760px){
   .snap-actions .btn,.btns .btn{min-height:44px;padding:12px 14px}
 }
@@ -565,15 +566,15 @@ button.pulse{animation:btnpulse .35s ease}
 .queue-details{display:grid;gap:10px;margin-top:10px}.queue-op{border:1px solid var(--line);border-left:4px solid #f59e0b;background:var(--panel2);border-radius:16px;padding:12px}.queue-op.failed{border-left-color:#ef4444}.queue-op.pending{border-left-color:#64748b}.queue-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}.queue-status{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.queue-meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px 14px}.queue-field{min-width:0}.queue-field span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}.queue-field b{font-size:13px;word-break:break-word}.queue-error{margin-top:10px;padding:10px;border-radius:12px;background:var(--panel);font-size:12px;line-height:1.4;white-space:pre-wrap;word-break:break-word}.queue-explain{margin-top:8px;color:var(--muted);font-size:11px;line-height:1.4}.elog-entry{padding:9px 0;border-bottom:1px solid var(--line)}.elog-entry:last-child{border-bottom:0}.elog-kind{display:inline-flex;border-radius:999px;padding:2px 6px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-right:5px;background:var(--ghost);color:var(--muted)}.elog-kind.bad{color:#b91c1c;background:rgba(239,68,68,.12)}.elog-explain{margin-top:4px;color:var(--muted);font-size:11px;line-height:1.35}.diag-note{padding:8px 10px;border-radius:12px;background:var(--panel2);margin-top:8px;font-size:11px;line-height:1.4;color:var(--muted)}
 
 .main{animation:none}
-.main.fwd{animation:pagefwd .16s ease both}
-.main.back{animation:pageback .16s ease both}
-@keyframes pagefwd{from{opacity:.6;transform:translateX(4px)}to{opacity:1;transform:none}}
-@keyframes pageback{from{opacity:.6;transform:translateX(-4px)}to{opacity:1;transform:none}}
+.main.fwd{animation:pagefwd .28s cubic-bezier(.22,1,.36,1) both}
+.main.back{animation:pageback .28s cubic-bezier(.22,1,.36,1) both}
+@keyframes pagefwd{from{opacity:.55;transform:translateX(10px)}to{opacity:1;transform:none}}
+@keyframes pageback{from{opacity:.55;transform:translateX(-10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){
   .main.fwd,.main.back,button.pulse,.btn.ok,.btn.bad,.sheet .mask,.sheet .box,.sheet.sheet-enter .mask,.sheet.sheet-enter .box,.sheet.sheet-leave .mask,.sheet.sheet-leave .box,.card.enter,
   .live-orb.live,.live-orb.saving,.live-orb.syncing,.live-orb.bad,.live-orb.error,
   .dot.syncing,.busy-spin::after,
-  .nav button.pulse,.more-row.pulse,.chip.pulse,.pill.pulse,.fold-panel,.fold-bar-v{animation:none !important;transition:none !important}
+  .nav button.pulse,.more-row.pulse,.chip.pulse,.pill.pulse,.fold-panel,.fold-bar-v,.plist-grid{animation:none !important;transition:none !important}
   .chip,.pill,.stat,.more-row,.chip.on,.seg button.on,.pick-opt.on{transition:none}
   .chip:active,.pill:active,.stat:active,.more-row:active,.bdft-panel .pill:active{transform:none}
   .toast{transition:opacity .01s}
@@ -1787,7 +1788,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.58";
+const APP_VERSION="R1.3.59";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
