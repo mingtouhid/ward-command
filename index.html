@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.52 faculty-directory-only -->
+<!-- WARD SYNC RELEASE: R1.3.54 chip-fade-both -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -338,8 +338,9 @@ a{color:var(--teal2);text-decoration:none}
 
 .user-mini{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .user-mini .user-meta{min-width:0}
-.ptag-row{display:flex;gap:8px;overflow-x:auto;padding:0 0 10px;margin:-2px 0 2px;-webkit-overflow-scrolling:touch}
-.ptag-row .chip{flex:0 0 auto;white-space:nowrap}
+.ptag-row{display:flex;gap:8px;overflow-x:auto;padding:2px 18px 10px 0;margin:-2px 0 2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;padding-left:8px;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 22px,#000 calc(100% - 22px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 22px,#000 calc(100% - 22px),transparent 100%)}
+.ptag-row::-webkit-scrollbar{display:none;width:0;height:0}
+.ptag-row .chip{flex:0 0 auto;white-space:nowrap;padding:11px 16px;font-size:13px;font-weight:650;min-height:42px}
 .duty-card .duty-actions{margin-top:10px}
 .plist-block{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .card.nobed{border:1.5px solid #eab308;background:color-mix(in srgb, #eab308 12%, var(--panel))}
@@ -1783,7 +1784,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.52";
+const APP_VERSION="R1.3.54";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
