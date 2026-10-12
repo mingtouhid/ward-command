@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.48 two-consultants -->
+<!-- WARD SYNC RELEASE: R1.3.49 locked-table-rpcs -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1783,7 +1783,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.48";
+const APP_VERSION="R1.3.49";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2032,7 +2032,7 @@ function qEct(e){
   }
   queue("ect_plans",{id:e.id,patient_id:e.pid,indication:e.indication||"",sessions_done:e.sessionsDone||0,next_session_at:e.nextAt||null,npo:e.npo!==false,status:["planned","completed","cancelled"].includes(e.status)?e.status:"planned",created_by:e.by||S.userId||null,created_at:e.at||now(),updated_at:now()});
 }
-function qEctSession(x){if(!x||!x.id||!x.planId||!x.pid)return;queue("ect_sessions",{id:x.id,plan_id:x.planId,patient_id:x.pid,session_number:x.sessionNumber,session_at:x.at||now(),anaesthesia:x.anaesthesia||null,stimulus:x.stimulus||null,seizure_seconds:x.seizureSeconds==null?null:x.seizureSeconds,complications:x.complications||null,response:x.response||null,next_plan:x.nextPlan||null,recorded_by:x.by||S.userId||null})}
+function qEctSession(x){if(!x||!x.id||!x.planId||!x.pid)return;queue("ect_sessions",{id:x.id,plan_id:x.planId,patient_id:x.pid,session_number:x.sessionNumber,session_at:x.at||now(),next_session_at:x.nextAt||null,anaesthesia:x.anaesthesia||null,stimulus:x.stimulus||null,seizure_seconds:x.seizureSeconds==null?null:x.seizureSeconds,complications:x.complications||null,response:x.response||null,next_plan:x.nextPlan||null,recorded_by:x.by||S.userId||null})}
 function qPatient(p){if(!p)return;queue("patients",{id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,consultant_name_2:p.consultant2||null,admitted_at:p.admittedAt||now(),discharged_at:p.dischargedAt||null,discharge_mode:p.dischargeMode||null,discharge_outcome:p.dischargeOutcome||null,treatment_mode:p.treatmentMode||null,active_status:p.status||"admitted",address:p.address||null,phone:p.phone||null,updated_by:S.userId||null,created_at:p.admittedAt||now(),updated_at:now()})}
 function qBed(b){if(!b)return;queue("beds",{id:b.id,bed_number:b.no,section_id:b.sectionId,active:b.active!==false,current_patient_id:b.patientId||null,created_at:now(),updated_at:now()})}
 function qAssign(a){if(!a)return;queue("patient_bed_assignments",{id:a.id,patient_id:a.patientId,bed_id:a.bedId,assigned_at:a.at||now(),released_at:a.released||null,assigned_by:a.by||S.userId||null})}
@@ -4389,7 +4389,7 @@ async function markEctDone(id){
   e.sessionsDone=sessionNumber;
   e.nextAt=nextEctAt(now())||e.nextAt||null;
   if(!(sb&&sessionTok)){
-    S.ectSessions=S.ectSessions||[];S.ectSessions.unshift(session);qEctSession(session);
+    S.ectSessions=S.ectSessions||[];S.ectSessions.unshift(session);session.nextAt=e.nextAt||null;qEctSession(session);
     ev(e.pid,"ECT session "+sessionNumber,true,"ect");save();render();toast("ECT session queued for sync","ok");return;
   }
   setBusy(true);
@@ -6336,15 +6336,28 @@ function toggleTagNow(id,tag,adding){
   qSnapTag(id,tag,adding?"add":"remove");save();render();
 }
 
-function qConsultant(c){if(!c)return;queue("unit_consultants",{id:c.id,name:c.name,designation:c.designation||"",active:true,sort_order:0,created_at:c.at||now(),updated_at:now()})}
-function addConsultant(){
+function qConsultant(c,active){if(!c)return;queue("unit_consultants",{id:c.id,name:c.name,designation:c.designation||"",active:active!==false,sort_order:c.sort||0,created_at:c.at||now()})}
+async function saveConsultantRow(c,active){
+  const row={id:c.id,name:c.name,designation:c.designation||"",active:active!==false,sort_order:c.sort||0,created_at:c.at||now()};
+  if(!sb||!sessionTok){qConsultant(c,active);return {queued:true}}
+  const {data,error}=await sb.rpc("ward_upsert_consultant",{p_token:sessionTok,p_row:row});
+  if(error) throw error;
+  if(!data||data.ok===false) throw new Error((data&&data.error)||"Consultant was not saved");
+  return {queued:false,data};
+}
+async function addConsultant(){
   if(!canAdmin()){toast("Admin only","bad");return}
   const name=val("cname").trim(), designation=val("cdesig").trim();
   if(!name){toast("Consultant name required","bad");return}
   S.consultants=S.consultants||[];
-  const c={id:uid("cns"),name,designation};
-  S.consultants.push(c);
-  qConsultant(c);ev(null,"Consultant "+name);toast("Saved "+name,"ok");save();render();
+  const c={id:uid("cns"),name,designation,at:now()};
+  setBusy(true,"Saving consultant…");
+  try{
+    await saveConsultantRow(c,true);
+    S.consultants.push(c);
+    ev(null,"Consultant "+name);toast("Saved "+name,"ok");save();
+  }catch(e){toast(e.message||e,"bad")}
+  finally{setBusy(false);render()}
 }
 function linkedResidentForConsultant(c){
   const list=S.residents||[];
@@ -6402,7 +6415,7 @@ async function saveConsEdit(){
   c.name=name;
   c.designation=designation;
   c.username=username||c.username||"";
-  qConsultant(c);
+  await saveConsultantRow(c,true);
   const linked=linkedResidentForConsultant(c);
   if(username && sessionTok && sb){
     setBusy(true,"Saving…");
@@ -6449,13 +6462,18 @@ function removeConsultant(id){
     body:"Remove "+label+" from faculty? This does not delete their login if they have one."};
   render({force:1});
 }
-function removeConsultantNow(id){
+async function removeConsultantNow(id){
   if(!canAdmin())return;
   const c=(S.consultants||[]).find(x=>x.id===id);
-  S.consultants=(S.consultants||[]).filter(x=>x.id!==id);
-  if(c) queue("unit_consultants",{id:c.id,name:c.name,designation:c.designation||"",active:false,sort_order:0});
-  ui.consEdit=null;
-  toast("Removed","ok");save();render();
+  if(!c){ui.consEdit=null;render();return}
+  setBusy(true,"Removing consultant…");
+  try{
+    await saveConsultantRow(c,false);
+    S.consultants=(S.consultants||[]).filter(x=>x.id!==id);
+    ui.consEdit=null;
+    toast("Removed","ok");save();
+  }catch(e){toast(e.message||e,"bad")}
+  finally{setBusy(false);render()}
 }
 function qSection(s){if(!s)return;queue("ward_sections",{id:s.id,name:s.name,active:s.active!==false,sort_order:s.sort||0,created_at:s.at||now(),updated_at:now()})}
 function addSection(){
