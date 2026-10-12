@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.49 locked-table-rpcs -->
+<!-- WARD SYNC RELEASE: R1.3.50 monthly-freq-today-filter -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -617,7 +617,7 @@ button.pulse{animation:btnpulse .35s ease}
 .admission-age.is-today{color:#2563eb}
 .today-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#2f80ed;flex:0 0 7px}
 .hero-today-stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
-.hero-today-stat{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border-radius:11px;background:rgba(255,255,255,.09);font-size:12px;color:#e2e8f0}
+.hero-today-stat{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border-radius:11px;background:rgba(255,255,255,.09);font-size:12px;color:#e2e8f0;border:0;font:inherit;cursor:pointer}
 .hero-today-stat b{font-size:15px;color:#fff;margin-left:2px}
 
 .patient-card{padding:14px}
@@ -1783,7 +1783,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.49";
+const APP_VERSION="R1.3.50";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -1980,7 +1980,7 @@ function qTask(x){
 function qDose(d){if(!d||!d.oid)return;queue("medication_doses",{id:d.id,order_id:d.oid,patient_id:d.pid,scheduled_at:d.at||now(),status:d.status||"pending",given_by:d.by||S.userId||null,given_at:d.status==="given"?(d.givenAt||d.at||now()):null})}
 function qOrder(o){if(!o)return;queue("medication_orders",{id:o.id,patient_id:o.pid,drug:o.drug,dose:o.dose,route:o.route||"PO",frequency:o.freq||"OD",scheduled_time:o.time||null,start_date:asDate(o.start)||asDate(now()),stop_date:asDate(o.stop),status:o.status||"active",hold_at:o.hold||null,created_at:o.at||o.start||now(),updated_at:now()})}
 const MED_ROUTES=[["PO","PO"],["IM","IM"],["IV","IV"],["SC","SC"],["SL","SL"],["PR","PR"],["inhale","Inhale"],["topical","Topical"]];
-const MED_FREQS=[["OD","OD"],["BD","BD"],["TDS","TDS"],["QID","QID"],["HS","HS"],["SOS","SOS"],["PRN","PRN"],["weekly","Weekly"]];
+const MED_FREQS=[["OD","OD"],["BD","BD"],["TDS","TDS"],["QID","QID"],["HS","HS"],["SOS","SOS"],["PRN","PRN"],["weekly","Weekly"],["monthly","Monthly"]];
 function medRowHtml(prefix,i,m){
   m=m||{};
   return `<div class="obs-med-block">
@@ -3285,7 +3285,7 @@ function homeView(){
       <div class="count">${list.length}</div>
       <div class="hero-wards">${wards.length?wards.map(w=>`<div class="hero-ward"><b>${w.n}</b><span>${esc(w.name)}</span></div>`).join(""):`<p class="sub">No sections yet</p>`}</div>
       <div class="hero-today-stats">
-        <div class="hero-today-stat admission"><span class="today-dot adm"></span><span class="today-lbl">Admissions today</span><b>${wardTodayAdmissionCount()}</b></div>
+        <button class="hero-today-stat admission" onclick="ui.ptag='today';go('patients')"><span class="today-dot adm"></span><span class="today-lbl">Admissions today</span><b>${wardTodayAdmissionCount()}</b></button>
         <div class="hero-today-stat discharge"><span class="today-dot dis"></span><span class="today-lbl">Discharges today</span><b>${wardTodayDischargeCount()}</b></div>
       </div>
     </div>
@@ -3341,6 +3341,7 @@ function patientsView(){
     if(tag==="ect") return !!(ectPlan(p.id)||(sn.tags||[]).includes("ect"));
     if(tag==="restrain") return restrainHeld(p.id);
     if(tag==="delirium"||tag==="high") return isDelirium(p.id);
+    if(tag==="today") return p.status==="admitted" && wardLocalDayKey(p.admittedAt||p.admitted_at)===wardLocalDayKey(new Date());
     return true;
   };
   const loose=unplacedPatients().filter(match);
@@ -3353,6 +3354,7 @@ function patientsView(){
       <button class="chip ${tag==="ect"?"on":""}" onclick="ui.ptag=ui.ptag==='ect'?'':'ect';render()">ECT</button>
       <button class="chip ${tag==="restrain"?"on":""}" onclick="ui.ptag=ui.ptag==='restrain'?'':'restrain';render()">Restrain</button>
       <button class="chip ${tag==="delirium"||tag==="high"?"on":""}" onclick="ui.ptag=(ui.ptag==='delirium'||ui.ptag==='high')?'':'delirium';render()">Delirium</button>
+      <button class="chip ${tag==="today"?"on":""}" onclick="ui.ptag=ui.ptag==='today'?'':'today';render()">Admitted today</button>
     </div>
     ${sectionBlock("No bed", loose.map(p=>patientCard(p,null)))}
     ${secs.map(sec=>{
