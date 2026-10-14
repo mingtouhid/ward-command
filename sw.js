@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.70-users-split";
+const VERSION = "ward-sync-pwa-r1.3.71-role-lock";
 const PRECACHE = [
   "./",
   "./index.html",

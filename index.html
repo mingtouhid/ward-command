@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.70 users-split -->
+<!-- WARD SYNC RELEASE: R1.3.71 role-lock -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1886,7 +1886,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.70";
+const APP_VERSION="R1.3.71";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -5017,7 +5017,9 @@ function userEditOverlay(){
   const r=(S.residents||[]).find(x=>x.username===username);
   if(!r) return "";
   const self=username===user().username;
-  const ROLES=[["resident","Resident"],["admin","Admin"],["consultant","Consultant"]];
+  const curRole=normRole(r.role);
+  const ROLES=curRole==="consultant"?[["consultant","Consultant"]]:[["resident","Resident"],["admin","Admin"]];
+  const roleLabel=(ROLES.find(x=>x[0]===curRole)||[0,curRole])[1];
   return `<div class="sheet mid"><button class="mask" onclick="closeUserEdit()"></button><div class="box" style="border-radius:24px;max-width:400px">
     <h2 class="page-title" style="margin:0 0 4px">${esc(r.displayName)}</h2>
     <p class="tiny" style="margin:0 0 12px">${esc(r.username)} · ${esc(normRole(r.role))}${self?" · you":""}</p>
@@ -5025,7 +5027,7 @@ function userEditOverlay(){
     <label class="field"><span>Display name</span><input id="ed" value="${esc(val("ed"))}" oninput="ui.fields=ui.fields||{};ui.fields.ed=this.value"/></label>
     ${(normRole(val("erole")||r.role)==="consultant")?`<label class="field"><span>Designation</span><input id="edes" maxlength="80" placeholder="e.g. Assistant Professor" value="${esc(val("edes"))}" oninput="ui.fields=ui.fields||{};ui.fields.edes=this.value"/></label>`:""}
     <label class="field"><span>New password</span><input id="ep" type="password" placeholder="Leave blank to keep" value="${esc(val("ep"))}" oninput="ui.fields=ui.fields||{};ui.fields.ep=this.value"/></label>
-    ${self?`<p class="tiny" style="margin:8px 0 12px">Your role stays admin. Ask another admin to change it.</p>`:`<label class="field"><span>Role</span>${picker("erole",ROLES,val("erole")||normRole(r.role),"Role")}</label>`}
+    ${self?`<p class="tiny" style="margin:8px 0 12px">Your role stays admin. Ask another admin to change it.</p>`:(ROLES.length>1?`<label class="field"><span>Role</span>${picker("erole",ROLES,val("erole")||curRole,"Role")}</label>`:`<div class="field"><span>Role</span><p class="sm role-fixed" style="margin:4px 0 10px">${esc(roleLabel)}</p></div>`)}
     <button class="btn block" onclick="saveUserEdit()">Save changes</button>
     ${self?"":`<button class="btn danger block" style="margin-top:8px" onclick="removeUser('${username}')">Remove account</button>`}
     <button class="btn ghost block" style="margin-top:8px" onclick="closeUserEdit()">Close</button>
