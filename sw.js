@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.59-sticky-motion";
+const VERSION = "ward-sync-pwa-r1.3.60-jail-tag";
 const PRECACHE = [
   "./",
   "./index.html",

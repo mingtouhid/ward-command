@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.59 sticky-motion -->
+<!-- WARD SYNC RELEASE: R1.3.60 jail-tag -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -298,6 +298,7 @@ a{color:var(--teal2);text-decoration:none}
 .tag-obs{background:#1e3a2f;color:#6ee7b7}
 .tag-intake{background:#3b2f1a;color:#fdba74}
 .tag-leave{background:#312e81;color:#c7d2fe}
+.tag-jail{background:#44403c;color:#fcd34d}
 .chart{width:100%;border-collapse:collapse;font-size:12px}
 .chart th{color:var(--muted);font-weight:500;text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);font-size:10px;text-transform:uppercase}
 .chart td{padding:8px 4px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -1671,7 +1672,8 @@ const TAGS=[
   {id:"npo",label:"NPO"},
   {id:"obs",label:"1:1 obs"},
   {id:"intake",label:"Poor intake"},
-  {id:"leave",label:"Leave"}
+  {id:"leave",label:"Leave"},
+  {id:"jail",label:"Jail"}
 ];
 function packWatch(sn){const tags=(sn.tags||[]).filter(Boolean);return (tags.length?"["+tags.join(",")+"] ":"")+(sn.watch||"")}
 function unpackWatch(s){const m=String(s||"").match(/^\[([^\]]*)\]\s*([\s\S]*)/);if(m)return {tags:m[1].split(",").map(x=>x.trim()).filter(Boolean),watch:m[2]};return {tags:[],watch:s||""}}
@@ -1788,7 +1790,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.59";
+const APP_VERSION="R1.3.60";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
