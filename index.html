@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.69 card-polish -->
+<!-- WARD SYNC RELEASE: R1.3.70 users-split -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1409,18 +1409,18 @@ html .home-stats > .stat.stat b{font-size:24px;line-height:1;margin:0;font-weigh
 /* R1.3.69 card-polish */
 html .home-stats > .stat.stat{min-height:92px;padding:0 4px 9px;display:grid;grid-template-rows:1fr auto;grid-template-columns:minmax(0,1fr);justify-items:center;align-items:center;text-align:center;gap:2px;
   --g:100,116,139;
-  border-color:rgba(var(--g),.28);
-  background-image:linear-gradient(to bottom,rgba(var(--g),.07),rgba(var(--g),0) 70%);
-  box-shadow:0 0 0 1px rgba(var(--g),.08),0 6px 18px -6px rgba(var(--g),.32);
+  border-color:rgba(var(--g),.14);
+  background-image:linear-gradient(to bottom,rgba(var(--g),.035),rgba(var(--g),0) 70%);
+  box-shadow:0 0 0 1px rgba(var(--g),.04),0 3px 9px -3px rgba(var(--g),.16);
   transition:transform .16s ease,box-shadow .2s ease}
 html .home-stats > .stat.stat b{align-self:center;justify-self:center;font-size:26px;margin:0}
 html .home-stats > .stat.stat span{align-self:end;width:100%;text-align:center;font-size:clamp(8.5px,2.65vw,11px);letter-spacing:.02em;line-height:1.15;
   white-space:normal;word-break:normal;overflow-wrap:normal;hyphens:none}
-html .home-stats > .stat.stat:active{box-shadow:0 0 0 1px rgba(var(--g),.16),0 8px 24px -6px rgba(var(--g),.45)}
-@media (hover:hover){html .home-stats > .stat.stat:hover{box-shadow:0 0 0 1px rgba(var(--g),.14),0 8px 22px -6px rgba(var(--g),.42)}}
+html .home-stats > .stat.stat:active{box-shadow:0 0 0 1px rgba(var(--g),.08),0 4px 12px -3px rgba(var(--g),.225)}
+@media (hover:hover){html .home-stats > .stat.stat:hover{box-shadow:0 0 0 1px rgba(var(--g),.07),0 4px 11px -3px rgba(var(--g),.21)}}
 html[data-theme="dark"] .home-stats > .stat.stat,html[data-theme="night"] .home-stats > .stat.stat,html[data-theme="ot"] .home-stats > .stat.stat{
-  border-color:rgba(var(--g),.42);background-image:linear-gradient(to bottom,rgba(var(--g),.12),rgba(var(--g),0) 72%);
-  box-shadow:0 0 0 1px rgba(var(--g),.14),0 0 22px -4px rgba(var(--g),.40)}
+  border-color:rgba(var(--g),.21);background-image:linear-gradient(to bottom,rgba(var(--g),.06),rgba(var(--g),0) 72%);
+  box-shadow:0 0 0 1px rgba(var(--g),.07),0 0 11px -2px rgba(var(--g),.20)}
 html .home-stats > .stat.stat.glow-delirium{--g:217,119,6}
 html .home-stats > .stat.stat.glow-handover{--g:37,99,235}
 html .home-stats > .stat.stat.glow-ect{--g:124,58,237}
@@ -1434,6 +1434,14 @@ html .home-stats > .stat.stat.glow-mine{--g:22,163,74}
 .filter-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 10px 7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel2,var(--panel));color:var(--ink);font:inherit;font-size:12.5px;font-weight:650;cursor:pointer}
 .filter-pill:focus-visible{outline:2px solid var(--accent,#0d9488);outline-offset:2px}
 .filter-pill-x{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--line);font-size:10px}
+.users-sec{margin:0 0 16px;animation:listin .22s ease both}
+.users-sec-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px 8px}
+.users-sec-head h3{margin:0;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.users-count{display:inline-grid;place-items:center;min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:var(--line);color:var(--ink);font-size:11px;letter-spacing:0}
+.users-empty{margin:0 2px 8px}
+.role-badge{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--line);color:var(--teal2)}
+.user-inactive{opacity:.55}
+@media (prefers-reduced-motion:reduce){.users-sec{animation:none}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1878,7 +1886,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.69";
+const APP_VERSION="R1.3.70";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2369,7 +2377,7 @@ function go(page,id){
   render({force:1,nav:1});
 }
 function back(){
-  if(ui.pick||ui.sheet||ui.confirm||ui.panel||ui.giveOpen||ui.notifySet||ui.userEdit||ui.consEdit){dismissOverlay();return}
+  if(ui.pick||ui.sheet||ui.confirm||ui.panel||ui.giveOpen||ui.notifySet||ui.userEdit||ui.consEdit||ui.addUser){dismissOverlay();return}
   snapshotScroll();
   if(nav.stack.length){
     nav.stack=nav.stack.slice(0,-1);
@@ -3037,12 +3045,13 @@ function ico(name){
 }
 
 function overlayOpen(){
-  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit);
+  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser);
 }
 function overlayDepth(){
   let n=0;
   if(ui.sheet||ui.panel||ui.giveOpen) n++;
   if(ui.userEdit) n++;
+  if(ui.addUser) n++;
   if(ui.consEdit) n++;
   if(ui.notifySet) n++;
   if(ui.pick) n++;
@@ -3055,7 +3064,7 @@ function prefersReduceMotion(){
 function clearOverlayState(extra){
   extra=extra||{};
   ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null;
-  ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null;
+  ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null; ui.addUser=null;
   if(extra.med){
     ui.medPid=null;
     if(ui.fields){try{delete ui.fields.md;delete ui.fields.mds}catch(e){}}
@@ -3066,6 +3075,7 @@ function popTopOverlay(extra){
   if(ui.confirm){ ui.confirm=null; return "confirm"; }
   if(ui.pick){ ui.pick=null; return "pick"; }
   if(ui.notifySet){ ui.notifySet=false; return "notifySet"; }
+  if(ui.addUser){ ui.addUser=null; return "addUser"; }
   if(ui.userEdit){ ui.userEdit=null; return "userEdit"; }
   if(ui.consEdit){ ui.consEdit=null; return "consEdit"; }
   if(ui.panel){ ui.panel=null; return "panel"; }
@@ -3139,7 +3149,7 @@ function shell(inner){
       <button class="${on("patients")}" onclick="go('patients')">${ico('patients')}<span class="lbl">Patients</span></button>
       <button class="${on("handover")}" onclick="go('handover')" ${ui.busy?"disabled":""}>${ico('handover')}<span class="lbl">Handovers</span></button>
       <button class="${on("more")}" onclick="go('more')">${ico('more')}<span class="lbl">More</span></button>
-    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||""))}${busyVeil()}`;
+    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||""))}${busyVeil()}`;
 }
 
 /* HOME: occupied beds only, current status */
@@ -5065,28 +5075,53 @@ async function saveUserEdit(){
 
 function usersView(){
   if(!canAdmin()) return `<div class="card"><p class="sm">Admin only.</p></div>`;
-  const ROLES=[["resident","Resident"],["admin","Admin"],["consultant","Consultant"]];
-  const list=(S.residents||[]).filter(r=>r.active!==false).slice().sort((a,b)=>a.displayName.localeCompare(b.displayName));
-  return `<button class="back" onclick="back()">← Back</button>
-    <h2 class="page-title">Users</h2>
-    <div class="card">
-      <p class="tiny">Invite</p>
-      <p class="tiny" style="margin:8px 0">Residents write · consultants view</p>
-      <label class="field"><span>Username</span><input id="nu" autocapitalize="none" value="${esc(val("nu"))}" oninput="ui.fields=ui.fields||{};ui.fields.nu=this.value"/></label>
-      <label class="field"><span>Display name</span><input id="nd" value="${esc(val("nd"))}" oninput="ui.fields=ui.fields||{};ui.fields.nd=this.value"/></label>
-      <label class="field"><span>Password</span><input id="np" type="password" value="${esc(val("np"))}" oninput="ui.fields=ui.fields||{};ui.fields.np=this.value"/></label>
-      <label class="field"><span>Role</span>${picker("nrole",ROLES,val("nrole")||"resident","Role")}</label>
-      <button class="btn block" onclick="inviteUser()">Create account</button>
-    </div>
-    ${list.map(r=>`<div class="card">
+  const all=(S.residents||[]).filter(r=>r.active!==false);
+  const srt=a=>a.slice().sort((x,y)=>((x.active===false)-(y.active===false))||String(x.displayName||"").localeCompare(String(y.displayName||"")));
+  const cons=srt(all.filter(r=>normRole(r.role)==="consultant"));
+  const res=srt(all.filter(r=>normRole(r.role)!=="consultant"));
+  const fac=u=>(S.faculty||[]).find(f=>f.username===u.username||f.id===u.id);
+  const row=r=>{const ro=normRole(r.role);const d=ro==="consultant"?((fac(r)||{}).designation||r.designation||""):"";
+    return `<div class="card user-card${r.active===false?" user-inactive":""}">
       <div class="user-mini">
         <div class="user-meta">
-          <div class="row" style="margin:0"><b>${esc(r.displayName)}</b><span class="tiny">${esc(normRole(r.role))}</span></div>
-          <p class="tiny">${esc(r.username)}${r.username===user().username?" · you":""}</p>
+          <div class="row" style="margin:0"><b>${esc(r.displayName)}</b>${ro==="admin"?`<span class="role-badge">Admin</span>`:""}</div>
+          <p class="tiny">${esc(r.username)}${d?" · "+esc(d):""}${r.username===user().username?" · you":""}</p>
         </div>
         <button class="btn ghost sm" onclick="openUserEdit('${r.username}')">Settings</button>
       </div>
-    </div>`).join("")}`;
+    </div>`};
+  const sec=(title,list,role,btn)=>`<section class="users-sec">
+      <div class="users-sec-head"><h3>${title} <span class="users-count">${list.length}</span></h3>
+        <button class="btn sm" onclick="openAddUser('${role}')">+ ${btn}</button></div>
+      ${list.length?list.map(row).join(""):`<p class="tiny users-empty">None yet</p>`}
+    </section>`;
+  return `<button class="back" onclick="back()">← Back</button>
+    <h2 class="page-title">Users</h2>
+    <p class="tiny" style="margin:0 0 10px">Residents write · consultants view</p>
+    ${sec("Consultants",cons,"consultant","Add consultant")}
+    ${sec("Residents",res,"resident","Add resident")}`;
+}
+function openAddUser(role){
+  if(!canAdmin()){toast("Admin only","bad");return}
+  ui.fields=ui.fields||{};
+  ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.ndes="";ui.fields.nrole=role==="consultant"?"consultant":"resident";
+  ui.addUser=ui.fields.nrole; render();
+}
+function addUserOverlay(){
+  if(!ui.addUser) return "";
+  const cons=ui.addUser==="consultant";
+  const ROLES=[["resident","Resident"],["admin","Admin"]];
+  return `<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box" style="border-radius:24px;max-width:400px">
+    <h2 class="page-title" style="margin:0 0 4px">${cons?"Add consultant":"Add resident"}</h2>
+    <p class="tiny" style="margin:0 0 12px">${cons?"Consultants have view-only access":"Residents can write notes and orders"}</p>
+    <label class="field"><span>Username</span><input id="nu" autocapitalize="none" value="${esc(val("nu"))}" oninput="ui.fields=ui.fields||{};ui.fields.nu=this.value"/></label>
+    <label class="field"><span>Display name</span><input id="nd" value="${esc(val("nd"))}" oninput="ui.fields=ui.fields||{};ui.fields.nd=this.value"/></label>
+    ${cons?`<label class="field"><span>Designation</span><input id="ndes" maxlength="80" placeholder="e.g. Assistant Professor" value="${esc(val("ndes"))}" oninput="ui.fields=ui.fields||{};ui.fields.ndes=this.value"/></label>`:""}
+    <label class="field"><span>Password</span><input id="np" type="password" value="${esc(val("np"))}" oninput="ui.fields=ui.fields||{};ui.fields.np=this.value"/></label>
+    ${cons?"":`<label class="field"><span>Role</span>${picker("nrole",ROLES,val("nrole")||"resident","Role")}</label>`}
+    <button class="btn block" onclick="inviteUser()">Create account</button>
+    <button class="btn ghost block" style="margin-top:8px" onclick="dismissOverlay()">Cancel</button>
+  </div></div>`;
 }
 async function inviteUser(){
   if(!canAdmin()){toast("Admin only","bad");return}
@@ -5103,9 +5138,12 @@ async function inviteUser(){
     if(!data) throw new Error("Invite did not apply. Sign in again as admin.");
     S.residents=S.residents.filter(r=>r.username!==username.toLowerCase());
     S.residents.unshift({id:uid("r"),username:username.toLowerCase(),displayName:name,role:role,active:true});
+    const des=role==="consultant"?(val("ndes")||"").trim():"";
+    if(des){try{const {error:dErr}=await sb.rpc("ward_set_user_designation",{p_token:sessionTok,p_username:username.toLowerCase(),p_designation:des});if(dErr) throw dErr;const nr=S.residents[0];if(nr) nr.designation=des;}catch(e){toast("Account created; designation not saved: "+(e.message||e),"bad")}}
     ui.fields=ui.fields||{};
-    ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.nrole="resident";
-    toast("Account created · "+username,"ok");save();render();
+    ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.ndes="";ui.fields.nrole="resident";
+    toast("Account created · "+username,"ok");save();
+    if(ui.addUser){dismissOverlay({after:()=>{render();Promise.resolve().then(()=>cloudPull()).catch(()=>{})}})}else render();
   }catch(e){toast(e.message||String(e),"bad")}finally{setBusy(false);}
 }
 function setUserRole(username,role){
