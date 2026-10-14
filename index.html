@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.64 my-orders -->
+<!-- WARD SYNC RELEASE: R1.3.65 duty-ack -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1377,6 +1377,7 @@ html.sheet-open .nav{z-index:40}
 .mo-status{flex:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--ok-bg,#dcfce7);color:var(--ok,#15803d)}
 .mo-item.removed .mo-status{background:var(--danger-bg,#fee2e2);color:var(--danger,#dc2626)}
 @media (prefers-reduced-motion:reduce){.mo-item{animation:none;transition:none}}
+.adv-duty-hint{font-style:italic;opacity:.85}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1821,7 +1822,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.64";
+const APP_VERSION="R1.3.65";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -6638,7 +6639,7 @@ function adviceCardHtml(p){
       <div class="adv-meta"><span>${esc(a.byName||"Consultant")}</span><span>${esc(stamp(a.at)||"")}${a.edited?` · <span class="adv-edited">edited ${esc(stamp(a.updatedAt)||"")}</span>`:""}</span></div>
       ${ackLine}
       ${mine&&!(a.acks||[]).length?`<div class="adv-tools"><button class="btn ghost sm" onclick="openAdviceForm('${p.id}','${esc(a.id)}')">Edit</button><button class="btn ghost sm" onclick="askRemoveAdvice('${esc(a.id)}')">Remove</button></div>`:""}
-      ${canWrite()&&S.userId&&!acked?`<div class="adv-tools"><button class="btn sm" onclick="ackAdvice('${esc(a.id)}')">Acknowledge</button></div>`:""}
+      ${canWrite()&&S.userId&&!acked?(dutyRecord()?`<div class="adv-tools"><button class="btn sm" onclick="ackAdvice('${esc(a.id)}')">Acknowledge</button></div>`:`<p class="adv-acks adv-duty-hint">Only on-duty residents can acknowledge</p>`):""}
     </div>`;
   }).join("");
   return `<div class="card snap-advice">
@@ -6719,6 +6720,7 @@ async function removeAdviceNow(id){
 }
 async function ackAdvice(id){
   if(!canWrite()){toast("Only residents acknowledge advice.","bad");return}
+  if(!dutyRecord()){toast("Only on-duty residents can acknowledge","bad");render();return}
   if(!navigator.onLine||!sessionTok||!sb){toast("You're offline. Try again when connected.","bad");return}
   try{
     const {data,error}=await sb.rpc("ward_ack_advice",{p_session_token:sessionTok,p_advice_id:id});
@@ -6727,6 +6729,7 @@ async function ackAdvice(id){
     toast("Advice acknowledged.","ok");
   }catch(e){
     const msg=String(e&&e.message||e); if(sessionDead(msg)) expireSession();
+    if(/on-duty/i.test(msg)){toast("Only on-duty residents can acknowledge","bad");try{cloudPull().then(()=>render()).catch(()=>{})}catch(_){}render();return}
     toast("Not acknowledged: "+msg,"bad");
   }
   render();
