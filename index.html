@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.62 consultant-advice -->
+<!-- WARD SYNC RELEASE: R1.3.63 advice-lock -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1807,7 +1807,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.62";
+const APP_VERSION="R1.3.63";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2495,7 +2495,9 @@ async function doCloudPull(opts){
   S.ect=ect.map(r=>({id:r.id,pid:r.patient_id,indication:r.indication||"",sessionsDone:r.sessions_done||0,nextAt:r.next_session_at,npo:r.npo!==false,status:r.status||"planned",by:r.created_by,at:r.created_at}));
   S.ectSessions=(ectSessions||[]).map(r=>({id:r.id,planId:r.plan_id,pid:r.patient_id,sessionNumber:r.session_number,at:r.session_at,anaesthesia:r.anaesthesia||null,stimulus:r.stimulus||null,seizureSeconds:r.seizure_seconds==null?null:r.seizure_seconds,complications:r.complications||null,response:r.response||null,nextPlan:r.next_plan||null,by:r.recorded_by||null}));
   S.obsStays=(wardState.observation_stays||[]).map(r=>({id:r.id,pid:r.patient_id,bedId:r.bed_id,reason:r.reason||"",note:r.note||"",at:r.started_at,by:r.started_by,endedAt:r.ended_at||null,endedBy:r.ended_by||null,outcome:r.outcome||null,referralTo:r.referral_to||""}));
-  if(adviceRows) S.advice=adviceRows.map(adviceFromRow);
+  if(adviceRows){S.advice=adviceRows.map(adviceFromRow);
+    if(ui._adviceEditId){const ea=S.advice.find(x=>x.id===ui._adviceEditId);
+      if(!ea||(ea.acks||[]).length){ui._adviceEditId=null;if(document.getElementById("adviceSheet")){setTimeout(()=>{toast(ea?"Already acknowledged, can't be changed":"Advice was removed","bad");dismissOverlay()},0)}}}}
   S.criticalStatusUpdates=criticalStatusUpdates.map(r=>({id:r.id,pid:r.patient_id,message:r.message,by:r.created_by,byName:r.created_by_name||((S.residents||[]).find(x=>String(x.id)===String(r.created_by))||{}).displayName||((S.residents||[]).find(x=>String(x.id)===String(r.created_by))||{}).username||r.created_by||"Clinician",at:r.created_at}));
   const incoming=events.map(r=>({id:r.id,pid:r.patient_id,title:r.title,kind:r.kind||evKind(r.title),detail:r.detail||"",by:r.actor_id,actorName:rname(r.actor_id),at:r.created_at,ok:true}));
   const byId={};
@@ -6617,7 +6619,7 @@ function adviceCardHtml(p){
       <p class="adv-msg">${esc(a.text)}</p>
       <div class="adv-meta"><span>${esc(a.byName||"Consultant")}</span><span>${esc(stamp(a.at)||"")}${a.edited?` · <span class="adv-edited">edited ${esc(stamp(a.updatedAt)||"")}</span>`:""}</span></div>
       ${ackLine}
-      ${mine?`<div class="adv-tools"><button class="btn ghost sm" onclick="openAdviceForm('${p.id}','${esc(a.id)}')">Edit</button><button class="btn ghost sm" onclick="askRemoveAdvice('${esc(a.id)}')">Remove</button></div>`:""}
+      ${mine&&!(a.acks||[]).length?`<div class="adv-tools"><button class="btn ghost sm" onclick="openAdviceForm('${p.id}','${esc(a.id)}')">Edit</button><button class="btn ghost sm" onclick="askRemoveAdvice('${esc(a.id)}')">Remove</button></div>`:""}
       ${canWrite()&&S.userId&&!acked?`<div class="adv-tools"><button class="btn sm" onclick="ackAdvice('${esc(a.id)}')">Acknowledge</button></div>`:""}
     </div>`;
   }).join("");
@@ -6631,6 +6633,8 @@ function openAdviceForm(pid,aid){
   const p=patient(pid); if(!p)return; const b=bedObj(pid);
   const a=aid?(S.advice||[]).find(x=>x.id===aid):null;
   if(aid&&(!a||String(a.by)!==String(S.userId))){toast("You can only edit advice you issued.","bad");return}
+  if(a&&(a.acks||[]).length){toast("Already acknowledged, can't be changed","bad");return}
+  ui._adviceEditId=a?a.id:null;
   ui.sheet=`<div class="sheet mid" id="adviceSheet" role="dialog" aria-modal="true" aria-labelledby="adviceSheetTitle"><button class="mask" aria-label="Close" onclick="dismissOverlay()"></button><div class="box">
     <div class="row"><h2 id="adviceSheetTitle">${a?"Edit advice":"Give advice"}</h2><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
     <p class="sm" style="margin:8px 0"><b>${esc(p.name)}</b> · Bed ${esc(b?b.no:"—")}</p>
@@ -6664,10 +6668,12 @@ async function submitAdvice(pid,aid){
       }
       toast("Advice issued to the ward team.","ok");
     }
+    ui._adviceEditId=null;
     dismissOverlay();
   }catch(e){
     const msg=String(e&&e.message||e);
     if(sessionDead(msg)) expireSession();
+    if(aid&&/already acknowledged/i.test(msg)){ui._adviceEditId=null;toast("Already acknowledged, can't be changed","bad");dismissOverlay();try{cloudPull().then(()=>render()).catch(()=>{})}catch(_){}return}
     toast((aid?"Advice not saved: ":"Advice not issued: ")+msg,"bad");
     if(btn){btn.disabled=false;btn.textContent=aid?"Save changes":"Issue advice";}
   }
@@ -6675,6 +6681,7 @@ async function submitAdvice(pid,aid){
 function askRemoveAdvice(id){
   const a=(S.advice||[]).find(x=>x.id===id);
   if(!a||!isConsultant()||String(a.by)!==String(S.userId)){toast("You can only remove advice you issued.","bad");return}
+  if((a.acks||[]).length){toast("Already acknowledged, can't be changed","bad");return}
   ui.confirm={fn:"removeAdvice",id,title:"Remove advice?",ok:"Remove",danger:true,body:"This removes the advice from the patient page for everyone."};
   render();
 }
@@ -6687,6 +6694,7 @@ async function removeAdviceNow(id){
     toast("Advice removed.","ok");
   }catch(e){
     const msg=String(e&&e.message||e); if(sessionDead(msg)) expireSession();
+    if(/already acknowledged/i.test(msg)){toast("Already acknowledged, can't be changed","bad");try{cloudPull().then(()=>render()).catch(()=>{})}catch(_){}render();return}
     toast("Advice not removed: "+msg,"bad");
   }
   render();
