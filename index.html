@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.66 consultant-merge -->
+<!-- WARD SYNC RELEASE: R1.3.67 consultant-chips -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1385,6 +1385,12 @@ html.sheet-open .nav{z-index:40}
 .pfilter-clear{margin:0 0 10px}
 .chip-mine.on{background:var(--accent,#0d9488);color:#fff;border-color:transparent}
 .stat-mine{border-left:3px solid var(--accent,#0d9488)}
+
+/* R1.3.67 consultant chips */
+.ptag-row.ptag-cons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;overflow:visible;padding:2px 0 10px;-webkit-mask-image:none;mask-image:none}
+.ptag-row.ptag-cons .chip{min-width:0;width:100%;justify-content:center;text-align:center;padding:11px 6px;overflow:hidden;text-overflow:ellipsis}
+.stat-opinion{border-left:3px solid var(--accent,#0d9488)}
+.home-stats > .stat:last-child:nth-child(odd){grid-column:1/-1}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1829,7 +1835,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.66";
+const APP_VERSION="R1.3.67";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3375,12 +3381,12 @@ function homeView(){
     <div class="home-side">
     <div class="home-stats">
       <button class="stat urgent" onclick="ui.ptag='delirium';go('patients')"><span>Delirium</span><b>${high}</b></button>
-      <button class="stat attn" onclick="go('handover')"><span>Handover</span><b>${inbox}</b></button>
+      ${isConsultant()?"":`<button class="stat attn" onclick="go('handover')"><span>Handover</span><b>${inbox}</b></button>`}
       <button class="stat" onclick="go('ect')"><span>ECT planned</span><b>${ect}</b></button>
       <button class="stat" onclick="ui.ptag='restrain';go('patients')"><span>Restrained</span><b>${restrainedN}</b></button>
       <button class="stat urgent" onclick="ui.ptag='suicidal';go('patients')"><span>Suicidal</span><b>${suicidalN}</b></button>
       <button class="stat" onclick="ui.ptag='jail';go('patients')"><span>Jail</span><b>${jailN}</b></button>
-      ${isConsultant()?`<button class="stat stat-mine" onclick="ui.ptag='mine';ui.preason='';ui.pcon='';go('patients')"><span>My patients</span><b>${myPatientCount()}</b></button>`:""}
+      ${isConsultant()?`<button class="stat stat-mine" onclick="ui.ptag='mine';ui.preason='';ui.pcon='';go('patients')"><span>My patients</span><b>${myPatientCount()}</b></button>`:`<button class="stat stat-opinion" onclick="ui.ptag='';ui.pcon='';ui.preason='opinion';go('patients')"><span>Opinion</span><b>${opinionCount()}</b></button>`}
     </div>
     <div class="card duty-card">
       ${canWrite()?"":`<div class="consultant-welcome"><p class="tiny">Welcome</p><p class="consultant-hello">${esc((user()||{}).displayName||"Consultant")}</p></div>`}
@@ -3423,10 +3429,14 @@ function patientsView(){
   const match=p=>{
     const text=!q||(p.name+" "+(p.diagnosis||"")+" "+(p.hospitalNo||p.code||"")+" "+bedOf(p.id)).toLowerCase().includes(q)||qTags.some(id=>hasSnapTag(p.id,id)||(id==="ect"&&ectPlan(p.id))||(id==="restrained"&&restrainHeld(p.id))||(id==="delirium"&&isDelirium(p.id)));
     if(!text) return false;
+    if(isConsultant()){
+      if(tag==="mine") return isMyPatient(p);
+      if(tag==="opinion_mine") return isMyPatient(p)&&patientHasReason(p,"opinion");
+      return true;
+    }
     if(ui.preason && !patientHasReason(p,ui.preason)) return false;
     if(ui.pcon && !patientHasConsultant(p,ui.pcon)) return false;
     if(!tag) return true;
-    if(tag==="mine") return isMyPatient(p);
     const sn=S.snaps[p.id]||{};
     if(tag==="ect") return !!(ectPlan(p.id)||(sn.tags||[]).includes("ect"));
     if(tag==="restrain") return restrainHeld(p.id);
@@ -3440,7 +3450,11 @@ function patientsView(){
   const orphanBeds=occupied().filter(b=>!secs.some(s=>s.id===b.sectionId) && match(onBed(b)));
   const sectionBlock=(title,cards)=>!cards.length?"":`<section class="plist-block"><h3 class="sec-sticky">${esc(title)}</h3><div class="plist-grid">${cards.join("")}</div></section>`;
   return `<input id="pq" placeholder="Bed, name, hosp no, diagnosis, tag" value="${esc(ui.q||"")}" oninput="ui.q=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>
-    <div class="ptag-row">
+    ${isConsultant()?`<div class="ptag-row ptag-cons" role="group" aria-label="Filter patients">
+      <button class="chip ${tag!=="mine"&&tag!=="opinion_mine"?"on":""}" aria-pressed="${tag!=="mine"&&tag!=="opinion_mine"}" onclick="ui.ptag='';render()">All</button>
+      <button class="chip ${tag==="mine"?"on":""}" aria-pressed="${tag==="mine"}" onclick="ui.ptag=ui.ptag==='mine'?'':'mine';render()">My patients</button>
+      <button class="chip ${tag==="opinion_mine"?"on":""}" aria-pressed="${tag==="opinion_mine"}" onclick="ui.ptag=ui.ptag==='opinion_mine'?'':'opinion_mine';render()">Opinion</button>
+    </div>`:`<div class="ptag-row">
       <button class="chip ${tag?"":"on"}" onclick="ui.ptag='';render()">All</button>
       <button class="chip ${tag==="ect"?"on":""}" onclick="ui.ptag=ui.ptag==='ect'?'':'ect';render()">ECT</button>
       <button class="chip ${tag==="restrain"?"on":""}" onclick="ui.ptag=ui.ptag==='restrain'?'':'restrain';render()">Restrain</button>
@@ -3448,9 +3462,8 @@ function patientsView(){
       <button class="chip ${tag==="suicidal"?"on":""}" onclick="ui.ptag=ui.ptag==='suicidal'?'':'suicidal';render()">Suicidal</button>
       <button class="chip ${tag==="jail"?"on":""}" onclick="ui.ptag=ui.ptag==='jail'?'':'jail';render()">Jail</button>
       <button class="chip ${tag==="today"?"on":""}" onclick="ui.ptag=ui.ptag==='today'?'':'today';render()">Admitted today</button>
-      ${isConsultant()?`<button class="chip chip-mine ${tag==="mine"?"on":""}" onclick="ui.ptag=ui.ptag==='mine'?'':'mine';render()">My patients</button>`:""}
     </div>
-    ${patientFilterRows()}
+    ${patientFilterRows()}`}
     ${sectionBlock("No bed", loose.map(p=>patientCard(p,null)))}
     ${secs.map(sec=>{
       const cards=occupied().filter(b=>b.sectionId===sec.id && match(onBed(b))).map(b=>patientCard(onBed(b),b));
@@ -6855,7 +6868,15 @@ function qPatientConsultantFromText(pid,t1,t2){
   save();
 }
 function isActivePatient(p){return p&&p.status!=="discharged"}
-function isMyPatient(p){return isConsultant()&&isActivePatient(p)&&!!S.userId&&(String(p.consultantId||"")===String(S.userId)||String(p.consultantId2||"")===String(S.userId))}
+function isMyPatient(p){
+  if(!isConsultant()||!isActivePatient(p)||!S.userId) return false;
+  if(String(p.consultantId||"")===String(S.userId)||String(p.consultantId2||"")===String(S.userId)) return true;
+  if(p.consultantId||p.consultantId2) return false;
+  const me=facultyById(S.userId)||{name:(user()||{}).displayName||""};
+  const n=normConsName(me.name); if(!n) return false;
+  return [p.consultant,p.consultant2].some(t=>t&&normConsName(t)===n);
+}
+function opinionCount(){return (S.patients||[]).filter(p=>isActivePatient(p)&&patientHasReason(p,"opinion")).length}
 function myPatientCount(){return (S.patients||[]).filter(isMyPatient).length}
 function patientReasonIds(p){return String(p.reason||"").split(",").map(x=>x.trim()).filter(Boolean)}
 function patientHasReason(p,r){
