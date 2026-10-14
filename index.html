@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.72 fresh-start -->
+<!-- WARD SYNC RELEASE: R1.3.73 report-census -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1904,7 +1904,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.72";
+const APP_VERSION="R1.3.73";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -5498,10 +5498,10 @@ function moreView(){
     ${canAdmin()?row("go('ward')",ico("setup"),"Ward setup","amber"):""}
     ${canAdmin()?row("go('users')",ico("users"),"Users","indigo"):""}
     </div>
-    <div class="card" style="padding:14px;margin:10px 0 4px">
+    ${(canAdmin()||isConsultant())?`<div class="card" style="padding:14px;margin:10px 0 4px">
       <label class="field" style="margin:0"><span>Report month</span><input type="month" id="rmon" value="${esc(ui.reportMonth||new Date().toISOString().slice(0,7))}" oninput="ui.reportMonth=this.value"/></label>
       <button class="btn block" style="margin-top:10px" onclick="exportMonthly()">Export monthly report</button>
-    </div>
+    </div>`:""}
     <p class="more-section">System</p>
     <div class="more-grid">
     ${row("ui.setupTab='theme';go('setup')",ico("theme"),"Theme","slate")}
@@ -5607,7 +5607,15 @@ function downloadSheet(filename,sheets){
   a.download=filename.replace(/\.xlsx$/,".csv");
   a.click();
 }
+function censusBedAt(p,at){
+  const t=+at;
+  const a=(S.assignments||[]).filter(x=>x.patientId===p.id&&x.at&&Date.parse(x.at)<t&&(!x.released||Date.parse(x.released)>=t))
+    .sort((x,y)=>Date.parse(y.at)-Date.parse(x.at))[0];
+  const b=a?S.beds.find(x=>x.id===a.bedId):(p.status!=="discharged"?S.beds.find(x=>x.patientId===p.id):null);
+  return b?(b.no||""):"";
+}
 function exportMonthly(){
+  if(!(canAdmin()||isConsultant())){toast("Reports are for admins and consultants","bad");return}
   const ym=(ui.reportMonth&&/^\d{4}-\d{2}$/.test(ui.reportMonth))?ui.reportMonth:new Date().toISOString().slice(0,7);
   const [yy,mm]=ym.split("-").map(Number);
   const start=new Date(yy,mm-1,1); start.setHours(0,0,0,0);
@@ -5618,6 +5626,15 @@ function exportMonthly(){
   const discharged=S.patients.filter(p=>reportablePatient(p)&&inMonth(p.dischargedAt,start,end))
     .sort((a,b)=>new Date(a.dischargedAt)-new Date(b.dischargedAt));
   const inWard=admitted.filter(p=>p.status!=="discharged");
+  // Month-end census: in the ward at the end of the month (or now, for the current month), whatever month admitted.
+  const censusAt=new Date(Math.min(+end,Date.now()));
+  const census=S.patients.filter(p=>{
+    if(!reportablePatient(p)) return false;
+    const a=Date.parse(reportAdmitAt(p)||""); if(!a||a>=+censusAt) return false;
+    const d=p.dischargedAt?Date.parse(p.dischargedAt):NaN;
+    return !(d<+censusAt);
+  }).sort((a,b)=>new Date(reportAdmitAt(a))-new Date(reportAdmitAt(b)));
+  const censusLabel=(+censusAt<+end)?"as of "+dmy(censusAt.toISOString()):"at month end";
   const deaths=discharged.filter(p=>(p.dischargeMode||"")==="death"||(p.dischargeOutcome||"")==="death");
   const xfers=(S.events||[]).filter(e=>{
     const ok=e.ok!==false && /transferred/i.test(e.title||"") && !/fail/i.test(e.title||"");
@@ -5638,10 +5655,13 @@ function exportMonthly(){
       return [i+1,dmy(e.at),p?(p.hospitalNo||p.code):"",p?p.name:"",e.title.replace(/^Transferred\s*/i,""),rname(e.by)];
     })
   ];
+  const censusSheet=banner("Month-end census ("+censusLabel+")",census.length).map((r,i)=>i===4?r.concat(["Bed","Days in ward"]):r)
+    .concat(census.map((p,i)=>reportRow(p,i+1).concat([censusBedAt(p,censusAt),Math.max(1,Math.round((+censusAt-Date.parse(reportAdmitAt(p)))/86400000))])));
   const summary=[
     [unit],["Monthly ward report · "+ym],["Generated "+dmy(now())],[],
     ["Item","Count"],
     ["Admissions this month",admitted.length],
+    ["In ward "+censusLabel+" (census)",census.length],
     ["Still in ward (of this month)",inWard.length],
     ["Discharges this month",discharged.length],
     ["Deaths this month",deaths.length],
@@ -5650,6 +5670,7 @@ function exportMonthly(){
   downloadSheet("ward-report-"+ym+".xlsx",[
     ["Summary",summary],
     ["Monthly register",pack("Admissions this month",admitted)],
+    ["Month-end census",censusSheet],
     ["Still in ward",pack("Still in ward",inWard)],
     ["Discharges",pack("Discharges this month",discharged)],
     ["Deaths",pack("Deaths this month",deaths)],
