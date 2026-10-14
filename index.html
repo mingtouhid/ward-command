@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.60 jail-tag -->
+<!-- WARD SYNC RELEASE: R1.3.61 tag-cards -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1790,7 +1790,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.60";
+const APP_VERSION="R1.3.61";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3277,12 +3277,20 @@ function handoverTileCount(){
   const incoming=new Set((S.handovers||[]).filter(h=>h.status==="sent"&&String(h.to||"")===me&&String(h.from||"")!==me).map(h=>h.id));
   return items.filter(i=>!i.done&&live(i)&&incoming.has(i.hid)).length;
 }
+function hasSnapTag(pid,id){return ((S.snaps[pid]||{}).tags||[]).includes(id)}
+function tagSearchIds(q){
+  q=String(q||"").trim().toLowerCase();if(!q)return [];
+  if(q.length<2)return [];
+  return TAGS.filter(t=>t.id.toLowerCase().startsWith(q)||t.label.toLowerCase().startsWith(q)||t.label.toLowerCase().split(/\s+/).some(w=>w.startsWith(q))).map(t=>t.id);
+}
 function homeView(){
   const list=occupied();
   const high=list.filter(b=>isDelirium(b.patientId)).length;
   const ect=(S.ect||[]).filter(e=>(!e.status||e.status==="planned")&&onWard(e.pid)).length;
   const inbox=handoverTileCount();
   const restrainedN=list.filter(b=>restrainHeld(b.patientId)).length;
+  const suicidalN=list.filter(b=>hasSnapTag(b.patientId,"suicidal")).length;
+  const jailN=list.filter(b=>hasSnapTag(b.patientId,"jail")).length;
   tidySectionNames();
   const wards=S.sections.filter(s=>s.active!==false).slice().sort((a,b)=>(a.sort||0)-(b.sort||0)).map(sec=>({
     name:sectionLabel(sec.name),
@@ -3305,6 +3313,8 @@ function homeView(){
       <button class="stat attn" onclick="go('handover')"><span>Handover</span><b>${inbox}</b></button>
       <button class="stat" onclick="go('ect')"><span>ECT planned</span><b>${ect}</b></button>
       <button class="stat" onclick="ui.ptag='restrain';go('patients')"><span>Restrained</span><b>${restrainedN}</b></button>
+      <button class="stat urgent" onclick="ui.ptag='suicidal';go('patients')"><span>Suicidal</span><b>${suicidalN}</b></button>
+      <button class="stat" onclick="ui.ptag='jail';go('patients')"><span>Jail</span><b>${jailN}</b></button>
     </div>
     <div class="card duty-card">
       ${canWrite()?"":`<div class="consultant-welcome"><p class="tiny">Welcome</p><p class="consultant-hello">${esc((user()||{}).displayName||"Consultant")}</p></div>`}
@@ -3343,14 +3353,16 @@ function patientCard(p,bed){
 function patientsView(){
   const q=(ui.q||"").toLowerCase();
   const tag=ui.ptag||"";
+  const qTags=tagSearchIds(q);
   const match=p=>{
-    const text=!q||(p.name+" "+(p.diagnosis||"")+" "+bedOf(p.id)).toLowerCase().includes(q);
+    const text=!q||(p.name+" "+(p.diagnosis||"")+" "+(p.hospitalNo||p.code||"")+" "+bedOf(p.id)).toLowerCase().includes(q)||qTags.some(id=>hasSnapTag(p.id,id)||(id==="ect"&&ectPlan(p.id))||(id==="restrained"&&restrainHeld(p.id))||(id==="delirium"&&isDelirium(p.id)));
     if(!text) return false;
     if(!tag) return true;
     const sn=S.snaps[p.id]||{};
     if(tag==="ect") return !!(ectPlan(p.id)||(sn.tags||[]).includes("ect"));
     if(tag==="restrain") return restrainHeld(p.id);
     if(tag==="delirium"||tag==="high") return isDelirium(p.id);
+    if(tag==="suicidal"||tag==="jail") return hasSnapTag(p.id,tag);
     if(tag==="today") return p.status==="admitted" && wardLocalDayKey(p.admittedAt||p.admitted_at)===wardLocalDayKey(new Date());
     return true;
   };
@@ -3358,12 +3370,14 @@ function patientsView(){
   const secs=(S.sections||[]).filter(s=>s.active!==false);
   const orphanBeds=occupied().filter(b=>!secs.some(s=>s.id===b.sectionId) && match(onBed(b)));
   const sectionBlock=(title,cards)=>!cards.length?"":`<section class="plist-block"><h3 class="sec-sticky">${esc(title)}</h3><div class="plist-grid">${cards.join("")}</div></section>`;
-  return `<input id="pq" placeholder="Bed, name, diagnosis" value="${esc(ui.q||"")}" oninput="ui.q=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>
+  return `<input id="pq" placeholder="Bed, name, hosp no, diagnosis, tag" value="${esc(ui.q||"")}" oninput="ui.q=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>
     <div class="ptag-row">
       <button class="chip ${tag?"":"on"}" onclick="ui.ptag='';render()">All</button>
       <button class="chip ${tag==="ect"?"on":""}" onclick="ui.ptag=ui.ptag==='ect'?'':'ect';render()">ECT</button>
       <button class="chip ${tag==="restrain"?"on":""}" onclick="ui.ptag=ui.ptag==='restrain'?'':'restrain';render()">Restrain</button>
       <button class="chip ${tag==="delirium"||tag==="high"?"on":""}" onclick="ui.ptag=(ui.ptag==='delirium'||ui.ptag==='high')?'':'delirium';render()">Delirium</button>
+      <button class="chip ${tag==="suicidal"?"on":""}" onclick="ui.ptag=ui.ptag==='suicidal'?'':'suicidal';render()">Suicidal</button>
+      <button class="chip ${tag==="jail"?"on":""}" onclick="ui.ptag=ui.ptag==='jail'?'':'jail';render()">Jail</button>
       <button class="chip ${tag==="today"?"on":""}" onclick="ui.ptag=ui.ptag==='today'?'':'today';render()">Admitted today</button>
     </div>
     ${sectionBlock("No bed", loose.map(p=>patientCard(p,null)))}
