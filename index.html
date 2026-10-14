@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.68 stat-grid -->
+<!-- WARD SYNC RELEASE: R1.3.69 card-polish -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1405,6 +1405,35 @@ html .home-stats > .stat.stat span{display:block;width:100%;font-size:10px;line-
 html .home-stats > .stat.stat b{font-size:24px;line-height:1;margin:0;font-weight:750;letter-spacing:-.02em;color:var(--teal2)}
 .home-stats > .stat:focus-visible{outline:2px solid var(--accent,#0d9488);outline-offset:2px}
 @media (max-width:340px){html .home-stats > .stat.stat{padding:8px 5px 7px}html .home-stats > .stat.stat span{font-size:9.5px;letter-spacing:.03em}html .home-stats > .stat.stat b{font-size:22px}}
+
+/* R1.3.69 card-polish */
+html .home-stats > .stat.stat{min-height:92px;padding:0 4px 9px;display:grid;grid-template-rows:1fr auto;grid-template-columns:minmax(0,1fr);justify-items:center;align-items:center;text-align:center;gap:2px;
+  --g:100,116,139;
+  border-color:rgba(var(--g),.28);
+  background-image:linear-gradient(to bottom,rgba(var(--g),.07),rgba(var(--g),0) 70%);
+  box-shadow:0 0 0 1px rgba(var(--g),.08),0 6px 18px -6px rgba(var(--g),.32);
+  transition:transform .16s ease,box-shadow .2s ease}
+html .home-stats > .stat.stat b{align-self:center;justify-self:center;font-size:26px;margin:0}
+html .home-stats > .stat.stat span{align-self:end;width:100%;text-align:center;font-size:clamp(8.5px,2.65vw,11px);letter-spacing:.02em;line-height:1.15;
+  white-space:normal;word-break:normal;overflow-wrap:normal;hyphens:none}
+html .home-stats > .stat.stat:active{box-shadow:0 0 0 1px rgba(var(--g),.16),0 8px 24px -6px rgba(var(--g),.45)}
+@media (hover:hover){html .home-stats > .stat.stat:hover{box-shadow:0 0 0 1px rgba(var(--g),.14),0 8px 22px -6px rgba(var(--g),.42)}}
+html[data-theme="dark"] .home-stats > .stat.stat,html[data-theme="night"] .home-stats > .stat.stat,html[data-theme="ot"] .home-stats > .stat.stat{
+  border-color:rgba(var(--g),.42);background-image:linear-gradient(to bottom,rgba(var(--g),.12),rgba(var(--g),0) 72%);
+  box-shadow:0 0 0 1px rgba(var(--g),.14),0 0 22px -4px rgba(var(--g),.40)}
+html .home-stats > .stat.stat.glow-delirium{--g:217,119,6}
+html .home-stats > .stat.stat.glow-handover{--g:37,99,235}
+html .home-stats > .stat.stat.glow-ect{--g:124,58,237}
+html .home-stats > .stat.stat.glow-suicidal{--g:225,29,72}
+html .home-stats > .stat.stat.glow-restrained{--g:234,88,12}
+html .home-stats > .stat.stat.glow-jail{--g:100,116,139}
+html .home-stats > .stat.stat.glow-opinion{--g:13,148,136}
+html .home-stats > .stat.stat.glow-mine{--g:22,163,74}
+@media (prefers-reduced-motion:reduce){html .home-stats > .stat.stat{transition:none}}
+.filter-pill-row{margin:0 0 10px}
+.filter-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 10px 7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel2,var(--panel));color:var(--ink);font:inherit;font-size:12.5px;font-weight:650;cursor:pointer}
+.filter-pill:focus-visible{outline:2px solid var(--accent,#0d9488);outline-offset:2px}
+.filter-pill-x{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--line);font-size:10px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1849,7 +1878,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.68";
+const APP_VERSION="R1.3.69";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3394,13 +3423,20 @@ function homeView(){
     </div>
     <div class="home-side">
     <div class="home-stats">
-      <button class="stat urgent" onclick="ui.ptag='delirium';go('patients')"><span>Delirium</span><b>${high}</b></button>
-      ${isConsultant()?"":`<button class="stat attn" onclick="go('handover')"><span>Handover</span><b>${inbox}</b></button>`}
-      <button class="stat" onclick="go('ect')"><span>ECT planned</span><b>${ect}</b></button>
-      <button class="stat" onclick="ui.ptag='restrain';go('patients')"><span>Restrained</span><b>${restrainedN}</b></button>
-      <button class="stat urgent" onclick="ui.ptag='suicidal';go('patients')"><span>Suicidal</span><b>${suicidalN}</b></button>
-      <button class="stat" onclick="ui.ptag='jail';go('patients')"><span>Jail</span><b>${jailN}</b></button>
-      ${isConsultant()?`<button class="stat stat-mine" onclick="ui.ptag='mine';ui.preason='';ui.pcon='';go('patients')"><span>My patients</span><b>${myPatientCount()}</b></button>`:`<button class="stat stat-opinion" onclick="ui.ptag='';ui.pcon='';ui.preason='opinion';go('patients')"><span>Opinion</span><b>${opinionCount()}</b></button>`}
+      ${(()=>{
+        const T={
+          delirium:`<button class="stat glow-delirium" onclick="ui.ptag='delirium';ui.preason='';ui.pcon='';go('patients')"><b>${high}</b><span>Delirium</span></button>`,
+          handover:`<button class="stat glow-handover" onclick="go('handover')"><b>${inbox}</b><span>Handover</span></button>`,
+          ect:`<button class="stat glow-ect" onclick="go('ect')"><b>${ect}</b><span>ECT</span></button>`,
+          suicidal:`<button class="stat glow-suicidal" onclick="ui.ptag='suicidal';ui.preason='';ui.pcon='';go('patients')"><b>${suicidalN}</b><span>Suicidal</span></button>`,
+          restrained:`<button class="stat glow-restrained" onclick="ui.ptag='restrain';ui.preason='';ui.pcon='';go('patients')"><b>${restrainedN}</b><span>Restrained</span></button>`,
+          jail:`<button class="stat glow-jail" onclick="ui.ptag='jail';ui.preason='';ui.pcon='';go('patients')"><b>${jailN}</b><span>Jail</span></button>`,
+          opinion:`<button class="stat glow-opinion" onclick="ui.ptag='';ui.pcon='';ui.preason='opinion';go('patients')"><b>${opinionCount()}</b><span>Opinion</span></button>`,
+          mine:`<button class="stat glow-mine" onclick="ui.ptag='mine';ui.preason='';ui.pcon='';go('patients')"><b>${myPatientCount()}</b><span>My patients</span></button>`
+        };
+        const order=isConsultant()?["delirium","ect","suicidal","jail","restrained","mine"]:["delirium","handover","ect","suicidal","restrained","jail","opinion"];
+        return order.map(k=>T[k]).join("");
+      })()}
     </div>
     <div class="card duty-card">
       ${canWrite()?"":`<div class="consultant-welcome"><p class="tiny">Welcome</p><p class="consultant-hello">${esc((user()||{}).displayName||"Consultant")}</p></div>`}
@@ -3446,7 +3482,7 @@ function patientsView(){
     if(isConsultant()){
       if(tag==="mine") return isMyPatient(p);
       if(tag==="opinion_mine") return isMyPatient(p)&&patientHasReason(p,"opinion");
-      return true;
+      if(!tag) return true;
     }
     if(ui.preason && !patientHasReason(p,ui.preason)) return false;
     if(ui.pcon && !patientHasConsultant(p,ui.pcon)) return false;
@@ -3468,16 +3504,7 @@ function patientsView(){
       <button class="chip ${tag!=="mine"&&tag!=="opinion_mine"?"on":""}" aria-pressed="${tag!=="mine"&&tag!=="opinion_mine"}" onclick="ui.ptag='';render()">All</button>
       <button class="chip ${tag==="mine"?"on":""}" aria-pressed="${tag==="mine"}" onclick="ui.ptag=ui.ptag==='mine'?'':'mine';render()">My patients</button>
       <button class="chip ${tag==="opinion_mine"?"on":""}" aria-pressed="${tag==="opinion_mine"}" onclick="ui.ptag=ui.ptag==='opinion_mine'?'':'opinion_mine';render()">Opinion</button>
-    </div>`:`<div class="ptag-row">
-      <button class="chip ${tag?"":"on"}" onclick="ui.ptag='';render()">All</button>
-      <button class="chip ${tag==="ect"?"on":""}" onclick="ui.ptag=ui.ptag==='ect'?'':'ect';render()">ECT</button>
-      <button class="chip ${tag==="restrain"?"on":""}" onclick="ui.ptag=ui.ptag==='restrain'?'':'restrain';render()">Restrain</button>
-      <button class="chip ${tag==="delirium"||tag==="high"?"on":""}" onclick="ui.ptag=(ui.ptag==='delirium'||ui.ptag==='high')?'':'delirium';render()">Delirium</button>
-      <button class="chip ${tag==="suicidal"?"on":""}" onclick="ui.ptag=ui.ptag==='suicidal'?'':'suicidal';render()">Suicidal</button>
-      <button class="chip ${tag==="jail"?"on":""}" onclick="ui.ptag=ui.ptag==='jail'?'':'jail';render()">Jail</button>
-      <button class="chip ${tag==="today"?"on":""}" onclick="ui.ptag=ui.ptag==='today'?'':'today';render()">Admitted today</button>
-    </div>
-    ${patientFilterRows()}`}
+    </div>`:patientFilterPill()}
     ${sectionBlock("No bed", loose.map(p=>patientCard(p,null)))}
     ${secs.map(sec=>{
       const cards=occupied().filter(b=>b.sectionId===sec.id && match(onBed(b))).map(b=>patientCard(onBed(b),b));
@@ -6916,6 +6943,17 @@ function patientFilterRows(){
       ${fl.map(f=>`<button class="chip ${c===f.id?"on":""}" aria-pressed="${c===f.id}" onclick="ui.pcon=ui.pcon==='${esc(f.id)}'?'':'${esc(f.id)}';render()">${esc(f.name)}</button>`).join("")}
     </div>`:""}
     ${(r||c)?`<button type="button" class="btn ghost sm pfilter-clear" onclick="ui.preason='';ui.pcon='';render()">Clear filters</button>`:""}`;
+}
+
+/* R1.3.69 filter pill (residents) */
+function patientFilterPill(){
+  const T={ect:"ECT",restrain:"Restrained",delirium:"Delirium",high:"Delirium",suicidal:"Suicidal",jail:"Jail",today:"Admitted today",mine:"My patients"};
+  const bits=[];
+  if(ui.ptag) bits.push(T[ui.ptag]||ui.ptag);
+  if(ui.preason) bits.push(ui.preason==="other"?"Other reason":(labelOf(ADMIT_REASONS,ui.preason)||ui.preason));
+  if(ui.pcon){const f=facultyById(ui.pcon); bits.push(f?f.name:"Consultant")}
+  if(!bits.length) return "";
+  return `<div class="filter-pill-row" role="status"><button type="button" class="filter-pill" onclick="ui.ptag='';ui.preason='';ui.pcon='';render()" aria-label="Clear filter: ${esc(bits.join(", "))}"><span>Filtered: ${esc(bits.join(" · "))}</span><span class="filter-pill-x" aria-hidden="true">✕</span></button></div>`;
 }
 function criticalStatusForm(pid){
   const p=patient(pid); if(!p)return; const b=bedObj(pid);
