@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.65 duty-ack -->
+<!-- WARD SYNC RELEASE: R1.3.66 consultant-merge -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1378,6 +1378,13 @@ html.sheet-open .nav{z-index:40}
 .mo-item.removed .mo-status{background:var(--danger-bg,#fee2e2);color:var(--danger,#dc2626)}
 @media (prefers-reduced-motion:reduce){.mo-item{animation:none;transition:none}}
 .adv-duty-hint{font-style:italic;opacity:.85}
+
+/* R1.3.66 filters + my patients */
+.pfilter-row{margin-top:-2px}
+.pfilter-k{flex:none;align-self:center;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 4px 0 2px}
+.pfilter-clear{margin:0 0 10px}
+.chip-mine.on{background:var(--accent,#0d9488);color:#fff;border-color:transparent}
+.stat-mine{border-left:3px solid var(--accent,#0d9488)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1822,7 +1829,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.65";
+const APP_VERSION="R1.3.66";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2463,9 +2470,10 @@ async function doCloudPull(opts){
   if(!sb)return {ok:false,pulled:false};
   const unresolved=pending.filter(o=>o.status!=="acked");
   const dirtySnaps=snapshotDirtyPids();
-  const [wardState,criticalStatusUpdates,adviceRows]=await Promise.all([
-    cloudReadWardState(),qCriticalStatusUpdates(),qPatientAdvice()
+  const [wardState,criticalStatusUpdates,adviceRows,facultyRows,consLinks]=await Promise.all([
+    cloudReadWardState(),qCriticalStatusUpdates(),qPatientAdvice(),qFaculty(),qPatientConsultantLinks()
   ]);
+  if(facultyRows) S.faculty=facultyRows;
   const unit=wardState.unit||[];
   const sections=wardState.sections||[];
   const beds=wardState.beds||[];
@@ -2515,6 +2523,8 @@ async function doCloudPull(opts){
   if(adviceRows){S.advice=adviceRows.map(adviceFromRow);
     if(ui._adviceEditId){const ea=S.advice.find(x=>x.id===ui._adviceEditId);
       if(!ea||(ea.acks||[]).length){ui._adviceEditId=null;if(document.getElementById("adviceSheet")){setTimeout(()=>{toast(ea?"Already acknowledged, can't be changed":"Advice was removed","bad");dismissOverlay()},0)}}}}
+  if(consLinks) S.consLinks=consLinks;
+  applyConsultantLinks();
   S.criticalStatusUpdates=criticalStatusUpdates.map(r=>({id:r.id,pid:r.patient_id,message:r.message,by:r.created_by,byName:r.created_by_name||((S.residents||[]).find(x=>String(x.id)===String(r.created_by))||{}).displayName||((S.residents||[]).find(x=>String(x.id)===String(r.created_by))||{}).username||r.created_by||"Clinician",at:r.created_at}));
   const incoming=events.map(r=>({id:r.id,pid:r.patient_id,title:r.title,kind:r.kind||evKind(r.title),detail:r.detail||"",by:r.actor_id,actorName:rname(r.actor_id),at:r.created_at,ok:true}));
   const byId={};
@@ -2572,6 +2582,8 @@ async function upsert(table,rows){
       ({error}=await sb.rpc("ward_upsert_task",{p_session_token:sessionTok,p_row:row}));
     }else if(table==="ward_sections"){
       ({error}=await sb.rpc("ward_upsert_section",{p_token:sessionTok,p_row:row}));
+    }else if(table==="patient_consultant"){
+      ({error}=await sb.rpc("ward_set_patient_consultant",{p_token:sessionTok,p_patient_id:row.patient_id,p_consultant_id:row.consultant_id||null,p_consultant_id_2:row.consultant_id_2||null}));
     }else if(table==="unit_consultants"){
       ({error}=await sb.rpc("ward_upsert_consultant",{p_token:sessionTok,p_row:row}));
     }else if(table==="unit_settings"){
@@ -2700,7 +2712,7 @@ async function doFlushPending(){
   }
   cloudStatus="syncing";
   Sync.state="RECONCILING";
-  const rank=t=>({patients:0,beds:1,patient_bed_assignments:2,restrain_toggle:3,snapshot_tag:4,pgt_note:5,snapshot_field:6,patient_snapshots:7,medication_orders:8,medication_doses:9,ect_plans:10,ect_sessions:11,tasks:12,handovers:13,handover_items:14,ward_sections:15,unit_consultants:16,unit_settings:17,activity_log:20}[t]??18);
+  const rank=t=>({patients:0,beds:1,patient_bed_assignments:2,restrain_toggle:3,snapshot_tag:4,pgt_note:5,snapshot_field:6,patient_snapshots:7,patient_consultant:7.5,medication_orders:8,medication_doses:9,ect_plans:10,ect_sessions:11,tasks:12,handovers:13,handover_items:14,ward_sections:15,unit_consultants:16,unit_settings:17,activity_log:20}[t]??18);
   work.sort((a,b)=>rank(a.table)-rank(b.table));
   let hard=false;
   for(const op of work){
@@ -3368,6 +3380,7 @@ function homeView(){
       <button class="stat" onclick="ui.ptag='restrain';go('patients')"><span>Restrained</span><b>${restrainedN}</b></button>
       <button class="stat urgent" onclick="ui.ptag='suicidal';go('patients')"><span>Suicidal</span><b>${suicidalN}</b></button>
       <button class="stat" onclick="ui.ptag='jail';go('patients')"><span>Jail</span><b>${jailN}</b></button>
+      ${isConsultant()?`<button class="stat stat-mine" onclick="ui.ptag='mine';ui.preason='';ui.pcon='';go('patients')"><span>My patients</span><b>${myPatientCount()}</b></button>`:""}
     </div>
     <div class="card duty-card">
       ${canWrite()?"":`<div class="consultant-welcome"><p class="tiny">Welcome</p><p class="consultant-hello">${esc((user()||{}).displayName||"Consultant")}</p></div>`}
@@ -3410,7 +3423,10 @@ function patientsView(){
   const match=p=>{
     const text=!q||(p.name+" "+(p.diagnosis||"")+" "+(p.hospitalNo||p.code||"")+" "+bedOf(p.id)).toLowerCase().includes(q)||qTags.some(id=>hasSnapTag(p.id,id)||(id==="ect"&&ectPlan(p.id))||(id==="restrained"&&restrainHeld(p.id))||(id==="delirium"&&isDelirium(p.id)));
     if(!text) return false;
+    if(ui.preason && !patientHasReason(p,ui.preason)) return false;
+    if(ui.pcon && !patientHasConsultant(p,ui.pcon)) return false;
     if(!tag) return true;
+    if(tag==="mine") return isMyPatient(p);
     const sn=S.snaps[p.id]||{};
     if(tag==="ect") return !!(ectPlan(p.id)||(sn.tags||[]).includes("ect"));
     if(tag==="restrain") return restrainHeld(p.id);
@@ -3432,7 +3448,9 @@ function patientsView(){
       <button class="chip ${tag==="suicidal"?"on":""}" onclick="ui.ptag=ui.ptag==='suicidal'?'':'suicidal';render()">Suicidal</button>
       <button class="chip ${tag==="jail"?"on":""}" onclick="ui.ptag=ui.ptag==='jail'?'':'jail';render()">Jail</button>
       <button class="chip ${tag==="today"?"on":""}" onclick="ui.ptag=ui.ptag==='today'?'':'today';render()">Admitted today</button>
+      ${isConsultant()?`<button class="chip chip-mine ${tag==="mine"?"on":""}" onclick="ui.ptag=ui.ptag==='mine'?'':'mine';render()">My patients</button>`:""}
     </div>
+    ${patientFilterRows()}
     ${sectionBlock("No bed", loose.map(p=>patientCard(p,null)))}
     ${secs.map(sec=>{
       const cards=occupied().filter(b=>b.sectionId===sec.id && match(onBed(b))).map(b=>patientCard(onBed(b),b));
@@ -3928,7 +3946,7 @@ function obsAdmitForm(){
     </label>
     <label class="field"><span>Working diagnosis</span><input id="oadx" value="${esc(d.dx||"")}" placeholder="Diagnosis"/></label>
     <label class="field"><span>Referred by</span><input id="oaref" value="${esc(d.ref||"")}" placeholder="OPD / casualty / hospital"/></label>
-    <label class="field"><span>Consultant</span>${(S.consultants&&S.consultants.length)?picker("oacon",(S.consultants||[]).map(c=>[c.name+(c.designation?", "+c.designation:""),c.name+(c.designation?", "+c.designation:"")]),d.con||"","Consultant"):`<input id="oacon" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
+    <label class="field"><span>Consultant</span>${(facultyList().length)?picker("oacon",facultyOptions(),d.con||"","Consultant"):`<input id="oacon" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
     <label class="field"><span>Bed</span>
       <input id="oabq" value="${esc(d.bq||"")}" placeholder="Current bed or another empty bed" oninput="filterObsBeds(this.value)" autocomplete="off"/>
     </label>
@@ -3968,6 +3986,7 @@ async function convertObservation(pid){
     p.reason=reasons||p.reason;
     p.referredBy=(d.ref||"").trim()||p.referredBy;
     p.consultant=(d.con||val("oacon")||"").trim()||p.consultant;
+    if((d.con||val("oacon")||"").trim()) qPatientConsultantFromText(pid,p.consultant,p.consultant2);
     if((d.dx||"").trim()) p.diagnosis=d.dx.trim();
     S.snaps[pid]=Object.assign({},S.snaps[pid]||{},{state:"Admitted from observation.",at:admittedAt,by:S.userId});
     if(!same&&destId&&from){
@@ -4109,8 +4128,8 @@ function censusView(){
       </label>
       <label class="field"><span>Working diagnosis</span><input id="adx" value="${esc(d.dx||"")}" placeholder="Diagnosis"/></label>
       <label class="field"><span>Referred by</span><input id="aref" value="${esc(d.ref||"")}" placeholder="OPD / casualty / hospital"/></label>
-      <label class="field"><span>Consultant</span>${(S.consultants&&S.consultants.length)?picker("acon",(S.consultants||[]).map(c=>[c.name+(c.designation?", "+c.designation:""),c.name+(c.designation?", "+c.designation:"")]),d.con||"","Consultant"):`<input id="acon" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
-      <label class="field"><span>Consultant 2</span>${(S.consultants&&S.consultants.length)?picker("acon2",(S.consultants||[]).map(c=>[c.name+(c.designation?", "+c.designation:""),c.name+(c.designation?", "+c.designation:"")]),d.con2||"","Optional"):`<input id="acon2" value="${esc(d.con2||"")}" placeholder="Second consultant, optional"/>`}</label>
+      <label class="field"><span>Consultant</span>${(facultyList().length)?picker("acon",facultyOptions(),d.con||"","Consultant"):`<input id="acon" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
+      <label class="field"><span>Consultant 2</span>${(facultyList().length)?picker("acon2",facultyOptions(),d.con2||"","Optional"):`<input id="acon2" value="${esc(d.con2||"")}" placeholder="Second consultant, optional"/>`}</label>
       <label class="field"><span>Bed</span>
         <input id="bq" value="${esc(d.bq||"")}" placeholder="Search bed or ward" oninput="filterBedPills(this.value)" autocomplete="off"/>
       </label>
@@ -4182,6 +4201,7 @@ async function admitCommit(id,p,bed,asg,hosp){setBusy(true);
       for(const op of ops) await upsert(op.table,[op.row]);
     }
     ev(id,"Admitted to "+bed.no+(hosp?" · "+hosp:""),true,"note");
+    qPatientConsultantFromText(id,p.consultant||p.consultant_name,p.consultant2||p.consultant_name_2);
     commitOrders(id,((ui.census||{}).meds||[]).filter(m=>(m.drug||"").trim()));
     if(ui.census) ui.census.meds=[{drug:"",dose:"",route:"PO",freq:"OD"}];
     try{
@@ -4923,6 +4943,7 @@ function openUserEdit(username){
   ui.fields.ed=r.displayName||"";
   ui.fields.ep="";
   ui.fields.erole=normRole(r.role)||"resident";
+  ui.fields.edes=(facultyById(r.id)||{}).designation||r.designation||"";
   render();
 }
 function closeUserEdit(){dismissOverlay()}
@@ -4938,6 +4959,7 @@ function userEditOverlay(){
     <p class="tiny" style="margin:0 0 12px">${esc(r.username)} · ${esc(normRole(r.role))}${self?" · you":""}</p>
     <label class="field"><span>Username</span><input id="eu" autocapitalize="none" value="${esc(val("eu"))}" oninput="ui.fields=ui.fields||{};ui.fields.eu=this.value"/></label>
     <label class="field"><span>Display name</span><input id="ed" value="${esc(val("ed"))}" oninput="ui.fields=ui.fields||{};ui.fields.ed=this.value"/></label>
+    ${(normRole(val("erole")||r.role)==="consultant")?`<label class="field"><span>Designation</span><input id="edes" maxlength="80" placeholder="e.g. Assistant Professor" value="${esc(val("edes"))}" oninput="ui.fields=ui.fields||{};ui.fields.edes=this.value"/></label>`:""}
     <label class="field"><span>New password</span><input id="ep" type="password" placeholder="Leave blank to keep" value="${esc(val("ep"))}" oninput="ui.fields=ui.fields||{};ui.fields.ep=this.value"/></label>
     ${self?`<p class="tiny" style="margin:8px 0 12px">Your role stays admin. Ask another admin to change it.</p>`:`<label class="field"><span>Role</span>${picker("erole",ROLES,val("erole")||normRole(r.role),"Role")}</label>`}
     <button class="btn block" onclick="saveUserEdit()">Save changes</button>
@@ -4962,6 +4984,13 @@ async function saveUserEdit(){
     });
     if(error) throw error;
     if(!data) throw new Error("Update did not apply. Sign in again as admin.");
+    if(normRole(role)==="consultant"){
+      const des=String(val("edes")||"").trim();
+      const {error:dErr}=await sb.rpc("ward_set_user_designation",{p_token:sessionTok,p_username:username,p_designation:des});
+      if(dErr && !/could not find|does not exist/i.test(dErr.message||"")) throw dErr;
+      const rr=(S.residents||[]).find(x=>x.username===old); if(rr) rr.designation=des;
+      const f=(S.faculty||[]).find(x=>x.username===old||x.username===username); if(f){f.designation=des;f.name=name;f.username=username}
+    }
     const r=(S.residents||[]).find(x=>x.username===old);
     if(r){
       r.username=username;
@@ -5380,8 +5409,9 @@ function treatLabel(m){
 function consultantPretty(raw){
   raw=(raw||"").trim();
   if(!raw) return "";
-  const hit=(S.consultants||[]).find(c=>c.name && (raw===c.name || raw.startsWith(c.name) || raw.includes(c.name)));
-  if(hit) return hit.designation?hit.name+", "+hit.designation:hit.name;
+  const fl=facultyList();
+  const hit=fl.find(c=>c.label===raw)||(S.consultants||[]).find(c=>c.name && (raw===c.name || raw.startsWith(c.name) || raw.includes(c.name)));
+  if(hit) return hit.label||(hit.designation?hit.name+", "+hit.designation:hit.name);
   return raw;
 }
 function consultantLine(p){
@@ -5822,9 +5852,8 @@ function wardHubPage(){
     <div class="row" style="margin-bottom:10px"><h2 class="page-title" style="margin:0">Ward setup</h2><span class="tiny">${nBeds} beds</span></div>
     <div class="setup-hub">
       ${tile("unit","01","Unit",S.unit.name||"Name the ward")}
-      ${tile("faculty","02","Faculty",(S.consultants||[]).length+" saved")}
-      ${tile("sections","03","Sections",S.sections.length+" named")}
-      ${tile("beds","04","Beds",nBeds+" on the map")}
+      ${tile("sections","02","Sections",S.sections.length+" named")}
+      ${tile("beds","03","Beds",nBeds+" on the map")}
     </div>`;
 }
 function wardPageShell(title,inner){
@@ -5925,7 +5954,6 @@ function wardBedsPage(){
 function wardView(){
   const tab=route.id||"";
   if(tab==="unit") return wardUnitPage();
-  if(tab==="faculty") return wardFacultyPage();
   if(tab==="sections") return wardSectionsPage();
   if(tab==="beds") return wardBedsPage();
   return wardHubPage();
@@ -6786,6 +6814,73 @@ function myOrdersView(){
   }
   return `${back}<h2 class="page-title">My orders</h2>
     <p class="tiny" style="margin:-4px 0 6px;opacity:.7">All advice you've issued, newest first.</p>${body}`;
+}
+
+/* R1.3.66 consultant merge */
+function isTestConsultantName(n,u){n=String(n||"");return String(u||"").toLowerCase()==="consultant"||/\btest\b/i.test(n)||/^\s*dr\.?\s*x\s*$/i.test(n)}
+function facultyList(){
+  let src;
+  if(Array.isArray(S.faculty)&&S.faculty.length) src=S.faculty.map(f=>({id:f.id,username:f.username,name:f.name||"",designation:f.designation||""}));
+  else src=(S.consultants||[]).filter(c=>c.active!==false).map(c=>({id:null,legacyId:c.id,name:c.name||"",designation:c.designation||""}));
+  return src.filter(f=>f.name&&!isTestConsultantName(f.name,f.username)).map(f=>Object.assign(f,{label:f.name+(f.designation?", "+f.designation:"")}));
+}
+function facultyOptions(){return facultyList().map(f=>[f.label,f.label])}
+function facultyById(id){return id?facultyList().find(f=>f.id===id)||null:null}
+function normConsName(t){return String(t||"").split(",")[0].toLowerCase().replace(/\./g," ").replace(/^\s*dr\s+/,"").replace(/\s+/g," ").trim()}
+function facultyIdForText(t){
+  t=String(t||"").trim(); if(!t) return null;
+  const fl=facultyList().filter(f=>f.id);
+  const hit=fl.find(f=>f.label===t)||(()=>{const n=normConsName(t);const m=fl.filter(f=>normConsName(f.name)===n);return m.length===1?m[0]:null})();
+  return hit?hit.id:null;
+}
+async function qFaculty(){
+  if(!sb||!sessionTok) return null;
+  try{const {data,error}=await sb.rpc("ward_list_faculty",{p_session_token:sessionTok}); if(error) return null; return Array.isArray(data)?data:null}catch(e){return null}
+}
+async function qPatientConsultantLinks(){
+  if(!sb||!sessionTok) return null;
+  try{const {data,error}=await sb.rpc("ward_list_patient_consultants",{p_session_token:sessionTok}); if(error) return null; return data&&typeof data==="object"?data:null}catch(e){return null}
+}
+function applyConsultantLinks(){
+  const m=S.consLinks||{};
+  (S.patients||[]).forEach(p=>{const l=m[p.id]; if(l){p.consultantId=l[0]||null;p.consultantId2=l[1]||null} else if(p.consultantId===undefined){p.consultantId=null;p.consultantId2=null}});
+}
+function qPatientConsultantFromText(pid,t1,t2){
+  if(!pid) return;
+  const c1=facultyIdForText(t1), c2=facultyIdForText(t2);
+  const p=patient(pid); if(p){p.consultantId=c1;p.consultantId2=c2}
+  S.consLinks=S.consLinks||{}; S.consLinks[pid]=[c1,c2];
+  if(!c1&&!c2) return;
+  queue("patient_consultant",{id:"pc|"+pid,patient_id:pid,consultant_id:c1,consultant_id_2:c2});
+  save();
+}
+function isActivePatient(p){return p&&p.status!=="discharged"}
+function isMyPatient(p){return isConsultant()&&isActivePatient(p)&&!!S.userId&&(String(p.consultantId||"")===String(S.userId)||String(p.consultantId2||"")===String(S.userId))}
+function myPatientCount(){return (S.patients||[]).filter(isMyPatient).length}
+function patientReasonIds(p){return String(p.reason||"").split(",").map(x=>x.trim()).filter(Boolean)}
+function patientHasReason(p,r){
+  const ids=patientReasonIds(p); const known=ADMIT_REASONS.map(x=>x[0]);
+  if(r==="other") return ids.some(x=>!known.includes(x));
+  return ids.includes(r);
+}
+function patientHasConsultant(p,key){
+  if(String(p.consultantId||"")===key||String(p.consultantId2||"")===key) return true;
+  if(p.consultantId||p.consultantId2) return false;
+  const f=facultyById(key); if(!f) return false;
+  const n=normConsName(f.name);
+  return [p.consultant,p.consultant2].some(t=>t&&normConsName(t)===n);
+}
+function patientFilterRows(){
+  const rs=[...ADMIT_REASONS.map(([id,lb])=>[id,lb]),["other","Other"]];
+  const fl=facultyList().filter(f=>f.id);
+  const r=ui.preason||"", c=ui.pcon||"";
+  return `<div class="ptag-row pfilter-row" role="group" aria-label="Filter by reason for admission"><span class="pfilter-k">Reason</span>
+      ${rs.map(([id,lb])=>`<button class="chip ${r===id?"on":""}" aria-pressed="${r===id}" onclick="ui.preason=ui.preason==='${id}'?'':'${id}';render()">${esc(lb)}</button>`).join("")}
+    </div>
+    ${fl.length?`<div class="ptag-row pfilter-row" role="group" aria-label="Filter by consultant"><span class="pfilter-k">Consultant</span>
+      ${fl.map(f=>`<button class="chip ${c===f.id?"on":""}" aria-pressed="${c===f.id}" onclick="ui.pcon=ui.pcon==='${esc(f.id)}'?'':'${esc(f.id)}';render()">${esc(f.name)}</button>`).join("")}
+    </div>`:""}
+    ${(r||c)?`<button type="button" class="btn ghost sm pfilter-clear" onclick="ui.preason='';ui.pcon='';render()">Clear filters</button>`:""}`;
 }
 function criticalStatusForm(pid){
   const p=patient(pid); if(!p)return; const b=bedObj(pid);
