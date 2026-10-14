@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.67 consultant-chips -->
+<!-- WARD SYNC RELEASE: R1.3.68 stat-grid -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1390,7 +1390,21 @@ html.sheet-open .nav{z-index:40}
 .ptag-row.ptag-cons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;overflow:visible;padding:2px 0 10px;-webkit-mask-image:none;mask-image:none}
 .ptag-row.ptag-cons .chip{min-width:0;width:100%;justify-content:center;text-align:center;padding:11px 6px;overflow:hidden;text-overflow:ellipsis}
 .stat-opinion{border-left:3px solid var(--accent,#0d9488)}
-.home-stats > .stat:last-child:nth-child(odd){grid-column:1/-1}
+
+/* R1.3.68 stat-grid: 4 per row, last row stretches, uniform cards */
+.home-stats{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;grid-auto-rows:1fr}
+.home-stats > .stat{grid-column:span 3}
+.home-stats > .stat:nth-child(4n+1):nth-last-child(3),.home-stats > .stat:nth-child(4n+1):nth-last-child(3) ~ .stat{grid-column:span 4}
+.home-stats > .stat:nth-child(4n+1):nth-last-child(2),.home-stats > .stat:nth-child(4n+1):nth-last-child(2) ~ .stat{grid-column:span 6}
+.home-stats > .stat:nth-child(4n+1):nth-last-child(1){grid-column:span 12}
+html .home-stats > .stat.stat{min-width:0;min-height:68px;height:100%;padding:9px 7px 8px;border-radius:14px;
+  display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;text-align:left;gap:4px;
+  background:var(--panel);border:1px solid var(--line);border-left-width:1px;border-left-color:var(--line);box-shadow:var(--shadow)}
+html .home-stats > .stat.stat span{display:block;width:100%;font-size:10px;line-height:1.15;letter-spacing:.05em;font-weight:700;
+  white-space:normal;overflow-wrap:anywhere;hyphens:none;color:var(--muted)}
+html .home-stats > .stat.stat b{font-size:24px;line-height:1;margin:0;font-weight:750;letter-spacing:-.02em;color:var(--teal2)}
+.home-stats > .stat:focus-visible{outline:2px solid var(--accent,#0d9488);outline-offset:2px}
+@media (max-width:340px){html .home-stats > .stat.stat{padding:8px 5px 7px}html .home-stats > .stat.stat span{font-size:9.5px;letter-spacing:.03em}html .home-stats > .stat.stat b{font-size:22px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1835,7 +1849,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.67";
+const APP_VERSION="R1.3.68";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
