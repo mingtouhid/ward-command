@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.73 report-census -->
+<!-- WARD SYNC RELEASE: R1.3.74 admit-snapshot -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1442,6 +1442,8 @@ html .home-stats > .stat.stat.glow-mine{--g:22,163,74}
 .role-badge{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--line);color:var(--teal2)}
 .user-inactive{opacity:.55}
 @media (prefers-reduced-motion:reduce){.users-sec{animation:none}}
+/* R1.3.74: entry animations play on first mount / navigation only, not on same-view re-renders */
+#app.rerender .plist-grid,#app.rerender .users-sec,#app.rerender .adv-item,#app.rerender .mo-item,#app.rerender .card.enter{animation:none !important}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1904,7 +1906,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.73";
+const APP_VERSION="R1.3.74";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2581,7 +2583,7 @@ async function doCloudPull(opts){
   const occupancyHold=unresolved.some(o=>["patients","beds","patient_bed_assignments"].includes(o.table));
   if(!occupancyHold){
     S.beds=beds.map(r=>({id:r.id,no:r.bed_number,sectionId:r.section_id,active:r.active!==false,patientId:r.current_patient_id||null}));
-    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",by:r.created_by||r.admitted_by||r.by||null}));
+    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
     S.assignments=assigns.map(r=>({id:r.id,patientId:r.patient_id,bedId:r.bed_id,at:r.assigned_at,released:r.released_at,by:r.assigned_by}));
   }
   const nextSnaps={}; snaps.forEach(r=>{nextSnaps[r.patient_id]=rowSnap(r)});
@@ -3562,6 +3564,7 @@ function snapView(){
         ${(()=>{const st=(S.obsStays||[]).filter(s=>s.pid===p.id).sort((a,b)=>new Date(b.at||0)-new Date(a.at||0))[0];return st?`<div><b>Observed</b>${fmt(st.at)}</div>`:""})()}
       </div>
       <p class="sm" style="margin-top:4px"><b>Diagnosis</b><br>${esc(p.diagnosis)}</p>
+      ${snapAdmitRows(p)}
       ${(p.status==="observation")?`<div class="card" style="margin:10px 0 0;padding:10px">
         <p class="tiny">UNDER OBSERVATION</p>
         ${canWrite()?`<div class="btns" style="margin-top:8px">
@@ -4272,10 +4275,19 @@ async function callAtomicWorkflow(name,args){
   err.message=formatSupabaseError(err.supabase,"Atomic workflow: "+name);
   throw err;
 }
+// R1.3.74: ward_admit_patient_core reads snake_case keys; send both shapes so reason/referral/date are not lost.
+function admitPayload(p){
+  return Object.assign({},p,{
+    patient_code:p.code||p.hospitalNo||null,hospital_no:p.hospitalNo||null,
+    reason_for_admission:(p.reason||"").trim()||null,referred_by:(p.referredBy||"").trim()||null,
+    consultant_name:(p.consultant||"").trim()||null,consultant_name_2:(p.consultant2||"").trim()||null,
+    admitted_at:p.admittedAt||null,treatment_mode:p.treatmentMode||null
+  });
+}
 async function admitCommit(id,p,bed,asg,hosp){setBusy(true);
   try{
     const atomic=await callAtomicWorkflow("ward_admit_patient",{
-      p_token:sessionTok,p_patient:p,
+      p_token:sessionTok,p_patient:admitPayload(p),
       p_snapshot:{patient_id:id,clinical_state:"Newly admitted.",risk_level:"moderate",sleep_status:"slept-well",watch_points:"",current_plan:"",tags:[],updated_by:S.userId,updated_at:S.snaps[id]?.at||now()},
       p_bed_id:bed.id,p_assignment:asg
     });
@@ -5529,6 +5541,15 @@ function consultantPretty(raw){
   if(hit) return hit.label||(hit.designation?hit.name+", "+hit.designation:hit.name);
   return raw;
 }
+function snapConsultantNames(p){
+  const nm=(t,id)=>{const f=facultyById(id);return (t&&String(t).trim())||(f?(f.label||f.name||""):"")};
+  return [nm(p.consultant,p.consultantId),nm(p.consultant2,p.consultantId2)].map(x=>consultantPretty(x)||x).filter(Boolean);
+}
+function snapAdmitRows(p){
+  const ref=String(p.referredBy||"").trim(), rs=reasonLine(p), cons=snapConsultantNames(p);
+  const row=(k,v)=>v?`<p class="sm snap-adm" style="margin-top:6px"><b>${k}</b><br>${esc(v)}</p>`:"";
+  return row("Referred by",ref)+row("Reason",rs)+row("Consultant",cons.join(" · "));
+}
 function consultantLine(p){
   const a=consultantPretty(p&&p.consultant);
   const b=consultantPretty(p&&p.consultant2);
@@ -5788,7 +5809,9 @@ async function loadNotificationInbox(){
     const {data,error}=await sb.rpc("ward_list_notification_inbox",{p_session_token:sessionTok,p_limit:40});
     if(error)throw error;
     const rows=data&&data.notifications!==undefined?data.notifications:(data&&data[0]&&data[0].notifications);
-    ui.notifyInbox=Array.isArray(rows)?rows:[];
+    const nextInbox=Array.isArray(rows)?rows:[];
+    ui._inboxSame=JSON.stringify(nextInbox)===JSON.stringify(ui.notifyInbox||[]);
+    ui.notifyInbox=nextInbox;
     ui.notifyInboxLoadedAt=Date.now();
   }catch(e){
     console.warn("Notification inbox",e);
@@ -5796,7 +5819,7 @@ async function loadNotificationInbox(){
     ui.notifyInboxError=/failed to fetch/i.test(m)?"Could not reach the server. Check the connection and tap Refresh.":m;
   }finally{
     ui.notifyInboxLoading=false;
-    render();
+    if(ui._inboxSame&&!ui.notifyInboxError){ui._inboxSame=false}else{ui._inboxSame=false;render()}
   }
 }
 async function markNotificationRead(id){
@@ -7498,6 +7521,7 @@ function restoreTyping(keep){
   el.focus({preventScroll:true});
   try{if(keep.start!=null)el.setSelectionRange(keep.start,keep.end)}catch(e){}
 }
+let lastRenderHtml="", lastRenderRoute="", renderCount=0, renderSkips=0;
 function render(opts){
   opts=opts||{};
   if(ui._sheetLeaving && !opts.forceLeave) return;
@@ -7525,6 +7549,11 @@ function render(opts){
   try{document.documentElement.classList.toggle("sheet-open", !!sheetOpen)}catch(e){}
   let _html=shell((pages[route.page]||patientsView)());
   if(ui._sheetEnter) _html=stampSheetEnter(_html);
+  // R1.3.74: skip identical re-renders (realtime pulls, inbox refresh) so the page doesn't flash or replay animations.
+  const _rk=routeKey(route.page,route.id);
+  if(!opts.nav && !opts.force && !navAnim && _html===lastRenderHtml && el.firstChild){ui._sheetEnter=false;renderHeld=false;renderSkips++;return}
+  el.classList.toggle("rerender", !opts.nav && !navAnim && _rk===lastRenderRoute);
+  lastRenderHtml=_html; lastRenderRoute=_rk; renderCount++;
   el.innerHTML=_html;
   ui._sheetEnter=false;
   const chipRow2=document.querySelector(".ptag-row");

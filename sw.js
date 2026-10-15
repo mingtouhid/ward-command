@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.73-report-census";
+const VERSION = "ward-sync-pwa-r1.3.74-admit-snapshot";
 const PRECACHE = [
   "./",
   "./index.html",
