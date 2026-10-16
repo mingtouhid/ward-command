@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.76 suicidal-risk -->
+<!-- WARD SYNC RELEASE: R1.3.77 duty-shift -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1906,7 +1906,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.76";
+const APP_VERSION="R1.3.77";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -4671,6 +4671,13 @@ function nextShift(s){
 function shiftHours(s){
   return {morning:"08:00–14:00",evening:"14:00–22:00",night:"22:00–08:00"}[s]||"";
 }
+// R1.3.77: shift name for a duty row; record's shift first, else derived from sign-in time in IST.
+function istShift(at){
+  const t=Date.parse(at||""); if(!t) return "";
+  const d=new Date(t+330*60000); const h=d.getUTCHours()+d.getUTCMinutes()/60;
+  return h>=8&&h<14?"morning":h>=14&&h<22?"evening":"night";
+}
+function dutyShiftLabel(x){return shiftLabel((x&&x.shift)||istShift(x&&x.at))||""}
 function shiftLabel(s){
   return {morning:"Morning",evening:"Evening",night:"Night"}[s]||s||"";
 }
@@ -4972,7 +4979,7 @@ function dutyCardBody(){
   const beds=S.beds.filter(b=>b.active).length;
   const open=dutyOpen();
   const list=open.length
-    ? open.map(x=>`<p class="sm" style="margin:6px 0 0">${esc(x.name||rname(x.userId))}${String(x.userId)===String(S.userId)?" · you":""} <span class="tiny">· ${esc(hoWhen(x.at))}</span></p>`).join("")
+    ? open.map(x=>`<p class="sm" style="margin:6px 0 0">${esc(x.name||rname(x.userId))}${String(x.userId)===String(S.userId)?" · you":""} <span class="tiny">· ${esc(dutyShiftLabel(x))}</span></p>`).join("")
     : `<p class="sm" style="margin-top:8px">No one signed in for ${esc(shiftLabel(sh))}</p>`;
   const action=canWrite()
     ? (d
