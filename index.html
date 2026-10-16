@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.75 delirium-watch -->
+<!-- WARD SYNC RELEASE: R1.3.76 suicidal-risk -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1906,7 +1906,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.75";
+const APP_VERSION="R1.3.76";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -6560,8 +6560,10 @@ async function toggleRestrainNow(id){
 }
 function isDelirium(pid){
   const sn=S.snaps[pid]||{};
-  return (sn.tags||[]).includes("delirium") || sn.risk==="high" || sn.risk==="critical";
+  return (sn.tags||[]).includes("delirium");
 }
+// R1.3.76: high while delirium or suicidal is flagged; low once neither is.
+function flagRisk(sn){const t=sn.tags||[];return (t.includes("delirium")||t.includes("suicidal"))?"high":"low"}
 function toggleHighRisk(id){
   if(!needWrite())return;
   const on0=isDelirium(id);
@@ -6576,7 +6578,7 @@ function toggleHighRiskNow(id){
   const tags=new Set(sn.tags||[]);
   if(on) tags.delete("delirium"); else tags.add("delirium");
   sn.tags=[...tags];
-  sn.risk=on?"low":"high";
+  sn.risk=flagRisk(sn);
   sn.at=now();sn.by=S.userId;
   ev(id,on?"Delirium cleared":"Flagged delirium",true,"status");
   qSnapField(id,"risk",sn.risk);
@@ -6606,7 +6608,9 @@ function toggleTagNow(id,tag,adding){
   if(adding) cur.add(tag); else cur.delete(tag);
   sn.tags=[...cur];sn.at=now();sn.by=S.userId;
   ev(id,(adding?"Flagged ":"Cleared ")+tag);
-  qSnapTag(id,tag,adding?"add":"remove");save();render();
+  qSnapTag(id,tag,adding?"add":"remove");
+  if(tag==="suicidal"){sn.risk=flagRisk(sn);qSnapField(id,"risk",sn.risk)}
+  save();render();
 }
 
 function qConsultant(c,active){if(!c)return;queue("unit_consultants",{id:c.id,name:c.name,designation:c.designation||"",active:active!==false,sort_order:c.sort||0,created_at:c.at||now()})}
