@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.74 admit-snapshot -->
+<!-- WARD SYNC RELEASE: R1.3.75 delirium-watch -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1906,7 +1906,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.74";
+const APP_VERSION="R1.3.75";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3576,7 +3576,6 @@ function snapView(){
       </div>`:""}
 
       ${tagHtml(p)}
-      ${canWrite()?`<button type="button" class="risk-toggle ${isDelirium(p.id)?"on":""}" onclick="toggleHighRisk('${p.id}')">Delirium</button>`:""}
     </div>
     <div class="card snap-current">
       ${canWrite()?`<p class="tiny">PGT-NOTE</p>
@@ -3590,7 +3589,7 @@ function snapView(){
       </div>
       ${pgtNotePreview(p.id)}`:`<div class="pgt-history-only"><button class="btn sm ghost" onclick="go('record','${p.id}')">See Clinical History</button></div>`}
       ${canWrite()?`<p class="tiny" style="margin:14px 0 8px">WATCH</p>
-      <div class="chips">${TAGS.filter(tg=>!['ect','obs','leave','restrained','delirium'].includes(tg.id)).map(tg=>{
+      <div class="chips"><button class="chip ${isDelirium(p.id)?"on":""}" onclick="toggleHighRisk('${p.id}')">Delirium</button>${TAGS.filter(tg=>!['ect','obs','leave','restrained','delirium'].includes(tg.id)).map(tg=>{
         const on=(sn.tags||[]).includes(tg.id);
         return `<button class="chip ${on?"on":""}" onclick="toggleTag('${p.id}','${tg.id}')">${tg.label}</button>`;
       }).join("")}</div>`:""}

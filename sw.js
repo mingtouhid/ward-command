@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.74-admit-snapshot";
+const VERSION = "ward-sync-pwa-r1.3.75-delirium-watch";
 const PRECACHE = [
   "./",
   "./index.html",
