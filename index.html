@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.79 ui-polish -->
+<!-- WARD SYNC RELEASE: R1.3.80 single-ack -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -2030,7 +2030,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.79";
+const APP_VERSION="R1.3.80";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -6975,7 +6975,7 @@ function adviceCardHtml(p){
   const me=String(S.userId||"");
   const list=rows.map(a=>{
     const mine=isConsultant()&&String(a.by||"")===me;
-    const acked=(a.acks||[]).some(k=>String(k.by)===me);
+    const acked=(a.acks||[]).length>0; // R1.3.80 single-ack: one acknowledgement closes it for everyone
     const ackLine=(a.acks||[]).length?`<p class="adv-acks"><b>✓ Acknowledged</b> · ${(a.acks||[]).map(k=>esc(k.name)+" "+esc(stamp(k.at)||"")).join(", ")}</p>`:`<p class="adv-acks">Not yet acknowledged</p>`;
     return `<div class="adv-item" data-advice-id="${esc(a.id)}">
       <p class="adv-msg">${esc(a.text)}</p>
@@ -7062,6 +7062,7 @@ async function removeAdviceNow(id){
   render();
 }
 async function ackAdvice(id){
+  {const a0=(S.advice||[]).find(x=>x.id===id);if(a0&&(a0.acks||[]).length){toast("Already acknowledged","ok");render();return}}
   if(!canWrite()){toast("Only residents acknowledge advice.","bad");return}
   if(!dutyRecord()){toast("Only on-duty residents can acknowledge","bad");render();return}
   if(!navigator.onLine||!sessionTok||!sb){toast("You're offline. Try again when connected.","bad");return}
