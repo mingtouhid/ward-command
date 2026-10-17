@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.78 stat-freq -->
+<!-- WARD SYNC RELEASE: R1.3.79 ui-polish -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1445,6 +1445,129 @@ html .home-stats > .stat.stat.glow-mine{--g:22,163,74}
 /* R1.3.74: entry animations play on first mount / navigation only, not on same-view re-renders */
 #app.rerender .plist-grid,#app.rerender .users-sec,#app.rerender .adv-item,#app.rerender .mo-item,#app.rerender .card.enter{animation:none !important}
 .chart tr.stat-done td{opacity:.62}
+/* ===== WARD SYNC UI POLISH PASS (R1.3.77 Visual Upgrade) ===== */
+
+/* Form labels: Sentence case instead of shouting all-caps */
+.field span {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+/* Patient Card Refinements */
+.patient-card {
+  padding: 16px;
+  border-radius: var(--radius-card, 20px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.patient-card:active {
+  transform: scale(0.985);
+}
+.patient-name {
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.patient-dx {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+/* Left-accent quote bar for Current State (replaces nested box) */
+.patient-state {
+  margin-top: 10px;
+  padding: 4px 0 4px 10px;
+  border-left: 3px solid var(--teal);
+  background: transparent;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.patient-state b {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+/* Light-mode adapted clinical tag pastels */
+html[data-theme="light"] .tag-ect { background: #ede9fe; color: #5b21b6; }
+html[data-theme="light"] .tag-restrained { background: #ffe4e6; color: #9f1239; }
+html[data-theme="light"] .tag-delirium { background: #fef3c7; color: #92400e; }
+html[data-theme="light"] .tag-aggressive { background: #fee2e2; color: #991b1b; }
+html[data-theme="light"] .tag-suicidal { background: #ffe4e6; color: #881337; }
+html[data-theme="light"] .tag-abscond { background: #e0f2fe; color: #0369a1; }
+html[data-theme="light"] .tag-npo { background: #f4f4f5; color: #3f3f46; }
+html[data-theme="light"] .tag-obs { background: #dcfce7; color: #166534; }
+html[data-theme="light"] .tag-intake { background: #ffedd5; color: #c2410c; }
+html[data-theme="light"] .tag-leave { background: #e0e7ff; color: #3730a3; }
+html[data-theme="light"] .tag-jail { background: #fef9c3; color: #854d0e; }
+
+/* Snapshot Critical Button: Softened from solid red to danger outline */
+.pgt-actions .pgt-critical {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  font-weight: 650;
+}
+.pgt-actions .pgt-critical:active {
+  background: color-mix(in srgb, var(--danger) 20%, var(--panel));
+}
+
+/* Hero Observation Pill Polish */
+.hero-obs {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.22);
+  border: 1px solid rgba(253, 230, 138, 0.35);
+  color: #fff7ed;
+  text-decoration: none;
+  cursor: pointer;
+}
+.hero-obs span {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  opacity: 0.9;
+}
+.hero-obs b {
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+/* Tabular numbers across timelines and charts */
+.chart td, .crit-meta, .rec-card .tiny, .pill b, .stat b, .bedno {
+  font-variant-numeric: tabular-nums;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1907,7 +2030,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.78";
+const APP_VERSION="R1.3.79";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3503,7 +3626,7 @@ function homeView(){
 function unplacedPatients(){
   return (S.patients||[]).filter(p=>p.status==="admitted" && !S.beds.some(b=>b.patientId===p.id));
 }
-function patientCard(p,bed){
+function patientCard(p, bed){
   const f=flags(p), sn=S.snaps[p.id]||{};
   const activeTags=(sn.tags||[]).map(id=>TAGS.find(t=>t.id===id)).filter(Boolean);
   const priority=activeTags.filter(t=>['suicidal','aggressive','abscond','restrained','npo','ect','obs'].includes(t.id)).slice(0,3);
@@ -3512,16 +3635,17 @@ function patientCard(p,bed){
         <div class="patient-head">
           <div class="bedno">${esc(bed?bed.no:"—")}</div>
           <div>
-            <div class="patient-name">${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}${p.diagnosis?` <span class="patient-dx">${esc(p.diagnosis)}</span>`:""}</div>
-            <p class="patient-meta">${p.age||""}${p.sex||""}${p.hospitalNo?` · ${esc(p.hospitalNo)}`:""}</p>
-            ${(()=>{const ai=wardAdmissionInfo(p);return ai?`<div class="admission-age ${ai.today?"is-today":""}">${ai.today?'<span class="today-dot"></span>':""}<span>${esc(ai.text)}</span></div>`:""})()}
+            <div class="patient-name">${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}</div>
+            ${p.diagnosis?`<div class="patient-dx">${esc(p.diagnosis)}</div>`:""}
+            <p class="patient-meta" style="margin-top:3px">${p.age||""}${p.sex||""}${p.hospitalNo?` · ${esc(p.hospitalNo)}`:""}</p>
+            ${(()=>{const ai=wardAdmissionInfo(p);return ai?`<div class="admission-age ${ai.today?"is-today":""}" style="margin-top:4px">${ai.today?'<span class="today-dot"></span>':""}<span>${esc(ai.text)}</span></div>`:""})()}
           </div>
           <div class="patient-priority">
             ${bed?(f.risk==="high"||f.risk==="critical")?`<span class="${rcls("high")}">high</span>`:"":`<span class="badge nobed-tag">No bed</span>`}
             ${priority.map(t=>`<span class="badge tag-${t.id}">${esc(t.label)}</span>`).join('')}
           </div>
         </div>
-        ${state?`<div class="patient-state"><b>Current state</b>${esc(state)}</div>`:""}
+        ${state?`<div class="patient-state">${esc(state)}</div>`:""}
         ${activeTags.length?`<div class="patient-tags">${activeTags.filter(t=>!priority.includes(t)).slice(0,4).map(t=>`<span class="tag tag-${t.id}">${esc(t.label)}</span>`).join('')}</div>`:""}
       </div>`;
 }
