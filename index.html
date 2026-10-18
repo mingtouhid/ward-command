@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.80 single-ack -->
+<!-- WARD SYNC RELEASE: R1.3.81 obs-admit-form -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -2030,7 +2030,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.80";
+const APP_VERSION="R1.3.81";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -4107,15 +4107,13 @@ async function startObservation(){
 }
 function obsAdmitAsk(pid){
   const p=patient(pid);if(!p||p.status!=="observation")return;
-  const bed=S.beds.find(b=>b.patientId===pid);
-  const empties=emptyBeds().filter(b=>!bed||b.id!==bed.id);
-  ui.confirm={fn:"obsAdmit",pid,title:"Admit from observation",ok:"Admit",
-    body:"Admit "+p.name+" on the current bed"+(bed?" ("+bed.no+")":"")+", or choose another empty bed first.",
-    extra:empties.length?empties.map(b=>b.id+"|"+b.no).join(","):""};
+  // R1.3.81: stray ui.confirm (fn "obsAdmit", no handler) removed; Admit opens only the form.
+  ["oasex","oacon","oacon2"].forEach(k=>{if(ui.fields)delete ui.fields[k]});
   ui.obsAdmit={pid,mode:"same",to:""};
   openPanel("obsAdmit",{pid});
 }
 function toggleObsReason(id){
+  obsAdmitDraft();
   ui.obsAdmit=ui.obsAdmit||{};
   const cur=new Set(ui.obsAdmit.reasons||[]);
   if(cur.has(id)) cur.delete(id); else cur.add(id);
@@ -4125,13 +4123,23 @@ function toggleObsReason(id){
 function obsAdmitDraft(){
   const g=id=>document.getElementById(id);
   ui.obsAdmit=ui.obsAdmit||{};
-  if(g("oadx")) ui.obsAdmit.dx=g("oadx").value;
-  if(g("oaref")) ui.obsAdmit.ref=g("oaref").value;
-  if(g("oacon")) ui.obsAdmit.con=g("oacon").value;
-  if(g("oadate")) ui.obsAdmit.adate=g("oadate").value;
-  if(g("oadmitbed")) ui.obsAdmit.to=g("oadmitbed").value;
-  if(g("oabq")) ui.obsAdmit.bq=g("oabq").value;
+  const d=ui.obsAdmit;
+  if(g("oahosp")) d.hosp=g("oahosp").value;
+  if(g("oaname")) d.name=g("oaname").value;
+  if(g("oaaddr")) d.addr=g("oaaddr").value;
+  if(g("oaphone")) d.phone=g("oaphone").value;
+  if(g("oaage")) d.age=g("oaage").value;
+  if(g("oasex")||(ui.fields&&ui.fields.oasex!=null)) d.sex=val("oasex")||d.sex;
+  if(g("oadx")) d.dx=g("oadx").value;
+  if(g("oaref")) d.ref=g("oaref").value;
+  if(g("oacon")||(ui.fields&&ui.fields.oacon!=null)) d.con=val("oacon");
+  if(g("oacon2")||(ui.fields&&ui.fields.oacon2!=null)) d.con2=val("oacon2");
+  if(g("oadate")) d.adate=g("oadate").value;
+  if(g("oadmitbed")) d.to=g("oadmitbed").value;
+  if(g("oabq")) d.bq=g("oabq").value;
+  if(d.meds) d.meds=readMedRows("oa",d.meds);
 }
+function addObsAdmitMed(){obsAdmitDraft();ui.obsAdmit.meds=ui.obsAdmit.meds||[];ui.obsAdmit.meds.push({drug:"",dose:"",route:"PO",freq:"OD"});render({fromInput:1})}
 function obsBedChoices(pid){
   const cur=S.beds.find(b=>b.patientId===pid);
   const rest=emptyBeds().filter(b=>!cur||b.id!==cur.id);
@@ -4161,8 +4169,15 @@ function pickObsBed(id){
 function obsAdmitForm(){
   const pid=(ui.panel&&ui.panel.pid)||(ui.obsAdmit&&ui.obsAdmit.pid);
   const p=patient(pid);if(!p)return "";
-  const d=ui.obsAdmit=Object.assign({pid,reasons:[],adate:localStamp(),dx:p.diagnosis||"",ref:p.referredBy||"",con:p.consultant||"",to:(S.beds.find(b=>b.patientId===pid)||{}).id,mode:"same"},ui.obsAdmit||{},{pid});
+  // R1.3.81: same fields, labels, order and validation as the main census Admit form; prefilled from the observation record.
+  const pre={pid,hosp:p.hospitalNo||p.code||"",name:p.name||"",addr:p.address||"",phone:p.phone||"",age:p.age?String(p.age):"",sex:p.sex||"M",
+    reasons:String(p.reason||"").split(",").map(x=>x.trim()).filter(Boolean),adate:localStamp(),
+    dx:(p.diagnosis&&p.diagnosis!=="Diagnosis pending")?p.diagnosis:"",ref:p.referredBy||"",con:p.consultant||"",con2:p.consultant2||"",
+    to:(S.beds.find(b=>b.patientId===pid)||{}).id,mode:"same",meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]};
+  const d=ui.obsAdmit=Object.assign(pre,ui.obsAdmit||{},{pid});
+  if(d.hosp==null) d.hosp=pre.hosp;
   if(!d.to) d.to=(S.beds.find(b=>b.patientId===pid)||{}).id;
+  if(!d.meds||!d.meds.length) d.meds=[{drug:"",dose:"",route:"PO",freq:"OD"}];
   const cur=S.beds.find(b=>b.patientId===pid);
   const nq=(d.bq||"").toLowerCase();
   const shown=obsBedChoices(pid).filter(b=>{
@@ -4172,19 +4187,32 @@ function obsAdmitForm(){
   });
   const reasons=d.reasons||[];
   const pills=shown.length?bedPillsHtml(shown,d.to,false,"obs"):`<span class="tiny">No bed available.</span>`;
-  return `<p class="tiny">Admit ${esc(p.name)} from observation. Hospital no. ${esc(p.hospitalNo||p.code)} \u00b7 ${p.age||""}${p.sex||""}</p>
+  const fac=facultyList().length;
+  return `<p class="tiny">Admit from observation. Existing details are filled in; check and complete them.</p>
+    <label class="field"><span>Hospital no. *</span><input id="oahosp" required value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off"/></label>
+    <label class="field"><span>Name</span><input id="oaname" value="${esc(d.name||"")}" placeholder="Full name"/></label>
+    <label class="field"><span>Address <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="oaaddr" value="${esc(d.addr||"")}" placeholder="Village / town / ward address" autocomplete="street-address"/></label>
+    <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="oaphone" value="${esc(d.phone||"")}" placeholder="Mobile number" inputmode="tel" autocomplete="tel"/></label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <label class="field"><span>Age</span><input id="oaage" value="${esc(d.age||"")}" inputmode="numeric"/></label>
+      <label class="field"><span>Sex</span>${picker("oasex",[["M","M"],["F","F"],["O","O"]],d.sex||"M","Sex")}</label>
+    </div>
     <label class="field"><span>Date of admission</span><input id="oadate" type="datetime-local" value="${esc(d.adate||localStamp())}"/></label>
     <label class="field"><span>Reason for referral</span>
       <div class="multi">${ADMIT_REASONS.map(([id,lb])=>`<button type="button" class="chip ${reasons.includes(id)?"on":""}" onclick="toggleObsReason('${id}')">${lb}</button>`).join("")}</div>
     </label>
     <label class="field"><span>Working diagnosis</span><input id="oadx" value="${esc(d.dx||"")}" placeholder="Diagnosis"/></label>
     <label class="field"><span>Referred by</span><input id="oaref" value="${esc(d.ref||"")}" placeholder="OPD / casualty / hospital"/></label>
-    <label class="field"><span>Consultant</span>${(facultyList().length)?picker("oacon",facultyOptions(),d.con||"","Consultant"):`<input id="oacon" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
+    <label class="field"><span>Consultant</span>${fac?picker("oacon",facultyOptions(),d.con||"","Consultant"):`<input id="oacon" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
+    <label class="field"><span>Consultant 2</span>${fac?picker("oacon2",facultyOptions(),d.con2||"","Optional"):`<input id="oacon2" value="${esc(d.con2||"")}" placeholder="Second consultant, optional"/>`}</label>
     <label class="field"><span>Bed</span>
-      <input id="oabq" value="${esc(d.bq||"")}" placeholder="Current bed or another empty bed" oninput="filterObsBeds(this.value)" autocomplete="off"/>
+      <input id="oabq" value="${esc(d.bq||"")}" placeholder="Search bed or ward" oninput="filterObsBeds(this.value)" autocomplete="off"/>
     </label>
-    <p class="tiny">${cur?"Current holding bed "+cur.no+" is selected unless you pick another.":""}</p>
+    <p class="tiny">${cur?"Current holding bed "+esc(cur.no)+" is selected unless you pick another.":""}</p>
     <div class="pills" id="obsbedpills" style="margin:8px 0 12px">${pills}</div>
+    <p class="tiny" style="margin:10px 0 6px">MEDICATIONS <em style="font-style:normal;opacity:.6">(optional, added to current orders)</em></p>
+    ${d.meds.map((m,i)=>medRowHtml("oa",i,m)).join("")}
+    <button class="btn ghost sm" type="button" onclick="addObsAdmitMed()">Add medication</button>
     <button class="btn block" onclick="obsAdmitDraft();convertObservation('${pid}')">Admit to bed</button>
     <button class="btn ghost block" style="margin-top:8px" onclick="closePanel()">Cancel</button>`;
 }
@@ -4192,15 +4220,26 @@ async function convertObservation(pid){
   if(!needWrite())return;
   const p=patient(pid);if(!p||p.status!=="observation")return;
   const from=S.beds.find(b=>b.patientId===pid);
+  obsAdmitDraft();
+  const d=ui.obsAdmit||{};
+  const hosp=(d.hosp||"").trim(), name=(d.name||"").trim();
+  const destId=d.to||(from&&from.id)||null;
+  const destBed=destId&&S.beds.find(b=>b.id===destId);
+  // R1.3.81: same validation as admitFromCensus.
+  if(!hosp){toast("Hospital number is required.","bad");return}
+  if(!destBed||(destBed.patientId&&destBed.patientId!==pid)||!name){toast("Enter hospital no., name and choose an empty bed.","bad");return}
+  if(S.patients.some(x=>x.id!==pid&&x.hospitalNo&&x.hospitalNo.toLowerCase()===hosp.toLowerCase()&&x.status!=="discharged")){
+    toast("This hospital number is already in the ward. Use Transfer if the bed is wrong.","bad");return;
+  }
   if(workflowLocked("obs-admit",pid))return;
   setBusy(true,"Admitting\u2026");
   try{
-    obsAdmitDraft();
-    const d=ui.obsAdmit||{};
     const reasons=(d.reasons||[]).join(",");
     const admittedAt=d.adate?new Date(d.adate).toISOString():now();
-    const destId=d.to||null;
     const same=!destId||(from&&from.id===destId);
+    const con=(d.con||"").trim(), con2=(d.con2||"").trim();
+    const age=+(d.age||0), sex=d.sex||"O";
+    const dx=(d.dx||"").trim()||"Diagnosis pending";
     const {data,error}=await sb.rpc("ward_convert_observation",{
       p_token:sessionTok,p_patient_id:pid,
       p_to_bed_id:same?null:destId,
@@ -4209,8 +4248,12 @@ async function convertObservation(pid){
         admitted_at:admittedAt,
         reason_for_admission:reasons||null,
         referred_by:(d.ref||"").trim()||null,
-        consultant_name:(d.con||val("oacon")||"").trim()||null,
-        diagnosis:(d.dx||"").trim()||null
+        consultant_name:con||null,
+        consultant_name_2:con2||null,
+        diagnosis:dx,
+        patient_code:hosp||null,hospital_no:hosp||null,
+        name:name||null,age:age||null,sex:sex||null,
+        address:(d.addr||"").trim()||null,phone:(d.phone||"").trim()||null
       }
     });
     if(error) throw error;
@@ -4218,14 +4261,22 @@ async function convertObservation(pid){
     p.admittedAt=admittedAt;
     p.reason=reasons||p.reason;
     p.referredBy=(d.ref||"").trim()||p.referredBy;
-    p.consultant=(d.con||val("oacon")||"").trim()||p.consultant;
-    if((d.con||val("oacon")||"").trim()) qPatientConsultantFromText(pid,p.consultant,p.consultant2);
-    if((d.dx||"").trim()) p.diagnosis=d.dx.trim();
+    p.consultant=con||p.consultant;
+    p.consultant2=con2||p.consultant2;
+    p.hospitalNo=hosp; p.code=hosp||p.code; p.name=name;
+    if(age) p.age=age; p.sex=sex;
+    p.address=(d.addr||"").trim()||p.address||"";
+    p.phone=(d.phone||"").trim()||p.phone||"";
+    p.diagnosis=dx;
+    // Server RPC (pre-migration) ignores consultant 2 / identity fields; queue a patient upsert so they still persist.
+    try{qPatient(p)}catch(_){}
+    if(con||con2) qPatientConsultantFromText(pid,p.consultant,p.consultant2);
     S.snaps[pid]=Object.assign({},S.snaps[pid]||{},{state:"Admitted from observation.",at:admittedAt,by:S.userId});
     if(!same&&destId&&from){
       from.patientId=null;
       const dest=S.beds.find(b=>b.id===destId); if(dest) dest.patientId=pid;
     }
+    commitOrders(pid,(d.meds||[]).filter(m=>(m.drug||"").trim()));
     const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.outcome="admitted"}
     ev(pid,"Admitted from observation",true,"note");
     try{
@@ -4386,7 +4437,7 @@ function admitFromCensus(){
   if(workflowLocked("admission",bid))return;
   const id=uid("p");
   const reasons=(d.reasons||[]).join(",");
-  const p={id,code:hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:(d.dx||"").trim()||"Diagnosis pending",reason:reasons,referredBy:(d.ref||"").trim(),consultant:(d.con||"").trim(),admittedAt:d.adate?new Date(d.adate).toISOString():now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:null,status:"admitted",address:(d.addr||"").trim(),phone:(d.phone||"").trim()};
+  const p={id,code:hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:(d.dx||"").trim()||"Diagnosis pending",reason:reasons,referredBy:(d.ref||"").trim(),consultant:(d.con||"").trim(),consultant2:(d.con2||"").trim(),admittedAt:d.adate?new Date(d.adate).toISOString():now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:null,status:"admitted",address:(d.addr||"").trim(),phone:(d.phone||"").trim()};
   S.patients.unshift(p);
   S.snaps[id]={state:"Newly admitted.",risk:"moderate",sleep:"slept-well",watch:"",plan:"",by:S.userId,at:now()};
   bed.patientId=id;
