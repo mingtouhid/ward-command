@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.86 flat-tiles -->
+<!-- WARD SYNC RELEASE: R1.3.87 about-accent -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1630,6 +1630,30 @@ html:not([data-theme="ot"]) .hero{border:1px solid var(--line)}
 .hero .hero-today-stat{background:var(--hero-chip);border-color:color-mix(in srgb,var(--hero-chip-ink) 10%,transparent);color:var(--hero-chip-ink)}
 .hero .hero-today-stat b{color:var(--hero-chip-b)}
 /* /R1.3.86 HERO ACCENT */
+/* R1.3.87 ABOUT ACCENT: glow, border, dividers, kicker and version follow the accent (Day = 700/800 shades, Night = 400/300) */
+html:not([data-accent]) .about-card{--ab-ver:#34d399;--ab-kick:#6ee7b7;--ab-rgb:52,211,153}
+html:not([data-accent])[data-theme="light"] .about-card{--ab-ver:#047857;--ab-kick:#0f766e;--ab-rgb:16,185,129}
+html[data-accent="blue"] .about-card{--ab-ver:#60a5fa;--ab-kick:#93c5fd;--ab-rgb:96,165,250}
+html[data-accent="blue"][data-theme="light"] .about-card{--ab-ver:#1d4ed8;--ab-kick:#1e40af;--ab-rgb:59,130,246}
+html[data-accent="purple"] .about-card{--ab-ver:#c084fc;--ab-kick:#d8b4fe;--ab-rgb:192,132,252}
+html[data-accent="purple"][data-theme="light"] .about-card{--ab-ver:#7e22ce;--ab-kick:#6b21a8;--ab-rgb:168,85,247}
+html[data-accent="rose"] .about-card{--ab-ver:#fb7185;--ab-kick:#fda4af;--ab-rgb:251,113,133}
+html[data-accent="rose"][data-theme="light"] .about-card{--ab-ver:#be123c;--ab-kick:#9f1239;--ab-rgb:244,63,94}
+html[data-accent="amber"] .about-card{--ab-ver:#fbbf24;--ab-kick:#fcd34d;--ab-rgb:251,191,36}
+html[data-accent="amber"][data-theme="light"] .about-card{--ab-ver:#92400e;--ab-kick:#78350f;--ab-rgb:245,158,11}
+html[data-accent="green"] .about-card{--ab-ver:#4ade80;--ab-kick:#86efac;--ab-rgb:74,222,128}
+html[data-accent="green"][data-theme="light"] .about-card{--ab-ver:#166534;--ab-kick:#14532d;--ab-rgb:34,197,94}
+.about-card{background:radial-gradient(120% 80% at 50% 0%,rgba(var(--ab-rgb),.22),transparent 55%),linear-gradient(180deg,rgba(7,17,14,.98),rgba(5,8,15,.94));border-color:rgba(var(--ab-rgb),.28);box-shadow:0 0 0 1px rgba(var(--ab-rgb),.12),0 22px 48px rgba(2,8,12,.55),0 0 36px rgba(var(--ab-rgb),.16)}
+html[data-theme="light"] .about-card{background:radial-gradient(120% 80% at 50% 0%,rgba(var(--ab-rgb),.14),transparent 55%),#fff;box-shadow:0 0 0 1px rgba(var(--ab-rgb),.12),0 22px 40px rgba(15,23,42,.08)}
+.about-card .about-kicker,html[data-accent][data-theme="light"] .about-card .about-kicker{color:var(--ab-kick)}
+html .about-card .about-ver{color:var(--ab-ver)}
+.about-card .about-rule{background:linear-gradient(90deg,transparent,rgba(var(--ab-rgb),.55),transparent)}
+html[data-theme="light"] .about-card .about-tag,html[data-theme="light"] .about-card .about-meta{color:#475569}
+/* /R1.3.87 ABOUT ACCENT */
+/* R1.3.87 HIDE SCROLLBARS: app-wide, scrolling still works */
+*,html,body{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar,html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0;background:transparent}
+/* /R1.3.87 HIDE SCROLLBARS */
 .accent-row{display:flex;flex-wrap:nowrap;justify-content:space-between;gap:4px;margin-top:10px;padding:0 5px}
 .accent-sw{width:clamp(34px,11vw,44px);height:auto;aspect-ratio:1;flex:none;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.12)}
 .accent-sw.on{outline:3px solid var(--ink);outline-offset:2px;border-color:transparent}
@@ -2129,7 +2153,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.86";
+const APP_VERSION="R1.3.87";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
