@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.82 ui-tidy -->
+<!-- WARD SYNC RELEASE: R1.3.83 sos-prn -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -2033,7 +2033,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.82";
+const APP_VERSION="R1.3.83";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2286,7 +2286,8 @@ function giveStat(oid){
   ev(o.pid,"STAT given · "+o.drug+" "+o.dose,true,"med");qDose(d);save();render();
   Promise.resolve(flushPending()).catch(()=>{});
 }
-function isPrn(o){return o&&!o.stop&&(o.status||"active")==="active"&&/prn/i.test(o.freq||"")}
+function isPrn(o){return o&&!o.stop&&(o.status||"active")==="active"&&/\b(prn|sos)\b/i.test(o.freq||"")}
+function prnLabel(o){return /\bsos\b/i.test((o&&o.freq)||"")?"SOS":"PRN"}
 function prnOrders(pid){return (S.orders||[]).filter(o=>o.pid===pid&&isPrn(o))}
 function prnStats(oid){
   const given=(S.doses||[]).filter(d=>d.oid===oid&&d.status==="given").sort((a,b)=>new Date(b.at)-new Date(a.at));
@@ -2318,7 +2319,7 @@ const bedOf=pid=>{const b=S.beds.find(x=>x.patientId===pid);return b?b.no:"—"}
 const bedObj=pid=>S.beds.find(x=>x.patientId===pid);
 const onBed=b=>b.patientId?patient(b.patientId):null;
 const occupied=()=>S.beds.filter(b=>b.active&&b.patientId).sort((a,b)=>a.no.localeCompare(b.no,undefined,{numeric:true}));
-const dueFor=pid=>S.doses.filter(d=>d.pid===pid&&d.status==="pending");
+const dueFor=pid=>S.doses.filter(d=>d.pid===pid&&d.status==="pending"&&!isPrn((S.orders||[]).find(o=>o.id===d.oid)));
 const openTasks=pid=>S.tasks.filter(t=>t.pid===pid&&t.status!=="done");
 function ev(pid,title,ok,kind,detail){
   const p=pid?patient(pid):null;
@@ -2401,7 +2402,7 @@ function evKind(title){
   if(/handover|flagged/.test(s))return "handover";
   if(/^task\b|task added|task notification|task assigned/.test(s))return "task";
   if(/\bect\b|electroconvulsive/.test(s))return "ect";
-  if(/given|held|refused|\bprn\b|started |stopped |resumed |dose|drug|olanzapine|lorazepam/.test(s))return "med";
+  if(/given|held|refused|\bprn\b|\bsos\b|started |stopped |resumed |dose|drug|olanzapine|lorazepam/.test(s))return "med";
   if(/\bpgt note\b|pgt-note/.test(s))return "pgt";
   if(/restrain|restraint/.test(s))return "restrain";
   if(/status updated|critical status|signed/.test(s))return "status";
@@ -3757,7 +3758,7 @@ function snapView(){
             : o.status==="held"
               ? "Paused · "+(stamp(o.hold)||fmt(o.hold)||"")
               : isStat(o) ? (statGiven(o)?"STAT · given "+(stamp(statGiven(o).givenAt||statGiven(o).at)||fmt(statGiven(o).at)):"STAT · due now")
-              : prn ? "PRN as needed" : "Ongoing since "+(fmt(o.start)||"");
+              : prn ? prnLabel(o)+" as needed" : "Ongoing since "+(fmt(o.start)||"");
           return `<tr class="${o.stop?"stopped":(o.status==="held"?"held":(statDone(o)?"stat-done":""))}">
           <td><div class="med-primary">${esc(o.drug)}</div><div class="med-meta">${esc(o.dose||"—")}${ds&&ds.last?" · last "+rel(ds.last.at):""}</div>
             ${isStat(o)&&!o.stop&&!statDone(o)&&o.status!=="held"&&canWrite()?`<div class="med-row-actions"><button class="btn sm" onclick="giveStat('${o.id}')">Give STAT</button></div>`:""}
@@ -7354,12 +7355,12 @@ function quickPrn(id){
   const existing=prnOrders(id);
   const chips=existing.map(o=>{
     const s=prnStats(o.id);
-    return `<button class="btn block" style="margin-top:8px" onclick="givePrn('${o.id}')">${esc(o.drug)} ${esc(o.dose)}${s.last?" · last "+rel(s.last.at):""}${s.today?" · "+s.today+" today":""}</button>`;
+    return `<button class="btn block" style="margin-top:8px" onclick="givePrn('${o.id}')">${esc(o.drug)} ${esc(o.dose)} · ${prnLabel(o)}${s.last?" · last "+rel(s.last.at):""}${s.today?" · "+s.today+" today":""}</button>`;
   }).join("");
   ui.sheet=`<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
     <div class="row"><b>Give PRN</b><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
-    <p class="sm" style="margin:8px 0">Tap a PRN to record a dose.</p>
-    ${chips||`<p class="tiny">No PRN orders yet.</p>`}
+    <p class="sm" style="margin:8px 0">Tap an SOS/PRN drug to record a dose.</p>
+    ${chips||`<p class="tiny">No SOS/PRN orders yet.</p>`}
     <p class="tiny" style="margin:14px 0 6px">OTHER</p>
     <label class="field"><span>Drug</span><input id="prn_d" value="${existing.length?"":"Lorazepam"}"/></label>
     <label class="field"><span>Dose</span><input id="prn_z" value="${existing.length?"":"1 mg"}"/></label>
@@ -7379,7 +7380,7 @@ async function givePrn(oid){
     const ops=pending.splice(0); pending.push(...hold);
     for(const op of ops.filter(x=>x.table==="medication_orders")) await upsert(op.table,[op.row]);
     for(const op of ops.filter(x=>x.table!=="medication_orders")) await upsert(op.table,[op.row]);
-    ev(o.pid,"PRN "+o.drug+" "+o.dose,true,"med");
+    ev(o.pid,prnLabel(o)+" "+o.drug+" "+o.dose,true,"med");
     toast("Given "+o.drug+" "+o.dose,"ok");
     save();dismissOverlay();
   }catch(e){
