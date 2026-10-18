@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.83 sos-prn -->
+<!-- WARD SYNC RELEASE: R1.3.84 obs-notify -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -2033,7 +2033,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.83";
+const APP_VERSION="R1.3.84";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -4103,6 +4103,17 @@ async function startObservation(){
     S.snaps[id]={state:"Under observation.",risk:"moderate",plan:dx,tags:[],at:now(),by:S.userId};
     meds.forEach(m=>S.orders.unshift({id:uid("mo"),pid:id,drug:m.drug,dose:m.dose,route:m.route,freq:m.freq,status:"active",start:now()}));
     ev(id,"Under observation \u00b7 "+bed.no,true,"note");
+    try{
+      await notifyServerEvent({
+        eventType:"observation",category:"clinical",priority:"normal",patientId:id,
+        title:"Observation started",
+        body:name+" \u00b7 Bed "+bed.no,
+        targetUrl:"./#/snap/"+encodeURIComponent(id),
+        recipientScope:"active_team",
+        dedupeKey:"obs-start:"+stay,
+        metadata:{action:"start",stay_id:stay,bed_no:bed.no}
+      });
+    }catch(ne){ evFail(id,"Observation notification",ne); }
     ui.obs={meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]};
     toast("Kept under observation","ok");ui.obsForm=false;save();render();
   }catch(e){
@@ -4339,10 +4350,22 @@ async function closeObservation(pid,outcome){
       p_token:sessionTok,p_patient_id:pid,p_outcome:outcome,p_referral_to:outcome==="referred"?dept:null,p_reason:reason||null
     });
     if(error) throw error;
-    const bed=S.beds.find(b=>b.patientId===pid); if(bed) bed.patientId=null;
+    const bed=S.beds.find(b=>b.patientId===pid); const bedNo=bed?bed.no:""; if(bed) bed.patientId=null;
     p.status="discharged";p.dischargedAt=now();p.dischargeMode=outcome==="referred"?"transfer":"advice";
     const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.outcome=outcome}
     ev(pid,"Observation ended \u00b7 "+outcome+(dept?" \u00b7 "+dept:""),true,"note");
+    try{
+      const isRef=outcome==="referred", ts=Date.now();
+      await notifyServerEvent({
+        eventType:"observation",category:"clinical",priority:"normal",patientId:pid,
+        title:isRef?"Referred from observation":"Observation disposed",
+        body:p.name+(bedNo?" \u00b7 Bed "+bedNo:"")+(isRef&&dept?" \u00b7 to "+dept:"")+(isRef&&reason?" \u00b7 "+reason:""),
+        targetUrl:"./#/snap/"+encodeURIComponent(pid),
+        recipientScope:"active_team",
+        dedupeKey:"obs-close:"+pid+":"+ts,
+        metadata:{action:isRef?"referral":"dispose",outcome,bed_no:bedNo||null,department:isRef?(dept||null):null,reason:reason||null}
+      });
+    }catch(ne){ evFail(pid,"Observation notification",ne); }
     closePanel();ui.obsRefer=null;
     toast(outcome==="referred"?"Referred"+(dept?" to "+dept:""):"Disposed","ok");save();go("observe");
   }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
