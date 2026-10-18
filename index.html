@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.81 obs-admit-form -->
+<!-- WARD SYNC RELEASE: R1.3.82 ui-tidy -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -304,7 +304,7 @@ a{color:var(--teal2);text-decoration:none}
 .chart td{padding:8px 4px;border-bottom:1px solid var(--line);vertical-align:top}
 .stopped{opacity:.45;text-decoration:line-through}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
-.act-log{min-width:0;max-width:100%;overflow-x:hidden}
+.act-log{min-width:0;max-width:100%;overflow:visible} /* R1.3.82: overflow-x:hidden clipped card shadows into a sharp band */
 .act-log .card .row{align-items:center;gap:8px}
 .act-log .card .sm,.act-log .card .tiny{text-align:left}
 .act-log h2{letter-spacing:-.02em}
@@ -1568,6 +1568,9 @@ html[data-theme="light"] .tag-jail { background: #fef9c3; color: #854d0e; }
   font-variant-numeric: tabular-nums;
 }
 
+/* R1.3.82 ui-tidy: blue ward section headers on Patients page */
+.plist-block .sec-sticky{color:#1d4ed8}
+html[data-theme="dark"] .plist-block .sec-sticky,html[data-theme="night"] .plist-block .sec-sticky,html[data-theme="ot"] .plist-block .sec-sticky{color:#93c5fd}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -2030,7 +2033,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.81";
+const APP_VERSION="R1.3.82";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -5184,7 +5187,7 @@ function dutyCardBody(){
       : `<div class="duty-actions"><button class="btn block" onclick="signDuty()">Sign in for ${esc(shiftLabel(sh))}</button></div>`)
     : "";
   const note=canWrite()
-    ? `<p class="tiny" style="margin-top:6px">${beds} beds · login is not duty</p>`
+    ? `<p class="tiny" style="margin-top:6px">${beds} beds</p>`
     : `<p class="tiny" style="margin-top:6px">${esc(shiftLabel(sh))} · ${beds} beds</p>`;
   return `${list}
     ${note}

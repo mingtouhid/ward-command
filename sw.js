@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.81-obs-admit-form";
+const VERSION = "ward-sync-pwa-r1.3.82-ui-tidy";
 const PRECACHE = [
   "./",
   "./index.html",
