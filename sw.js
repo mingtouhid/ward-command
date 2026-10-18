@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.84-obs-notify";
+const VERSION = "ward-sync-pwa-r1.3.85-accent-sound";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -35,12 +35,17 @@ self.addEventListener("push", (event) => {
   try { data = event.data ? event.data.json() : {}; }
   catch (e) { data = { body: event.data ? event.data.text() : "New Ward Command notification." }; }
   const title = data.title || "Ward Command";
+  const inner = data.data || {};
+  const priority = String(data.priority || inner.priority || "normal").toLowerCase();
+  const providedTag = data.tag || data.dedupe_key || inner.dedupe_key || data.event_id || inner.notification_id;
+  const tag = providedTag ? String(providedTag) : ("wc-" + Date.now());
   const options = {
     body: data.body || "You have a new ward notification.",
     icon: data.icon || "./icons/icon-notif-192.png",
     badge: data.badge || "./icons/badge-96.png",
-    tag: data.tag || "ward-command",
-    renotify: !!data.renotify,
+    tag,
+    renotify: providedTag ? true : !!data.renotify,
+    vibrate: priority === "high" ? [200, 100, 200] : [120],
     requireInteraction: !!data.requireInteraction,
     data: { url: data.url || "/#/home", ...(data.data || {}) }
   };

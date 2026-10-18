@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.84 obs-notify -->
+<!-- WARD SYNC RELEASE: R1.3.85 accent-sound -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -12,6 +12,7 @@
   try{t=localStorage.getItem("ward-command-theme")||"light"}catch(e){}
   document.documentElement.setAttribute("data-theme",t);
   document.documentElement.style.colorScheme=t;
+  try{var a=localStorage.getItem("ward-command-accent-v1");if(a&&a!=="teal"&&"blue purple rose amber green".split(" ").indexOf(a)>=0)document.documentElement.setAttribute("data-accent",a)}catch(e){}
 })();
 
 /* V85.5_CRITICAL_STATUS_RETENTION */
@@ -1571,6 +1572,34 @@ html[data-theme="light"] .tag-jail { background: #fef9c3; color: #854d0e; }
 /* R1.3.82 ui-tidy: blue ward section headers on Patients page */
 .plist-block .sec-sticky{color:#1d4ed8}
 html[data-theme="dark"] .plist-block .sec-sticky,html[data-theme="night"] .plist-block .sec-sticky,html[data-theme="ot"] .plist-block .sec-sticky{color:#93c5fd}
+
+/* R1.3.85 ACCENT COLOURS: only active when html[data-accent] is set (teal = no attribute = original look) */
+html[data-accent="blue"]{--teal:#1d4ed8;--teal2:#1e3a8a;--btn-ink:#ffffff;--accent:#1d4ed8;--pill-full:#dbeafe;--pill-full-line:#bfdbfe;--pill-full-ink:#1e3a8a;--nav-on:#dbeafe;--acc-nav-ink:#172554;--acc-tint:#dbeafe;--acc-hi:#bfdbfe}
+html[data-accent="blue"][data-theme="dark"],html[data-accent="blue"][data-theme="night"],html[data-accent="blue"][data-theme="ot"]{--teal:#60a5fa;--teal2:#93c5fd;--btn-ink:#0b1a33;--accent:#60a5fa;--pill-full:rgba(96,165,250,.16);--pill-full-line:#1e3a8a;--pill-full-ink:#93c5fd;--nav-on:rgba(96,165,250,.18);--acc-nav-ink:#eff6ff;--acc-tint:rgba(96,165,250,.18);--acc-hi:#93c5fd}
+html[data-accent="purple"]{--teal:#7e22ce;--teal2:#581c87;--btn-ink:#ffffff;--accent:#7e22ce;--pill-full:#f3e8ff;--pill-full-line:#e9d5ff;--pill-full-ink:#581c87;--nav-on:#f3e8ff;--acc-nav-ink:#3b0764;--acc-tint:#f3e8ff;--acc-hi:#e9d5ff}
+html[data-accent="purple"][data-theme="dark"],html[data-accent="purple"][data-theme="night"],html[data-accent="purple"][data-theme="ot"]{--teal:#c084fc;--teal2:#d8b4fe;--btn-ink:#1e0a33;--accent:#c084fc;--pill-full:rgba(192,132,252,.16);--pill-full-line:#6b21a8;--pill-full-ink:#d8b4fe;--nav-on:rgba(192,132,252,.18);--acc-nav-ink:#faf5ff;--acc-tint:rgba(192,132,252,.18);--acc-hi:#d8b4fe}
+html[data-accent="rose"]{--teal:#be123c;--teal2:#881337;--btn-ink:#ffffff;--accent:#be123c;--pill-full:#ffe4e6;--pill-full-line:#fecdd3;--pill-full-ink:#881337;--nav-on:#ffe4e6;--acc-nav-ink:#4c0519;--acc-tint:#ffe4e6;--acc-hi:#fecdd3}
+html[data-accent="rose"][data-theme="dark"],html[data-accent="rose"][data-theme="night"],html[data-accent="rose"][data-theme="ot"]{--teal:#fb7185;--teal2:#fda4af;--btn-ink:#2a0610;--accent:#fb7185;--pill-full:rgba(251,113,133,.16);--pill-full-line:#9f1239;--pill-full-ink:#fda4af;--nav-on:rgba(251,113,133,.18);--acc-nav-ink:#fff1f2;--acc-tint:rgba(251,113,133,.18);--acc-hi:#fda4af}
+html[data-accent="amber"]{--teal:#d97706;--teal2:#92400e;--btn-ink:#1c1917;--accent:#d97706;--pill-full:#fef3c7;--pill-full-line:#fde68a;--pill-full-ink:#92400e;--nav-on:#fef3c7;--acc-nav-ink:#451a03;--acc-tint:#fef3c7;--acc-hi:#fde68a}
+html[data-accent="amber"][data-theme="dark"],html[data-accent="amber"][data-theme="night"],html[data-accent="amber"][data-theme="ot"]{--teal:#fbbf24;--teal2:#fcd34d;--btn-ink:#1c1300;--accent:#fbbf24;--pill-full:rgba(251,191,36,.16);--pill-full-line:#92400e;--pill-full-ink:#fcd34d;--nav-on:rgba(251,191,36,.18);--acc-nav-ink:#fffbeb;--acc-tint:rgba(251,191,36,.18);--acc-hi:#fcd34d}
+html[data-accent="green"]{--teal:#15803d;--teal2:#14532d;--btn-ink:#ffffff;--accent:#15803d;--pill-full:#dcfce7;--pill-full-line:#bbf7d0;--pill-full-ink:#14532d;--nav-on:#dcfce7;--acc-nav-ink:#052e16;--acc-tint:#dcfce7;--acc-hi:#bbf7d0}
+html[data-accent="green"][data-theme="dark"],html[data-accent="green"][data-theme="night"],html[data-accent="green"][data-theme="ot"]{--teal:#4ade80;--teal2:#86efac;--btn-ink:#052e16;--accent:#4ade80;--pill-full:rgba(74,222,128,.16);--pill-full-line:#166534;--pill-full-ink:#86efac;--nav-on:rgba(74,222,128,.18);--acc-nav-ink:#f0fdf4;--acc-tint:rgba(74,222,128,.18);--acc-hi:#86efac}
+html[data-accent] .nav button.on,html[data-accent][data-theme] .nav button.on{color:var(--acc-nav-ink);background:var(--nav-on)}
+html[data-accent] .nav button.on .ico svg{stroke:var(--acc-nav-ink)}
+html[data-accent] .fab{background:linear-gradient(180deg,var(--acc-hi),var(--teal));color:var(--btn-ink);box-shadow:0 10px 24px color-mix(in srgb,var(--teal) 35%,transparent)}
+html[data-accent][data-theme] .bed-pick .pill.full,html[data-accent][data-theme] .bdft-panel .pill.full{background:color-mix(in srgb,var(--teal) 20%,var(--panel));border-color:var(--teal);color:var(--ink)}
+html[data-accent][data-theme] .bed-pick .pill.full small,html[data-accent][data-theme] .bdft-panel .pill.full small{color:var(--teal2)}
+html[data-accent][data-theme="light"] .about-kicker{color:var(--teal2)}
+html[data-accent] .rec-dot{background:var(--teal);box-shadow:0 0 0 4px color-mix(in srgb,var(--teal) 14%,transparent)}
+html[data-accent] :focus-visible{outline-color:var(--teal)}
+html[data-accent] input:focus,html[data-accent] select:focus,html[data-accent] textarea:focus{border-color:var(--teal)}
+.accent-row{display:flex;flex-wrap:nowrap;justify-content:space-between;gap:4px;margin-top:10px;padding:0 5px}
+.accent-sw{width:clamp(34px,11vw,44px);height:auto;aspect-ratio:1;flex:none;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.accent-sw.on{outline:3px solid var(--ink);outline-offset:2px;border-color:transparent}
+.accent-sw svg{width:48%;height:48%}
+.accent-cap{font-size:10px;text-align:center;color:var(--muted);margin-top:4px;font-weight:700}
+.accent-cell{display:flex;flex-direction:column;align-items:center;min-width:0;flex:0 1 auto;padding:5px 0}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -1609,6 +1638,13 @@ const TREATMENT_MODES=[["conservative","Conservative"],["ect","ECT"],["conservat
 function optList(rows,sel){return rows.map(([id,lb])=>`<option value="${id}" ${sel===id?"selected":""}>${lb}</option>`).join("")}
 function labelOf(rows,id){const h=(rows||[]).find(r=>String(r[0])===String(id));if(h)return h[1];try{const p=typeof patient==="function"?patient(id):null;if(p&&p.name){const bed=typeof bedOf==="function"?bedOf(p.id):"";const pref=bed&&bed!=="—"?bed+" · ":"";return pref+p.name+(p.status==="observation"?" (OBS)":"")}}catch(e){}return id||"—"}
 
+const ACCENT_KEY="ward-command-accent-v1";
+const ACCENTS=[["teal","Teal"],["blue","Blue"],["purple","Purple"],["rose","Rose"],["amber","Amber"],["green","Green"]];
+const ACCENT_SW={"teal": {"light": "#0f766e", "dark": "#34d399", "ink": "#ffffff", "dink": "#022c22"}, "blue": {"light": "#1d4ed8", "dark": "#60a5fa", "ink": "#ffffff", "dink": "#0b1a33"}, "purple": {"light": "#7e22ce", "dark": "#c084fc", "ink": "#ffffff", "dink": "#1e0a33"}, "rose": {"light": "#be123c", "dark": "#fb7185", "ink": "#ffffff", "dink": "#2a0610"}, "amber": {"light": "#d97706", "dark": "#fbbf24", "ink": "#1c1917", "dink": "#1c1300"}, "green": {"light": "#15803d", "dark": "#4ade80", "ink": "#ffffff", "dink": "#052e16"}};
+function currentAccent(){try{const a=localStorage.getItem(ACCENT_KEY)||"teal";return ACCENTS.some(x=>x[0]===a)?a:"teal"}catch(e){return "teal"}}
+function applyAccent(a){const v=a||currentAccent();if(v==="teal")document.documentElement.removeAttribute("data-accent");else document.documentElement.setAttribute("data-accent",v)}
+function setAccent(a){const v=ACCENTS.some(x=>x[0]===a)?a:"teal";try{localStorage.setItem(ACCENT_KEY,v)}catch(e){}applyAccent(v);render()}
+function accentSwatches(theme){const dark=theme!=="light";const cur=currentAccent();return `<div class="accent-row">${ACCENTS.map(([id,lb])=>{const c=ACCENT_SW[id];const bg=dark?c.dark:c.light;const ink=dark?c.dink:c.ink;return `<div class="accent-cell"><button class="accent-sw ${cur===id?"on":""}" style="background:${bg}" aria-label="${lb} accent" aria-pressed="${cur===id}" onclick="setAccent('${id}')">${cur===id?`<svg viewBox="0 0 24 24" fill="none" stroke="${ink}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`:""}</button><div class="accent-cap">${lb}</div></div>`}).join("")}</div>`}
 const DENSITY_KEY="ward-command-density-v1";
 function currentTheme(){
   try{
@@ -1653,22 +1689,31 @@ function saveFeedbackPrefs(p){
   return next;
 }
 const Feedback={
-  audio:null, audioUnlocked:false,
+  audio:null, audioUnlocked:false, _tapTimer:null, _lastTone:0, _errLogged:{},
   prefs(){return feedbackPrefs()},
   set(kind,on){const p=this.prefs();p[kind]=!!on;saveFeedbackPrefs(p);if(kind==="sound"&&on)this.unlockAudio();render()},
+  logOnce(kind,e){
+    if(this._errLogged[kind])return;this._errLogged[kind]=true;
+    try{if(typeof pushElog==="function")pushElog(kind+" feedback failed: "+(e&&e.message||e),"bad")}catch(x){}
+  },
+  ctx(){
+    const C=window.AudioContext||window.webkitAudioContext;
+    if(!C)return null;
+    if(!this.audio||this.audio.state==="closed")this.audio=new C();
+    return this.audio;
+  },
+  resume(){
+    const a=this.audio;
+    if(!a||a.state==="running"||a.state==="closed")return;
+    try{const r=a.resume();if(r&&r.catch)r.catch(e=>this.logOnce("audio",e))}catch(e){this.logOnce("audio",e)}
+  },
   unlockAudio(){
-    if(this.audioUnlocked)return;
-    try{
-      const C=window.AudioContext||window.webkitAudioContext;
-      if(!C)return;
-      this.audio=this.audio||new C();
-      if(this.audio.state==="suspended")this.audio.resume().catch(()=>{});
-      this.audioUnlocked=true;
-    }catch(e){}
+    try{if(!this.ctx())return;this.resume();this.audioUnlocked=true}catch(e){this.logOnce("audio",e)}
   },
   tone(type){
-    const p=this.prefs();
-    if(!p.sound)return;
+    if(!this.prefs().sound)return;
+    // a toast tone replaces a pending tap tone (no double tone)
+    if(type!=="tap"&&this._tapTimer){clearTimeout(this._tapTimer);this._tapTimer=null}
     this.unlockAudio();
     const a=this.audio;
     if(!a)return;
@@ -1684,23 +1729,36 @@ const Feedback={
       gain.gain.exponentialRampToValueAtTime(.0001,t+cfg.d);
       osc.connect(gain).connect(a.destination);
       osc.start(t);osc.stop(t+cfg.d+.02);
-    }catch(e){}
+      this._lastTone=Date.now();
+    }catch(e){this.logOnce("audio",e)}
   },
   vibrate(pattern){
     if(!this.prefs().haptic||!navigator.vibrate)return;
-    try{navigator.vibrate(pattern)}catch(e){}
+    try{navigator.vibrate(pattern)}catch(e){this.logOnce("vibrate",e)}
   },
   tap(button){
     if(!button)return;
     const cls=button.classList||{};
     if(cls.contains("danger")||cls.contains("warn"))this.vibrate([10,20,10]);
     else this.vibrate(8);
-    if(this.prefs().sound)this.tone("tap");
+    if(!this.prefs().sound)return;
+    this.unlockAudio(); // resume inside the user gesture
+    if(this._tapTimer)clearTimeout(this._tapTimer);
+    if(Date.now()-this._lastTone<150)return; // toast tone already played for this tap
+    this._tapTimer=setTimeout(()=>{this._tapTimer=null;this.tone("tap")},120);
   },
   success(){this.vibrate(12);this.tone("success")},
   error(){this.vibrate([12,25,12]);this.tone("error")}
 };
-applyTheme(currentTheme());
+function feedbackWake(){
+  if(document.visibilityState!=="visible")return;
+  if(!Feedback.audioUnlocked||!Feedback.prefs().sound)return;
+  if(Feedback.audio&&Feedback.audio.state==="closed"){Feedback.audio=null;Feedback.audioUnlocked=false;return} // next gesture recreates it
+  Feedback.resume();
+}
+document.addEventListener("visibilitychange",feedbackWake);
+window.addEventListener("pageshow",feedbackWake);
+applyTheme(currentTheme());applyAccent();
 applyDensity(currentDensity());
 
 function notifyPrefs(){
@@ -1735,7 +1793,6 @@ async function loadServerNotifyPrefs(){
     p.ect=data.ect!==false;
     p.clinical=data.clinical_alerts!==false;
     p.broadcasts=data.broadcasts!==false;
-    p.sound=data.alert_sound===true;
     saveNotifyPrefs(p);
     return p;
   }catch(e){return null}
@@ -1811,7 +1868,7 @@ const Notifications={
     const reg=await this.registration();
     const opts={body:"Notifications are working on this device.",icon:"./icons/icon-notif-192.png",badge:"./icons/badge-96.png",tag:"ward-command-test",data:{url:"./#/home"}};
     if(reg) await reg.showNotification("Ward Sync",opts); else new Notification("Ward Sync",opts);
-    if(notifyPrefs().sound)Feedback.tone("success");
+    Feedback.tone("success");
   },
   status(){
     const p=notifyPrefs();
@@ -2033,7 +2090,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.84";
+const APP_VERSION="R1.3.85";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -5990,7 +6047,6 @@ function notifySettingsHtml(){
         ${notifyToggle("Handovers","Handover posts",np.handovers,"handovers")}
         ${notifyToggle("ECT","ECT plans and sessions",np.ect,"ect")}
         ${notifyToggle("Broadcasts","Ward tannoy messages",np.broadcasts,"broadcasts")}
-        ${notifyToggle("Sound","Play a tone on test alerts",np.sound,"sound")}
       </div>
 `;
 }
@@ -6008,7 +6064,6 @@ async function toggleNotify(key){
   const p=notifyPrefs();
   p[key]=!p[key];
   saveNotifyPrefs(p); render();
-  if(key==='sound')return;
   try{await saveServerNotifyPrefs(p)}catch(e){
     p[key]=!p[key];saveNotifyPrefs(p);toast("Could not save notification preference","bad");render();
   }
@@ -6150,6 +6205,10 @@ function setupView(){
           <button class="btn ${theme==="light"?"":"ghost"}" onclick="setTheme('light')">Day</button>
           <button class="btn ${theme!=="light"?"":"ghost"}" onclick="setTheme('ot')">Night</button>
         </div>
+      </div>
+      <div class="card">
+        <p class="tiny">ACCENT COLOUR</p>
+        ${accentSwatches(theme)}
       </div>
       <div class="card">
         <p class="tiny">DENSITY</p>
