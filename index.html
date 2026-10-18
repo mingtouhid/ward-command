@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.85 accent-sound -->
+<!-- WARD SYNC RELEASE: R1.3.86 flat-tiles -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -12,7 +12,7 @@
   try{t=localStorage.getItem("ward-command-theme")||"light"}catch(e){}
   document.documentElement.setAttribute("data-theme",t);
   document.documentElement.style.colorScheme=t;
-  try{var a=localStorage.getItem("ward-command-accent-v1");if(a&&a!=="teal"&&"blue purple rose amber green".split(" ").indexOf(a)>=0)document.documentElement.setAttribute("data-accent",a)}catch(e){}
+  try{var a=localStorage.getItem("ward-command-accent-v1")||"blue";if(a!=="teal"&&"blue purple rose amber green".split(" ").indexOf(a)>=0)document.documentElement.setAttribute("data-accent",a)}catch(e){}
 })();
 
 /* V85.5_CRITICAL_STATUS_RETENTION */
@@ -1431,6 +1431,14 @@ html .home-stats > .stat.stat.glow-jail{--g:100,116,139}
 html .home-stats > .stat.stat.glow-opinion{--g:13,148,136}
 html .home-stats > .stat.stat.glow-mine{--g:22,163,74}
 @media (prefers-reduced-motion:reduce){html .home-stats > .stat.stat{transition:none}}
+/* R1.3.86 FLAT TILES: drop per-tile tinted gradient/border/glow; match standard cards */
+html:root body .home-stats > .stat.stat,html:root body .home-stats > .stat.stat:hover,html:root body .home-stats > .stat.stat:active{
+  background:var(--panel);background-image:none;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
+/* R1.3.86: tile counts black/white (not accent/--teal2) */
+html:root body .home-stats > .stat.stat b{color:#0f172a}
+html:root[data-theme="ot"] body .home-stats > .stat.stat b,
+html:root[data-theme="dark"] body .home-stats > .stat.stat b,
+html:root[data-theme="night"] body .home-stats > .stat.stat b{color:#fff}
 .filter-pill-row{margin:0 0 10px}
 .filter-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 10px 7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel2,var(--panel));color:var(--ink);font:inherit;font-size:12.5px;font-weight:650;cursor:pointer}
 .filter-pill:focus-visible{outline:2px solid var(--accent,#0d9488);outline-offset:2px}
@@ -1593,6 +1601,35 @@ html[data-accent][data-theme="light"] .about-kicker{color:var(--teal2)}
 html[data-accent] .rec-dot{background:var(--teal);box-shadow:0 0 0 4px color-mix(in srgb,var(--teal) 14%,transparent)}
 html[data-accent] :focus-visible{outline-color:var(--teal)}
 html[data-accent] input:focus,html[data-accent] select:focus,html[data-accent] textarea:focus{border-color:var(--teal)}
+/* R1.3.86 BACK BUTTON */
+button.back.back-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;margin:0 0 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);box-shadow:0 1px 2px rgba(15,23,42,.06),0 4px 12px rgba(15,23,42,.06);color:var(--teal);transition:transform .12s ease,background-color .12s ease}
+button.back.back-btn svg{display:block;width:20px;height:20px}
+button.back.back-btn:active{transform:scale(.94);background:color-mix(in srgb,var(--teal) 12%,var(--panel))}
+html[data-theme="ot"] button.back.back-btn{box-shadow:0 4px 12px rgba(0,0,0,.35)}
+.ect-page-head button.back.back-btn{margin:0 0 6px}
+/* /R1.3.86 BACK BUTTON */
+/* R1.3.86 HERO ACCENT: Day = near-white card (3.5% accent), Night = dark card (6% accent); faint glow; top-right shape 20% accent-400; observation badge solid accent fill with accent-950 text (all >= WCAG AA) */
+html:not([data-accent]):not([data-theme="ot"]){--hero:#f7fdfc;--hero-glow:#e3f8f6;--hero-shape:#cef4f0;--hero-badge:#99f6e4;--hero-badge-ink:#042f2e;--hero-badge-line:#7cf0dc;--hero-ink:#0f172a;--hero-muted:#475569;--hero-chip:#ebf1f1;--hero-chip-ink:#1e293b;--hero-chip-b:#0f172a}
+html:not([data-accent])[data-theme="ot"]{--hero:#081b17;--hero-glow:#092e28;--hero-shape:#0f4039;--hero-badge:#5eead4;--hero-badge-ink:#042f2e;--hero-badge-line:#7cf0dc;--hero-ink:#f1f5f9;--hero-muted:#b2e6e2;--hero-chip:#192b27;--hero-chip-ink:#e2e8f0;--hero-chip-b:#ffffff}
+html[data-accent="blue"]:not([data-theme="ot"]){--hero:#f8fbff;--hero-glow:#e9f2fe;--hero-shape:#daeafe;--hero-badge:#bfdbfe;--hero-badge-ink:#172554;--hero-badge-line:#a9d0fe;--hero-ink:#0f172a;--hero-muted:#475569;--hero-chip:#eceff4;--hero-chip-ink:#1e293b;--hero-chip-b:#0f172a}
+html[data-accent="blue"][data-theme="ot"]{--hero:#0a181c;--hero-glow:#102536;--hero-shape:#1b3448;--hero-badge:#93c5fd;--hero-badge-ink:#172554;--hero-badge-line:#a9d0fe;--hero-ink:#f1f5f9;--hero-muted:#c5d8f0;--hero-chip:#1b282c;--hero-chip-ink:#e2e8f0;--hero-chip-b:#ffffff}
+html[data-accent="purple"]:not([data-theme="ot"]){--hero:#fcf9ff;--hero-glow:#f6edfe;--hero-shape:#f0e2fe;--hero-badge:#e9d5ff;--hero-badge-ink:#3b0764;--hero-badge-line:#e0c4fe;--hero-ink:#0f172a;--hero-muted:#475569;--hero-chip:#f0eef4;--hero-chip-ink:#1e293b;--hero-chip-b:#0f172a}
+html[data-accent="purple"][data-theme="ot"]{--hero:#11151c;--hero-glow:#231d36;--hero-shape:#342b49;--hero-badge:#d8b4fe;--hero-badge-ink:#3b0764;--hero-badge-line:#e0c4fe;--hero-ink:#f1f5f9;--hero-muted:#dad5f0;--hero-chip:#21252c;--hero-chip-ink:#e2e8f0;--hero-chip-b:#ffffff}
+html[data-accent="rose"]:not([data-theme="ot"]){--hero:#fff8f9;--hero-glow:#feebee;--hero-shape:#fedde2;--hero-badge:#fecdd3;--hero-badge-ink:#4c0519;--hero-badge-line:#feb8c1;--hero-ink:#0f172a;--hero-muted:#475569;--hero-chip:#f3edef;--hero-chip-ink:#1e293b;--hero-chip-b:#0f172a}
+html[data-accent="rose"][data-theme="ot"]{--hero:#151413;--hero-glow:#30191c;--hero-shape:#43262a;--hero-badge:#fda4af;--hero-badge-ink:#4c0519;--hero-badge-line:#feb8c1;--hero-ink:#f1f5f9;--hero-muted:#e4d1da;--hero-chip:#262423;--hero-chip-ink:#e2e8f0;--hero-chip-b:#ffffff}
+html[data-accent="amber"]:not([data-theme="ot"]){--hero:#fffcf6;--hero-glow:#fef6e1;--hero-shape:#feefcc;--hero-badge:#fde68a;--hero-badge-ink:#451a03;--hero-badge-line:#fcdc6c;--hero-ink:#0f172a;--hero-muted:#475569;--hero-chip:#f3f0ec;--hero-chip-ink:#1e293b;--hero-chip-b:#0f172a}
+html[data-accent="amber"][data-theme="ot"]{--hero:#15190e;--hero-glow:#30290d;--hero-shape:#433b12;--hero-badge:#fcd34d;--hero-badge-ink:#451a03;--hero-badge-line:#fcdc6c;--hero-ink:#f1f5f9;--hero-muted:#e4deb6;--hero-chip:#262a1f;--hero-chip-ink:#e2e8f0;--hero-chip-b:#ffffff}
+html[data-accent="green"]:not([data-theme="ot"]){--hero:#f7fdf9;--hero-glow:#e6faed;--hero-shape:#d5f7e1;--hero-badge:#bbf7d0;--hero-badge-ink:#052e16;--hero-badge-line:#a0f3be;--hero-ink:#0f172a;--hero-muted:#475569;--hero-chip:#ecf1ef;--hero-chip-ink:#1e293b;--hero-chip-b:#0f172a}
+html[data-accent="green"][data-theme="ot"]{--hero:#091c13;--hero-glow:#0c301c;--hero-shape:#164329;--hero-badge:#86efac;--hero-badge-ink:#052e16;--hero-badge-line:#a0f3be;--hero-ink:#f1f5f9;--hero-muted:#c3e6d8;--hero-chip:#1a2c23;--hero-chip-ink:#e2e8f0;--hero-chip-b:#ffffff}
+.hero{background:radial-gradient(120% 80% at 100% 0%,var(--hero-glow),transparent 46%),var(--hero);color:var(--hero-ink)}
+html:not([data-theme="ot"]) .hero{border:1px solid var(--line)}
+.hero:after{background:var(--hero-shape);z-index:0}
+.hero>*{position:relative;z-index:1}
+.hero .hero-obs{position:absolute;z-index:3;background:var(--hero-badge);border-color:var(--hero-badge-line);color:var(--hero-badge-ink);box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.hero .hero-obs span{opacity:1}
+.hero .hero-today-stat{background:var(--hero-chip);border-color:color-mix(in srgb,var(--hero-chip-ink) 10%,transparent);color:var(--hero-chip-ink)}
+.hero .hero-today-stat b{color:var(--hero-chip-b)}
+/* /R1.3.86 HERO ACCENT */
 .accent-row{display:flex;flex-wrap:nowrap;justify-content:space-between;gap:4px;margin-top:10px;padding:0 5px}
 .accent-sw{width:clamp(34px,11vw,44px);height:auto;aspect-ratio:1;flex:none;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.12)}
 .accent-sw.on{outline:3px solid var(--ink);outline-offset:2px;border-color:transparent}
@@ -1638,12 +1675,14 @@ const TREATMENT_MODES=[["conservative","Conservative"],["ect","ECT"],["conservat
 function optList(rows,sel){return rows.map(([id,lb])=>`<option value="${id}" ${sel===id?"selected":""}>${lb}</option>`).join("")}
 function labelOf(rows,id){const h=(rows||[]).find(r=>String(r[0])===String(id));if(h)return h[1];try{const p=typeof patient==="function"?patient(id):null;if(p&&p.name){const bed=typeof bedOf==="function"?bedOf(p.id):"";const pref=bed&&bed!=="—"?bed+" · ":"";return pref+p.name+(p.status==="observation"?" (OBS)":"")}}catch(e){}return id||"—"}
 
+/* R1.3.86 BACK BUTTON: shared line-arrow icon */
+const BACK_ICON=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg>`;
 const ACCENT_KEY="ward-command-accent-v1";
 const ACCENTS=[["teal","Teal"],["blue","Blue"],["purple","Purple"],["rose","Rose"],["amber","Amber"],["green","Green"]];
 const ACCENT_SW={"teal": {"light": "#0f766e", "dark": "#34d399", "ink": "#ffffff", "dink": "#022c22"}, "blue": {"light": "#1d4ed8", "dark": "#60a5fa", "ink": "#ffffff", "dink": "#0b1a33"}, "purple": {"light": "#7e22ce", "dark": "#c084fc", "ink": "#ffffff", "dink": "#1e0a33"}, "rose": {"light": "#be123c", "dark": "#fb7185", "ink": "#ffffff", "dink": "#2a0610"}, "amber": {"light": "#d97706", "dark": "#fbbf24", "ink": "#1c1917", "dink": "#1c1300"}, "green": {"light": "#15803d", "dark": "#4ade80", "ink": "#ffffff", "dink": "#052e16"}};
-function currentAccent(){try{const a=localStorage.getItem(ACCENT_KEY)||"teal";return ACCENTS.some(x=>x[0]===a)?a:"teal"}catch(e){return "teal"}}
+function currentAccent(){try{const a=localStorage.getItem(ACCENT_KEY)||"blue";return ACCENTS.some(x=>x[0]===a)?a:"blue"}catch(e){return "blue"}} /* R1.3.86: blue is the default accent; teal = explicit choice (no attribute) */
 function applyAccent(a){const v=a||currentAccent();if(v==="teal")document.documentElement.removeAttribute("data-accent");else document.documentElement.setAttribute("data-accent",v)}
-function setAccent(a){const v=ACCENTS.some(x=>x[0]===a)?a:"teal";try{localStorage.setItem(ACCENT_KEY,v)}catch(e){}applyAccent(v);render()}
+function setAccent(a){const v=ACCENTS.some(x=>x[0]===a)?a:"blue";try{localStorage.setItem(ACCENT_KEY,v)}catch(e){}applyAccent(v);render()}
 function accentSwatches(theme){const dark=theme!=="light";const cur=currentAccent();return `<div class="accent-row">${ACCENTS.map(([id,lb])=>{const c=ACCENT_SW[id];const bg=dark?c.dark:c.light;const ink=dark?c.dink:c.ink;return `<div class="accent-cell"><button class="accent-sw ${cur===id?"on":""}" style="background:${bg}" aria-label="${lb} accent" aria-pressed="${cur===id}" onclick="setAccent('${id}')">${cur===id?`<svg viewBox="0 0 24 24" fill="none" stroke="${ink}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`:""}</button><div class="accent-cap">${lb}</div></div>`}).join("")}</div>`}
 const DENSITY_KEY="ward-command-density-v1";
 function currentTheme(){
@@ -2090,7 +2129,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.85";
+const APP_VERSION="R1.3.86";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3756,7 +3795,7 @@ function snapView(){
   const p=patient(route.id);if(!p)return `<div class="card">Not found.</div>`;
   const sn=S.snaps[p.id]||{};const b=bedObj(p.id);const f=flags(p);
   const meds=S.orders.filter(o=>o.pid===p.id).sort((a,c)=>(a.stop?1:0)-(c.stop?1:0)||a.drug.localeCompare(c.drug));
-  return `<button class="back" onclick="back()">← Back</button>
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <div class="snap-cols">
     <div class="card snap-identity">
       <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span>${ectPlan(p.id)?'<span class="badge r-high">ECT</span>':""}${isDelirium(p.id)?` <span class="${rcls("high")}">delirium</span>`:""}</span></div>
@@ -3942,7 +3981,7 @@ function ectSchedForm(){
 function ectPageHead(listN){
   return `<div class="ect-page-head">
     <div>
-      <button class="back" onclick="back()">← Back</button>
+      <button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
       <h2 class="page-title">ECT</h2>
       <p class="tiny" style="margin:4px 0 0">${listN?listN+" planned · ":""}${esc(ectDayNames())}</p>
     </div>
@@ -4116,7 +4155,7 @@ function observeView(){
       <button class="btn ghost block" style="margin-top:8px" onclick="ui.obsForm=false;render()">Cancel</button>
     </div>`;
   const formCard=ui.obsForm?form:`<button class="btn block" onclick="obsDraft();ui.obsForm=true;render()">Keep someone under observation</button>`;
-  return `<button class="back" onclick="back()">← Back</button>
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <h2 class="page-title">Under observation</h2>
     <p class="tiny" style="margin:-4px 0 8px">NOW UNDER OBSERVATION · ${open.length}</p>
     ${list}
@@ -4449,7 +4488,7 @@ function censusView(){
     const p=pid?patient(pid):null;
     const treat=d.treat||["conservative"];
     const form=!!(p&&ui.disForm);
-    return `<button class="back" onclick="back()">← Back</button>
+    return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
       <h2 class="page-title">Discharge</h2>${seg}
       <div class="card">
         <label class="field"><span>Patient</span>
@@ -4479,7 +4518,7 @@ function censusView(){
     const sec=(S.sections.find(s=>s.id===b.sectionId)||{}).name||"";
     return (b.no+" "+sec).toLowerCase().includes(bq);
   });
-  return `<button class="back" onclick="back()">← Back</button>
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <h2 class="page-title">Admit</h2>${seg}
     <div class="card">
       <label class="field"><span>Hospital no. *</span><input id="ahosp" required value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off"/></label>
@@ -5417,7 +5456,7 @@ function usersView(){
         <button class="btn sm" onclick="openAddUser('${role}')">+ ${btn}</button></div>
       ${list.length?list.map(row).join(""):`<p class="tiny users-empty">None yet</p>`}
     </section>`;
-  return `<button class="back" onclick="back()">← Back</button>
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <h2 class="page-title">Users</h2>
     <p class="tiny" style="margin:0 0 10px">Residents write · consultants view</p>
     ${sec("Consultants",cons,"consultant","Add consultant")}
@@ -5580,7 +5619,7 @@ function tasksView(){
   const open=(S.tasks||[]).filter(t=>t.status!=="done").length;
   const done=(S.tasks||[]).filter(t=>t.status==="done").length;
   const my=(S.tasks||[]).filter(t=>String(t.to||"")===String(S.userId||"")&&t.status!=="done").length;
-  return `<button class="back" onclick="back()">← Back</button>
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <div class="row" style="margin-bottom:8px"><h2>Task board</h2><span class="tiny">${open} open · ${done} done</span></div>
     <div class="task-board-summary">
       <div><b>${open}</b><span>Open</span></div>
@@ -5611,7 +5650,7 @@ function tasksView(){
     }).join(""):`<div class="card">No tasks match this view.</div>`}`;
 }
 function aboutView(){
-  return `<button class="back" onclick="back()">← Back</button>
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <div class="about-stage">
       <div class="about-card">
         <p class="about-kicker">System</p>
@@ -5760,7 +5799,7 @@ function broadcastView(){
       <div class="row">${seen}${canDel?`<button class="btn ghost sm" onclick="deleteBroadcast('${m.id}')">Delete</button>`:""}</div>
     </div>`;
   }).join(""):`<p class="tiny" style="text-align:center;margin:18px 0">No broadcasts this shift.</p>`;
-  return `<button class="back" onclick="back()">\u2190 Back</button>
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <h2 class="page-title">Broadcast</h2>
     <div class="bcast-compose">
       <div class="seg bcast-aud">${seg("residents","Residents")}${seg("faculty","Faculty")}${seg("everyone","Everyone")}</div>
@@ -6172,7 +6211,7 @@ function setupView(){
   const cfg=canCfg(user().role);
   const theme=currentTheme();
   const tab=ui.setupTab||"theme";
-  const back=`<button class="back" onclick="back()">← Back</button>`;
+  const back=`<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>`;
   if(tab==="notify"){
     const np=notifyPrefs();
     const perm=("Notification" in window)?Notification.permission:"unsupported";
@@ -6233,7 +6272,7 @@ function setupView(){
   return connectionView();
 }
 function connectionView(){
-  const back=`<button class="back" onclick="back()">← Back</button>`;
+  const back=`<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>`;
   const diag=(ui.diag||[]).map(x=>`<p class="tiny">${x.ok?"●":"○"} ${esc(x.msg)}</p>`).join("")||`<p class="tiny"></p>`;
   const elog=loadElog();
   const c=outboxCounts();
@@ -6296,7 +6335,7 @@ function wardHubPage(){
   const tile=(id,k,t,m)=>`<button type="button" class="setup-tile" onclick="go('ward','${id}')">
       <span class="setup-k">${k}</span><b>${esc(t)}</b><span class="tiny">${esc(m)}</span>
     </button>`;
-  return `<button class="back" onclick="back()">← Back</button>
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <div class="row" style="margin-bottom:10px"><h2 class="page-title" style="margin:0">Ward setup</h2><span class="tiny">${nBeds} beds</span></div>
     <div class="setup-hub">
       ${tile("unit","01","Unit",S.unit.name||"Name the ward")}
@@ -6305,7 +6344,7 @@ function wardHubPage(){
     </div>`;
 }
 function wardPageShell(title,inner){
-  return `<button class="back" onclick="go('ward')">← Ward setup</button>
+  return `<button class="back back-btn" type="button" aria-label="Back to Ward setup" title="Back to Ward setup" onclick="go(\'ward\')">${BACK_ICON}</button>
     <h2 class="page-title">${title}</h2>
     <div class="setup-page">${inner}</div>`;
 }
@@ -6444,7 +6483,7 @@ function activityView(){
   });
   items.sort((a,b)=>b.t-a.t);
   const chips=[["all","All"],["fail","Failed"],["pgt","PGT"],["restrain","Restrain"],["med","Meds"],["ect","ECT"],["handover","Handover"],["task","Tasks"]];
-  return `<div class="act-log"><button class="back" onclick="back()">← Back</button>
+  return `<div class="act-log"><button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <div class="row" style="margin-bottom:8px"><h2 style="margin:0;min-width:0">Activity log</h2><span class="tiny">${items.length}</span></div>
     <input id="aq" placeholder="Search bed, name, action, resident" value="${esc(ui.aq||"")}" oninput="ui.aq=this.value;render({fromInput:1})" style="margin-bottom:8px" enterkeyhint="search" autocomplete="off"/>
     <div class="chips">${chips.map(([k,l])=>`<button class="chip ${kind===k?"on":""}" onclick="ui.akind='${k}';render()">${l}</button>`).join("")}</div>
@@ -6743,7 +6782,7 @@ function recordView(){
   const p=patient(route.id); if(!p) return `<div class="card">Not found.</div>`;
   const b=bedObj(p.id);
   const items=patientRecordItems(p.id);
-  return `<button class="back" onclick="back()">← Back</button>
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <div class="record-head">
       <div>
         <h2 class="page-title">Clinical record</h2>
@@ -7239,7 +7278,7 @@ function moDayLabel(iso){
   return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 }
 function myOrdersView(){
-  const back=`<button class="back" onclick="back()">← Back</button>`;
+  const back=`<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>`;
   if(!isConsultant()) return `${back}<h2 class="page-title">My orders</h2><div class="card"><p class="sm">Only consultants have an orders list.</p></div>`;
   if(!ui._myOrdHydrated){ui._myOrdHydrated=1;ui.myOrdersLoading=true;loadMyOrders().then(()=>render()).catch(()=>render())}
   const rows=Array.isArray(ui.myOrders)?ui.myOrders:null;
