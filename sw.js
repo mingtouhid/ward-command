@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.88-duty-area";
+const VERSION = "ward-sync-pwa-r1.3.90-patient-edit";
 const PRECACHE = [
   "./",
   "./index.html",
