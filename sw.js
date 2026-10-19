@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.87-about-accent";
+const VERSION = "ward-sync-pwa-r1.3.88-duty-area";
 const PRECACHE = [
   "./",
   "./index.html",

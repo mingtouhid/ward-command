@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.87 about-accent -->
+<!-- WARD SYNC RELEASE: R1.3.88 duty-area -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1654,6 +1654,25 @@ html[data-theme="light"] .about-card .about-tag,html[data-theme="light"] .about-
 *,html,body{scrollbar-width:none;-ms-overflow-style:none}
 *::-webkit-scrollbar,html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0;background:transparent}
 /* /R1.3.87 HIDE SCROLLBARS */
+/* R1.3.88 DUTY AREA */
+.area-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.area-box{padding-top:20px}
+.area-opt{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px 14px;border-radius:16px;background:var(--panel);border:1.5px solid var(--line);color:var(--ink);text-align:left;box-shadow:var(--shadow);font:inherit}
+.area-opt b{font-size:22px;font-weight:800;letter-spacing:.02em;color:var(--teal)}
+.area-opt span{font-size:12px;color:var(--muted);line-height:1.3}
+.area-opt:active{transform:scale(.97);border-color:var(--teal)}
+.area-opt.cur,.area-opt:disabled{opacity:.55}
+.duty-grp{margin-top:10px}
+.duty-grp+.duty-grp{padding-top:10px;border-top:1px solid var(--line)}
+.duty-grp-h{display:flex;align-items:center;justify-content:space-between;margin:0}
+.duty-badge{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px}
+.duty-badge.ipd{background:#dbeafe;color:#1e3a8a}
+.duty-badge.opd{background:#fef3c7;color:#78350f}
+html[data-theme="ot"] .duty-badge.ipd{background:rgba(96,165,250,.18);color:#bfdbfe}
+html[data-theme="ot"] .duty-badge.opd{background:rgba(251,191,36,.16);color:#fde68a}
+.duty-other{margin:10px 0 0;color:var(--muted)}
+.duty-switch{display:inline-flex;align-items:center;margin-left:6px;padding:3px 9px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font:inherit;font-size:11.5px;font-weight:700;line-height:1.3;color:var(--teal);box-shadow:0 1px 2px rgba(15,23,42,.06);vertical-align:middle}.duty-switch:active{transform:scale(.95);border-color:var(--teal)}
+/* /R1.3.88 DUTY AREA */
 .accent-row{display:flex;flex-wrap:nowrap;justify-content:space-between;gap:4px;margin-top:10px;padding:0 5px}
 .accent-sw{width:clamp(34px,11vw,44px);height:auto;aspect-ratio:1;flex:none;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.12)}
 .accent-sw.on{outline:3px solid var(--ink);outline-offset:2px;border-color:transparent}
@@ -2153,7 +2172,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.87";
+const APP_VERSION="R1.3.88";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2845,7 +2864,7 @@ async function doCloudPull(opts){
   ensureUnits();
   S.sections=sections.map(r=>({id:r.id,name:sectionLabel(r.name),active:r.active!==false}));
   S.residents=residents.filter(r=>r.active!==false).map(r=>({id:r.id,username:r.username,displayName:r.display_name,role:r.role,active:r.active!==false}));
-  S.dutyList=(wardState.duty||[]).map(d=>({userId:d.resident_id,shift:d.shift,at:d.started_at,name:d.display_name||d.username||rname(d.resident_id)}));
+  S.dutyList=(wardState.duty||[]).map(d=>({userId:d.resident_id,shift:d.shift,at:d.started_at,area:d.duty_area||null,name:d.display_name||d.username||rname(d.resident_id)}));
   S.consultants=(consultants||[]).filter(r=>r.active!==false).map(r=>({id:r.id,name:r.name,designation:r.designation||""}));
   const occupancyHold=unresolved.some(o=>["patients","beds","patient_bed_assignments"].includes(o.table));
   if(!occupancyHold){
@@ -5322,9 +5341,18 @@ function dutyCardBody(){
   const sh=currentShift();
   const beds=S.beds.filter(b=>b.active).length;
   const open=dutyOpen();
-  const list=open.length
-    ? open.map(x=>`<p class="sm" style="margin:6px 0 0">${esc(x.name||rname(x.userId))}${String(x.userId)===String(S.userId)?" · you":""} <span class="tiny">· ${esc(dutyShiftLabel(x))}</span></p>`).join("")
-    : `<p class="sm" style="margin-top:8px">No one signed in for ${esc(shiftLabel(sh))}</p>`;
+  // R1.3.88 DUTY AREA: morning list grouped into IPD / OPD (display only)
+  const row=x=>{const me=String(x.userId)===String(S.userId);
+    const sw=(me&&sh==="morning"&&canWrite()&&x.area)?` <button type="button" class="duty-switch" aria-label="Switch duty area to ${x.area==="ipd"?"OPD":"IPD"}" onclick="switchDutyArea()">Switch to ${x.area==="ipd"?"OPD":"IPD"}</button>`:"";
+    return `<p class="sm" style="margin:6px 0 0">${esc(x.name||rname(x.userId))}${me?" · you":""} <span class="tiny">· ${esc(dutyShiftLabel(x))}</span>${sw}</p>`};
+  let list;
+  if(!open.length) list=`<p class="sm" style="margin-top:8px">No one signed in for ${esc(shiftLabel(sh))}</p>`;
+  else if(sh==="morning"){
+    const g=a=>open.filter(x=>x.area===a), other=open.filter(x=>x.area!=="ipd"&&x.area!=="opd");
+    const grp=(lb,arr,cls)=>`<div class="duty-grp ${cls}"><p class="duty-grp-h"><span class="duty-badge ${cls}">${lb}</span><span class="tiny">${arr.length}</span></p>${arr.length?arr.map(row).join(""):`<p class="tiny" style="margin:4px 0 0">No one yet</p>`}</div>`;
+    list=grp("IPD · Ward",g("ipd"),"ipd")+grp("OPD",g("opd"),"opd")+
+      (other.length?`<p class="tiny duty-other">Not specified: ${other.map(x=>esc(x.name||rname(x.userId))+(String(x.userId)===String(S.userId)?" (you)":"")).join(", ")}</p>`:"");
+  } else list=open.map(row).join("");
   const action=canWrite()
     ? (d
       ? `<div class="duty-actions"><button class="btn ghost block" onclick="endDuty()">End shift</button></div>`
@@ -5340,22 +5368,65 @@ function dutyCardBody(){
 function signDuty(){
   if(!needWrite())return;
   const sh=currentShift();
+  if(sh==="morning"){ // R1.3.88: step 1 = mandatory IPD/OPD choice
+    ui.confirm={fn:"dutyArea",areaPick:true,title:"Choose morning duty area"};
+    render();return;
+  }
   ui.confirm={fn:"signDuty",title:"Sign in for shift",ok:"Sign in",
     body:"Sign in as on duty for "+shiftLabel(sh)+" ("+shiftHours(sh)+")? This does not block anyone who stays off duty."};
   render();
 }
-async function signDutyNow(){
+function dutyAreaLabel(a){return a==="opd"?"OPD":a==="ipd"?"IPD (Ward)":""}
+function pickDutyArea(a){
+  const c=ui.confirm; if(!c||(a!=="ipd"&&a!=="opd"))return;
+  if(c.fn==="switchArea"){ui.confirm=null;render();return setDutyAreaNow(a)}
+  const sh=currentShift();
+  ui.confirm={fn:"signDuty",area:a,title:"Sign in for shift",ok:"Sign in",danger:false,
+    body:"Sign in as on duty for "+shiftLabel(sh)+" ("+shiftHours(sh)+") in "+dutyAreaLabel(a)+"? This does not block anyone who stays off duty."};
+  render();
+}
+function switchDutyArea(){
+  if(!needWrite())return;
+  const d=dutyRecord(); if(!d||currentShift()!=="morning")return;
+  ui.confirm={fn:"switchArea",areaPick:true,current:d.area,title:"Switch duty area"};
+  render();
+}
+function rpcMissing(e){const m=String((e&&(e.message||e.details||e.hint))||"");return !!(e&&(e.code==="PGRST202"||e.code==="42883"))||/could not find the function/i.test(m)}
+async function setDutyAreaNow(a){
+  if(!sb||!sessionTok){toast("Sign in again.","bad");return}
+  setBusy(true,"Updating duty area…");
+  try{
+    const {data,error}=await sb.rpc("ward_set_duty_area",{p_session_token:sessionTok,p_area:a});
+    if(error){ if(rpcMissing(error)) throw new Error("Switching area needs a server update"); throw error }
+    if(data&&data.ok===false) throw new Error(data.error||"Could not update duty area");
+    const r=dutyRecord(); if(r) r.area=(data&&data.duty_area)||a;
+    ev(null,"Duty area · "+dutyAreaLabel(a),true);
+    toast("Now in "+dutyAreaLabel(a),"ok");
+    save();
+  }catch(e){toast(e.message||e,"bad")}
+  finally{setBusy(false);render()}
+}
+async function signDutyNow(area){
   if(!sb||!sessionTok){toast("Sign in again.","bad");return}
   const sh=currentShift();
+  const ar=sh==="morning"?(area||null):null;
+  if(sh==="morning"&&!ar){signDuty();return}
   setBusy(true,"Signing in for shift…");
   try{
-    const {data,error}=await sb.rpc("ward_sign_duty",{p_session_token:sessionTok,p_shift:sh});
+    let res=await sb.rpc("ward_sign_duty",ar?{p_session_token:sessionTok,p_shift:sh,p_area:ar}:{p_session_token:sessionTok,p_shift:sh});
+    let fellBack=false;
+    if(res.error&&ar&&rpcMissing(res.error)){ // server not migrated yet: use old 2-param RPC
+      res=await sb.rpc("ward_sign_duty",{p_session_token:sessionTok,p_shift:sh});fellBack=true;
+    }
+    const {data,error}=res;
     if(error) throw error;
     if(data&&data.ok===false) throw new Error(data.error||"Could not sign in for shift");
+    const area=fellBack?null:((data&&data.duty_area)||ar);
     S.dutyList=(S.dutyList||[]).filter(d=>String(d.userId)!==String(S.userId));
-    S.dutyList.push({userId:S.userId,shift:sh,at:(data&&data.started_at)||now(),name:(user()&&user().displayName)||rname(S.userId)});
-    ev(null,"On duty · "+shiftLabel(sh),true);
-    toast("On duty · "+shiftLabel(sh),"ok");
+    S.dutyList.push({userId:S.userId,shift:sh,at:(data&&data.started_at)||now(),area,name:(user()&&user().displayName)||rname(S.userId)});
+    const lbl="On duty · "+shiftLabel(sh)+(area?" · "+dutyAreaLabel(area):"");
+    ev(null,lbl,true);
+    toast(lbl,"ok");
     save();
   }catch(e){toast(e.message||e,"bad")}
   finally{setBusy(false);render()}
@@ -5555,6 +5626,10 @@ async function setUserRoleNow(username,role){
 function confirmOverlay(){
   const c=ui.confirm;
   if(!c)return "";
+  if(c.areaPick) return `<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box area-box" role="dialog" aria-modal="true" aria-label="${esc(c.title||"Choose duty area")}" style="border-radius:24px;max-width:360px">
+    <div class="area-pick">${[["ipd","IPD","Ward / inpatients","IPD (Ward)"],["opd","OPD","Outpatient department","OPD"]].map(([id,lb,sub,al])=>`<button type="button" class="area-opt ${c.current===id?"cur":""}" aria-label="${al}${c.current===id?" (current)":""}" ${c.current===id?"disabled":""} onclick="pickDutyArea('${id}')"><b>${lb}</b><span>${sub}${c.current===id?" · current":""}</span></button>`).join("")}</div>
+    <button class="btn ghost block" style="margin-top:12px" onclick="dismissOverlay()">Cancel</button>
+  </div></div>`;
   return `<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box" style="border-radius:24px;max-width:360px">
     <h2 class="page-title" style="margin:0 0 8px">${esc(c.title||"Confirm")}</h2>
     <p class="sm" style="margin:0 0 16px">${esc(c.body||"")}</p>
@@ -5585,7 +5660,7 @@ function confirmYes(){
   if(c.fn==="removeBed") return removeBedNow(c.id);
   if(c.fn==="clearBeds") return clearSectionBedsNow(c.secId);
   if(c.fn==="obsClose") return closeObservation(c.pid,c.outcome);
-  if(c.fn==="signDuty") return signDutyNow();
+  if(c.fn==="signDuty") return signDutyNow(c.area);
   if(c.fn==="endDuty") return endDutyNow();
   if(c.fn==="removeConsultant") return removeConsultantNow(c.id);
   if(c.fn==="toggleRestrain") return toggleRestrainNow(c.id);
