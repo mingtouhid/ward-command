@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.90 patient-edit -->
+<!-- WARD SYNC RELEASE: R1.3.91 obs-dispose-previous -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1738,6 +1738,8 @@ const VAPID_PUBLIC_KEY="BGmtZGSzxLS5F8o4zYYRPUM8dazr4KX2NAmgulve9PLWbp9FFYV1fwwe
 const THEME_KEY="ward-command-theme";
 const DISCHARGE_MODES=[["advice","On advice"],["request","On request"],["dama","DAMA"],["lama","LAMA"],["abscond","Abscond"],["transfer","Transfer"],["death","Death"]];
 const DISCHARGE_OUTCOMES=[["improved","Improved"],["partial","Partially improved"],["unchanged","Unchanged"],["worse","Worse"],["death","Death"]];
+const OBS_DISPOSE_MODES=[["advice","On advice"],["request","On request"],["lama","LAMA"]];
+const OBS_DISPOSE_OUTCOMES=[["improved","Improved"],["unchanged","Unchanged"]];
 const ADMIT_REASONS=[["dx_mgmt","Diagnosis & management"],["deaddiction","De-addiction therapy"],["opinion","Opinion"],["mh_cert","Mental health certificate"]];
 const TREATMENT_MODES=[["conservative","Conservative"],["ect","ECT"],["conservative_ect","Conservative + ECT"]];
 function optList(rows,sel){return rows.map(([id,lb])=>`<option value="${id}" ${sel===id?"selected":""}>${lb}</option>`).join("")}
@@ -4193,10 +4195,37 @@ function obsDraft(){
 function addObsMed(){obsDraft();ui.obs.meds=ui.obs.meds||[];ui.obs.meds.push({drug:"",dose:"",route:"PO",freq:"OD"});render()}
 function observeView(){
   const d=ui.obs=ui.obs||{meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]};
+  ui.obsTab=ui.obsTab||"now";
+  const tab=ui.obsTab;
   const empties=emptyBeds();
   const open=openObsStays();
   const meds=d.meds&&d.meds.length?d.meds:[{drug:"",dose:"",route:"PO",freq:"OD"}];
   d.meds=meds;
+  const seg=`<div class="seg">
+    <button class="${tab==="now"?"on":""}" onclick="ui.obsTab='now';render()">Now</button>
+    <button class="${tab==="prev"?"on":""}" onclick="ui.obsTab='prev';render()">Previous</button>
+  </div>`;
+  if(tab==="prev"){
+    const prev=(S.obsStays||[]).filter(s=>s.endedAt&&(s.outcome==="disposed"||s.outcome==="referred"))
+      .slice().sort((a,b)=>new Date(b.endedAt||0)-new Date(a.endedAt||0));
+    const list=prev.length?prev.map(stay=>{
+      const p=patient(stay.pid);
+      const b=(S.beds||[]).find(x=>x.id===stay.bedId);
+      if(!p) return "";
+      return `<div class="card">
+        <div class="row"><div class="bedno">${esc(b?b.no:"—")}</div></div>
+        <p class="tiny">${esc(p.hospitalNo||p.code||"—")}</p>
+        <b onclick="go('snap','${p.id}')">${esc(p.name)}</b>
+        <p class="tiny">${esc(p.address||"—")}</p>
+        <p class="tiny">${esc(p.diagnosis||"—")}</p>
+        <p class="tiny">Start ${fmt(stay.at)} · End ${fmt(stay.endedAt)}</p>
+      </div>`;
+    }).filter(Boolean).join(""):`<div class="card"><p class="sm">No previous observations.</p></div>`;
+    return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
+    <h2 class="page-title">Under observation</h2>
+    ${seg}
+    ${list}`;
+  }
   const list=open.length?open.map(p=>{
       const b=bedObj(p.id);
       return `<div class="card">
@@ -4232,6 +4261,7 @@ function observeView(){
   const formCard=ui.obsForm?form:`<button class="btn block" onclick="obsDraft();ui.obsForm=true;render()">Keep someone under observation</button>`;
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <h2 class="page-title">Under observation</h2>
+    ${seg}
     <p class="tiny" style="margin:-4px 0 8px">NOW UNDER OBSERVATION · ${open.length}</p>
     ${list}
     ${formCard}`;
@@ -4486,9 +4516,27 @@ function obsCloseAsk(pid,outcome){
     openPanel("obsRefer",{pid});
     return;
   }
-  ui.confirm={fn:"obsClose",pid,outcome,title:"Dispose observation",ok:"Dispose",
-    body:"Dispose "+p.name+" and free the bed? This is not a ward discharge of an admitted patient."};
-  render();
+  ui.obsDispose={pid,mode:"",outcome:""};
+  if(ui.fields){delete ui.fields.odmode;delete ui.fields.odout}
+  openPanel("obsDispose",{pid});
+}
+function obsDisposeForm(){
+  const pid=(ui.panel&&ui.panel.pid)||(ui.obsDispose&&ui.obsDispose.pid);
+  const p=patient(pid);if(!p)return "";
+  const d=ui.obsDispose=ui.obsDispose||{pid,mode:"",outcome:""};
+  return `<p class="tiny">Dispose ${esc(p.name)} and free the bed.</p>
+    <label class="field"><span>Mode of discharge</span>${picker("odmode",OBS_DISPOSE_MODES,d.mode||"","Mode of discharge")}</label>
+    <label class="field"><span>Outcome</span>${picker("odout",OBS_DISPOSE_OUTCOMES,d.outcome||"","Outcome")}</label>
+    <button class="btn block" onclick="submitObsDispose('${pid}')">Dispose</button>
+    <button class="btn ghost block" style="margin-top:8px" onclick="closePanel()">Cancel</button>`;
+}
+function submitObsDispose(pid){
+  const mode=(val("odmode")||"").trim().toLowerCase();
+  const outcome=(val("odout")||"").trim().toLowerCase();
+  ui.obsDispose=Object.assign(ui.obsDispose||{},{pid,mode,outcome});
+  if(!["advice","request","lama"].includes(mode)){toast("Choose the mode of discharge.","bad");return}
+  if(!["improved","unchanged"].includes(outcome)){toast("Choose the outcome.","bad");return}
+  closeObservation(pid,"disposed");
 }
 function obsReferForm(){
   const pid=(ui.panel&&ui.panel.pid)||(ui.obsRefer&&ui.obsRefer.pid);
@@ -4512,17 +4560,36 @@ async function closeObservation(pid,outcome){
   if(!needWrite())return;
   const p=patient(pid);if(!p||p.status!=="observation")return;
   const ref=outcome==="referred"?(val("orefto")||"").trim():"";
+  const dept=(ui.obsRefer&&ui.obsRefer.dept)||(val("orefdept")||"").trim()||ref;
+  const reason=(ui.obsRefer&&ui.obsRefer.reason)||(val("orefreason")||"").trim();
+  let dMode=null, dOut=null;
+  if(outcome==="disposed"){
+    dMode=((ui.obsDispose&&ui.obsDispose.mode)||(val("odmode")||"").trim()).toLowerCase();
+    dOut=((ui.obsDispose&&ui.obsDispose.outcome)||(val("odout")||"").trim()).toLowerCase();
+    if(!["advice","request","lama"].includes(dMode)){toast("Choose the mode of discharge.","bad");return}
+    if(!["improved","unchanged"].includes(dOut)){toast("Choose the outcome.","bad");return}
+  }
   if(workflowLocked("obs-close",pid))return;
   setBusy(true,"Closing observation\u2026");
   try{
-    const dept=(ui.obsRefer&&ui.obsRefer.dept)||(val("orefdept")||"").trim()||ref;
-    const reason=(ui.obsRefer&&ui.obsRefer.reason)||(val("orefreason")||"").trim();
-    const {data,error}=await sb.rpc("ward_close_observation",{
-      p_token:sessionTok,p_patient_id:pid,p_outcome:outcome,p_referral_to:outcome==="referred"?dept:null,p_reason:reason||null
-    });
+    const rpcArgs={
+      p_token:sessionTok,p_patient_id:pid,p_outcome:outcome,
+      p_referral_to:outcome==="referred"?dept:null,p_reason:reason||null
+    };
+    if(outcome==="disposed"){
+      rpcArgs.p_discharge_mode=dMode;
+      rpcArgs.p_discharge_outcome=dOut;
+    }
+    const {data,error}=await sb.rpc("ward_close_observation",rpcArgs);
     if(error) throw error;
     const bed=S.beds.find(b=>b.patientId===pid); const bedNo=bed?bed.no:""; if(bed) bed.patientId=null;
-    p.status="discharged";p.dischargedAt=now();p.dischargeMode=outcome==="referred"?"transfer":"advice";
+    p.status="discharged";p.dischargedAt=now();
+    if(outcome==="referred"){
+      p.dischargeMode="transfer";
+    }else{
+      p.dischargeMode=dMode;
+      p.dischargeOutcome=dOut;
+    }
     const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.outcome=outcome}
     ev(pid,"Observation ended \u00b7 "+outcome+(dept?" \u00b7 "+dept:""),true,"note");
     try{
@@ -4534,10 +4601,10 @@ async function closeObservation(pid,outcome){
         targetUrl:"./#/snap/"+encodeURIComponent(pid),
         recipientScope:"active_team",
         dedupeKey:"obs-close:"+pid+":"+ts,
-        metadata:{action:isRef?"referral":"dispose",outcome,bed_no:bedNo||null,department:isRef?(dept||null):null,reason:reason||null}
+        metadata:{action:isRef?"referral":"dispose",outcome,bed_no:bedNo||null,department:isRef?(dept||null):null,reason:reason||null,discharge_mode:dMode||null,discharge_outcome:dOut||null}
       });
     }catch(ne){ evFail(pid,"Observation notification",ne); }
-    closePanel();ui.obsRefer=null;
+    closePanel();ui.obsRefer=null;ui.obsDispose=null;
     toast(outcome==="referred"?"Referred"+(dept?" to "+dept:""):"Disposed","ok");save();go("observe");
   }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
   finally{workflowUnlock("obs-close",pid);setBusy(false)}
@@ -5227,6 +5294,7 @@ function livePanels(){
   if(p.kind==="task") html+=taskFormBody(p.id);
   if(p.kind==="obsAdmit") html+=panelBox("Admit from observation",obsAdmitForm());
   if(p.kind==="obsRefer") html+=panelBox("Refer from observation",obsReferForm());
+  if(p.kind==="obsDispose") html+=panelBox("Dispose observation",obsDisposeForm());
   return html;
 }
 function giveHandoverForm(defShift){
