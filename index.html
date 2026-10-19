@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.91 obs-dispose-previous (APP_VERSION + SW bump) -->
+<!-- WARD SYNC RELEASE: R1.3.92 obs-prev-detail -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -2199,7 +2199,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.91";
+const APP_VERSION="R1.3.92";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -4212,12 +4212,23 @@ function observeView(){
       const p=patient(stay.pid);
       const b=(S.beds||[]).find(x=>x.id===stay.bedId);
       if(!p) return "";
+      let detail="";
+      if(stay.outcome==="disposed"){
+        const mode=labelOf(DISCHARGE_MODES,p.dischargeMode)||p.dischargeMode||"";
+        const out=labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome)||p.dischargeOutcome||"";
+        detail="Disposed"+(mode?" · "+mode:"")+(out?" · "+out:"");
+      }else if(stay.outcome==="referred"){
+        const dept=(stay.referralTo||"").trim();
+        const reason=(stay.note||"").trim();
+        detail="Referred"+(dept?" to "+dept:"")+(reason?" · "+reason:"");
+      }
       return `<div class="card">
         <div class="row"><div class="bedno">${esc(b?b.no:"—")}</div></div>
         <p class="tiny">${esc(p.hospitalNo||p.code||"—")}</p>
         <b onclick="go('snap','${p.id}')">${esc(p.name)}</b>
         <p class="tiny">${esc(p.address||"—")}</p>
         <p class="tiny">${esc(p.diagnosis||"—")}</p>
+        ${detail?`<p class="tiny">${esc(detail)}</p>`:""}
         <p class="tiny">Start ${fmt(stay.at)} · End ${fmt(stay.endedAt)}</p>
       </div>`;
     }).filter(Boolean).join(""):`<div class="card"><p class="sm">No previous observations.</p></div>`;
