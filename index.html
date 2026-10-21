@@ -2200,7 +2200,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.93";
+const APP_VERSION="R1.3.94";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -6897,11 +6897,40 @@ function patientRecordItems(pid){
       return ts>=a-60000 && ts<=b+60000;
     });
   };
-  obsStays.forEach(s=>{
+  const assignsAll=(S.assignments||[]).filter(a=>String(a.patientId)===String(pid)).slice().sort((a,b)=>Date.parse(a.at||0)-Date.parse(b.at||0));
+  const bedNoById=id=>(((S.beds||[]).find(x=>x.id===id)||{}).no)||"";
+  const patientBits=()=>{
+    const bits=[];
+    if(p.hospitalNo) bits.push("Hospital no: "+p.hospitalNo);
+    if(p.diagnosis) bits.push("Diagnosis: "+p.diagnosis);
+    if(consultantLine(p)) bits.push("Consultant: "+consultantLine(p));
+    if(p.referredBy) bits.push("Source: "+p.referredBy);
+    if(p.reason) bits.push("Reason: "+p.reason);
+    if(p.address||p.phone) bits.push([p.address,p.phone].filter(Boolean).join(" · "));
+    return bits;
+  };
+  // R1.3.94: a patient who came in under observation gets the first (WARD) card as
+  // "Kept under observation on <obs bed>"; the separate duplicate obs card is dropped.
+  const firstStay=obsStays[0]||null;
+  const firstStayTs=firstStay?(Date.parse(firstStay.at||0)||0):0;
+  const obsFirst=!!firstStay && (p.status==="observation" || !admitTs || !firstStayTs || firstStayTs<=admitTs+5*60000);
+  obsStays.forEach((s,i)=>{
     const obsMeds=allMeds.filter(medInObs);
-    const bits=[s.reason,s.note].filter(Boolean);
-    if(obsMeds.length) bits.push("Medications:\n"+obsMeds.map(medLine).join("\n"));
-    add({kind:"obs",title:"Kept under observation",at:s.at,by:s.by,body:bits.join("\n")});
+    if(obsFirst && i===0){
+      const sTs=Date.parse(s.at||0)||0;
+      const a0=assignsAll.find(a=>Math.abs((Date.parse(a.at||0)||0)-sTs)<=5*60000)||assignsAll[0];
+      const obsBed=bedNoById(s.bedId)||(a0?bedNoById(a0.bedId):"")||(p.status==="observation"?bedOf(pid):"");
+      const bits=patientBits();
+      [s.reason,s.note].filter(Boolean).forEach(x=>bits.push(x));
+      if(obsMeds.length) bits.push("Medications:\n"+obsMeds.map(medLine).join("\n"));
+      const evObs=((S.events||[]).filter(e=>String(e.pid)===String(pid)&&/under observation|kept under observation/i.test(e.title||"")).sort((a,b)=>Math.abs(Date.parse(a.at||0)-sTs)-Math.abs(Date.parse(b.at||0)-sTs))[0])||{};
+      const byName=(evObs.actorName&&evObs.actorName!=="?")?evObs.actorName:"";
+      add({kind:"admit",obsFirst:true,title:(obsBed&&obsBed!=="—")?("Kept under observation on "+obsBed):"Kept under observation",at:s.at,by:s.by||evObs.by||(a0&&a0.by)||p.by||null,byName:byName,body:bits.join("\n")});
+    }else{
+      const bits=[s.reason,s.note].filter(Boolean);
+      if(obsMeds.length) bits.push("Medications:\n"+obsMeds.map(medLine).join("\n"));
+      add({kind:"obs",title:"Kept under observation",at:s.at,by:s.by,body:bits.join("\n")});
+    }
     if(s.endedAt){
       let title="Observation ended";
       if(s.outcome==="admitted") title="Admitted from observation";
@@ -6911,17 +6940,12 @@ function patientRecordItems(pid){
       add({kind:"obs",title:title,at:s.endedAt,by:s.endedBy,body:s.referralReason||""});
     }
   });
-  if(p.admittedAt && p.status!=="observation"){
-    const assigns=(S.assignments||[]).filter(a=>String(a.patientId)===String(pid)).slice().sort((a,b)=>Date.parse(a.at||0)-Date.parse(b.at||0));
-    const firstA=assigns[0];
+  if(p.admittedAt && p.status!=="observation" && (!obsFirst || fromObs)){
+    const assigns=assignsAll;
+    // After observation, the real admission uses the bed held at admission time, not the obs bed.
+    const firstA=(obsFirst&&admitTs)?(assigns.filter(a=>(Date.parse(a.at||0)||0)<=admitTs+60000).slice(-1)[0]||assigns[assigns.length-1]):assigns[0];
     const bed=firstA?((S.beds||[]).find(x=>x.id===firstA.bedId)||{}).no:bedOf(pid);
-    const bits=[];
-    if(p.hospitalNo) bits.push("Hospital no: "+p.hospitalNo);
-    if(p.diagnosis) bits.push("Diagnosis: "+p.diagnosis);
-    if(consultantLine(p)) bits.push("Consultant: "+consultantLine(p));
-    if(p.referredBy) bits.push("Source: "+p.referredBy);
-    if(p.reason) bits.push("Reason: "+p.reason);
-    if(p.address||p.phone) bits.push([p.address,p.phone].filter(Boolean).join(" · "));
+    const bits=patientBits();
     const evAct=((S.events||[]).filter(e=>String(e.pid)===String(pid)&&/admitted to|admission\b|admitted from/i.test(e.title||"")).sort((a,b)=>Math.abs(Date.parse(a.at||0)-Date.parse(p.admittedAt||0))-Math.abs(Date.parse(b.at||0)-Date.parse(p.admittedAt||0)))[0])||{};
     const by=p.by||evAct.by||(firstA&&firstA.by)||null;
     const byName=(evAct.actorName&&evAct.actorName!=="?")?evAct.actorName:"";
@@ -6977,6 +7001,7 @@ function patientRecordItems(pid){
   });
   items.sort((a,b)=>{
     const rank=it=>{
+      if(it.obsFirst) return 0;
       if(fromObs){
         if(it.title==="Kept under observation") return 0;
         if(it.title==="Admitted from observation") return 1;
