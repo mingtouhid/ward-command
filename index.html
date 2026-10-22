@@ -2200,7 +2200,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.95";
+const APP_VERSION="R1.3.96";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2691,11 +2691,12 @@ function snapshotScroll(){
   if(!m) return;
   navScroll[routeKey(route.page,route.id)]=m.scrollTop;
 }
-function go(page,id){
+function go(page,id,keepTab){
   if(ui._sheetLeaving){ui._sheetLeaving=false;try{document.documentElement.classList.remove("sheet-open")}catch(e){}}
   snapshotScroll();
   id=id||null;
-  const tab=PAGE_TAB[page]||"home";
+  // R1.3.96: keepTab pushes onto the current tab's stack so back() returns to the opening list.
+  const tab=keepTab?(nav.tab||"home"):(PAGE_TAB[page]||"home");
   if(tab!==nav.tab){nav.tab=tab;nav.stack=[]}
   if(page===tabRoot(tab)&&!id) nav.stack=[];
   else {
@@ -3767,7 +3768,7 @@ function homeView(){
       <div class="hero-wards">${wards.length?wards.map(w=>`<div class="hero-ward"><b>${w.n}</b><span>${esc(w.name)}</span></div>`).join(""):`<p class="sub">No sections yet</p>`}</div>
       <div class="hero-today-stats">
         <button class="hero-today-stat admission" onclick="ui.ptag='today';go('patients')"><span class="today-dot adm"></span><span class="today-lbl">Admissions today</span><b>${wardTodayAdmissionCount()}</b></button>
-        <div class="hero-today-stat discharge"><span class="today-dot dis"></span><span class="today-lbl">Discharges today</span><b>${wardTodayDischargeCount()}</b></div>
+        <button class="hero-today-stat discharge" onclick="ui.ctab='out';go('census',null,1)"><span class="today-dot dis"></span><span class="today-lbl">Discharges today</span><b>${wardTodayDischargeCount()}</b></button>
       </div>
     </div>
     <div class="home-side">
@@ -4223,10 +4224,10 @@ function observeView(){
         const reason=(stay.note||"").trim();
         detail="Referred"+(dept?" to "+dept:"")+(reason?" · "+reason:"");
       }
-      return `<div class="card">
+      return `<div class="card" style="cursor:pointer" onclick="go('record','${p.id}',1)">
         <div class="row"><div class="bedno">${esc(b?b.no:"—")}</div></div>
         <p class="tiny">${esc(p.hospitalNo||p.code||"—")}</p>
-        <b onclick="go('snap','${p.id}')">${esc(p.name)}</b>
+        <b>${esc(p.name)}</b>
         <p class="tiny">${esc(p.address||"—")}</p>
         <p class="tiny">${esc(p.diagnosis||"—")}</p>
         ${detail?`<p class="tiny">${esc(detail)}</p>`:""}
@@ -4631,7 +4632,8 @@ function censusView(){
   if(!d.ddate) d.ddate=localStamp();
   const empties=emptyBeds();
   const occ=occupied();
-  const recent=S.patients.filter(p=>p.status==="discharged").slice(0,20);
+  const disTs=x=>{const t=Date.parse(x.dischargedAt||0);return Number.isFinite(t)&&x.dischargedAt?t:-Infinity};
+  const recent=S.patients.filter(p=>p.status==="discharged").slice().sort((a,b)=>{const ta=disTs(a),tb=disTs(b);return ta===tb?0:(tb>ta?1:-1)}).slice(0,20);
   const seg=`<div class="seg">
     <button class="${tab==="in"?"on":""}" onclick="censusDraft();ui.ctab='in';render()">Admit</button>
     <button class="${tab==="out"?"on":""}" onclick="censusDraft();ui.ctab='out';render()">Discharge</button>
@@ -4662,7 +4664,7 @@ function censusView(){
         <label class="field"><span>Date of discharge</span><input id="ddate" type="datetime-local" value="${esc(d.ddate||localStamp())}"/></label>
         <button class="btn danger block" onclick="censusDraft();dischargeFromCensus()">Confirm discharge</button>
       </div>`:""}
-      ${recent.length?`<p class="sec">Recent discharges</p>${recent.map(x=>`<div class="card"><b>${esc(x.name)}</b><p class="tiny">${esc(x.hospitalNo||x.code)} · ${labelOf(DISCHARGE_MODES,x.dischargeMode)} · ${labelOf(DISCHARGE_OUTCOMES,x.dischargeOutcome)} · ${x.dischargedAt?fmt(x.dischargedAt):""}</p></div>`).join("")}`:""}`;
+      ${recent.length?`<p class="sec">Recent discharges</p>${recent.map(x=>`<div class="card" style="cursor:pointer" onclick="go('record','${x.id}',1)"><b>${esc(x.name)}</b><p class="tiny">${esc(x.hospitalNo||x.code)} · ${labelOf(DISCHARGE_MODES,x.dischargeMode)} · ${labelOf(DISCHARGE_OUTCOMES,x.dischargeOutcome)} · ${x.dischargedAt?fmt(x.dischargedAt):""}</p></div>`).join("")}`:""}`;
   }
 
   const reasons=d.reasons||[];
