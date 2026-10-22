@@ -2200,7 +2200,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.96";
+const APP_VERSION="R1.3.97";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3712,9 +3712,22 @@ function wardTodayAdmissionCount(){
     return raw && wardLocalDayKey(raw)===today;
   }).length;
 }
+// R1.3.97: true when the patient came in under observation and was never admitted to the ward
+// (closed as disposed/referred from observation). These live in Under observation → Previous,
+// not in ward discharges. Same "came in under observation" test as patientRecordItems (R1.3.94).
+function obsOnlyDischarge(p){
+  if(!p) return false;
+  const stays=(S.obsStays||[]).filter(s=>String(s.pid)===String(p.id));
+  if(!stays.length) return false;
+  if(stays.some(s=>s.outcome==="admitted"||/admitted from observation/i.test(s.outcome||""))) return false;
+  const first=stays.map(s=>Date.parse(s.at||0)||0).filter(Boolean).sort((a,b)=>a-b)[0]||0;
+  const admitTs=Date.parse(p.admittedAt||0)||0;
+  return !admitTs || !first || first<=admitTs+5*60000;
+}
 function wardTodayDischargeCount(){
   const today=wardLocalDayKey(new Date());
   return (S.patients||[]).filter(p=>{
+    if(obsOnlyDischarge(p)) return false;
     const raw=p?.dischargedAt||p?.discharged_at;
     return raw && wardLocalDayKey(raw)===today;
   }).length;
@@ -4633,7 +4646,7 @@ function censusView(){
   const empties=emptyBeds();
   const occ=occupied();
   const disTs=x=>{const t=Date.parse(x.dischargedAt||0);return Number.isFinite(t)&&x.dischargedAt?t:-Infinity};
-  const recent=S.patients.filter(p=>p.status==="discharged").slice().sort((a,b)=>{const ta=disTs(a),tb=disTs(b);return ta===tb?0:(tb>ta?1:-1)}).slice(0,20);
+  const recent=S.patients.filter(p=>p.status==="discharged"&&!obsOnlyDischarge(p)).slice().sort((a,b)=>{const ta=disTs(a),tb=disTs(b);return ta===tb?0:(tb>ta?1:-1)}).slice(0,20);
   const seg=`<div class="seg">
     <button class="${tab==="in"?"on":""}" onclick="censusDraft();ui.ctab='in';render()">Admit</button>
     <button class="${tab==="out"?"on":""}" onclick="censusDraft();ui.ctab='out';render()">Discharge</button>

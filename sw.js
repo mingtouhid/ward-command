@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.96-discharge-list";
+const VERSION = "ward-sync-pwa-r1.3.97-discharge-no-obs";
 const PRECACHE = [
   "./",
   "./index.html",
