@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.99 hero-ward-style -->
+<!-- WARD SYNC RELEASE: R1.3.100 record-merge-dx-suggest -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1714,7 +1714,17 @@ button.hero-ward:focus-visible{outline:2px solid var(--teal);outline-offset:2px;
 .hosp-autofill-meta{min-width:0;flex:1}
 .hosp-autofill-k{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--pill-full-ink)}
 .hosp-autofill-v{font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
-/* /R1.3.98 UX BATCH */
+.dx-wrap{position:relative;display:block;width:100%}
+.dx-suggest{margin:-4px 0 10px;border-radius:12px;background:var(--panel);border:1px solid var(--line);box-shadow:0 8px 24px rgba(15,23,42,.12);max-height:244px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
+.dx-suggest:empty{display:none;margin:0;border:0}
+.dx-suggest::-webkit-scrollbar{display:none;width:0;height:0}
+html[data-theme="ot"] .dx-suggest{box-shadow:0 10px 28px rgba(0,0,0,.45)}
+button.dx-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:9px 12px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:13px;line-height:1.3;text-align:left;cursor:pointer;border-radius:0;box-shadow:none}
+button.dx-opt:last-child{border-bottom:0}
+button.dx-opt:hover,button.dx-opt:active,button.dx-opt.active{background:var(--pill-full)}
+.dx-opt-name{font-weight:600;color:var(--ink);min-width:0;flex:1}
+.dx-opt-code{flex:none;font-size:11px;font-weight:800;letter-spacing:.03em;padding:2px 7px;border-radius:999px;background:var(--pill-full);color:var(--pill-full-ink);border:1px solid var(--pill-full-line)}
+/* /R1.3.100 UX BATCH */
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -2209,7 +2219,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.99";
+const APP_VERSION="R1.3.100";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3914,23 +3924,14 @@ function patientsView(){
   const secs=(S.sections||[]).filter(s=>s.active!==false).slice().sort((a,b)=>(a.sort||0)-(b.sort||0));
   const shownSecs=psec?secs.filter(s=>s.id===psec):secs;
   const orphanBeds=psec?[]:occupied().filter(b=>!secs.some(s=>s.id===b.sectionId) && match(onBed(b)));
-  const wardOcc=occupied().filter(b=>{const x=onBed(b);return x&&x.status==="admitted"});
-  const secPills=secs.length?(`<div class="ptag-row psec-row" role="group" aria-label="Ward sections">
-    <button type="button" class="chip ${!psec?"on":""}" aria-pressed="${!psec}" onclick="ui.psec='';render()">All wards (${wardOcc.length})</button>
-    ${secs.map(sec=>{
-      const n=wardOcc.filter(b=>b.sectionId===sec.id).length;
-      const on=psec===sec.id;
-      return `<button type="button" class="chip ${on?"on":""}" aria-pressed="${on}" onclick="ui.psec=ui.psec==='${esc(sec.id)}'?'':'${esc(sec.id)}';render()">${esc(sectionLabel(sec.name))} (${n})</button>`;
-    }).join("")}
-  </div>`):"";
   const sectionBlock=(title,cards,secId)=>!cards.length?"":`<section class="plist-block" ${secId?`id="sec-${esc(secId)}"`:""}><h3 class="sec-sticky">${esc(title)}</h3><div class="plist-grid">${cards.join("")}</div></section>`;
   return `<input id="pq" placeholder="Bed, name, hosp no, diagnosis, tag" value="${esc(ui.q||"")}" oninput="ui.q=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>
-    ${secPills}
     ${isConsultant()?`<div class="ptag-row ptag-cons" role="group" aria-label="Filter patients">
       <button class="chip ${tag!=="mine"&&tag!=="opinion_mine"?"on":""}" aria-pressed="${tag!=="mine"&&tag!=="opinion_mine"}" onclick="ui.ptag='';render()">All</button>
       <button class="chip ${tag==="mine"?"on":""}" aria-pressed="${tag==="mine"}" onclick="ui.ptag=ui.ptag==='mine'?'':'mine';render()">My patients</button>
       <button class="chip ${tag==="opinion_mine"?"on":""}" aria-pressed="${tag==="opinion_mine"}" onclick="ui.ptag=ui.ptag==='opinion_mine'?'':'opinion_mine';render()">Opinion</button>
-    </div>`:patientFilterPill()}
+    </div>`:``}
+    ${patientFilterPill()}
     ${sectionBlock("No bed", loose.map(p=>patientCard(p,null)))}
     ${shownSecs.map(sec=>{
       const cards=occupied().filter(b=>b.sectionId===sec.id && match(onBed(b))).map(b=>patientCard(onBed(b),b));
@@ -4312,6 +4313,176 @@ function autofillReturningPatient(kind,pid){
   render();
   toast("Autofilled "+p.name,"ok");
 }
+const DX_CATALOG=[
+  ["Schizophrenia","6A20","paranoid hebephrenic catatonic undifferentiated simple schizophrenia psychosis"],
+  ["Schizophrenia, first episode","6A20.0","fes first episode psychosis schizophrenia"],
+  ["Schizophrenia, multiple episodes","6A20.1","chronic relapsing schizophrenia"],
+  ["Schizoaffective disorder","6A21","sad schizoaffective manic depressive"],
+  ["Schizotypal disorder","6A22","schizotypal"],
+  ["Acute and transient psychotic disorder","6A23","atpd acute psychosis brief psychotic disorder polymorphic"],
+  ["Delusional disorder","6A24","persistent delusional disorder paranoia"],
+  ["Unspecified primary psychotic disorder","6A2Z","psychosis nos unspecified psychosis"],
+  ["Catatonia associated with another mental disorder","6A40","catatonia catatonic syndrome stupor mutism"],
+  ["Catatonia induced by substances or medications","6A41","drug induced catatonia"],
+  ["Bipolar type I disorder","6A60","bpad bipolar mood disorder bmd manic depressive"],
+  ["Bipolar type I disorder, current episode manic without psychotic symptoms","6A60.0","bpad mania manic episode"],
+  ["Bipolar type I disorder, current episode manic with psychotic symptoms","6A60.1","bpad mania with psychosis psychotic mania"],
+  ["Bipolar type I disorder, current episode depressive","6A60.4","bpad depression bipolar depression"],
+  ["Bipolar type I disorder, current episode mixed","6A60.9","bpad mixed episode"],
+  ["Bipolar type II disorder","6A61","bpad ii hypomania bipolar 2"],
+  ["Cyclothymic disorder","6A62","cyclothymia"],
+  ["Single episode depressive disorder","6A70","mdd major depressive disorder depression mild moderate severe"],
+  ["Single episode depressive disorder, severe with psychotic symptoms","6A70.4","mdd psychotic depression severe depression"],
+  ["Recurrent depressive disorder","6A71","rdd mdd recurrent depression unipolar depression"],
+  ["Dysthymic disorder","6A72","dysthymia persistent depressive disorder"],
+  ["Mixed depressive and anxiety disorder","6A73","mdad anxious depression"],
+  ["Generalized anxiety disorder","6B00","gad generalized anxiety"],
+  ["Panic disorder","6B01","panic attack panic disorder"],
+  ["Agoraphobia","6B02","agoraphobia"],
+  ["Specific phobia","6B03","phobia"],
+  ["Social anxiety disorder","6B04","social phobia"],
+  ["Obsessive-compulsive disorder","6B20","ocd obsessions compulsions"],
+  ["Body dysmorphic disorder","6B21","bdd dysmorphophobia"],
+  ["Post-traumatic stress disorder","6B40","ptsd trauma"],
+  ["Complex post-traumatic stress disorder","6B41","cptsd complex ptsd"],
+  ["Prolonged grief disorder","6B42","grief bereavement"],
+  ["Adjustment disorder","6B43","adjustment reaction stress"],
+  ["Acute stress reaction","QE84","acute stress disorder asr"],
+  ["Dissociative neurological symptom disorder","6B60","conversion disorder functional neurological dnsd pseudoseizures pnes"],
+  ["Dissociative amnesia","6B61","amnesia fugue"],
+  ["Trance and possession disorder","6B62","possession trance hysteria"],
+  ["Bodily distress disorder","6C20","somatization somatoform disorder"],
+  ["Alcohol dependence syndrome","6C40.2","ads aud alcohol use disorder ethanol dependence"],
+  ["Harmful pattern of use of alcohol","6C40.1","harmful alcohol use abuse"],
+  ["Alcohol intoxication","6C40.3","acute alcohol intoxication"],
+  ["Alcohol withdrawal, uncomplicated","6C40.40","aws alcohol withdrawal syndrome uncomplicated"],
+  ["Alcohol withdrawal with perceptual disturbances","6C40.41","aws alcohol withdrawal hallucinations"],
+  ["Alcohol withdrawal with seizures","6C40.42","aws alcohol withdrawal seizures rum fits"],
+  ["Alcohol withdrawal delirium","6C40.5","dt delirium tremens aws"],
+  ["Alcohol-induced psychotic disorder","6C40.6","alcoholic hallucinosis alcohol psychosis"],
+  ["Wernicke-Korsakoff syndrome","5B5A.0","wernicke encephalopathy korsakoff amnestic"],
+  ["Cannabis dependence","6C41.2","cud cannabis use disorder bhang ganja"],
+  ["Cannabis-induced psychotic disorder","6C41.6","cannabis psychosis cipd"],
+  ["Opioid dependence syndrome","6C43.2","ods oud opioid use disorder heroin brown sugar tramadol"],
+  ["Opioid withdrawal","6C43.4","ows opioid withdrawal syndrome"],
+  ["Sedative, hypnotic or anxiolytic dependence","6C44.2","benzodiazepine dependence bzd"],
+  ["Sedative, hypnotic or anxiolytic withdrawal","6C44.4","benzodiazepine withdrawal"],
+  ["Stimulant dependence","6C46.2","amphetamine methamphetamine cocaine"],
+  ["Nicotine dependence","6C4A.2","tobacco smoking gutkha"],
+  ["Volatile inhalant dependence","6C4B.2","inhalant solvent dendrite"],
+  ["Disorders due to use of multiple specified psychoactive substances","6C4F","polysubstance dependence multiple substance use"],
+  ["Intellectual developmental disorder","6A00","idd mental retardation mr intellectual disability"],
+  ["Autism spectrum disorder","6A02","asd autism"],
+  ["Attention deficit hyperactivity disorder","6A05","adhd add hyperkinetic"],
+  ["Delirium","6D70","acute confusional state organic brain syndrome"],
+  ["Dementia due to Alzheimer disease","6D80","alzheimer dementia major neurocognitive disorder"],
+  ["Vascular dementia","6D81","vascular neurocognitive disorder"],
+  ["Dementia, unspecified","6D8Z","dementia neurocognitive disorder"],
+  ["Personality disorder","6D10","pd cluster b c"],
+  ["Borderline personality pattern","6D11.5","bpd emotionally unstable personality disorder eupd"],
+  ["Anorexia nervosa","6B80","eating disorder anorexia"],
+  ["Bulimia nervosa","6B81","eating disorder bulimia"],
+  ["Mental or behavioural disorders associated with pregnancy, childbirth or the puerperium","6E20","postpartum psychosis postnatal depression puerperal"],
+  ["Intentional self-harm","PB80","dsh deliberate self harm suicidal attempt para-suicide poisoning hanging"],
+  ["Drug-induced parkinsonism / Extrapyramidal symptoms","8A00.24","eps extrapyramidal dystonia akathisia"],
+  ["Neuroleptic malignant syndrome","8A00.2","nms"]
+];
+function searchDxCatalog(rawQ){
+  const q=String(rawQ||"").trim().toLowerCase();
+  if(!q) return [];
+  const tokens=q.split(/\s+/).filter(Boolean);
+  const pool=DX_CATALOG.map((row,idx)=>({name:row[0],code:row[1],kw:row[2]||"",val:row[1]?(row[0]+" ("+row[1]+")"):row[0],idx}));
+  const known=new Set(pool.flatMap(x=>[x.name.toLowerCase(),x.code.toLowerCase(),x.val.toLowerCase()]));
+  (S.patients||[]).forEach((p,i)=>{
+    const dx=String(p&&p.diagnosis||"").trim();
+    if(!dx||dx==="Diagnosis pending") return;
+    const low=dx.toLowerCase();
+    if(known.has(low)) return;
+    known.add(low);
+    pool.push({name:dx,code:"Ward",kw:"",val:dx,idx:1000+i});
+  });
+  const scored=[];
+  for(const it of pool){
+    const nameL=it.name.toLowerCase(), codeL=it.code.toLowerCase(), kwL=it.kw.toLowerCase(), valL=it.val.toLowerCase();
+    const hay=nameL+" "+codeL+" "+kwL+" "+valL;
+    if(!tokens.every(t=>hay.includes(t))) continue;
+    let sc=0;
+    const kwWords=kwL.split(/\s+/);
+    if(codeL===q) sc+=1000;
+    else if(codeL.startsWith(q)) sc+=600;
+    if(kwWords.includes(q)) sc+=500;
+    if(nameL===q||valL===q) sc+=900;
+    else if(nameL.startsWith(q)) sc+=400;
+    else if(nameL.split(/[^a-z0-9]+/).some(w=>w.startsWith(q))) sc+=250;
+    else if(nameL.includes(q)) sc+=150;
+    sc-=it.idx*0.05;
+    scored.push({it,sc});
+  }
+  scored.sort((a,b)=>b.sc-a.sc);
+  return scored.slice(0,6).map(x=>x.it);
+}
+function dxSuggestItemsHtml(q,curVal){
+  const list=searchDxCatalog(q);
+  if(!list.length) return "";
+  if(list.length===1 && String(curVal||"").trim().toLowerCase()===list[0].val.toLowerCase()) return "";
+  return list.map((it,i)=>`<button type="button" class="dx-opt${i===0?" active":""}" role="option" data-val="${esc(it.val)}" onmousedown="event.preventDefault()" onclick="pickDxSuggest(this)"><span class="dx-opt-name">${esc(it.name)}</span><span class="dx-opt-code">${esc(it.code)}</span></button>`).join("");
+}
+function syncDxDraft(el,mode,extraPid){
+  const v=el?el.value:"";
+  if(mode==="obs_odx"){ui.obs=ui.obs||{};ui.obs.dx=v;}
+  else if(mode==="obs_oadx"){ui.obsAdmit=ui.obsAdmit||{};ui.obsAdmit.dx=v;}
+  else if(mode==="census_ddx"){ui.census=ui.census||{};ui.census.ddx=v;ui.census.ddxPid=extraPid||"";}
+  else if(mode==="census_adx"){ui.census=ui.census||{};ui.census.dx=v;}
+  else if(mode==="fields_adx"){ui.fields=ui.fields||{};ui.fields.adx=v;}
+  else if(mode==="fields_ddx"){ui.fields=ui.fields||{};ui.fields.ddx=v;}
+  else if(mode==="pedit_edx"){ui.pedit=ui.pedit||{};ui.pedit.dx=v;}
+}
+function onDxInput(el,mode,extraPid){
+  if(!el) return;
+  syncDxDraft(el,mode,extraPid);
+  const wrap=el.closest(".dx-wrap");
+  const box=wrap&&wrap.querySelector(".dx-suggest");
+  if(box) box.innerHTML=dxSuggestItemsHtml(el.value,el.value);
+}
+function closeDxSuggest(el){
+  const wrap=el&&el.closest?el.closest(".dx-wrap"):null;
+  const box=wrap&&wrap.querySelector(".dx-suggest");
+  if(box) box.innerHTML="";
+}
+function closeDxSuggestLater(el){
+  setTimeout(()=>closeDxSuggest(el),180);
+}
+function pickDxSuggest(btn){
+  if(!btn) return;
+  const wrap=btn.closest(".dx-wrap");
+  const input=wrap&&wrap.querySelector("input");
+  const val=btn.getAttribute("data-val")||"";
+  if(input){
+    input.value=val;
+    syncDxDraft(input,input.getAttribute("data-dx-mode")||"",input.getAttribute("data-dx-pid")||"");
+  }
+  const box=wrap&&wrap.querySelector(".dx-suggest");
+  if(box) box.innerHTML="";
+}
+function onDxKey(ev,el){
+  const wrap=el&&el.closest(".dx-wrap");
+  const box=wrap&&wrap.querySelector(".dx-suggest");
+  if(!box||!box.children.length) return;
+  const opts=[...box.querySelectorAll(".dx-opt")];
+  let idx=opts.findIndex(x=>x.classList.contains("active"));
+  if(ev.key==="Escape"){ev.preventDefault();box.innerHTML="";return;}
+  if(ev.key==="ArrowDown"){ev.preventDefault();opts.forEach(x=>x.classList.remove("active"));idx=(idx+1)%opts.length;opts[idx].classList.add("active");opts[idx].scrollIntoView({block:"nearest"});return;}
+  if(ev.key==="ArrowUp"){ev.preventDefault();opts.forEach(x=>x.classList.remove("active"));idx=(idx-1+opts.length)%opts.length;opts[idx].classList.add("active");opts[idx].scrollIntoView({block:"nearest"});return;}
+  if(ev.key==="Enter"&&idx>=0){ev.preventDefault();pickDxSuggest(opts[idx]);}
+}
+function dxFieldHtml(labelHtml,inputId,valStr,placeholder,mode,extraPid){
+  return `<div class="dx-wrap"><label class="field"><span>${labelHtml}</span><input id="${inputId}" value="${esc(valStr||"")}" placeholder="${esc(placeholder||"Diagnosis")}" autocomplete="off" data-dx-mode="${esc(mode||"")}" data-dx-pid="${esc(extraPid||"")}" oninput="onDxInput(this,'${esc(mode||"")}','${esc(extraPid||"")}')" onkeydown="onDxKey(event,this)" onblur="closeDxSuggestLater(this)"/></label><div class="dx-suggest" role="listbox" aria-label="Diagnosis suggestions"></div></div>`;
+}
+document.addEventListener("pointerdown",function(e){
+  if(e.target&&e.target.closest&&e.target.closest(".dx-wrap")) return;
+  document.querySelectorAll(".dx-suggest").forEach(b=>{b.innerHTML="";});
+});
+
 function bedSortKey(b){
   const no=String((b&&b.no)||"");
   const m=no.match(/^([A-Za-z]+)\s*-?\s*(\d+)/) || no.match(/(\d+)/);
@@ -4466,7 +4637,7 @@ function observeView(){
       </div>
       <label class="field"><span>Address <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="oaddr" value="${esc(d.addr||"")}" placeholder="Village / town"/></label>
       <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="ophone" value="${esc(d.phone||"")}" inputmode="tel" placeholder="Mobile number"/></label>
-      <label class="field"><span>Provisional diagnosis</span><input id="odx" value="${esc(d.dx||"")}" placeholder="Working diagnosis"/></label>
+      ${dxFieldHtml("Provisional diagnosis","odx",d.dx||"","Working diagnosis","obs_odx")}
       <label class="field"><span>Bed</span>${picker("obed",(empties.length?empties.map(b=>[b.id,b.no+" · "+((S.sections.find(s=>s.id===b.sectionId)||{}).name||"")]):[["","No empty bed"]]),d.bed||(empties[0]&&empties[0].id)||"","Bed")}</label>
       <p class="tiny" style="margin:10px 0 6px">MEDICATIONS</p>
       ${meds.map((m,i)=>medRowHtml("o",i,m)).join("")}
@@ -4634,7 +4805,7 @@ function obsAdmitForm(){
     <label class="field"><span>Reason for referral</span>
       <div class="multi">${ADMIT_REASONS.map(([id,lb])=>`<button type="button" class="chip ${reasons.includes(id)?"on":""}" onclick="toggleObsReason('${id}')">${lb}</button>`).join("")}</div>
     </label>
-    <label class="field"><span>Working diagnosis</span><input id="oadx" value="${esc(d.dx||"")}" placeholder="Diagnosis"/></label>
+    ${dxFieldHtml("Working diagnosis","oadx",d.dx||"","Diagnosis","obs_oadx")}
     <label class="field"><span>Referred by</span><input id="oaref" value="${esc(d.ref||"")}" placeholder="OPD / casualty / hospital"/></label>
     <label class="field"><span>Consultant</span>${fac?picker("oacon",facultyOptions(),d.con||"","Consultant"):`<input id="oacon" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
     <label class="field"><span>Consultant 2</span>${fac?picker("oacon2",facultyOptions(),d.con2||"","Optional"):`<input id="oacon2" value="${esc(d.con2||"")}" placeholder="Second consultant, optional"/>`}</label>
@@ -4881,7 +5052,7 @@ function censusView(){
       </div>
       <button class="btn block ${p?"danger":"idle"}" ${p?"":"disabled"} onclick="if(!ui.disId)return;censusDraft();ui.disForm=true;render()" style="margin-bottom:10px">Discharge</button>
       ${form?`<div class="card">
-        <label class="field"><span>Working diagnosis</span><input id="ddx" value="${esc(curDx)}" placeholder="Diagnosis" oninput="ui.census=ui.census||{};ui.census.ddx=this.value;ui.census.ddxPid='${p?p.id:""}'"/></label>
+        ${dxFieldHtml("Working diagnosis","ddx",curDx,"Diagnosis","census_ddx",p?p.id:"")}
         <label class="field"><span>Mode of treatment</span>
           <div class="multi">${TREATMENT_MODES.filter(x=>x[0]!=="conservative_ect").map(([id,lb])=>`<button class="chip ${treat.includes(id)?"on":""}" onclick="toggleMulti('treat','${id}')">${lb}</button>`).join("")}
           <span class="tiny">${labelOf(TREATMENT_MODES,treatFromChips())}</span>
@@ -4918,7 +5089,7 @@ function censusView(){
       <label class="field"><span>Reason for referral</span>
         <div class="multi">${ADMIT_REASONS.map(([id,lb])=>`<button type="button" class="chip ${reasons.includes(id)?"on":""}" onclick="toggleMulti('reasons','${id}')">${lb}</button>`).join("")}</div>
       </label>
-      <label class="field"><span>Working diagnosis</span><input id="adx" value="${esc(d.dx||"")}" placeholder="Diagnosis"/></label>
+      ${dxFieldHtml("Working diagnosis","adx",d.dx||"","Diagnosis","census_adx")}
       <label class="field"><span>Referred by</span><input id="aref" value="${esc(d.ref||"")}" placeholder="OPD / casualty / hospital"/></label>
       <label class="field"><span>Consultant</span>${(facultyList().length)?picker("acon",facultyOptions(),d.con||"","Consultant"):`<input id="acon" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
       <label class="field"><span>Consultant 2</span>${(facultyList().length)?picker("acon2",facultyOptions(),d.con2||"","Optional"):`<input id="acon2" value="${esc(d.con2||"")}" placeholder="Second consultant, optional"/>`}</label>
@@ -5162,7 +5333,7 @@ function admitFormBody(){
       <label class="field"><span>Age</span><input id="aage" value="${esc(val("aage")||"30")}" oninput="ui.fields=ui.fields||{};ui.fields.aage=this.value"/></label>
       <label class="field"><span>Sex</span>${picker("asex",[["M","M"],["F","F"],["O","O"]],val("asex")||"M","Sex")}</label>
     </div>
-    <label class="field"><span>Diagnosis</span><input id="adx" placeholder="Working diagnosis" value="${esc(val("adx"))}" oninput="ui.fields=ui.fields||{};ui.fields.adx=this.value"/></label>
+    ${dxFieldHtml("Diagnosis","adx",val("adx"),"Working diagnosis","fields_adx")}
     <button class="btn block" ${empties.length?"":"disabled"} onclick="admitPatient()">Admit to bed</button>`;
 }
 function admitPatient(){
@@ -5195,7 +5366,7 @@ function dischargeFormBody(id){
   const treat=val("dtrt")||p.treatmentMode||(ectPlan(id)?"ect":"conservative");
   const curDx=val("ddx")||(ui.fields&&ui.fields.ddx!=null?ui.fields.ddx:(p.diagnosis||""));
   return `<p class="sm" style="margin:8px 0">${esc(p.name)}</p>
-    <label class="field"><span>Working diagnosis</span><input id="ddx" value="${esc(curDx)}" placeholder="Diagnosis" oninput="ui.fields=ui.fields||{};ui.fields.ddx=this.value"/></label>
+    ${dxFieldHtml("Working diagnosis","ddx",curDx,"Diagnosis","fields_ddx")}
     <label class="field"><span>Mode of treatment</span>${picker("dtrt",TREATMENT_MODES,treat,"Mode of treatment")}</label>
     <label class="field"><span>Mode of discharge</span>${picker("dmode",DISCHARGE_MODES,val("dmode")||p.dischargeMode||"advice","Mode of discharge")}</label>
     <label class="field"><span>Outcome</span>${picker("dout",DISCHARGE_OUTCOMES,val("dout")||p.dischargeOutcome||"improved","Outcome")}</label>
@@ -6355,12 +6526,13 @@ function snapConsultantNames(p){
 function snapAdmitRows(p){
   const ref=String(p.referredBy||"").trim(), rs=reasonLine(p), cons=snapConsultantNames(p);
   const row=(k,v)=>v?`<p class="sm snap-adm" style="margin-top:6px"><b>${k}</b><br>${esc(v)}</p>`:"";
-  return row("Referred by",ref)+row("Reason",rs)+row("Consultant",cons.join(" · "));
+  const consRow=cons.length?`<p class="sm snap-adm" style="margin-top:6px"><b>Consultant</b><br>${cons.map(esc).join("<br>")}</p>`:"";
+  return row("Referred by",ref)+row("Reason",rs)+consRow;
 }
 function consultantLine(p){
   const a=consultantPretty(p&&p.consultant);
   const b=consultantPretty(p&&p.consultant2);
-  return [a,b].filter(Boolean).join(" · ");
+  return [a,b].filter(Boolean).join("\n");
 }
 function reasonLine(p){
   const raw=p.reason||"";
@@ -7167,12 +7339,16 @@ function patientRecordItems(pid){
     const bits=[];
     if(p.hospitalNo) bits.push("Hospital no: "+p.hospitalNo);
     if(p.diagnosis) bits.push("Diagnosis: "+p.diagnosis);
-    if(consultantLine(p)) bits.push("Consultant: "+consultantLine(p));
+    const cons=snapConsultantNames(p);
+    if(cons.length===1) bits.push("Consultant: "+cons[0]);
+    else if(cons.length>1){bits.push("Consultant: "+cons[0]);cons.slice(1).forEach((c,i)=>bits.push("Consultant "+(i+2)+": "+c));}
     if(p.referredBy) bits.push("Source: "+p.referredBy);
     if(p.reason) bits.push("Reason: "+p.reason);
     if(p.address||p.phone) bits.push([p.address,p.phone].filter(Boolean).join(" · "));
     return bits;
   };
+  const meds=allMeds;
+  const starts=meds.filter(o=>(o.start||o.at) && !medInObs(o)).slice().sort((a,b)=>Date.parse(a.start||a.at||0)-Date.parse(b.start||b.at||0));
   // R1.3.94: a patient who came in under observation gets the first (WARD) card as
   // "Kept under observation on <obs bed>"; the separate duplicate obs card is dropped.
   const firstStay=obsStays[0]||null;
@@ -7204,20 +7380,21 @@ function patientRecordItems(pid){
       add({kind:"obs",title:title,at:s.endedAt,by:s.endedBy,body:s.referralReason||""});
     }
   });
+  let admitCardAdded=false;
   if(p.admittedAt && p.status!=="observation" && (!obsFirst || fromObs)){
     const assigns=assignsAll;
     // After observation, the real admission uses the bed held at admission time, not the obs bed.
     const firstA=(obsFirst&&admitTs)?(assigns.filter(a=>(Date.parse(a.at||0)||0)<=admitTs+60000).slice(-1)[0]||assigns[assigns.length-1]):assigns[0];
     const bed=firstA?((S.beds||[]).find(x=>x.id===firstA.bedId)||{}).no:bedOf(pid);
     const bits=patientBits();
+    if(starts.length) bits.push("Medications:\n"+starts.map(medLine).join("\n"));
     const evAct=((S.events||[]).filter(e=>String(e.pid)===String(pid)&&/admitted to|admission\b|admitted from/i.test(e.title||"")).sort((a,b)=>Math.abs(Date.parse(a.at||0)-Date.parse(p.admittedAt||0))-Math.abs(Date.parse(b.at||0)-Date.parse(p.admittedAt||0)))[0])||{};
     const by=p.by||evAct.by||(firstA&&firstA.by)||null;
     const byName=(evAct.actorName&&evAct.actorName!=="?")?evAct.actorName:"";
     add({kind:"admit",title:bed?("Admitted to "+bed):"Admitted",at:p.admittedAt||(firstA&&firstA.at),by:by,byName:byName,body:bits.join("\n")});
+    admitCardAdded=true;
   }
-  const meds=allMeds;
-  const starts=meds.filter(o=>(o.start||o.at) && !medInObs(o)).slice().sort((a,b)=>Date.parse(a.start||a.at||0)-Date.parse(b.start||b.at||0));
-  if(starts.length){
+  if(!admitCardAdded && starts.length){
     const first=starts[0];
     const started=medEventActor(pid,first.drug,first.start||first.at,["started ","medication started"]);
     const lines=starts.map(o=>[o.drug,o.dose,o.route||"PO",o.freq||"OD"].filter(Boolean).join(" · "));
@@ -7905,7 +8082,7 @@ function patientFilterPill(){
   const T={ect:"ECT",restrain:"Restrained",delirium:"Delirium",high:"Delirium",suicidal:"Suicidal",jail:"Jail",today:"Admitted today",mine:"My patients"};
   const bits=[];
   if(ui.psec){const sec=(S.sections||[]).find(s=>s.id===ui.psec); bits.push(sec?sectionLabel(sec.name):"Section")}
-  if(ui.ptag) bits.push(T[ui.ptag]||ui.ptag);
+  if(ui.ptag && !(isConsultant()&&(ui.ptag==="mine"||ui.ptag==="opinion_mine"))) bits.push(T[ui.ptag]||ui.ptag);
   if(ui.preason) bits.push(ui.preason==="other"?"Other reason":(labelOf(ADMIT_REASONS,ui.preason)||ui.preason));
   if(ui.pcon){const f=facultyById(ui.pcon); bits.push(f?f.name:"Consultant")}
   if(!bits.length) return "";
@@ -8338,7 +8515,7 @@ function peditView(){
       <label class="field"><span>Reason for referral</span>
         <div class="multi">${ADMIT_REASONS.map(([id,lb])=>`<button type="button" class="chip ${reasons.includes(id)?"on":""}" onclick="peditToggle('${id}')">${lb}</button>`).join("")}</div>
       </label>
-      <label class="field"><span>Working diagnosis</span><input id="edx" value="${esc(d.dx||"")}" placeholder="Diagnosis"/></label>
+      ${dxFieldHtml("Working diagnosis","edx",d.dx||"","Diagnosis","pedit_edx")}
       <label class="field"><span>Referred by</span><input id="eref" value="${esc(d.ref||"")}" placeholder="OPD / casualty / hospital"/></label>
       <label class="field"><span>Consultant</span>${(facultyList().length)?picker("econ",facultyOptions(),d.con||"","Consultant"):`<input id="econ" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
       <label class="field"><span>Consultant 2</span>${(facultyList().length)?picker("econ2",facultyOptions(),d.con2||"","Optional"):`<input id="econ2" value="${esc(d.con2||"")}" placeholder="Second consultant, optional"/>`}</label>
