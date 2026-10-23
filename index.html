@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.92 obs-prev-detail -->
+<!-- WARD SYNC RELEASE: R1.3.98 ux-batch-oct23 -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1705,7 +1705,16 @@ html[data-theme="ot"] button.pedit-btn{box-shadow:0 4px 12px rgba(0,0,0,.35)}
 .accent-sw svg{width:48%;height:48%}
 .accent-cap{font-size:10px;text-align:center;color:var(--muted);margin-top:4px;font-weight:700}
 .accent-cell{display:flex;flex-direction:column;align-items:center;min-width:0;flex:0 1 auto;padding:5px 0}
-
+/* R1.3.98 UX BATCH */
+button.hero-ward{appearance:none;-webkit-appearance:none;text-align:left;font:inherit;color:inherit;cursor:pointer;transition:transform .12s ease,background-color .15s ease,border-color .15s ease}
+button.hero-ward:hover{border-color:rgba(255,255,255,.32);background:rgba(255,255,255,.16)}
+button.hero-ward:active{transform:scale(.97)}
+.psec-row{margin-bottom:8px}
+.hosp-autofill{margin:-2px 0 10px;padding:10px 12px;border-radius:12px;background:var(--pill-full);border:1px solid var(--pill-full-line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hosp-autofill-meta{min-width:0;flex:1}
+.hosp-autofill-k{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--pill-full-ink)}
+.hosp-autofill-v{font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+/* /R1.3.98 UX BATCH */
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -2200,7 +2209,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.97";
+const APP_VERSION="R1.3.98";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2484,6 +2493,24 @@ const onWard=id=>{const p=patient(id);return !!(p&&p.status==="admitted")};
 const underObs=id=>{const p=patient(id);return !!(p&&p.status==="observation")};
 const bedOf=pid=>{const b=S.beds.find(x=>x.patientId===pid);return b?b.no:"—"};
 const bedObj=pid=>S.beds.find(x=>x.patientId===pid);
+const lastBedObj=pid=>{
+  const cur=bedObj(pid);
+  if(cur) return cur;
+  const asg=(S.assignments||[]).filter(a=>String(a.patientId)===String(pid))
+    .slice().sort((a,b)=>(Date.parse(b.released||b.at||0)||0)-(Date.parse(a.released||a.at||0)||0))[0];
+  if(asg&&asg.bedId){
+    const b=(S.beds||[]).find(x=>x.id===asg.bedId);
+    if(b) return b;
+  }
+  const st=(S.obsStays||[]).filter(s=>String(s.pid)===String(pid))
+    .slice().sort((a,b)=>(Date.parse(b.endedAt||b.at||0)||0)-(Date.parse(a.endedAt||a.at||0)||0))[0];
+  if(st&&st.bedId){
+    const b=(S.beds||[]).find(x=>x.id===st.bedId);
+    if(b) return b;
+  }
+  return null;
+};
+const lastBedNo=pid=>{const b=lastBedObj(pid);return b?b.no:"—"};
 const onBed=b=>b.patientId?patient(b.patientId):null;
 const occupied=()=>S.beds.filter(b=>b.active&&b.patientId).sort((a,b)=>a.no.localeCompare(b.no,undefined,{numeric:true}));
 const dueFor=pid=>S.doses.filter(d=>d.pid===pid&&d.status==="pending"&&!isPrn((S.orders||[]).find(o=>o.id===d.oid)));
@@ -2685,12 +2712,25 @@ function flags(p){
   };
 }
 
-function routeKey(page,id){return String(page||"home")+"::"+String(id||"")}
+function routeKey(page,id){
+  const p=String(page||"home");
+  let sub="";
+  if(p==="observe") sub=String(ui.obsTab||"now");
+  else if(p==="census") sub=String((ui.ctab||"in")+":"+(ui.disListOnly?"list":"full"));
+  else if(p==="handover") sub=String(ui.htab||"in");
+  return p+"::"+String(id||"")+(sub?"::"+sub:"");
+}
 function snapshotScroll(){
   const m=document.querySelector(".main");
   if(!m) return;
   navScroll[routeKey(route.page,route.id)]=m.scrollTop;
 }
+document.addEventListener("scroll",e=>{
+  const t=e&&e.target;
+  if(t&&t.classList&&t.classList.contains("main")&&!renderHeld){
+    navScroll[routeKey(route.page,route.id)]=t.scrollTop;
+  }
+},{passive:true,capture:true});
 function go(page,id,keepTab){
   if(ui._sheetLeaving){ui._sheetLeaving=false;try{document.documentElement.classList.remove("sheet-open")}catch(e){}}
   snapshotScroll();
@@ -2726,11 +2766,18 @@ function back(){
     render({force:1,nav:1});
     return;
   }
-  if(nav.tab!=="home") go("home");
+  if(nav.tab!=="home"){
+    nav.tab="home";nav.stack=[];
+    if(ui.busy){ui.busy=false;ui.busyLabel="";}
+    navDir="back";navAnim=true;
+    syncRoute();
+    try{history.pushState({tab:nav.tab,stack:[]},"",navHash())}catch(e){}
+    render({force:1,nav:1});
+  }
 }
 window.addEventListener("popstate",e=>{
   snapshotScroll();
-  if(applyNavState(e.state)){if(ui._sheetLeaving)ui._sheetLeaving=false;clearOverlayState();render({force:1,nav:1});return}
+  if(applyNavState(e.state)){if(ui._sheetLeaving)ui._sheetLeaving=false;clearOverlayState();navDir="back";navAnim=true;render({force:1,nav:1});return}
   try{history.pushState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(err){}
 });
 function cloudOn(){return !!(S.supabaseUrl&&S.supabaseAnonKey&&/^https:\/\//i.test(S.supabaseUrl)&&window.supabase)}
@@ -2906,7 +2953,7 @@ async function doCloudPull(opts){
     if(S.snaps[pid]) nextSnaps[pid]=S.snaps[pid];
   });
   S.snaps=nextSnaps;
-  S.orders=orders.map(r=>({id:r.id,pid:r.patient_id,drug:r.drug,dose:r.dose,route:r.route,freq:r.frequency,time:r.scheduled_time||"08:00",start:r.start_date,stop:r.stop_date,status:r.status,hold:r.hold_at||null,by:r.created_by||r.by||null,indication:r.indication||"",lineage:r.lineage_id||null,supersedes:r.supersedes||null,note:r.change_note||"",updatedAt:r.updated_at||null}));
+  S.orders=orders.map(r=>({id:r.id,pid:r.patient_id,drug:r.drug,dose:r.dose,route:r.route,freq:r.frequency,time:r.scheduled_time||"08:00",start:r.start_date,at:r.created_at||null,stop:r.stop_date,status:r.status,hold:r.hold_at||null,by:r.created_by||r.by||null,indication:r.indication||"",lineage:r.lineage_id||null,supersedes:r.supersedes||null,note:r.change_note||"",updatedAt:r.updated_at||null}));
   S.doses=doses.map(r=>({id:r.id,oid:r.order_id,pid:r.patient_id,at:r.scheduled_at,status:r.status,by:r.given_by,givenAt:r.given_at||null}));
   S.tasks=tasks.map(r=>({id:r.id,pid:r.patient_id,title:r.title,detail:r.detail||"",pri:r.priority,status:r.status,to:r.assigned_to||null,by:r.created_by||null,at:r.created_at||null,completedAt:r.completed_at||null}));
   S.handovers=handovers.map(r=>({id:r.id,from:r.from_id,to:r.to_id,shift:r.shift,status:r.status,at:r.created_at,ackBy:r.acknowledged_by||null,ackAt:r.acknowledged_at||null}));
@@ -3720,8 +3767,10 @@ function obsOnlyDischarge(p){
   const stays=(S.obsStays||[]).filter(s=>String(s.pid)===String(p.id));
   if(!stays.length) return false;
   if(stays.some(s=>s.outcome==="admitted"||/admitted from observation/i.test(s.outcome||""))) return false;
+  const lastEnd=stays.map(s=>Date.parse(s.endedAt||s.at||0)||0).filter(Boolean).sort((a,b)=>b-a)[0]||0;
   const first=stays.map(s=>Date.parse(s.at||0)||0).filter(Boolean).sort((a,b)=>a-b)[0]||0;
   const admitTs=Date.parse(p.admittedAt||0)||0;
+  if(admitTs && lastEnd && admitTs>lastEnd+5*60000) return false;
   return !admitTs || !first || first<=admitTs+5*60000;
 }
 function wardTodayDischargeCount(){
@@ -3770,6 +3819,7 @@ function homeView(){
   const jailN=list.filter(b=>hasSnapTag(b.patientId,"jail")).length;
   tidySectionNames();
   const wards=S.sections.filter(s=>s.active!==false).slice().sort((a,b)=>(a.sort||0)-(b.sort||0)).map(sec=>({
+    id:sec.id,
     name:sectionLabel(sec.name),
     n:list.filter(b=>b.sectionId===sec.id).length
   }));
@@ -3778,10 +3828,10 @@ function homeView(){
       <button type="button" class="hero-obs" onclick="go('observe')"><span>Patients under observation</span><b>${(S.patients||[]).filter(p=>p.status==='observation').length}</b></button>
       <div class="label">Patients in ward</div>
       <div class="count">${list.length}</div>
-      <div class="hero-wards">${wards.length?wards.map(w=>`<div class="hero-ward"><b>${w.n}</b><span>${esc(w.name)}</span></div>`).join(""):`<p class="sub">No sections yet</p>`}</div>
+      <div class="hero-wards">${wards.length?wards.map(w=>`<button type="button" class="hero-ward" onclick="openWardSection('${esc(w.id)}')"><b>${w.n}</b><span>${esc(w.name)}</span></button>`).join(""):`<p class="sub">No sections yet</p>`}</div>
       <div class="hero-today-stats">
-        <button class="hero-today-stat admission" onclick="ui.ptag='today';go('patients')"><span class="today-dot adm"></span><span class="today-lbl">Admissions today</span><b>${wardTodayAdmissionCount()}</b></button>
-        <button class="hero-today-stat discharge" onclick="ui.ctab='out';go('census',null,1)"><span class="today-dot dis"></span><span class="today-lbl">Discharges today</span><b>${wardTodayDischargeCount()}</b></button>
+        <button class="hero-today-stat admission" onclick="ui.psec='';ui.ptag='today';go('patients')"><span class="today-dot adm"></span><span class="today-lbl">Admissions today</span><b>${wardTodayAdmissionCount()}</b></button>
+        <button class="hero-today-stat discharge" onclick="openRecentDischarges()"><span class="today-dot dis"></span><span class="today-lbl">Discharges today</span><b>${wardTodayDischargeCount()}</b></button>
       </div>
     </div>
     <div class="home-side">
@@ -3859,20 +3909,32 @@ function patientsView(){
     if(tag==="today") return p.status==="admitted" && wardLocalDayKey(p.admittedAt||p.admitted_at)===wardLocalDayKey(new Date());
     return true;
   };
-  const loose=unplacedPatients().filter(match);
-  const secs=(S.sections||[]).filter(s=>s.active!==false);
-  const orphanBeds=occupied().filter(b=>!secs.some(s=>s.id===b.sectionId) && match(onBed(b)));
-  const sectionBlock=(title,cards)=>!cards.length?"":`<section class="plist-block"><h3 class="sec-sticky">${esc(title)}</h3><div class="plist-grid">${cards.join("")}</div></section>`;
+  const psec=ui.psec||"";
+  const loose=psec?[]:unplacedPatients().filter(match);
+  const secs=(S.sections||[]).filter(s=>s.active!==false).slice().sort((a,b)=>(a.sort||0)-(b.sort||0));
+  const shownSecs=psec?secs.filter(s=>s.id===psec):secs;
+  const orphanBeds=psec?[]:occupied().filter(b=>!secs.some(s=>s.id===b.sectionId) && match(onBed(b)));
+  const wardOcc=occupied().filter(b=>{const x=onBed(b);return x&&x.status==="admitted"});
+  const secPills=secs.length?(`<div class="ptag-row psec-row" role="group" aria-label="Ward sections">
+    <button type="button" class="chip ${!psec?"on":""}" aria-pressed="${!psec}" onclick="ui.psec='';render()">All wards (${wardOcc.length})</button>
+    ${secs.map(sec=>{
+      const n=wardOcc.filter(b=>b.sectionId===sec.id).length;
+      const on=psec===sec.id;
+      return `<button type="button" class="chip ${on?"on":""}" aria-pressed="${on}" onclick="ui.psec=ui.psec==='${esc(sec.id)}'?'':'${esc(sec.id)}';render()">${esc(sectionLabel(sec.name))} (${n})</button>`;
+    }).join("")}
+  </div>`):"";
+  const sectionBlock=(title,cards,secId)=>!cards.length?"":`<section class="plist-block" ${secId?`id="sec-${esc(secId)}"`:""}><h3 class="sec-sticky">${esc(title)}</h3><div class="plist-grid">${cards.join("")}</div></section>`;
   return `<input id="pq" placeholder="Bed, name, hosp no, diagnosis, tag" value="${esc(ui.q||"")}" oninput="ui.q=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>
+    ${secPills}
     ${isConsultant()?`<div class="ptag-row ptag-cons" role="group" aria-label="Filter patients">
       <button class="chip ${tag!=="mine"&&tag!=="opinion_mine"?"on":""}" aria-pressed="${tag!=="mine"&&tag!=="opinion_mine"}" onclick="ui.ptag='';render()">All</button>
       <button class="chip ${tag==="mine"?"on":""}" aria-pressed="${tag==="mine"}" onclick="ui.ptag=ui.ptag==='mine'?'':'mine';render()">My patients</button>
       <button class="chip ${tag==="opinion_mine"?"on":""}" aria-pressed="${tag==="opinion_mine"}" onclick="ui.ptag=ui.ptag==='opinion_mine'?'':'opinion_mine';render()">Opinion</button>
     </div>`:patientFilterPill()}
     ${sectionBlock("No bed", loose.map(p=>patientCard(p,null)))}
-    ${secs.map(sec=>{
+    ${shownSecs.map(sec=>{
       const cards=occupied().filter(b=>b.sectionId===sec.id && match(onBed(b))).map(b=>patientCard(onBed(b),b));
-      return sectionBlock(sectionLabel(sec.name), cards);
+      return sectionBlock(sectionLabel(sec.name), cards, sec.id);
     }).join("")}
     ${sectionBlock("Other", orphanBeds.map(b=>patientCard(onBed(b),b)))}`;
 }
@@ -3979,6 +4041,7 @@ function snapView(){
         ${p.status!=="discharged"?`<button class="btn sm ghost" onclick="transferForm('${p.id}')">Transfer</button>`:""}
         <button class="btn sm ghost" onclick="flagHandover('${p.id}')">Handover</button>
         <button class="btn sm ${(sn.tags||[]).includes("restrained")?"danger":"ghost"}" style="grid-column:1/-1" onclick="toggleRestrain('${p.id}')">${restrainHeld(p.id)?"Release restraint":"Restrain"}</button>
+        ${p.status==="admitted"?`<button class="btn sm danger" style="grid-column:1/-1" onclick="openSnapDischarge('${p.id}')">Discharge patient</button>`:""}
       </div>
     </div>`:""}
     ${p.status==="discharged"?`<div class="card"><p class="tiny">Discharged</p></div>`:""}
@@ -4132,6 +4195,121 @@ function censusDraft(){
   if(g("dmode")|| (ui.fields&&ui.fields.dmode!=null)) ui.census.mode=val("dmode")||ui.census.mode;
   if(g("dout")|| (ui.fields&&ui.fields.dout!=null)) ui.census.outcome=val("dout")||ui.census.outcome;
   if(g("ddate")) ui.census.ddate=g("ddate").value;
+  if(g("ddx")) ui.census.ddx=g("ddx").value;
+}
+function openWardSection(secId){
+  ui.psec=secId||"";
+  ui.ptag="";ui.preason="";ui.pcon="";
+  go("patients");
+}
+function openRecentDischarges(){
+  ui.ctab="out";
+  ui.disListOnly=true;
+  ui.disForm=false;
+  go("census",null,1);
+}
+function openSnapDischarge(pid){
+  if(!needWrite()) return;
+  const p=patient(pid);
+  if(!p||p.status!=="admitted") return;
+  ui.ctab="out";
+  ui.disListOnly=false;
+  ui.disId=p.id;
+  ui.disForm=true;
+  ui.census=Object.assign(ui.census||{reasons:[],treat:["conservative"],mode:"advice",outcome:"improved"},{
+    ddate:localStamp(),
+    ddx:p.diagnosis||"",
+    ddxPid:p.id
+  });
+  go("census",null,1);
+}
+function findReturningPatient(hosp){
+  const q=String(hosp||"").trim().toLowerCase();
+  if(!q||q.length<2) return null;
+  const past=(S.patients||[]).filter(p=>p.status==="discharged");
+  const exact=past.find(p=>String(p.hospitalNo||p.code||"").trim().toLowerCase()===q);
+  if(exact) return exact;
+  if(q.length<3) return null;
+  return past.find(p=>String(p.hospitalNo||p.code||"").trim().toLowerCase().startsWith(q))||null;
+}
+function hospMatchBannerHtml(kind,hosp){
+  const m=findReturningPatient(hosp);
+  if(!m) return "";
+  const meta=[m.name,[m.age||"",m.sex||""].join(""),m.diagnosis||""].filter(Boolean).join(" · ");
+  return `<div class="hosp-autofill" data-returning-id="${esc(m.id)}">
+    <div class="hosp-autofill-meta">
+      <div class="hosp-autofill-k">Returning patient · ${esc(m.hospitalNo||m.code)}</div>
+      <div class="hosp-autofill-v">${esc(meta)}</div>
+    </div>
+    <button type="button" class="btn sm" onclick="autofillReturningPatient('${esc(kind)}','${esc(m.id)}')">Autofill</button>
+  </div>`;
+}
+function onAdmitHospInput(v){
+  ui.census=ui.census||{};
+  ui.census.hosp=v;
+  const el=document.getElementById("ahospMatch");
+  if(el) el.innerHTML=hospMatchBannerHtml("admit",v);
+}
+function onObsHospInput(v){
+  ui.obs=ui.obs||{};
+  ui.obs.hosp=v;
+  const el=document.getElementById("ohospMatch");
+  if(el) el.innerHTML=hospMatchBannerHtml("obs",v);
+}
+function onAdmitPanelHospInput(v){
+  ui.fields=ui.fields||{};
+  ui.fields.ahosp=v;
+  const el=document.getElementById("ahospPanelMatch");
+  if(el) el.innerHTML=hospMatchBannerHtml("admitPanel",v);
+}
+function autofillReturningPatient(kind,pid){
+  const p=patient(pid);
+  if(!p) return;
+  const cleanDx=(p.diagnosis&&p.diagnosis!=="Diagnosis pending")?p.diagnosis:"";
+  if(kind==="obs"){
+    obsDraft();
+    ui.obs=ui.obs||{};
+    ui.obs.hosp=p.hospitalNo||p.code||ui.obs.hosp||"";
+    ui.obs.name=p.name||"";
+    ui.obs.age=p.age!=null&&p.age!==0?String(p.age):"";
+    ui.obs.sex=p.sex||"M";
+    ui.obs.addr=p.address||"";
+    ui.obs.phone=p.phone||"";
+    if(cleanDx) ui.obs.dx=cleanDx;
+    ui.fields=ui.fields||{};
+    ui.fields.osex=p.sex||"M";
+    render();
+    toast("Autofilled "+p.name,"ok");
+    return;
+  }
+  if(kind==="admitPanel"){
+    ui.fields=ui.fields||{};
+    ui.fields.ahosp=p.hospitalNo||p.code||ui.fields.ahosp||"";
+    ui.fields.aname=p.name||"";
+    ui.fields.aage=p.age!=null&&p.age!==0?String(p.age):"";
+    ui.fields.asex=p.sex||"M";
+    ui.fields.aaddr=p.address||"";
+    ui.fields.aphone=p.phone||"";
+    if(cleanDx) ui.fields.adx=cleanDx;
+    render();
+    toast("Autofilled "+p.name,"ok");
+    return;
+  }
+  censusDraft();
+  ui.census=ui.census||{};
+  ui.census.hosp=p.hospitalNo||p.code||ui.census.hosp||"";
+  ui.census.name=p.name||"";
+  ui.census.age=p.age!=null&&p.age!==0?String(p.age):"";
+  ui.census.sex=p.sex||"M";
+  ui.census.addr=p.address||"";
+  ui.census.phone=p.phone||"";
+  if(cleanDx) ui.census.dx=cleanDx;
+  if(p.consultant&&!ui.census.con) ui.census.con=p.consultant;
+  if(p.consultant2&&!ui.census.con2) ui.census.con2=p.consultant2;
+  ui.fields=ui.fields||{};
+  ui.fields.asex=p.sex||"M";
+  render();
+  toast("Autofilled "+p.name,"ok");
 }
 function bedSortKey(b){
   const no=String((b&&b.no)||"");
@@ -4221,11 +4399,20 @@ function observeView(){
     <button class="${tab==="prev"?"on":""}" onclick="ui.obsTab='prev';render()">Previous</button>
   </div>`;
   if(tab==="prev"){
-    const prev=(S.obsStays||[]).filter(s=>s.endedAt&&(s.outcome==="disposed"||s.outcome==="referred"))
+    const oq=String(ui.obsPrevQ||"").trim().toLowerCase();
+    const prevAll=(S.obsStays||[]).filter(s=>s.endedAt&&(s.outcome==="disposed"||s.outcome==="referred"))
       .slice().sort((a,b)=>new Date(b.endedAt||0)-new Date(a.endedAt||0));
+    const prev=prevAll.filter(stay=>{
+      if(!oq) return true;
+      const p=patient(stay.pid);
+      if(!p) return false;
+      const b=(S.beds||[]).find(x=>x.id===stay.bedId)||lastBedObj(stay.pid);
+      const hay=[p.name,p.hospitalNo,p.code,p.diagnosis,p.address,b?b.no:"",stay.referralTo,stay.note].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(oq);
+    });
     const list=prev.length?prev.map(stay=>{
       const p=patient(stay.pid);
-      const b=(S.beds||[]).find(x=>x.id===stay.bedId);
+      const b=(S.beds||[]).find(x=>x.id===stay.bedId)||lastBedObj(stay.pid);
       if(!p) return "";
       let detail="";
       if(stay.outcome==="disposed"){
@@ -4246,10 +4433,11 @@ function observeView(){
         ${detail?`<p class="tiny">${esc(detail)}</p>`:""}
         <p class="tiny">Start ${fmt(stay.at)} · End ${fmt(stay.endedAt)}</p>
       </div>`;
-    }).filter(Boolean).join(""):`<div class="card"><p class="sm">No previous observations.</p></div>`;
+    }).filter(Boolean).join(""):`<div class="card"><p class="sm">${oq?"No matching previous observations.":"No previous observations."}</p></div>`;
     return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <h2 class="page-title">Under observation</h2>
     ${seg}
+    <input id="obsPrevQ" placeholder="Search name, hospital no., diagnosis or bed" value="${esc(ui.obsPrevQ||"")}" oninput="ui.obsPrevQ=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>
     ${list}`;
   }
   const list=open.length?open.map(p=>{
@@ -4268,7 +4456,8 @@ function observeView(){
     }).join(""):`<div class="card"><p class="sm">No one is under observation.</p></div>`;
   const form=`<div class="card">
       <p class="tiny">KEEP UNDER OBSERVATION</p>
-      <label class="field"><span>Hospital no.</span><input id="ohosp" value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off"/></label>
+      <label class="field"><span>Hospital no.</span><input id="ohosp" value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off" oninput="onObsHospInput(this.value)"/></label>
+      <div id="ohospMatch">${hospMatchBannerHtml("obs",d.hosp)}</div>
       <label class="field"><span>Name</span><input id="oname" value="${esc(d.name||"")}" placeholder="Full name"/></label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <label class="field"><span>Age</span><input id="oage" value="${esc(d.age||"")}" inputmode="numeric"/></label>
@@ -4306,7 +4495,8 @@ async function startObservation(){
     toast("This hospital number is already on the ward.","bad");return;
   }
   if(workflowLocked("observation",bed.id))return;
-  const id=uid("p"), asg=uid("as"), stay=uid("os");
+  const prevRet=(S.patients||[]).find(x=>x.hospitalNo&&x.hospitalNo.toLowerCase()===hosp.toLowerCase()&&x.status==="discharged");
+  const id=prevRet?prevRet.id:uid("p"), asg=uid("as"), stay=uid("os");
   const p={id,code:hosp,hospitalNo:hosp,name,age:+(d.age||0),sex:d.sex||"O",diagnosis:dx,address:(d.addr||"").trim(),phone:(d.phone||"").trim(),admittedAt:now(),status:"observation"};
   setBusy(true,"Saving observation\u2026");
   try{
@@ -4646,17 +4836,40 @@ function censusView(){
   const empties=emptyBeds();
   const occ=occupied();
   const disTs=x=>{const t=Date.parse(x.dischargedAt||0);return Number.isFinite(t)&&x.dischargedAt?t:-Infinity};
-  const recent=S.patients.filter(p=>p.status==="discharged"&&!obsOnlyDischarge(p)).slice().sort((a,b)=>{const ta=disTs(a),tb=disTs(b);return ta===tb?0:(tb>ta?1:-1)}).slice(0,20);
+  const recentAll=S.patients.filter(p=>p.status==="discharged"&&!obsOnlyDischarge(p)).slice().sort((a,b)=>{const ta=disTs(a),tb=disTs(b);return ta===tb?0:(tb>ta?1:-1)});
+  const dq=String(ui.disQ||"").trim().toLowerCase();
+  const recent=recentAll.filter(x=>{
+    if(!dq) return true;
+    const bno=lastBedNo(x.id);
+    const hay=[x.name,x.hospitalNo,x.code,x.diagnosis,bno!=="-"?bno:""].filter(Boolean).join(" ").toLowerCase();
+    return hay.includes(dq);
+  });
   const seg=`<div class="seg">
-    <button class="${tab==="in"?"on":""}" onclick="censusDraft();ui.ctab='in';render()">Admit</button>
-    <button class="${tab==="out"?"on":""}" onclick="censusDraft();ui.ctab='out';render()">Discharge</button>
+    <button class="${tab==="in"?"on":""}" onclick="censusDraft();ui.ctab='in';ui.disListOnly=false;render()">Admit</button>
+    <button class="${tab==="out"?"on":""}" onclick="censusDraft();ui.ctab='out';ui.disListOnly=false;render()">Discharge</button>
   </div>`;
 
   if(tab==="out"){
     const pid=ui.disId||"";
     const p=pid?patient(pid):null;
+    if(p && d.ddxPid!==p.id){ d.ddx=p.diagnosis||""; d.ddxPid=p.id; }
+    const curDx=d.ddx!=null?d.ddx:(p&&p.diagnosis||"");
     const treat=d.treat||["conservative"];
     const form=!!(p&&ui.disForm);
+    const disSearch=`<input id="disQ" placeholder="Search name, hospital no., diagnosis or bed" value="${esc(ui.disQ||"")}" oninput="ui.disQ=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>`;
+    const disCards=recent.length?recent.map(x=>{
+      const bno=lastBedNo(x.id);
+      return `<div class="card" style="cursor:pointer" onclick="go('record','${x.id}',1)"><b>${esc(x.name)}</b><p class="tiny">${esc(x.hospitalNo||x.code)}${bno&&bno!=="—"?" · Bed "+esc(bno):""}${x.diagnosis?" · "+esc(x.diagnosis):""} · ${labelOf(DISCHARGE_MODES,x.dischargeMode)} · ${labelOf(DISCHARGE_OUTCOMES,x.dischargeOutcome)} · ${x.dischargedAt?fmt(x.dischargedAt):""}</p></div>`;
+    }).join(""):`<div class="card"><p class="sm">${dq?"No matching discharged patients.":"No recent discharges."}</p></div>`;
+    if(ui.disListOnly){
+      return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
+        <div class="row" style="align-items:center;margin-bottom:6px">
+          <h2 class="page-title" style="margin:0">Recent discharges</h2>
+          ${canWrite()?`<button class="btn ghost sm" type="button" onclick="ui.disListOnly=false;render()">Discharge patient</button>`:""}
+        </div>
+        ${disSearch}
+        ${disCards}`;
+    }
     return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
       <h2 class="page-title">Discharge</h2>${seg}
       <div class="card">
@@ -4667,6 +4880,7 @@ function censusView(){
       </div>
       <button class="btn block ${p?"danger":"idle"}" ${p?"":"disabled"} onclick="if(!ui.disId)return;censusDraft();ui.disForm=true;render()" style="margin-bottom:10px">Discharge</button>
       ${form?`<div class="card">
+        <label class="field"><span>Working diagnosis</span><input id="ddx" value="${esc(curDx)}" placeholder="Diagnosis" oninput="ui.census=ui.census||{};ui.census.ddx=this.value;ui.census.ddxPid='${p?p.id:""}'"/></label>
         <label class="field"><span>Mode of treatment</span>
           <div class="multi">${TREATMENT_MODES.filter(x=>x[0]!=="conservative_ect").map(([id,lb])=>`<button class="chip ${treat.includes(id)?"on":""}" onclick="toggleMulti('treat','${id}')">${lb}</button>`).join("")}
           <span class="tiny">${labelOf(TREATMENT_MODES,treatFromChips())}</span>
@@ -4677,7 +4891,7 @@ function censusView(){
         <label class="field"><span>Date of discharge</span><input id="ddate" type="datetime-local" value="${esc(d.ddate||localStamp())}"/></label>
         <button class="btn danger block" onclick="censusDraft();dischargeFromCensus()">Confirm discharge</button>
       </div>`:""}
-      ${recent.length?`<p class="sec">Recent discharges</p>${recent.map(x=>`<div class="card" style="cursor:pointer" onclick="go('record','${x.id}',1)"><b>${esc(x.name)}</b><p class="tiny">${esc(x.hospitalNo||x.code)} · ${labelOf(DISCHARGE_MODES,x.dischargeMode)} · ${labelOf(DISCHARGE_OUTCOMES,x.dischargeOutcome)} · ${x.dischargedAt?fmt(x.dischargedAt):""}</p></div>`).join("")}`:""}`;
+      ${recentAll.length?`<p class="sec">Recent discharges</p>${disSearch}${disCards}`:""}`;
   }
 
   const reasons=d.reasons||[];
@@ -4690,7 +4904,8 @@ function censusView(){
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <h2 class="page-title">Admit</h2>${seg}
     <div class="card">
-      <label class="field"><span>Hospital no. *</span><input id="ahosp" required value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off"/></label>
+      <label class="field"><span>Hospital no. *</span><input id="ahosp" required value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off" oninput="onAdmitHospInput(this.value)"/></label>
+      <div id="ahospMatch">${hospMatchBannerHtml("admit",d.hosp)}</div>
       <label class="field"><span>Name</span><input id="aname" value="${esc(d.name||"")}" placeholder="Full name"/></label>
       <label class="field"><span>Address <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="aaddr" value="${esc(d.addr||"")}" placeholder="Village / town / ward address" autocomplete="street-address"/></label>
       <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="aphone" value="${esc(d.phone||"")}" placeholder="Mobile number" inputmode="tel" autocomplete="tel"/></label>
@@ -4727,15 +4942,19 @@ function admitFromCensus(){
     flashBtn(".card .btn.block","bad");toast("This hospital number is already in the ward. Use Transfer if the bed is wrong.","bad");return;
   }
   if(workflowLocked("admission",bid))return;
-  const id=uid("p");
+  const prevRet=(S.patients||[]).find(x=>x.hospitalNo&&x.hospitalNo.toLowerCase()===hosp.toLowerCase()&&x.status==="discharged");
+  const prevBackup=prevRet?JSON.parse(JSON.stringify(prevRet)):null;
+  const prevSnapBackup=prevRet&&S.snaps[prevRet.id]?JSON.parse(JSON.stringify(S.snaps[prevRet.id])):null;
+  const id=prevRet?prevRet.id:uid("p");
   const reasons=(d.reasons||[]).join(",");
-  const p={id,code:hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:(d.dx||"").trim()||"Diagnosis pending",reason:reasons,referredBy:(d.ref||"").trim(),consultant:(d.con||"").trim(),consultant2:(d.con2||"").trim(),admittedAt:d.adate?new Date(d.adate).toISOString():now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:null,status:"admitted",address:(d.addr||"").trim(),phone:(d.phone||"").trim()};
+  const p={id,code:(prevRet&&prevRet.code)||hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:(d.dx||"").trim()||"Diagnosis pending",reason:reasons,referredBy:(d.ref||"").trim(),consultant:(d.con||"").trim(),consultant2:(d.con2||"").trim(),admittedAt:d.adate?new Date(d.adate).toISOString():now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:null,status:"admitted",address:(d.addr||"").trim(),phone:(d.phone||"").trim()};
+  S.patients=S.patients.filter(x=>x.id!==id);
   S.patients.unshift(p);
   S.snaps[id]={state:"Newly admitted.",risk:"moderate",sleep:"slept-well",watch:"",plan:"",by:S.userId,at:now()};
   bed.patientId=id;
   const asg={id:uid("as"),patientId:id,bedId:bed.id,at:now(),released:null,by:S.userId};
   S.assignments.unshift(asg);
-  admitCommit(id,p,bed,asg,hosp);
+  admitCommit(id,p,bed,asg,hosp,prevBackup,prevSnapBackup);
 }
 async function callAtomicWorkflow(name,args){
   if(!sb||!sessionTok)return {used:false};
@@ -4772,7 +4991,7 @@ function admitPayload(p){
     admitted_at:p.admittedAt||null,treatment_mode:p.treatmentMode||null
   });
 }
-async function admitCommit(id,p,bed,asg,hosp){setBusy(true);
+async function admitCommit(id,p,bed,asg,hosp,prevBackup,prevSnapBackup){setBusy(true);
   try{
     const atomic=await callAtomicWorkflow("ward_admit_patient",{
       p_token:sessionTok,p_patient:admitPayload(p),
@@ -4811,7 +5030,8 @@ async function admitCommit(id,p,bed,asg,hosp){setBusy(true);
     ui.census={reasons:[],treat:["conservative"],adate:localStamp()};if(ui.medPid){ui.medPid=null;if(ui.fields){delete ui.fields.md;delete ui.fields.mds}}ui.sheet=null;save();go("snap",id);
   }catch(e){
     S.patients=S.patients.filter(x=>x.id!==id);
-    delete S.snaps[id];
+    if(prevBackup) S.patients.unshift(prevBackup);
+    if(prevSnapBackup) S.snaps[id]=prevSnapBackup; else delete S.snaps[id];
     if(bed) bed.patientId=null;
     S.assignments=S.assignments.filter(a=>a.id!==asg.id);
     const sup=e&&e.supabase||{};
@@ -4856,10 +5076,13 @@ function dischargeFromCensus(){
   const id=ui.disId;const p=patient(id);if(!p||p.status==="discharged"){toast("Select a patient first.","bad");return}
   if(workflowLocked("discharge",id))return;
   const d=ui.census||{};
+  const oldDx=p.diagnosis||"";
+  const nextDx=(d.ddx!=null&&d.ddxPid===p.id?String(d.ddx):oldDx).trim()||oldDx;
   const bed=S.beds.find(b=>b.patientId===id);
   const releasedBefore=(S.assignments||[]).filter(a=>a.patientId===id&&!a.released).map(a=>({id:a.id,released:a.released}));
   const ect=ectPlan(id);
   const ectBefore=ect?{status:ect.status,nextAt:ect.nextAt,sessionsDone:ect.sessionsDone}:null;
+  p.diagnosis=nextDx;
   p.status="discharged";
   p.dischargedAt=d.ddate?new Date(d.ddate).toISOString():now();
   p.dischargeMode=d.mode||"advice";
@@ -4869,9 +5092,9 @@ function dischargeFromCensus(){
   const releasedAt=now();
   S.assignments.forEach(a=>{if(a.patientId===id&&!a.released)a.released=releasedAt});
   if(ect && p.dischargeMode!=="death")ect.status="cancelled";
-  dischargeCommit(p,bed,releasedBefore,ect,ectBefore);
+  dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx);
 }
-async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore){setBusy(true);
+async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx){setBusy(true);
   try{
     const activeAssignments=(S.assignments||[]).filter(a=>a.patientId===p.id&&a.released);
     const atomic=await callAtomicWorkflow("ward_discharge_patient",{
@@ -4904,9 +5127,16 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore){setBusy(true)
       evFail(p.id,"Discharge notification",ne);
       console.warn("Discharge notification failed",ne);
     }
+    if(oldDx!==undefined && String(p.diagnosis||"")!==String(oldDx||"")){
+      S.patientEdits=S.patientEdits||[];
+      S.patientEdits.unshift({id:"pe-"+uid("ed"),pid:p.id,field:"diagnosis",old:oldDx||null,new:p.diagnosis||null,by:S.userId,at:p.dischargedAt||now(),group:"dis-"+p.id});
+      ev(p.id,"Patient details edited",true,"note","Diagnosis: "+(oldDx||"—")+" → "+(p.diagnosis||"—"));
+    }
     ev(p.id,"Discharged · "+labelOf(DISCHARGE_MODES,p.dischargeMode)+" · "+labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome),true,"note");
+    if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;}
     flashBtn(".btn.danger.block","ok");toast("Discharged "+p.name,"ok");ui.disId="";ui.disForm=false;save();ui.ctab="out";render();
   }catch(e){
+    if(oldDx!==undefined) p.diagnosis=oldDx;
     p.status="admitted"; p.dischargedAt=null; p.dischargeMode=null; p.dischargeOutcome=null; p.treatmentMode=null;
     if(bed)bed.patientId=p.id;
     (S.assignments||[]).forEach(a=>{const old=releasedBefore&&releasedBefore.find(x=>x.id===a.id);if(old)a.released=old.released});
@@ -4922,7 +5152,8 @@ function admitFormBody(){
   const empties=emptyBeds();
   const d=ui.census||{};
   return `<label class="field"><span>Bed</span>${picker("abed",empties.length?empties.map(b=>[b.id,b.no]):[["","No empty bed"]],d.bed|| (empties[0]&&empties[0].id)||"","Bed")}</label>
-    <label class="field"><span>Hospital no. *</span><input id="ahosp" required placeholder="UHID / IP number" autocomplete="off" value="${esc(val("ahosp"))}" oninput="ui.fields=ui.fields||{};ui.fields.ahosp=this.value"/></label>
+    <label class="field"><span>Hospital no. *</span><input id="ahosp" required placeholder="UHID / IP number" autocomplete="off" value="${esc(val("ahosp"))}" oninput="onAdmitPanelHospInput(this.value)"/></label>
+    <div id="ahospPanelMatch">${hospMatchBannerHtml("admitPanel",val("ahosp"))}</div>
     <label class="field"><span>Name</span><input id="aname" placeholder="Full name" value="${esc(val("aname"))}" oninput="ui.fields=ui.fields||{};ui.fields.aname=this.value"/></label>
     <label class="field"><span>Address (optional)</span><input id="aaddr" placeholder="Village / town / ward address" value="${esc(val("aaddr"))}" oninput="ui.fields=ui.fields||{};ui.fields.aaddr=this.value"/></label>
     <label class="field"><span>Phone (optional)</span><input id="aphone" placeholder="Mobile number" inputmode="tel" value="${esc(val("aphone"))}" oninput="ui.fields=ui.fields||{};ui.fields.aphone=this.value"/></label>
@@ -4941,31 +5172,40 @@ function admitPatient(){
   if(S.patients.some(x=>x.hospitalNo && x.hospitalNo.toLowerCase()===hosp.toLowerCase() && x.status!=="discharged")){
     toast("This hospital number is already in the ward.","bad");return;
   }
-  const id=uid("p");
+  const prevRet=(S.patients||[]).find(x=>x.hospitalNo&&x.hospitalNo.toLowerCase()===hosp.toLowerCase()&&x.status==="discharged");
+  const prevBackup=prevRet?JSON.parse(JSON.stringify(prevRet)):null;
+  const prevSnapBackup=prevRet&&S.snaps[prevRet.id]?JSON.parse(JSON.stringify(S.snaps[prevRet.id])):null;
+  const id=prevRet?prevRet.id:uid("p");
   const c1=((ui.census&&ui.census.con)||val("acon")||"").trim();
   const c2=((ui.census&&ui.census.con2)||val("acon2")||"").trim();
-  const p={id,code:hosp||("PSY-"+id.slice(-6).toUpperCase()),patient_code:hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",hospital_no:hosp||null,name,age:+val("aage")||0,sex:val("asex")||"O",diagnosis:dx,admittedAt:now(),admitted_at:now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:"conservative",status:"admitted",address:(val("aaddr")||"").trim(),phone:(val("aphone")||"").trim(),consultant:c1,consultant2:c2,consultant_name:c1||null,consultant_name_2:c2||null,reason:(ui.census&&ui.census.reason)||"",reason_for_admission:(ui.census&&ui.census.reason)||null,referredBy:((ui.census&&ui.census.ref)||val("aref")||"").trim(),referred_by:((ui.census&&ui.census.ref)||val("aref")||"").trim()||null};
+  const code=(prevRet&&prevRet.code)||hosp||("PSY-"+id.slice(-6).toUpperCase());
+  const p={id,code,patient_code:code,hospitalNo:hosp||"",hospital_no:hosp||null,name,age:+val("aage")||0,sex:val("asex")||"O",diagnosis:dx,admittedAt:now(),admitted_at:now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:"conservative",status:"admitted",address:(val("aaddr")||"").trim(),phone:(val("aphone")||"").trim(),consultant:c1,consultant2:c2,consultant_name:c1||null,consultant_name_2:c2||null,reason:(ui.census&&ui.census.reason)||"",reason_for_admission:(ui.census&&ui.census.reason)||null,referredBy:((ui.census&&ui.census.ref)||val("aref")||"").trim(),referred_by:((ui.census&&ui.census.ref)||val("aref")||"").trim()||null};
+  S.patients=S.patients.filter(x=>x.id!==id);
   S.patients.unshift(p);
   S.snaps[id]={state:"Newly admitted.",risk:"moderate",sleep:"slept-well",watch:"",plan:"",by:S.userId,at:now()};
   bed.patientId=id;
   const asg={id:uid("as"),patientId:id,bedId:bed.id,at:now(),released:null,by:S.userId};
   S.assignments.unshift(asg);
-  admitCommit(id,p,bed,asg,hosp);
+  admitCommit(id,p,bed,asg,hosp,prevBackup,prevSnapBackup);
 }
 function dischargeForm(id){ const p=patient(id);if(!p||p.status==="discharged")return; openPanel("discharge",{id}); }
 function dischargeFormBody(id){
   const p=patient(id);if(!p) return `<p class="sm">Patient not found.</p>`;
   const treat=val("dtrt")||p.treatmentMode||(ectPlan(id)?"ect":"conservative");
+  const curDx=val("ddx")||(ui.fields&&ui.fields.ddx!=null?ui.fields.ddx:(p.diagnosis||""));
   return `<p class="sm" style="margin:8px 0">${esc(p.name)}</p>
+    <label class="field"><span>Working diagnosis</span><input id="ddx" value="${esc(curDx)}" placeholder="Diagnosis" oninput="ui.fields=ui.fields||{};ui.fields.ddx=this.value"/></label>
     <label class="field"><span>Mode of treatment</span>${picker("dtrt",TREATMENT_MODES,treat,"Mode of treatment")}</label>
     <label class="field"><span>Mode of discharge</span>${picker("dmode",DISCHARGE_MODES,val("dmode")||p.dischargeMode||"advice","Mode of discharge")}</label>
     <label class="field"><span>Outcome</span>${picker("dout",DISCHARGE_OUTCOMES,val("dout")||p.dischargeOutcome||"improved","Outcome")}</label>
-    <button class="btn danger block" onclick="ui.ctab='out';ui.disId='${p.id}';closePanel();go('census')">Confirm discharge</button>`;
+    <button class="btn danger block" onclick="openSnapDischarge('${p.id}');closePanel()">Confirm discharge</button>`;
 }
 function dischargePatient(id){
   if(!needWrite())return;
   const p=patient(id);if(!p||p.status==="discharged")return;
   if(workflowLocked("discharge",id))return;
+  const oldDx=p.diagnosis||"";
+  const nextDx=(val("ddx")||oldDx).trim()||oldDx;
   const mode=val("dmode")||"advice";
   const outcome=val("dout")||"improved";
   const treat=val("dtrt")||p.treatmentMode||"conservative";
@@ -4973,6 +5213,7 @@ function dischargePatient(id){
   const releasedBefore=(S.assignments||[]).filter(a=>a.patientId===id&&!a.released).map(a=>({id:a.id,released:a.released}));
   const ect=ectPlan(id);
   const ectBefore=ect?{status:ect.status,nextAt:ect.nextAt,sessionsDone:ect.sessionsDone}:null;
+  p.diagnosis=nextDx;
   p.status="discharged";
   p.dischargedAt=now();
   p.dischargeMode=mode;
@@ -4983,7 +5224,7 @@ function dischargePatient(id){
   S.assignments.forEach(a=>{if(a.patientId===id&&!a.released)a.released=releasedAt});
   if(ect && mode!=="death") ect.status="cancelled";
   ui.sheet=null;ui.panel=null;
-  Promise.resolve(dischargeCommit(p,bed,releasedBefore,ect,ectBefore)).finally(()=>go("patients"));
+  Promise.resolve(dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx)).finally(()=>go("patients"));
 }
 
 function openFab(){
@@ -4998,7 +5239,7 @@ function openFab(){
       <button class="card" onclick="fabForm('task')"><b>Task</b><p class="tiny">Assign follow-up</p></button>
       <button class="card" onclick="fabForm('handover')"><b>Handover</b><p class="tiny">Flag for night</p></button>
       <button class="card" onclick="fabForm('ect')"><b>Plan ECT</b><p class="tiny">Add to ECT list</p></button>
-      <button class="card" onclick="ui.ctab='in';go('census')"><b>Admit new</b><p class="tiny">Empty bed + identifiers</p></button>
+      <button class="card" onclick="ui.ctab='in';ui.disListOnly=false;go('census')"><b>Admit new</b><p class="tiny">Empty bed + identifiers</p></button>
     </div>
   </div></div>`;
   render();
@@ -6062,7 +6303,7 @@ function moreView(){
     <p class="tiny" style="margin:-4px 0 14px;opacity:.55">Build ${esc(APP_VERSION)}</p>
     <p class="more-section">Ward</p>
     <div class="more-grid">
-    ${canWrite()?row("ui.ctab='in';go('census')",ico("census"),"Admit / Discharge","teal"):""}
+    ${canWrite()?row("ui.ctab='in';ui.disListOnly=false;go('census')",ico("census"),"Admit / Discharge","teal"):""}
     ${canWrite()?row("go('observe')",ico("observe"),"Under observation","amber"):""}
     ${row("go('ect')",ico("ect"),"ECT","violet")}
     ${row("go('tasks')",ico("tasks"),"Task board","blue")}
@@ -6140,9 +6381,7 @@ function wasAdmittedFromObservation(p){
 function reportablePatient(p){
   if(!p) return false;
   if(p.status==="observation") return false;
-  const stays=obsStaysOf(p.id);
-  if(!stays.length) return true;
-  return wasAdmittedFromObservation(p);
+  return !obsOnlyDischarge(p);
 }
 function reportAdmitAt(p){
   const stays=obsStaysOf(p.id).filter(s=>(s.outcome||"")==="admitted")
@@ -6782,7 +7021,7 @@ function patchFrozenSheetPick(id,v){
 function setPick(id,v){
   ui.fields=ui.fields||{};
   ui.fields[id]=v;
-  if(id==="disel"){ui.disId=v;ui.disForm=false}
+  if(id==="disel"){ui.disId=v;ui.disForm=false;const dp=v?patient(v):null;ui.census=ui.census||{};ui.census.ddx=dp?(dp.diagnosis||""):"";ui.census.ddxPid=v||""}
   if(id==="dmode"||id==="dout"||id==="asex"||id==="abed"||id==="acon"||id==="acon2"||id==="hshift"){
     ui.census=ui.census||{};
     if(id==="dmode") ui.census.mode=v;
@@ -6904,11 +7143,20 @@ function patientRecordItems(pid){
   const allMeds=(S.orders||[]).filter(o=>o.pid===pid && !isPrn(o));
   const medInObs=o=>{
     if(!obsStays.length) return false;
-    const ts=Date.parse(o.start||o.at||0)||0;
+    if(p.status==="observation") return true;
+    const raw=String(o.at||o.start||"").trim();
+    const ts=Date.parse(raw||0)||0;
+    const isDateOnly=/^\d{4}-\d{2}-\d{2}$/.test(String(o.start||"").trim()) && !o.at;
+    const dayKey=String(o.start||"").trim().slice(0,10);
     if(fromObs && admitTs && ts && ts<admitTs) return true;
     return obsStays.some(s=>{
       const a=Date.parse(s.at||0)||0;
       const b=Date.parse(s.endedAt||0)||Date.now();
+      if(isDateOnly && dayKey){
+        const startDay=wardLocalDayKey(s.at)||String(s.at||"").slice(0,10);
+        const endDay=s.endedAt?(wardLocalDayKey(s.endedAt)||String(s.endedAt||"").slice(0,10)):wardLocalDayKey(new Date());
+        if(startDay && endDay && dayKey>=startDay && dayKey<=endDay) return true;
+      }
       return ts>=a-60000 && ts<=b+60000;
     });
   };
@@ -7048,7 +7296,7 @@ function recordItemHtml(it){
 }
 function recordView(){
   const p=patient(route.id); if(!p) return `<div class="card">Not found.</div>`;
-  const b=bedObj(p.id);
+  const b=bedObj(p.id)||lastBedObj(p.id);
   const items=patientRecordItems(p.id);
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <div class="record-head">
@@ -7062,7 +7310,7 @@ function recordView(){
 }
 function exportPatientRecord(pid){
   const p=patient(pid); if(!p) return;
-  const b=bedObj(pid);
+  const b=bedObj(pid)||lastBedObj(pid);
   const items=patientRecordItems(pid);
   const rows=items.map(it=>{
     const who=recActor(it);
@@ -7655,11 +7903,12 @@ function patientFilterRows(){
 function patientFilterPill(){
   const T={ect:"ECT",restrain:"Restrained",delirium:"Delirium",high:"Delirium",suicidal:"Suicidal",jail:"Jail",today:"Admitted today",mine:"My patients"};
   const bits=[];
+  if(ui.psec){const sec=(S.sections||[]).find(s=>s.id===ui.psec); bits.push(sec?sectionLabel(sec.name):"Section")}
   if(ui.ptag) bits.push(T[ui.ptag]||ui.ptag);
   if(ui.preason) bits.push(ui.preason==="other"?"Other reason":(labelOf(ADMIT_REASONS,ui.preason)||ui.preason));
   if(ui.pcon){const f=facultyById(ui.pcon); bits.push(f?f.name:"Consultant")}
   if(!bits.length) return "";
-  return `<div class="filter-pill-row" role="status"><button type="button" class="filter-pill" onclick="ui.ptag='';ui.preason='';ui.pcon='';render()" aria-label="Clear filter: ${esc(bits.join(", "))}"><span>Filtered: ${esc(bits.join(" · "))}</span><span class="filter-pill-x" aria-hidden="true">✕</span></button></div>`;
+  return `<div class="filter-pill-row" role="status"><button type="button" class="filter-pill" onclick="ui.psec='';ui.ptag='';ui.preason='';ui.pcon='';render()" aria-label="Clear filter: ${esc(bits.join(", "))}"><span>Filtered: ${esc(bits.join(" · "))}</span><span class="filter-pill-x" aria-hidden="true">✕</span></button></div>`;
 }
 function criticalStatusForm(pid){
   const p=patient(pid); if(!p)return; const b=bedObj(pid);
@@ -8371,8 +8620,9 @@ function render(opts){
   if(main2){
     if(opts.nav){
       if(navDir==="back"){
-        const saved=navScroll[routeKey(route.page,route.id)];
-        main2.scrollTop=saved||0;
+        const saved=navScroll[routeKey(route.page,route.id)]||0;
+        main2.scrollTop=saved;
+        try{requestAnimationFrame(()=>{const m3=document.querySelector(".main");if(m3)m3.scrollTop=saved;})}catch(e){}
       }else{
         main2.scrollTop=0;
       }
