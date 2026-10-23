@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.98 ux-batch-oct23 -->
+<!-- WARD SYNC RELEASE: R1.3.99 hero-ward-style -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1705,10 +1705,10 @@ html[data-theme="ot"] button.pedit-btn{box-shadow:0 4px 12px rgba(0,0,0,.35)}
 .accent-sw svg{width:48%;height:48%}
 .accent-cap{font-size:10px;text-align:center;color:var(--muted);margin-top:4px;font-weight:700}
 .accent-cell{display:flex;flex-direction:column;align-items:center;min-width:0;flex:0 1 auto;padding:5px 0}
-/* R1.3.98 UX BATCH */
-button.hero-ward{appearance:none;-webkit-appearance:none;text-align:left;font:inherit;color:inherit;cursor:pointer;transition:transform .12s ease,background-color .15s ease,border-color .15s ease}
-button.hero-ward:hover{border-color:rgba(255,255,255,.32);background:rgba(255,255,255,.16)}
-button.hero-ward:active{transform:scale(.97)}
+/* R1.3.99 UX BATCH */
+button.hero-ward{border:0;background:transparent;padding:0;margin:0;box-shadow:none;outline:none;appearance:none;-webkit-appearance:none;text-align:left;font:inherit;color:inherit;width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity .12s ease,transform .12s ease}
+button.hero-ward:active{opacity:.72;transform:scale(.98)}
+button.hero-ward:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
 .psec-row{margin-bottom:8px}
 .hosp-autofill{margin:-2px 0 10px;padding:10px 12px;border-radius:12px;background:var(--pill-full);border:1px solid var(--pill-full-line);display:flex;align-items:center;justify-content:space-between;gap:10px}
 .hosp-autofill-meta{min-width:0;flex:1}
@@ -2209,7 +2209,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.98";
+const APP_VERSION="R1.3.99";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -4201,6 +4201,7 @@ function openWardSection(secId){
   ui.psec=secId||"";
   ui.ptag="";ui.preason="";ui.pcon="";
   go("patients");
+  try{requestAnimationFrame(()=>{const c=document.querySelector(".psec-row .chip.on");if(c&&c.scrollIntoView)c.scrollIntoView({block:"nearest",inline:"center"})})}catch(e){}
 }
 function openRecentDischarges(){
   ui.ctab="out";
@@ -8580,8 +8581,7 @@ function render(opts){
   }
   const main=document.querySelector(".main");
   const y=main?main.scrollTop:0;
-  const chipRow=document.querySelector(".ptag-row");
-  const chipX=chipRow?chipRow.scrollLeft:0;
+  const chipXs=Array.from(document.querySelectorAll(".ptag-row")).map(r=>r.scrollLeft);
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
   if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){el.innerHTML=`<div class="login"><div class="login-card"><h1>Ward Sync</h1><p class="muted">Checking session…</p></div></div>`;return}
@@ -8602,8 +8602,7 @@ function render(opts){
   lastRenderHtml=_html; lastRenderRoute=_rk; renderCount++;
   el.innerHTML=_html;
   ui._sheetEnter=false;
-  const chipRow2=document.querySelector(".ptag-row");
-  if(chipRow2 && chipX) chipRow2.scrollLeft=chipX;
+  document.querySelectorAll(".ptag-row").forEach((r,i)=>{if(chipXs[i])r.scrollLeft=chipXs[i]});
   try{ if(ui.giveOpen) refreshGivePost(); }catch(e){}
   (function syncNavClearance(){
     try{
