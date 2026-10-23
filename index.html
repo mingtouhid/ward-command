@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.105 actions-grid -->
+<!-- WARD SYNC RELEASE: R1.3.106 record-clean -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -2225,7 +2225,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.105";
+const APP_VERSION="R1.3.106";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -5577,7 +5577,7 @@ async function closeObservation(pid,outcome){
       p.dischargeMode=dMode;
       p.dischargeOutcome=dOut;
     }
-    const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.outcome=outcome}
+    const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.endedBy=S.userId;st.outcome=outcome;if(outcome==="referred"){st.referralTo=dept;st.note=reason;st.referralReason=reason;}}
     ev(pid,"Observation ended \u00b7 "+outcome+(dept?" \u00b7 "+dept:""),true,"note");
     try{
       const isRef=outcome==="referred", ts=Date.now();
@@ -7963,24 +7963,40 @@ function patientRecordItems(pid){
       const obsBed=bedNoById(s.bedId)||(a0?bedNoById(a0.bedId):"")||(p.status==="observation"?bedOf(pid):"");
       const bits=patientBits();
       const sReason=s.reason?(reasonLine({reason:s.reason})||s.reason):"";
-      [sReason&&sReason!==(reasonLine(p)||p.reason)?sReason:"",s.note].filter(Boolean).forEach(x=>bits.push(x));
+      if(sReason&&sReason!==(reasonLine(p)||p.reason)) bits.push(sReason);
       if(obsMeds.length) bits.push("Medications:\n"+obsMeds.map(medLine).join("\n"));
       const evObs=((S.events||[]).filter(e=>String(e.pid)===String(pid)&&/under observation|kept under observation/i.test(e.title||"")).sort((a,b)=>Math.abs(Date.parse(a.at||0)-sTs)-Math.abs(Date.parse(b.at||0)-sTs))[0])||{};
       const byName=(evObs.actorName&&evObs.actorName!=="?")?evObs.actorName:"";
       add({kind:"admit",obsFirst:true,title:(obsBed&&obsBed!=="—")?("Kept under observation on "+obsBed):"Kept under observation",at:s.at,by:s.by||evObs.by||(a0&&a0.by)||p.by||null,byName:byName,body:bits.join("\n")});
     }else{
       const sReason=s.reason?(reasonLine({reason:s.reason})||s.reason):"";
-      const bits=[sReason,s.note].filter(Boolean);
+      const bits=[sReason].filter(Boolean);
       if(obsMeds.length) bits.push("Medications:\n"+obsMeds.map(medLine).join("\n"));
       add({kind:"obs",title:"Kept under observation",at:s.at,by:s.by,body:bits.join("\n")});
     }
     if(s.endedAt){
-      let title="Observation ended";
-      if(s.outcome==="admitted") title="Admitted from observation";
-      else if(s.outcome==="referred") title="Referred"+(s.referralTo?" to "+s.referralTo:"");
-      else if(s.outcome==="disposed") title="Disposed from observation";
-      else if(s.outcome) title="Observation ended · "+s.outcome;
-      add({kind:"obs",title:title,at:s.endedAt,by:s.endedBy,body:s.referralReason||""});
+      let title="Observation ended", body="";
+      const refReason=(s.referralReason||s.note||"").trim();
+      if(s.outcome==="admitted"){
+        title="Admitted from observation";
+      }else if(s.outcome==="referred"){
+        title="Referred"+(s.referralTo?" to "+s.referralTo:"");
+        if(refReason) body="Reason: "+refReason;
+      }else if(s.outcome==="disposed"){
+        title="Disposed";
+        const modeL=labelOf(DISCHARGE_MODES,p.dischargeMode);
+        const outL=labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome);
+        const mode=(modeL&&modeL!=="—")?modeL:(p.dischargeMode||"");
+        const out=(outL&&outL!=="—")?outL:(p.dischargeOutcome||"");
+        body=[mode,out].filter(Boolean).join(" · ");
+      }else if(s.outcome){
+        title="Observation ended · "+s.outcome;
+      }
+      const endTs=Date.parse(s.endedAt||0)||0;
+      const evEnd=((S.events||[]).filter(e=>String(e.pid)===String(pid)&&/observation ended|referred|disposed/i.test(e.title||"")).sort((a,b)=>Math.abs(Date.parse(a.at||0)-endTs)-Math.abs(Date.parse(b.at||0)-endTs))[0])||{};
+      const endBy=s.endedBy||evEnd.by||s.by||p.by||null;
+      const endByName=(evEnd.actorName&&evEnd.actorName!=="?")?evEnd.actorName:"";
+      add({kind:"obs",title:title,at:s.endedAt,by:endBy,byName:endByName,body:body});
     }
   });
   let admitCardAdded=false;
@@ -8026,12 +8042,12 @@ function patientRecordItems(pid){
   (S.criticalStatusUpdates||[]).filter(x=>String(x.pid)===String(pid)).forEach(c=>{
     add({kind:"crit",title:"Critical status",at:c.at||c.created_at||c.updated_at,by:c.by||c.actor,byName:c.byName||c.actorName,body:c.text||c.value||c.note||c.body||""});
   });
-  if(p.dischargedAt){
+  if(p.dischargedAt && !obsOnlyDischarge(p)){
     const modeL=labelOf(DISCHARGE_MODES,p.dischargeMode);
     const outL=labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome);
     const mode=(modeL&&modeL!=="—")?modeL:(p.dischargeMode||"");
     const out=(outL&&outL!=="—")?outL:(p.dischargeOutcome||"");
-    add({kind:"dis",title:"Discharge",at:p.dischargedAt,body:[mode,out].filter(Boolean).join(" · ")});
+    add({kind:"dis",title:"Discharged",at:p.dischargedAt,body:[mode,out].filter(Boolean).join(" · ")});
   }
   (S.events||[]).filter(e=>e.pid===pid).forEach(e=>{
     if(recSkipEventTitle(e.title)) return;
@@ -8070,7 +8086,6 @@ function recordItemHtml(it){
   return `<div class="rec-item rec-${recCss(it.kind)}">
     <div class="rec-rail"><div class="rec-dot"></div></div>
     <div class="rec-card">
-      <p class="rec-kicker">${esc(it.kind==="admit"?"WARD":recKindLabel(it.kind))}</p>
       <h3>${esc(it.title||"")}</h3>
       ${it.body?`<p class="sm">${esc(it.body)}</p>`:""}
       <p class="tiny">${esc(who)}${who?" · ":""}${esc(stamp(it.at)||fmt(it.at)||"")}</p>
@@ -8098,8 +8113,7 @@ function exportPatientRecord(pid){
   const rows=items.map(it=>{
     const who=recActor(it);
     return `<div style="border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin:0 0 8px">
-      <div style="font-size:10px;letter-spacing:.12em;font-weight:700;color:#64748b">${esc(recKindLabel(it.kind))}</div>
-      <div style="font-size:14px;font-weight:700;margin-top:2px">${esc(it.title||"")}</div>
+      <div style="font-size:14px;font-weight:700;margin:0">${esc(it.title||"")}</div>
       ${it.body?`<div style="font-size:13px;margin-top:4px;white-space:pre-wrap">${esc(it.body)}</div>`:""}
       <div style="font-size:11px;color:#64748b;margin-top:6px">${esc(who)}${who?" · ":""}${esc(stamp(it.at)||fmt(it.at)||"")}</div>
     </div>`;
