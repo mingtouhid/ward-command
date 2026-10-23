@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.102 hero-ward-align -->
+<!-- WARD SYNC RELEASE: R1.3.103 med-suggest -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1725,7 +1725,9 @@ button.dx-opt:last-child{border-bottom:0}
 button.dx-opt:hover,button.dx-opt:active,button.dx-opt.active{background:var(--pill-full)}
 .dx-opt-name{font-weight:600;color:var(--ink);min-width:0;flex:1}
 .dx-opt-code{flex:none;font-size:11px;font-weight:800;letter-spacing:.03em;padding:2px 7px;border-radius:999px;background:var(--pill-full);color:var(--pill-full-ink);border:1px solid var(--pill-full-line)}
-/* /R1.3.100 UX BATCH */
+.med-ac-wrap .dx-suggest{margin:6px 0 2px}
+.med-opt-doses{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* /R1.3.103 UX BATCH */
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -2220,7 +2222,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.102";
+const APP_VERSION="R1.3.103";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2425,10 +2427,7 @@ function medRowHtml(prefix,i,m){
   m=m||{};
   return `<div class="obs-med-block">
       <div class="med-sec"><p class="tiny">DRUG + DOSE</p>
-        <div class="obs-med-grid">
-          <input id="${prefix}drug${i}" value="${esc(m.drug||"")}" placeholder="Drug" autocomplete="off"/>
-          <input id="${prefix}dose${i}" value="${esc(m.dose||"")}" placeholder="Dose" autocomplete="off"/>
-        </div>
+        ${medInputsGridHtml({drugId:prefix+"drug"+i,doseId:prefix+"dose"+i,routeId:prefix+"route"+i,freqId:prefix+"freq"+i,drugVal:m.drug||"",doseVal:m.dose||"",mode:"row",prefix,idx:i})}
       </div>
       <div class="med-sec"><p class="tiny">ROUTE</p>${picker(prefix+"route"+i,MED_ROUTES,m.route||"PO","Route")}</div>
       <div class="med-sec"><p class="tiny">FREQUENCY</p>${picker(prefix+"freq"+i,MED_FREQS,m.freq||"OD","Frequency")}</div>
@@ -4451,7 +4450,11 @@ function closeDxSuggest(el){
   if(box) box.innerHTML="";
 }
 function closeDxSuggestLater(el){
-  setTimeout(()=>closeDxSuggest(el),180);
+  setTimeout(()=>{
+    const wrap=el&&el.closest?el.closest(".dx-wrap"):null;
+    if(wrap&&document.activeElement&&wrap.contains(document.activeElement)) return;
+    closeDxSuggest(el);
+  },180);
 }
 function pickDxSuggest(btn){
   if(!btn) return;
@@ -4479,6 +4482,343 @@ function onDxKey(ev,el){
 function dxFieldHtml(labelHtml,inputId,valStr,placeholder,mode,extraPid){
   return `<div class="dx-wrap"><label class="field"><span>${labelHtml}</span><input id="${inputId}" value="${esc(valStr||"")}" placeholder="${esc(placeholder||"Diagnosis")}" autocomplete="off" data-dx-mode="${esc(mode||"")}" data-dx-pid="${esc(extraPid||"")}" oninput="onDxInput(this,'${esc(mode||"")}','${esc(extraPid||"")}')" onkeydown="onDxKey(event,this)" onblur="closeDxSuggestLater(this)"/></label><div class="dx-suggest" role="listbox" aria-label="Diagnosis suggestions"></div></div>`;
 }
+
+const MED_CATALOG=[
+  // 1. Parenteral / Emergency & Long-Acting Depots (IM / IV)
+  ["Inj. Lorazepam",["2mg","4mg","1 amp","2 amp"],"IV","SOS","lopez ativan lorazepam iv im acute agitation status"],
+  ["Inj. Lopez",["4mg","2mg","1 amp","2 amp"],"IV","BD","lorazepam lopez iv im agitation"],
+  ["Inj. Haloperidol",["5mg","10mg","1 amp"],"IM","SOS","nedol serenace haloperidol im agitation"],
+  ["Inj. Nedol",["5mg","10mg","1 amp"],"IM","SOS","haloperidol serenace nedol im"],
+  ["Inj. Haloperidol + Promethazine (Nedol:Phenargan)",["1:1 amp","5mg + 25mg","5mg + 50mg"],"IM","BD","nedol phenargan 1:1 haloperidol promethazine rapid tranquilization"],
+  ["Inj. Nedol:Phenargan",["1:1 amp","5mg + 25mg","5mg + 50mg"],"IM","BD","haloperidol promethazine 1:1 nedol phenargan"],
+  ["Inj. Promethazine",["25mg","50mg","1 amp"],"IM","SOS","phenargan avomine promethazine im eps"],
+  ["Inj. Phenargan",["25mg","50mg","1 amp"],"IM","SOS","promethazine phenargan im"],
+  ["Inj. Olanzapine",["5mg","10mg"],"IM","SOS","olanzapine im acute agitation"],
+  ["Inj. Olanzapine Pamoate (LA)",["405mg","300mg","210mg"],"IM","monthly","olanzapine la depot long acting pamoate zypadhera 405 405mg 300mg 210mg"],
+  ["Inj. Flupenthixol Decanoate (LA)",["20mg","40mg"],"IM","monthly","fluanxol depot flupentixol la long acting"],
+  ["Inj. Zuclopenthixol Acetate (Acuphase)",["50mg","100mg"],"IM","STAT","clopixol acuphase zuclopenthixol acute"],
+  ["Inj. Zuclopenthixol Decanoate (LA)",["200mg"],"IM","monthly","clopixol depot zuclopenthixol la long acting"],
+  ["Inj. Haloperidol Decanoate (LA)",["50mg","100mg"],"IM","monthly","senorm la haloperidol depot long acting"],
+  ["Inj. Paliperidone Palmitate (LA)",["75mg","100mg","150mg"],"IM","monthly","invega sustenna paliperidone la depot long acting"],
+  ["Inj. Diazepam",["5mg","10mg","1 amp"],"IV","SOS","valium calmpose diazepam iv"],
+  ["Inj. Midazolam",["2mg","5mg","1 amp"],"IV","SOS","mezolam midazolam iv im"],
+  ["Inj. Ketamine",["0.5mg/kg","25mg","50mg"],"IV","STAT","ketamine infusion"],
+  // 2. Oral Antipsychotics
+  ["Tab. Olanzapine",["2.5mg","5mg","7.5mg","10mg","15mg","20mg"],"PO","HS","oleanz oliza olanzapine"],
+  ["Tab. Olanzapine MD",["5mg","10mg","15mg","20mg"],"PO","HS","oleanz rt olanzapine mouth dissolving dispersible"],
+  ["Tab. Risperidone",["0.5mg","1mg","2mg","3mg","4mg","6mg"],"PO","BD","riscon sizodon risperdal risperidone"],
+  ["Tab. Risperidone + Trihexyphenidyl (Riscon Forte)",["4mg + 2mg","4mg","1 tab"],"PO","BD","riscon forte sizodon forte risperidone thp"],
+  ["Tab. Risperidone + Trihexyphenidyl (Riscon Plus)",["3mg + 2mg","2mg + 2mg","3mg","1 tab"],"PO","BD","riscon plus sizodon plus risperidone thp"],
+  ["Tab. Aripiprazole",["2.5mg","5mg","10mg","15mg","20mg","30mg"],"PO","OD","arip mt abilify asprito aripiprazole"],
+  ["Tab. Quetiapine",["25mg","50mg","100mg","200mg","300mg","400mg"],"PO","HS","qutan seroquel quetiapine"],
+  ["Tab. Clozapine",["12.5mg","25mg","50mg","100mg","200mg"],"PO","HS","sizopin lozapin clozapine"],
+  ["Tab. Haloperidol",["0.5mg","1.5mg","5mg","10mg"],"PO","BD","serenace nedol haloperidol"],
+  ["Tab. Amisulpride",["50mg","100mg","200mg","300mg","400mg"],"PO","BD","solian sulpitac amisulpride"],
+  ["Tab. Cariprazine",["1.5mg","3mg","4.5mg","6mg"],"PO","OD","caripra vraylar cariprazine"],
+  ["Tab. Lurasidone",["40mg","80mg"],"PO","OD","lurasid latuda lurasidone"],
+  ["Tab. Blonanserin",["4mg","8mg"],"PO","BD","ewag lonasen blonanserin"],
+  ["Tab. Trifluoperazine",["5mg","10mg"],"PO","BD","eskalin trifluoperazine"],
+  ["Tab. Chlorpromazine",["25mg","50mg","100mg","200mg"],"PO","BD","largactil cpz chlorpromazine"],
+  ["Tab. Paliperidone ER",["3mg","6mg","9mg"],"PO","OD","palido invega paliperidone"],
+  ["Tab. Iloperidone",["1mg","2mg","4mg","6mg","8mg"],"PO","BD","iloperidone"],
+  // 3. Oral Benzodiazepines & Hypnotics
+  ["Tab. Lorazepam",["1mg","2mg"],"PO","HS","lopez ativan lorazepam"],
+  ["Tab. Clonazepam",["0.25mg","0.5mg","1mg","2mg"],"PO","HS","zapiz lonazep rivotril clonazepam"],
+  ["Tab. Clonazepam MD",["0.25mg","0.5mg"],"PO","SOS","zapiz md lonazep md mouth dissolving clonazepam"],
+  ["Tab. Diazepam",["5mg","10mg"],"PO","HS","valium calmpose diazepam"],
+  ["Tab. Chlordiazepoxide",["10mg","25mg"],"PO","TDS","librium equilibrium chlordiazepoxide alcohol withdrawal"],
+  ["Tab. Oxazepam",["15mg","30mg"],"PO","TDS","serepax oxazepam alcohol withdrawal"],
+  ["Tab. Nitrazepam",["5mg","10mg"],"PO","HS","nitrest nitrosun nitrazepam"],
+  ["Tab. Etizolam",["0.25mg","0.5mg","1mg"],"PO","HS","etizola macfresh etizolam"],
+  ["Tab. Zolpidem",["5mg","10mg","6.25mg CR","12.5mg CR"],"PO","HS","zolfresh nitrest stilnoct zolpidem"],
+  ["Tab. Melatonin",["3mg","5mg","10mg"],"PO","HS","meloset melatonin"],
+  // 4. Mood Stabilizers & Antiepileptics
+  ["Tab. Sodium Valproate",["200mg","300mg","500mg"],"PO","BD","valparin encorate chrono valproate"],
+  ["Tab. Divalproex Sodium",["250mg","500mg","750mg","1000mg"],"PO","BD","dayo depakote dicorate divalproex valproate"],
+  ["Tab. Lithium Carbonate",["150mg","300mg","400mg SR","450mg SR"],"PO","BD","licab intalith lithium"],
+  ["Tab. Carbamazepine",["100mg","200mg","300mg","400mg CR"],"PO","BD","tegretol mazetol zen carbamazepine"],
+  ["Tab. Oxcarbazepine",["150mg","300mg","450mg","600mg"],"PO","BD","oxetol trileptal oxcarbazepine"],
+  ["Tab. Lamotrigine",["25mg","50mg","100mg","200mg"],"PO","BD","lamitor lamez lamotrigine"],
+  ["Inj. Levetiracetam",["500mg","1000mg"],"IV","BD","levipil levetiracetam iv seizure"],
+  ["Tab. Levetiracetam",["250mg","500mg","750mg","1000mg"],"PO","BD","levipil levetiracetam"],
+  ["Tab. Topiramate",["25mg","50mg","100mg"],"PO","BD","topaz topamac topiramate"],
+  ["Tab. Pregabalin",["75mg","150mg"],"PO","HS","pregalin lyrica pregabalin"],
+  ["Tab. Gabapentin",["100mg","300mg","400mg"],"PO","BD","gabantin neurontin gabapentin"],
+  // 5. Antidepressants
+  ["Cap. Fluoxetine",["10mg","20mg","40mg","60mg"],"PO","OD","fludac prodep prozac fluoxetine"],
+  ["Tab. Escitalopram",["5mg","10mg","15mg","20mg"],"PO","OD","nexito stalopam cipralex escitalopram"],
+  ["Tab. Sertraline",["25mg","50mg","100mg","150mg","200mg"],"PO","OD","daxid zoloft sertima sertraline"],
+  ["Tab. Paroxetine CR",["12.5mg","25mg","37.5mg"],"PO","OD","pari cr paxidep cr paroxetine"],
+  ["Tab. Fluvoxamine",["50mg","100mg","150mg"],"PO","HS","uvox fluvoxin fluvoxamine"],
+  ["Cap. Venlafaxine XR",["37.5mg","75mg","150mg","225mg"],"PO","OD","veniz xr effexor venlafaxine"],
+  ["Tab. Desvenlafaxine",["50mg","100mg"],"PO","OD","desvenla dveniz desvenlafaxine"],
+  ["Cap. Duloxetine",["20mg","30mg","40mg","60mg"],"PO","OD","duzela symbal cymbalta duloxetine"],
+  ["Tab. Mirtazapine",["7.5mg","15mg","30mg","45mg"],"PO","HS","mirta mirtaz mirtazapine"],
+  ["Tab. Amitriptyline",["10mg","25mg","50mg","75mg"],"PO","HS","tryptomer elavil amitriptyline"],
+  ["Tab. Clomipramine",["10mg","25mg","50mg","75mg SR"],"PO","HS","clonil anafranil clomipramine"],
+  ["Tab. Nortriptyline",["10mg","25mg"],"PO","HS","sensival nortriptyline"],
+  ["Tab. Dosulepin",["25mg","50mg","75mg"],"PO","HS","prothiaden dothiepin dosulepin"],
+  ["Tab. Bupropion XL",["150mg","300mg"],"PO","OD","bupron xl wellbutrin bupropion"],
+  ["Tab. Trazodone",["25mg","50mg","100mg"],"PO","HS","trazalon trazodone"],
+  ["Tab. Vortioxetine",["5mg","10mg","20mg"],"PO","OD","brintellix vortioxetine"],
+  ["Tab. Agomelatine",["25mg"],"PO","HS","agoprex valdoxan agomelatine"],
+  ["Tab. Buspirone",["5mg","10mg"],"PO","BD","buspin buspirone"],
+  // 6. Anticholinergics / EPS, Movement, Cognitive & ADHD
+  ["Tab. Trihexyphenidyl",["2mg","4mg"],"PO","BD","pacitane thp bexol solo dt benzhexol anticholinergic eps"],
+  ["Tab. Trihexyphenidyl MD",["2mg"],"PO","BD","solo dt bexol dt dispersible mouth dissolving trihexyphenidyl thp pacitane eps"],
+  ["Tab. Promethazine",["10mg","25mg","50mg"],"PO","HS","phenargan avomine promethazine"],
+  ["Tab. Propranolol",["10mg","20mg","40mg LA"],"PO","BD","ciplar inderal propranolol akathisia tremor"],
+  ["Tab. Tetrabenazine",["25mg"],"PO","TDS","revocon nitoman tetrabenazine tardive dyskinesia chorea"],
+  ["Tab. Glycopyrrolate",["1mg","2mg"],"PO","BD","glycohale robinul glycopyrrolate sialorrhea clozapine"],
+  ["Tab. Amantadine",["100mg"],"PO","BD","amantrel amantadine"],
+  ["Tab. Donepezil",["5mg","10mg"],"PO","HS","donep aricept donepezil dementia"],
+  ["Tab. Memantine",["5mg","10mg"],"PO","BD","admenta namenda memantine dementia"],
+  ["Tab. Atomoxetine",["10mg","18mg","25mg","40mg"],"PO","OD","axepta strattera atomoxetine adhd"],
+  ["Tab. Methylphenidate",["5mg","10mg","18mg ER","20mg SR"],"PO","OD","inspiral addwize concerta ritalin methylphenidate adhd"],
+  // 7. De-addiction, Hepatoprotectives, Nutritional & Supportive Ward Meds
+  ["Tab. Silymarin",["140mg","70mg"],"PO","BD","silybon legarin hepatoprotective liver silymarin"],
+  ["Tab. Thiamine",["100mg"],"PO","BD","vitamin b1 benfotiamine thiamine oral"],
+  ["Inj. Thiamine",["100mg","200mg","500mg","1 amp","5 amp in 100ml NS"],"IM","BD","optineuron vitamin b1 wernicke thiamine im iv"],
+  ["Inj. Thiamine in 100ml NS",["500mg (5 amp)","200mg (2 amp)","100mg (1 amp)"],"IV","STAT","5amp in 100ml ns thiamine infusion wernicke"],
+  ["Tab. Ursodeoxycholic Acid",["150mg","300mg"],"PO","BD","udiliv udca ursocol liver"],
+  ["Tab. Acamprosate",["333mg","666mg"],"PO","TDS","acamprol acamprosate alcohol craving"],
+  ["Tab. Naltrexone",["50mg"],"PO","OD","naltima revia naltrexone craving"],
+  ["Tab. Disulfiram",["250mg","500mg"],"PO","OD","esperal cronol disulfiram deterrent"],
+  ["Tab. Baclofen",["10mg","20mg"],"PO","BD","liofen lioresal baclofen craving"],
+  ["Tab. Buprenorphine + Naloxone",["2mg + 0.5mg","4mg + 1mg","0.4mg","2mg","4mg","8mg"],"SL","OD","addnok suboxone buprenorphine naloxone ost"],
+  ["Tab. Clonidine",["100mcg","50mcg"],"PO","TDS","arkamin catapres clonidine withdrawal"],
+  ["Tab. Nicotine Polacrilex Gum",["2mg","4mg"],"PO","SOS","nicotex kwit nicotine gum"],
+  ["Inj. Pantoprazole",["40mg"],"IV","OD","pan 40 pantocid pantoprazole iv"],
+  ["Tab. Pantoprazole",["40mg"],"PO","OD","pan 40 pantocid pantoprazole"],
+  ["Inj. Ondansetron",["4mg","8mg","1 amp"],"IV","SOS","emeset zofran ondansetron iv"],
+  ["Tab. Ondansetron",["4mg","8mg"],"PO","SOS","emeset zofran ondansetron"],
+  ["Syp. Lactulose",["15ml","30ml"],"PO","HS","duphalac looz lactulose constipation hepatic"],
+  ["Cap. B-Complex",["1 cap"],"PO","OD","becosules neurobion multivitamin b complex"],
+  ["Tab. Folic Acid",["5mg"],"PO","OD","folvite folic acid"],
+  ["IVF DNS",["500ml","1000ml"],"IV","OD","dns dextrose normal saline iv fluid"],
+  ["IVF NS 0.9%",["500ml","1000ml"],"IV","OD","ns normal saline iv fluid"],
+  ["IVF RL",["500ml","1000ml"],"IV","OD","rl ringer lactate iv fluid"],
+  ["IVF DNS-RL",["1000ml","500ml"],"IV","OD","dns rl iv fluid"],
+  ["IVF DNS-NS",["1000ml","500ml"],"IV","OD","dns ns iv fluid"]
+];
+function normMedKey(s){
+  return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+}
+function getMedCatalogPool(){
+  const pool=MED_CATALOG.map((r,idx)=>({
+    name:r[0],
+    doses:Array.isArray(r[1])?r[1].slice():[],
+    route:r[2]||"PO",
+    freq:r[3]||"OD",
+    kw:r[4]||"",
+    idx
+  }));
+  const byKey=new Map();
+  pool.forEach(it=>byKey.set(normMedKey(it.name),it));
+  (S.orders||[]).forEach((o,i)=>{
+    const raw=String(o&&o.drug||"").trim();
+    if(!raw) return;
+    const k=normMedKey(raw);
+    if(!k) return;
+    const dose=String(o&&o.dose||"").trim();
+    const validDose=dose&&dose!=="—";
+    if(byKey.has(k)){
+      const it=byKey.get(k);
+      if(validDose&&!it.doses.some(d=>d.toLowerCase()===dose.toLowerCase())) it.doses.push(dose);
+      return;
+    }
+    const created={name:raw,doses:validDose?[dose]:[],route:o.route||"PO",freq:o.freq||"OD",kw:"ward",idx:1000+i};
+    byKey.set(k,created);
+    pool.push(created);
+  });
+  return pool;
+}
+function searchMedCatalog(rawQ){
+  const q=String(rawQ||"").trim().toLowerCase();
+  if(!q) return [];
+  const tokens=q.split(/\s+/).filter(Boolean);
+  const pool=getMedCatalogPool();
+  const scored=[];
+  for(const it of pool){
+    const nameL=it.name.toLowerCase(), kwL=it.kw.toLowerCase(), routeL=it.route.toLowerCase();
+    const dosesL=it.doses.join(" ").toLowerCase();
+    const hay=nameL+" "+kwL+" "+routeL+" "+dosesL;
+    if(!tokens.every(t=>hay.includes(t))) continue;
+    let sc=0;
+    const stripped=nameL.replace(/^(tab|cap|inj|syp|ivf)\.?\s+/,"");
+    if(nameL===q||stripped===q) sc+=1000;
+    else if(stripped.startsWith(q)) sc+=650;
+    else if(nameL.startsWith(q)) sc+=550;
+    else if(nameL.split(/[^a-z0-9]+/).some(w=>w.startsWith(q))) sc+=350;
+    else if(kwL.split(/\s+/).some(w=>w===q)) sc+=450;
+    else if(kwL.split(/\s+/).some(w=>w.startsWith(q))) sc+=250;
+    else sc+=120;
+    sc-=it.idx*0.05;
+    scored.push({it,sc});
+  }
+  scored.sort((a,b)=>b.sc-a.sc);
+  return scored.slice(0,6).map(x=>x.it);
+}
+function findMedEntryForDose(rawDrug){
+  const q=String(rawDrug||"").trim();
+  if(!q) return null;
+  const k=normMedKey(q);
+  const pool=getMedCatalogPool();
+  for(const it of pool){
+    const nk=normMedKey(it.name);
+    const stripped=nk.replace(/^(tab|cap|inj|syp|ivf)\s+/,"");
+    if(nk===k||stripped===k) return it;
+  }
+  const matches=searchMedCatalog(q);
+  return matches[0]||null;
+}
+function medDrugSuggestHtml(q,curVal){
+  const list=searchMedCatalog(q);
+  if(!list.length) return "";
+  if(list.length===1 && String(curVal||"").trim().toLowerCase()===list[0].name.toLowerCase()) return "";
+  return list.map((it,i)=>{
+    const dosePreview=it.doses&&it.doses.length?it.doses.slice(0,5).join(" · "):"";
+    return `<button type="button" class="dx-opt${i===0?" active":""}" role="option" data-med-kind="drug" data-name="${esc(it.name)}" data-route="${esc(it.route)}" data-freq="${esc(it.freq)}" data-doses="${esc((it.doses||[]).join("|"))}" onmousedown="event.preventDefault()" onclick="pickMedSuggest(this)"><span class="dx-opt-name">${esc(it.name)}${dosePreview?`<small class="med-opt-doses">${esc(dosePreview)}</small>`:""}</span><span class="dx-opt-code">${esc(it.route)}</span></button>`;
+  }).join("");
+}
+function medDoseSuggestHtml(drugVal,doseQ,forceAll){
+  const entry=findMedEntryForDose(drugVal);
+  if(!entry||!entry.doses||!entry.doses.length) return "";
+  const q=String(doseQ||"").trim().toLowerCase();
+  const exactAlready=entry.doses.some(d=>d.toLowerCase()===q);
+  const filtered=(!q||forceAll||exactAlready)?entry.doses:entry.doses.filter(d=>d.toLowerCase().includes(q));
+  const list=filtered.length?filtered:entry.doses;
+  if(!list.length) return "";
+  return list.map((d,i)=>`<button type="button" class="dx-opt${i===0?" active":""}" role="option" data-med-kind="dose" data-dose="${esc(d)}" onmousedown="event.preventDefault()" onclick="pickMedSuggest(this)"><span class="dx-opt-name">${esc(d)}</span><span class="dx-opt-code">${esc(entry.route||"Dose")}</span></button>`).join("");
+}
+function setMedPickerSilent(pickId,newVal){
+  if(!pickId||!newVal) return;
+  ui.fields=ui.fields||{};
+  ui.fields[pickId]=newVal;
+  const btn=document.getElementById(pickId);
+  const label=labelOf(MED_ROUTES,newVal)!=="—"?labelOf(MED_ROUTES,newVal):(labelOf(MED_FREQS,newVal)!=="—"?labelOf(MED_FREQS,newVal):newVal);
+  if(btn){
+    btn.setAttribute("data-val",newVal);
+    const sp=btn.querySelector("span");
+    if(sp) sp.textContent=label;
+  }
+  patchFrozenSheetPick(pickId,newVal);
+}
+function syncMedInputsFromWrap(wrap){
+  if(!wrap) return;
+  const mode=wrap.getAttribute("data-med-mode")||"";
+  const drugId=wrap.getAttribute("data-drug-id")||"";
+  const doseId=wrap.getAttribute("data-dose-id")||"";
+  const routeId=wrap.getAttribute("data-route-id")||"";
+  const freqId=wrap.getAttribute("data-freq-id")||"";
+  const drugEl=drugId?document.getElementById(drugId):null;
+  const doseEl=doseId?document.getElementById(doseId):null;
+  if(mode==="sheet"){
+    ui.fields=ui.fields||{};
+    if(drugEl) ui.fields.md=drugEl.value;
+    if(doseEl) ui.fields.mds=doseEl.value;
+    if(ui.medPid) ui.sheet=medSheetHtml(ui.medPid);
+  }else if(mode==="edit"){
+    ui.fields=ui.fields||{};
+    if(doseEl) ui.fields.med_dose=doseEl.value;
+    if(ui.medEditId) ui.sheet=medEditSheetHtml(ui.medEditId);
+  }else if(mode==="row"){
+    const prefix=wrap.getAttribute("data-med-prefix")||"";
+    const idx=+(wrap.getAttribute("data-med-idx")||0);
+    const rowObj={
+      drug:drugEl?drugEl.value:"",
+      dose:doseEl?doseEl.value:"",
+      route:val(routeId)||"PO",
+      freq:val(freqId)||"OD"
+    };
+    if(prefix==="o"){ui.obs=ui.obs||{meds:[]};ui.obs.meds=ui.obs.meds||[];ui.obs.meds[idx]=rowObj;}
+    else if(prefix==="oa"){ui.obsAdmit=ui.obsAdmit||{meds:[]};ui.obsAdmit.meds=ui.obsAdmit.meds||[];ui.obsAdmit.meds[idx]=rowObj;}
+    else if(prefix==="a"){ui.census=ui.census||{meds:[]};ui.census.meds=ui.census.meds||[];ui.census.meds[idx]=rowObj;}
+  }
+}
+function onMedDrugInput(el){
+  if(!el) return;
+  const wrap=el.closest(".med-ac-wrap");
+  if(!wrap) return;
+  syncMedInputsFromWrap(wrap);
+  const box=wrap.querySelector(".med-suggest");
+  if(box) box.innerHTML=medDrugSuggestHtml(el.value,el.value);
+}
+function onMedDoseFocus(el,fromInput){
+  if(!el) return;
+  const wrap=el.closest(".med-ac-wrap");
+  if(!wrap) return;
+  syncMedInputsFromWrap(wrap);
+  const drugId=wrap.getAttribute("data-drug-id")||"";
+  const drugEl=drugId?document.getElementById(drugId):null;
+  const drugVal=drugEl?drugEl.value:"";
+  const box=wrap.querySelector(".med-suggest");
+  if(box) box.innerHTML=medDoseSuggestHtml(drugVal,el.value,!fromInput);
+}
+function pickMedSuggest(btn){
+  if(!btn) return;
+  const wrap=btn.closest(".med-ac-wrap");
+  if(!wrap) return;
+  const kind=btn.getAttribute("data-med-kind")||"drug";
+  const drugId=wrap.getAttribute("data-drug-id")||"";
+  const doseId=wrap.getAttribute("data-dose-id")||"";
+  const routeId=wrap.getAttribute("data-route-id")||"";
+  const drugEl=drugId?document.getElementById(drugId):null;
+  const doseEl=doseId?document.getElementById(doseId):null;
+  const box=wrap.querySelector(".med-suggest");
+  if(kind==="drug"){
+    const name=btn.getAttribute("data-name")||"";
+    const route=btn.getAttribute("data-route")||"";
+    const dosesRaw=btn.getAttribute("data-doses")||"";
+    const doses=dosesRaw?dosesRaw.split("|").filter(Boolean):[];
+    if(drugEl) drugEl.value=name;
+    if(route) setMedPickerSilent(routeId,route);
+    if(doses.length===1 && doseEl && !doseEl.value.trim()){
+      doseEl.value=doses[0];
+      syncMedInputsFromWrap(wrap);
+      if(box) box.innerHTML="";
+      return;
+    }
+    syncMedInputsFromWrap(wrap);
+    if(doseEl){
+      doseEl.focus();
+      if(box) box.innerHTML=medDoseSuggestHtml(name,doseEl.value,true);
+    }else if(box){
+      box.innerHTML="";
+    }
+  }else{
+    const dose=btn.getAttribute("data-dose")||"";
+    if(doseEl) doseEl.value=dose;
+    syncMedInputsFromWrap(wrap);
+    if(box) box.innerHTML="";
+  }
+}
+function onMedKey(ev,el){
+  const wrap=el&&el.closest(".med-ac-wrap");
+  const box=wrap&&wrap.querySelector(".med-suggest");
+  if(!box||!box.children.length) return;
+  const opts=[...box.querySelectorAll(".dx-opt")];
+  let idx=opts.findIndex(x=>x.classList.contains("active"));
+  if(ev.key==="Escape"){ev.preventDefault();box.innerHTML="";return;}
+  if(ev.key==="ArrowDown"){ev.preventDefault();opts.forEach(x=>x.classList.remove("active"));idx=(idx+1)%opts.length;opts[idx].classList.add("active");opts[idx].scrollIntoView({block:"nearest"});return;}
+  if(ev.key==="ArrowUp"){ev.preventDefault();opts.forEach(x=>x.classList.remove("active"));idx=(idx-1+opts.length)%opts.length;opts[idx].classList.add("active");opts[idx].scrollIntoView({block:"nearest"});return;}
+  if(ev.key==="Enter"&&idx>=0){ev.preventDefault();pickMedSuggest(opts[idx]);}
+}
+function medInputsGridHtml(cfg){
+  const drugId=cfg.drugId||"md", doseId=cfg.doseId||"mds", routeId=cfg.routeId||"mroute", freqId=cfg.freqId||"mfreq";
+  const mode=cfg.mode||"row", prefix=cfg.prefix||"", idx=cfg.idx!=null?cfg.idx:0;
+  const drugAttr=cfg.drugDisabled
+    ? `id="${esc(drugId)}" value="${esc(cfg.drugVal||"")}" disabled aria-label="Drug (cannot be changed)" title="Drug cannot be changed. Stop and add a new drug instead."`
+    : `id="${esc(drugId)}" value="${esc(cfg.drugVal||"")}" placeholder="Drug" autocomplete="off" oninput="onMedDrugInput(this)" onfocus="onMedDrugInput(this)" onkeydown="onMedKey(event,this)" onblur="closeDxSuggestLater(this)"`;
+  return `<div class="dx-wrap med-ac-wrap" data-drug-id="${esc(drugId)}" data-dose-id="${esc(doseId)}" data-route-id="${esc(routeId)}" data-freq-id="${esc(freqId)}" data-med-mode="${esc(mode)}" data-med-prefix="${esc(prefix)}" data-med-idx="${esc(String(idx))}">
+    <div class="obs-med-grid">
+      <input ${drugAttr}/>
+      <input id="${esc(doseId)}" value="${esc(cfg.doseVal||"")}" placeholder="Dose" autocomplete="off" onfocus="onMedDoseFocus(this,false)" oninput="onMedDoseFocus(this,true)" onkeydown="onMedKey(event,this)" onblur="closeDxSuggestLater(this)"/>
+    </div>
+    <div class="dx-suggest med-suggest" role="listbox" aria-label="Medication suggestions"></div>
+  </div>`;
+}
+
 document.addEventListener("pointerdown",function(e){
   if(e.target&&e.target.closest&&e.target.closest(".dx-wrap")) return;
   document.querySelectorAll(".dx-suggest").forEach(b=>{b.innerHTML="";});
@@ -7168,6 +7508,7 @@ function snapshotMedInputs(){
   if(ds) ui.fields.mds=ds.value;
   try{censusDraft()}catch(e){}
   try{obsDraft()}catch(e){}
+  try{if(ui.panel&&ui.panel.kind==="obsAdmit")obsAdmitDraft()}catch(e){}
   try{if(route.page==="pedit")peditDraft()}catch(e){}
   if(ui.medPid) ui.sheet=medSheetHtml(ui.medPid);
   if(ui.medEditId) ui.sheet=medEditSheetHtml(ui.medEditId); // R1.3.89
@@ -8601,10 +8942,7 @@ function medEditSheetHtml(id){
   return `<div class="sheet mid"><button class="mask" onclick="closeMedEdit()"></button><div class="box">
     <div class="row"><b>Edit medication</b><button class="btn ghost sm" onclick="closeMedEdit()">Close</button></div>
     <div class="med-sec"><p class="tiny">DRUG + DOSE</p>
-      <div class="obs-med-grid">
-        <input id="med_drug" value="${esc(o.drug)}" disabled aria-label="Drug (cannot be changed)" title="Drug cannot be changed. Stop and add a new drug instead."/>
-        <input id="med_dose" placeholder="Dose" autocomplete="off" value="${esc(f.med_dose!=null?f.med_dose:o.dose||"")}" oninput="ui.fields.med_dose=this.value"/>
-      </div>
+      ${medInputsGridHtml({drugId:"med_drug",doseId:"med_dose",routeId:"med_route",freqId:"med_freq",drugVal:o.drug||"",doseVal:f.med_dose!=null?f.med_dose:(o.dose||""),drugDisabled:true,mode:"edit"})}
       <p class="tiny" style="margin-top:6px">Drug name can't be edited. Stop and add a new drug instead.</p>
     </div>
     <div class="med-sec"><p class="tiny">ROUTE</p>${picker("med_route",MED_ROUTES,o.route||"PO","Route")}</div>
@@ -8666,15 +9004,12 @@ async function saveMedEdit(id){
 function closeMedForm(){dismissOverlay({med:1})}
 function medSheetHtml(pid){
   ui.fields=ui.fields||{};
-  const drug=esc(ui.fields.md||"");
-  const dose=esc(ui.fields.mds||"");
+  const drug=ui.fields.md||"";
+  const dose=ui.fields.mds||"";
   return `<div class="sheet mid"><button class="mask" onclick="closeMedForm()"></button><div class="box">
     <div class="row"><b>Medication</b><button class="btn ghost sm" onclick="closeMedForm()">Close</button></div>
     <div class="med-sec"><p class="tiny">DRUG + DOSE</p>
-      <div class="obs-med-grid">
-        <input id="md" placeholder="Drug" autocomplete="off" value="${drug}" oninput="ui.fields=ui.fields||{};ui.fields.md=this.value"/>
-        <input id="mds" placeholder="Dose" autocomplete="off" value="${dose}" oninput="ui.fields=ui.fields||{};ui.fields.mds=this.value"/>
-      </div>
+      ${medInputsGridHtml({drugId:"md",doseId:"mds",routeId:"mroute",freqId:"mfreq",drugVal:drug,doseVal:dose,mode:"sheet"})}
     </div>
     <div class="med-sec"><p class="tiny">ROUTE</p>${picker("mroute",MED_ROUTES,val("mroute")||"PO","Route")}</div>
     <div class="med-sec"><p class="tiny">FREQUENCY</p>${picker("mfreq",MED_FREQS,val("mfreq")||"OD","Frequency")}</div>
