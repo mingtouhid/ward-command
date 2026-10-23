@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.104-sos-reason-addr-obs-tel";
+const VERSION = "ward-sync-pwa-r1.3.105-actions-grid";
 const PRECACHE = [
   "./",
   "./index.html",
