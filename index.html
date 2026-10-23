@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.103 med-suggest -->
+<!-- WARD SYNC RELEASE: R1.3.104 sos-reason-addr-obs-tel -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1727,7 +1727,10 @@ button.dx-opt:hover,button.dx-opt:active,button.dx-opt.active{background:var(--p
 .dx-opt-code{flex:none;font-size:11px;font-weight:800;letter-spacing:.03em;padding:2px 7px;border-radius:999px;background:var(--pill-full);color:var(--pill-full-ink);border:1px solid var(--pill-full-line)}
 .med-ac-wrap .dx-suggest{margin:6px 0 2px}
 .med-opt-doses{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* /R1.3.103 UX BATCH */
+.tel-link{color:var(--teal2);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:3px;padding:1px 6px;margin:-1px -2px;border-radius:6px;background:color-mix(in srgb,var(--teal) 10%,transparent);transition:background .15s}
+.tel-link:hover,.tel-link:active{background:color-mix(in srgb,var(--teal) 18%,transparent);text-decoration:underline}
+.obs-timer{font-variant-numeric:tabular-nums;letter-spacing:.02em}
+/* /R1.3.104 UX BATCH */
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -2222,7 +2225,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.103";
+const APP_VERSION="R1.3.104";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3953,7 +3956,7 @@ function snapView(){
       <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span>${ectPlan(p.id)?'<span class="badge r-high">ECT</span>':""}${isDelirium(p.id)?` <span class="${rcls("high")}">delirium</span>`:""}</span></div>
       <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}</h2>
       <p class="tiny" style="margin-top:4px">${p.age}${p.sex} · ${esc(p.hospitalNo||p.code)}</p>
-      ${(p.address||p.phone)?`<p class="tiny" style="margin-top:4px">${p.address?esc(p.address):""}${p.address&&p.phone?" · ":""}${p.phone?esc(p.phone):""}</p>`:""}
+      ${(p.address||p.phone)?`<p class="tiny" style="margin-top:4px">${p.address?esc(p.address):""}${p.address&&p.phone?" · ":""}${p.phone?phoneLinkHtml(p.phone):""}</p>`:""}
       <div class="meta">
         <div><b>Admitted</b>${fmt(p.admittedAt)}</div>
         <div><b>Ward days</b>${Math.max(1,Math.round((Date.now()-new Date(p.admittedAt))/86400000))}</div>
@@ -3963,7 +3966,7 @@ function snapView(){
       ${dxHistoryHtml(p)}
       ${snapAdmitRows(p)}
       ${(p.status==="observation")?`<div class="card" style="margin:10px 0 0;padding:10px">
-        <p class="tiny">UNDER OBSERVATION</p>
+        <div class="row"><p class="tiny">UNDER OBSERVATION</p>${obsElapsedBadgeHtml(p)}</div>
         ${canWrite()?`<div class="btns" style="margin-top:8px">
           <button class="btn sm" onclick="transferForm('${p.id}')">Transfer</button>
           <button class="btn sm" onclick="obsAdmitAsk('${p.id}')">Admit</button>
@@ -4009,8 +4012,9 @@ function snapView(){
               : isStat(o) ? (statGiven(o)?"STAT · given "+(stamp(statGiven(o).givenAt||statGiven(o).at)||fmt(statGiven(o).at)):"STAT · due now")
               : prn ? prnLabel(o)+" as needed" : (()=>{const ch=medChain(o);return ch.length?"Ongoing since "+(fmt(ch[ch.length-1].start)||"")+" · changed "+(fmt(o.start)||""):"Ongoing since "+(fmt(o.start)||"")})();
           return `<tr class="${o.stop?"stopped":(o.status==="held"?"held":(statDone(o)?"stat-done":""))}">
-          <td><div class="med-primary">${esc(o.drug)}</div><div class="med-meta">${esc(o.dose||"—")}${ds&&ds.last?" · last "+rel(ds.last.at):""}</div>
+          <td><div class="med-primary">${esc(o.drug)}</div><div class="med-meta">${esc(o.dose||"—")}${ds&&ds.last?" · last "+rel(ds.last.at):""}${ds&&ds.today?" · "+ds.today+" today":""}</div>
             ${isStat(o)&&!o.stop&&!statDone(o)&&o.status!=="held"&&canWrite()?`<div class="med-row-actions"><button class="btn sm" onclick="giveStat('${o.id}')">Give STAT</button></div>`:""}
+            ${prn&&!o.stop&&o.status!=="held"&&canWrite()?`<div class="med-row-actions"><button class="btn sm" onclick="givePrn('${o.id}')">Give SOS</button></div>`:""}
             ${!o.stop&&!statDone(o)&&canWrite()?`<div class="med-row-actions">
               ${o.status==="held"?`<button class="btn ghost sm" onclick="resumeMed('${o.id}')">Resume</button>`:`<button class="btn ghost sm" onclick="holdMed('${o.id}')">Pause</button>`}
               <button class="btn ghost sm" onclick="openMedEdit('${o.id}')">Edit</button>
@@ -4481,6 +4485,261 @@ function onDxKey(ev,el){
 }
 function dxFieldHtml(labelHtml,inputId,valStr,placeholder,mode,extraPid){
   return `<div class="dx-wrap"><label class="field"><span>${labelHtml}</span><input id="${inputId}" value="${esc(valStr||"")}" placeholder="${esc(placeholder||"Diagnosis")}" autocomplete="off" data-dx-mode="${esc(mode||"")}" data-dx-pid="${esc(extraPid||"")}" oninput="onDxInput(this,'${esc(mode||"")}','${esc(extraPid||"")}')" onkeydown="onDxKey(event,this)" onblur="closeDxSuggestLater(this)"/></label><div class="dx-suggest" role="listbox" aria-label="Diagnosis suggestions"></div></div>`;
+}
+
+function phoneLinkHtml(phone){
+  const raw=String(phone||"").trim();
+  if(!raw) return "";
+  const dial=raw.replace(/[^+\d]/g,"");
+  if(!dial) return esc(raw);
+  return `<a href="tel:${esc(dial)}" class="tel-link" onclick="event.stopPropagation()" title="Call ${esc(raw)}"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${esc(raw)}</a>`;
+}
+
+function obsElapsedInfo(p){
+  if(!p) return null;
+  const stays=(S.obsStays||[]).filter(s=>s.pid===p.id).slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
+  const openStay=stays.find(s=>!s.endedAt)||stays[0]||null;
+  const at=(openStay&&openStay.at)||p.admittedAt||null;
+  const ts=Date.parse(at||0)||0;
+  if(!ts) return null;
+  const ms=Math.max(0,Date.now()-ts);
+  const mins=Math.max(1,Math.floor(ms/60000));
+  const hrs=Math.floor(mins/60);
+  const label=hrs<1?(mins+"m in obs"):(hrs+"h in obs");
+  return {label,hrs,mins,over24:hrs>=24,at};
+}
+function obsElapsedBadgeHtml(p){
+  const info=obsElapsedInfo(p);
+  if(!info) return "";
+  return `<span class="badge ${info.over24?"r-high":"r-moderate"} obs-timer" title="Observation started ${esc(stamp(info.at)||fmt(info.at))}">${esc(info.label)}</span>`;
+}
+
+const ADDR_DISTRICTS=[
+  ["Dibrugarh","Assam","dibrugarh"],
+  ["Tinsukia","Assam","tinsukia"],
+  ["Charaideo","Assam","charaideo sonari"],
+  ["Sivasagar","Assam","sivasagar sibsagar"],
+  ["Dhemaji","Assam","dhemaji"],
+  ["Lakhimpur","Assam","lakhimpur north lakhimpur"],
+  ["Jorhat","Assam","jorhat"],
+  ["Golaghat","Assam","golaghat"],
+  ["Majuli","Assam","majuli"],
+  ["Karbi Anglong","Assam","karbi anglong karbianglong diphu bokajan"],
+  ["Sonitpur","Assam","sonitpur tezpur"],
+  ["Biswanath","Assam","biswanath gohpur"],
+  ["Nagaon","Assam","nagaon nowgong"],
+  ["Hojai","Assam","hojai"],
+  ["Kamrup","Assam","kamrup guwahati"],
+  ["Cachar","Assam","cachar silchar"],
+  ["Changlang, Arunachal Pradesh","Arunachal","changlang miao bordumsa arunachal"],
+  ["Namsai, Arunachal Pradesh","Arunachal","namsai arunachal"],
+  ["Lohit, Arunachal Pradesh","Arunachal","lohit tezu arunachal"],
+  ["Tirap, Arunachal Pradesh","Arunachal","tirap khonsa deomali arunachal"],
+  ["Longding, Arunachal Pradesh","Arunachal","longding arunachal"],
+  ["East Siang, Arunachal Pradesh","Arunachal","east siang pasighat arunachal"],
+  ["Lower Dibang Valley, Arunachal Pradesh","Arunachal","roing dibang arunachal"],
+  ["Mon, Nagaland","Nagaland","mon nagaland"]
+];
+
+const ADDR_CATALOG=[
+  // Dibrugarh district
+  ["Dibrugarh","Dibrugarh","dibrugarh town amch"],
+  ["Barbari, Dibrugarh","Dibrugarh","barbari amch dibrugarh"],
+  ["Kamar patti, Dibrugarh","Dibrugarh","kamar patti kamarpatti dibrugarh"],
+  ["Jyotinagar, Dibrugarh","Dibrugarh","jyotinagar jyoti nagar dibrugarh"],
+  ["Milan Nagar, Dibrugarh","Dibrugarh","milan nagar dibrugarh"],
+  ["Chowkidinghee, Dibrugarh","Dibrugarh","chowkidinghee dibrugarh"],
+  ["Graham Bazar, Dibrugarh","Dibrugarh","graham bazar dibrugarh"],
+  ["Duliajan, Dibrugarh","Dibrugarh","duliajan dibrugarh"],
+  ["Naharkatiya, Dibrugarh","Dibrugarh","naharkatiya naharkatia dibrugarh"],
+  ["Chabua, Dibrugarh","Dibrugarh","chabua dibrugarh"],
+  ["Moran, Dibrugarh","Dibrugarh","moran moranhat dibrugarh"],
+  ["Namrup, Dibrugarh","Dibrugarh","namrup dibrugarh"],
+  ["Tingkhong, Dibrugarh","Dibrugarh","tingkhong dibrugarh"],
+  ["Lahoal, Dibrugarh","Dibrugarh","lahoal lahowal dibrugarh"],
+  ["Barbaruah, Dibrugarh","Dibrugarh","barbaruah borbaruah dibrugarh"],
+  ["Khowang, Dibrugarh","Dibrugarh","khowang dibrugarh"],
+  ["Tengakhat, Dibrugarh","Dibrugarh","tengakhat dibrugarh"],
+  ["Rohmaria, Dibrugarh","Dibrugarh","rohmaria rohmoria dibrugarh"],
+  ["Dikom, Dibrugarh","Dibrugarh","dikom dibrugarh"],
+  // Tinsukia district
+  ["Tinsukia","Tinsukia","tinsukia town"],
+  ["Digboi, Tinsukia","Tinsukia","digboi tinsukia"],
+  ["Margherita, Tinsukia","Tinsukia","margherita tinsukia"],
+  ["Doomdooma, Tinsukia","Tinsukia","doomdooma doom dooma tinsukia"],
+  ["Makum, Tinsukia","Tinsukia","makum tinsukia"],
+  ["Sadiya, Tinsukia","Tinsukia","sadiya chapakhowa tinsukia"],
+  ["Kakopathar, Tinsukia","Tinsukia","kakopathar tinsukia"],
+  ["Ledo, Tinsukia","Tinsukia","ledo tinsukia"],
+  ["Jagun, Tinsukia","Tinsukia","jagun tinsukia"],
+  ["Bordubi, Tinsukia","Tinsukia","bordubi tinsukia"],
+  ["Pengaree, Tinsukia","Tinsukia","pengaree pengeri tinsukia"],
+  // Charaideo district
+  ["Sonari, Charaideo","Charaideo","sonari charaideo"],
+  ["Sepekhati, Charaideo","Charaideo","sepekhati sapekhati charaideo"],
+  ["Sapekhati, Charaideo","Charaideo","sapekhati sepekhati charaideo"],
+  ["Moranhat, Charaideo","Charaideo","moranhat charaideo"],
+  ["Mahmora, Charaideo","Charaideo","mahmora charaideo"],
+  ["Mathurapur, Charaideo","Charaideo","mathurapur charaideo"],
+  // Sivasagar district
+  ["Sivasagar","Sivasagar","sivasagar sibsagar town"],
+  ["Nazira, Sivasagar","Sivasagar","nazira sivasagar sibsagar"],
+  ["Simaluguri, Sivasagar","Sivasagar","simaluguri sivasagar sibsagar"],
+  ["Amguri, Sivasagar","Sivasagar","amguri sivasagar sibsagar"],
+  ["Demow, Sivasagar","Sivasagar","demow thowra sivasagar sibsagar"],
+  ["Gaurisagar, Sivasagar","Sivasagar","gaurisagar sivasagar sibsagar"],
+  ["Geleky, Sivasagar","Sivasagar","geleky geleki sivasagar sibsagar"],
+  // Dhemaji district
+  ["Dhemaji","Dhemaji","dhemaji town"],
+  ["Silapathar, Dhemaji","Dhemaji","silapathar dhemaji"],
+  ["Jonai, Dhemaji","Dhemaji","jonai dhemaji"],
+  ["Gogamukh, Dhemaji","Dhemaji","gogamukh dhemaji"],
+  ["Sissiborgaon, Dhemaji","Dhemaji","sissiborgaon dhemaji"],
+  ["Bordoloni, Dhemaji","Dhemaji","bordoloni dhemaji"],
+  ["Borapatoria, Dhemaji","Dhemaji","borapatoria dhemaji"],
+  // Lakhimpur district
+  ["North Lakhimpur, Lakhimpur","Lakhimpur","north lakhimpur"],
+  ["Bihpuria, Lakhimpur","Lakhimpur","bihpuria lakhimpur"],
+  ["Dhakuakhana, Lakhimpur","Lakhimpur","dhakuakhana lakhimpur"],
+  ["Narayanpur, Lakhimpur","Lakhimpur","narayanpur lakhimpur"],
+  ["Laluk, Lakhimpur","Lakhimpur","laluk lakhimpur"],
+  // Jorhat, Majuli, Golaghat, Karbi Anglong & Assam
+  ["Jorhat","Jorhat","jorhat town"],
+  ["Titabar, Jorhat","Jorhat","titabar titabor jorhat"],
+  ["Mariani, Jorhat","Jorhat","mariani jorhat"],
+  ["Teok, Jorhat","Jorhat","teok jorhat"],
+  ["Garmur, Majuli","Majuli","garmur majuli kamalabari"],
+  ["Golaghat","Golaghat","golaghat town"],
+  ["Bokakhat, Golaghat","Golaghat","bokakhat golaghat"],
+  ["Sarupathar, Golaghat","Golaghat","sarupathar golaghat"],
+  ["Dergaon, Golaghat","Golaghat","dergaon golaghat"],
+  ["Bokajan, Karbi Anglong","Karbi Anglong","bokajan karbianglong karbi anglong"],
+  ["Diphu, Karbi Anglong","Karbi Anglong","diphu karbianglong karbi anglong"],
+  ["Tezpur, Sonitpur","Sonitpur","tezpur sonitpur"],
+  ["Gohpur, Biswanath","Biswanath","gohpur biswanath"],
+  ["Nagaon","Nagaon","nagaon nowgong"],
+  // Arunachal Pradesh & Nagaland catchment
+  ["Namsai, Arunachal Pradesh","Arunachal","namsai arunachal"],
+  ["Lohit, Arunachal Pradesh","Arunachal","lohit tezu arunachal"],
+  ["Tezu, Lohit, Arunachal Pradesh","Arunachal","tezu lohit arunachal"],
+  ["Changlang, Arunachal Pradesh","Arunachal","changlang arunachal"],
+  ["Miao, Changlang, Arunachal Pradesh","Arunachal","miao bordumsa changlang arunachal"],
+  ["Khonsa, Tirap, Arunachal Pradesh","Arunachal","khonsa tirap arunachal"],
+  ["Deomali, Tirap, Arunachal Pradesh","Arunachal","deomali tirap arunachal"],
+  ["Longding, Arunachal Pradesh","Arunachal","longding arunachal"],
+  ["Roing, Lower Dibang Valley, Arunachal Pradesh","Arunachal","roing dibang arunachal"],
+  ["Pasighat, East Siang, Arunachal Pradesh","Arunachal","pasighat east siang arunachal"],
+  ["Mon, Nagaland","Nagaland","mon nagaland"]
+];
+
+function searchAddrCatalog(rawQ){
+  const raw=String(rawQ||"");
+  const q=raw.trim().toLowerCase();
+  const out=[];
+  const seen=new Set();
+  const push=(val,badge)=>{
+    const k=String(val||"").trim().toLowerCase();
+    if(!k||seen.has(k)) return;
+    seen.add(k);
+    out.push({val:String(val).trim(),badge:badge||"Ward"});
+  };
+  // 1) If user typed "<Custom locality>, <partial district>", suggest completing the district after the comma!
+  const commaIdx=raw.indexOf(",");
+  if(commaIdx>0){
+    const prefix=raw.slice(0,commaIdx).trim();
+    const after=raw.slice(commaIdx+1).trim().toLowerCase();
+    if(prefix.length>=2){
+      for(const [dist,region,kw] of ADDR_DISTRICTS){
+        const hay=(dist+" "+region+" "+kw).toLowerCase();
+        if(!after || dist.toLowerCase().startsWith(after) || hay.includes(after)){
+          push(prefix+", "+dist, dist.split(",")[0]);
+          if(out.length>=5) break;
+        }
+      }
+    }
+  }
+  if(!q) return out.slice(0,6);
+  // 2) Build combined pool from ADDR_CATALOG + existing S.patients addresses
+  const pool=ADDR_CATALOG.map((r,idx)=>({val:r[0],badge:r[1],kw:r[2]||"",idx}));
+  const known=new Set(pool.map(x=>x.val.toLowerCase()));
+  ((typeof S==="object"&&S&&S.patients)||[]).forEach(p=>{
+    const a=String((p&&p.address)||"").trim();
+    if(a && !known.has(a.toLowerCase())){
+      known.add(a.toLowerCase());
+      const parts=a.split(",").map(s=>s.trim()).filter(Boolean);
+      const badge=parts.length>1?parts[parts.length-1]:"Ward";
+      pool.push({val:a,badge,kw:a.toLowerCase(),idx:500});
+    }
+  });
+  const tokens=q.split(/[^a-z0-9]+/).filter(Boolean);
+  const scored=[];
+  for(const it of pool){
+    const valL=it.val.toLowerCase();
+    const badgeL=String(it.badge||"").toLowerCase();
+    const hay=valL+" "+badgeL+" "+(it.kw||"").toLowerCase();
+    if(!tokens.every(t=>hay.includes(t))) continue;
+    let sc=0;
+    if(valL===q) sc+=1000;
+    else if(valL.startsWith(q)) sc+=500;
+    else if(valL.split(/[^a-z0-9]+/).some(w=>w.startsWith(q))) sc+=300;
+    else if(badgeL.startsWith(q)) sc+=240;
+    else sc+=120;
+    sc-=it.idx*0.05;
+    scored.push({it,sc});
+  }
+  scored.sort((a,b)=>b.sc-a.sc);
+  for(const x of scored){
+    push(x.it.val,x.it.badge);
+    if(out.length>=6) break;
+  }
+  return out.slice(0,6);
+}
+function addrSuggestItemsHtml(q,curVal){
+  const list=searchAddrCatalog(q);
+  if(!list.length) return "";
+  if(list.length===1 && String(curVal||"").trim().toLowerCase()===list[0].val.toLowerCase()) return "";
+  return list.map((it,i)=>`<button type="button" class="dx-opt${i===0?" active":""}" role="option" data-val="${esc(it.val)}" onmousedown="event.preventDefault()" onclick="pickAddrSuggest(this)"><span class="dx-opt-name">${esc(it.val)}</span><span class="dx-opt-code">${esc(it.badge)}</span></button>`).join("");
+}
+function syncAddrDraft(el,mode){
+  const v=el?el.value:"";
+  if(mode==="obs_oaddr"){ui.obs=ui.obs||{};ui.obs.addr=v;}
+  else if(mode==="obs_oaaddr"){ui.obsAdmit=ui.obsAdmit||{};ui.obsAdmit.addr=v;}
+  else if(mode==="census_aaddr"){ui.census=ui.census||{};ui.census.addr=v;}
+  else if(mode==="fields_aaddr"){ui.fields=ui.fields||{};ui.fields.aaddr=v;}
+  else if(mode==="pedit_eaddr"){ui.pedit=ui.pedit||{};ui.pedit.addr=v;}
+}
+function onAddrInput(el,mode){
+  if(!el) return;
+  syncAddrDraft(el,mode);
+  const wrap=el.closest(".dx-wrap");
+  const box=wrap&&wrap.querySelector(".dx-suggest");
+  if(box) box.innerHTML=addrSuggestItemsHtml(el.value,el.value);
+}
+function pickAddrSuggest(btn){
+  if(!btn) return;
+  const wrap=btn.closest(".dx-wrap");
+  const input=wrap&&wrap.querySelector("input");
+  const val=btn.getAttribute("data-val")||"";
+  if(input){
+    input.value=val;
+    syncAddrDraft(input,input.getAttribute("data-addr-mode")||"");
+  }
+  const box=wrap&&wrap.querySelector(".dx-suggest");
+  if(box) box.innerHTML="";
+}
+function onAddrKey(ev,el){
+  const wrap=el&&el.closest(".dx-wrap");
+  const box=wrap&&wrap.querySelector(".dx-suggest");
+  if(!box||!box.children.length) return;
+  const opts=[...box.querySelectorAll(".dx-opt")];
+  let idx=opts.findIndex(x=>x.classList.contains("active"));
+  if(ev.key==="Escape"){ev.preventDefault();box.innerHTML="";return;}
+  if(ev.key==="ArrowDown"){ev.preventDefault();opts.forEach(x=>x.classList.remove("active"));idx=(idx+1)%opts.length;opts[idx].classList.add("active");opts[idx].scrollIntoView({block:"nearest"});return;}
+  if(ev.key==="ArrowUp"){ev.preventDefault();opts.forEach(x=>x.classList.remove("active"));idx=(idx-1+opts.length)%opts.length;opts[idx].classList.add("active");opts[idx].scrollIntoView({block:"nearest"});return;}
+  if(ev.key==="Enter"&&idx>=0){ev.preventDefault();pickAddrSuggest(opts[idx]);}
+}
+function addrFieldHtml(labelHtml,inputId,valStr,placeholder,mode){
+  return `<div class="dx-wrap"><label class="field"><span>${labelHtml}</span><input id="${inputId}" value="${esc(valStr||"")}" placeholder="${esc(placeholder||"Village / town, District")}" autocomplete="off" data-addr-mode="${esc(mode||"")}" oninput="onAddrInput(this,'${esc(mode||"")}')" onkeydown="onAddrKey(event,this)" onblur="closeDxSuggestLater(this)"/></label><div class="dx-suggest" role="listbox" aria-label="Address suggestions"></div></div>`;
 }
 
 const MED_CATALOG=[
@@ -4956,7 +5215,7 @@ function observeView(){
   const list=open.length?open.map(p=>{
       const b=bedObj(p.id);
       return `<div class="card">
-        <div class="row"><div class="bedno">${esc(b?b.no:"—")}</div><span class="badge r-moderate">OBS</span></div>
+        <div class="row"><div class="bedno">${esc(b?b.no:"—")}</div><div style="display:flex;gap:6px;align-items:center">${obsElapsedBadgeHtml(p)}<span class="badge r-moderate">OBS</span></div></div>
         <b onclick="go('snap','${p.id}')">${esc(p.name)}</b>
         <p class="tiny">${esc(p.hospitalNo||p.code)} · ${p.age||""}${p.sex||""} · ${esc(p.diagnosis||"")}</p>
         ${canWrite()?`<div class="btns" style="margin-top:8px">
@@ -4976,7 +5235,7 @@ function observeView(){
         <label class="field"><span>Age</span><input id="oage" value="${esc(d.age||"")}" inputmode="numeric"/></label>
         <label class="field"><span>Sex</span>${picker("osex",[["M","M"],["F","F"],["O","O"]],d.sex||"M","Sex")}</label>
       </div>
-      <label class="field"><span>Address <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="oaddr" value="${esc(d.addr||"")}" placeholder="Village / town"/></label>
+      ${addrFieldHtml('Address <em style="font-style:normal;opacity:.6">(optional)</em>',"oaddr",d.addr||"","Village / town, District","obs_oaddr")}
       <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="ophone" value="${esc(d.phone||"")}" inputmode="tel" placeholder="Mobile number"/></label>
       ${dxFieldHtml("Provisional diagnosis","odx",d.dx||"","Working diagnosis","obs_odx")}
       <label class="field"><span>Bed</span>${picker("obed",(empties.length?empties.map(b=>[b.id,b.no+" · "+((S.sections.find(s=>s.id===b.sectionId)||{}).name||"")]):[["","No empty bed"]]),d.bed||(empties[0]&&empties[0].id)||"","Bed")}</label>
@@ -5136,7 +5395,7 @@ function obsAdmitForm(){
   return `<p class="tiny">Admit from observation. Existing details are filled in; check and complete them.</p>
     <label class="field"><span>Hospital no. *</span><input id="oahosp" required value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off"/></label>
     <label class="field"><span>Name</span><input id="oaname" value="${esc(d.name||"")}" placeholder="Full name"/></label>
-    <label class="field"><span>Address <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="oaaddr" value="${esc(d.addr||"")}" placeholder="Village / town / ward address" autocomplete="street-address"/></label>
+    ${addrFieldHtml('Address <em style="font-style:normal;opacity:.6">(optional)</em>',"oaaddr",d.addr||"","Village / town / ward address","obs_oaaddr")}
     <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="oaphone" value="${esc(d.phone||"")}" placeholder="Mobile number" inputmode="tel" autocomplete="tel"/></label>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <label class="field"><span>Age</span><input id="oaage" value="${esc(d.age||"")}" inputmode="numeric"/></label>
@@ -5420,7 +5679,7 @@ function censusView(){
       <label class="field"><span>Hospital no. *</span><input id="ahosp" required value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off" oninput="onAdmitHospInput(this.value)"/></label>
       <div id="ahospMatch">${hospMatchBannerHtml("admit",d.hosp)}</div>
       <label class="field"><span>Name</span><input id="aname" value="${esc(d.name||"")}" placeholder="Full name"/></label>
-      <label class="field"><span>Address <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="aaddr" value="${esc(d.addr||"")}" placeholder="Village / town / ward address" autocomplete="street-address"/></label>
+      ${addrFieldHtml('Address <em style="font-style:normal;opacity:.6">(optional)</em>',"aaddr",d.addr||"","Village / town / ward address","census_aaddr")}
       <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="aphone" value="${esc(d.phone||"")}" placeholder="Mobile number" inputmode="tel" autocomplete="tel"/></label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <label class="field"><span>Age</span><input id="aage" value="${esc(d.age||"")}" inputmode="numeric"/></label>
@@ -5668,7 +5927,7 @@ function admitFormBody(){
     <label class="field"><span>Hospital no. *</span><input id="ahosp" required placeholder="UHID / IP number" autocomplete="off" value="${esc(val("ahosp"))}" oninput="onAdmitPanelHospInput(this.value)"/></label>
     <div id="ahospPanelMatch">${hospMatchBannerHtml("admitPanel",val("ahosp"))}</div>
     <label class="field"><span>Name</span><input id="aname" placeholder="Full name" value="${esc(val("aname"))}" oninput="ui.fields=ui.fields||{};ui.fields.aname=this.value"/></label>
-    <label class="field"><span>Address (optional)</span><input id="aaddr" placeholder="Village / town / ward address" value="${esc(val("aaddr"))}" oninput="ui.fields=ui.fields||{};ui.fields.aaddr=this.value"/></label>
+    ${addrFieldHtml("Address (optional)","aaddr",val("aaddr"),"Village / town / ward address","fields_aaddr")}
     <label class="field"><span>Phone (optional)</span><input id="aphone" placeholder="Mobile number" inputmode="tel" value="${esc(val("aphone"))}" oninput="ui.fields=ui.fields||{};ui.fields.aphone=this.value"/></label>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <label class="field"><span>Age</span><input id="aage" value="${esc(val("aage")||"30")}" oninput="ui.fields=ui.fields||{};ui.fields.aage=this.value"/></label>
@@ -7685,7 +7944,8 @@ function patientRecordItems(pid){
     if(cons.length===1) bits.push("Consultant: "+cons[0]);
     else if(cons.length>1){bits.push("Consultant: "+cons[0]);cons.slice(1).forEach((c,i)=>bits.push("Consultant "+(i+2)+": "+c));}
     if(p.referredBy) bits.push("Source: "+p.referredBy);
-    if(p.reason) bits.push("Reason: "+p.reason);
+    const rLine=reasonLine(p)||p.reason;
+    if(rLine) bits.push("Reason: "+rLine);
     if(p.address||p.phone) bits.push([p.address,p.phone].filter(Boolean).join(" · "));
     return bits;
   };
@@ -7703,13 +7963,15 @@ function patientRecordItems(pid){
       const a0=assignsAll.find(a=>Math.abs((Date.parse(a.at||0)||0)-sTs)<=5*60000)||assignsAll[0];
       const obsBed=bedNoById(s.bedId)||(a0?bedNoById(a0.bedId):"")||(p.status==="observation"?bedOf(pid):"");
       const bits=patientBits();
-      [s.reason,s.note].filter(Boolean).forEach(x=>bits.push(x));
+      const sReason=s.reason?(reasonLine({reason:s.reason})||s.reason):"";
+      [sReason&&sReason!==(reasonLine(p)||p.reason)?sReason:"",s.note].filter(Boolean).forEach(x=>bits.push(x));
       if(obsMeds.length) bits.push("Medications:\n"+obsMeds.map(medLine).join("\n"));
       const evObs=((S.events||[]).filter(e=>String(e.pid)===String(pid)&&/under observation|kept under observation/i.test(e.title||"")).sort((a,b)=>Math.abs(Date.parse(a.at||0)-sTs)-Math.abs(Date.parse(b.at||0)-sTs))[0])||{};
       const byName=(evObs.actorName&&evObs.actorName!=="?")?evObs.actorName:"";
       add({kind:"admit",obsFirst:true,title:(obsBed&&obsBed!=="—")?("Kept under observation on "+obsBed):"Kept under observation",at:s.at,by:s.by||evObs.by||(a0&&a0.by)||p.by||null,byName:byName,body:bits.join("\n")});
     }else{
-      const bits=[s.reason,s.note].filter(Boolean);
+      const sReason=s.reason?(reasonLine({reason:s.reason})||s.reason):"";
+      const bits=[sReason,s.note].filter(Boolean);
       if(obsMeds.length) bits.push("Medications:\n"+obsMeds.map(medLine).join("\n"));
       add({kind:"obs",title:"Kept under observation",at:s.at,by:s.by,body:bits.join("\n")});
     }
@@ -7766,8 +8028,10 @@ function patientRecordItems(pid){
     add({kind:"crit",title:"Critical status",at:c.at||c.created_at||c.updated_at,by:c.by||c.actor,byName:c.byName||c.actorName,body:c.text||c.value||c.note||c.body||""});
   });
   if(p.dischargedAt){
-    const mode=p.dischargeMode||"";
-    const out=p.dischargeOutcome||"";
+    const modeL=labelOf(DISCHARGE_MODES,p.dischargeMode);
+    const outL=labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome);
+    const mode=(modeL&&modeL!=="—")?modeL:(p.dischargeMode||"");
+    const out=(outL&&outL!=="—")?outL:(p.dischargeOutcome||"");
     add({kind:"dis",title:"Discharge",at:p.dischargedAt,body:[mode,out].filter(Boolean).join(" · ")});
   }
   (S.events||[]).filter(e=>e.pid===pid).forEach(e=>{
@@ -8527,25 +8791,18 @@ function quickPrn(id){
   render();
 }
 async function givePrn(oid){
-  if(!needWrite())return; setBusy(true);
+  if(!needWrite())return;
   const o=(S.orders||[]).find(x=>x.id===oid); if(!o)return;
   if(!o.at) o.at=now();
   const d={id:uid("d"),oid:o.id,pid:o.pid,at:now(),status:"given",by:S.userId,givenAt:now()};
   S.doses.unshift(d);
-  try{
-    const hold=pending.slice(); pending.length=0;
-    qOrder(o); qDose(d);
-    const ops=pending.splice(0); pending.push(...hold);
-    for(const op of ops.filter(x=>x.table==="medication_orders")) await upsert(op.table,[op.row]);
-    for(const op of ops.filter(x=>x.table!=="medication_orders")) await upsert(op.table,[op.row]);
-    ev(o.pid,prnLabel(o)+" "+o.drug+" "+o.dose,true,"med");
-    toast("Given "+o.drug+" "+o.dose,"ok");
-    save();dismissOverlay();
-  }catch(e){
-    S.doses=S.doses.filter(x=>x.id!==d.id);
-    evFail(o.pid,"PRN",e);
-    toast(e.message||String(e),"bad");save();render();
-  }finally{setBusy(false);}
+  ev(o.pid,prnLabel(o)+" "+o.drug+" "+o.dose,true,"med");
+  qOrder(o); qDose(d);
+  toast("Given "+o.drug+" "+o.dose,"ok");
+  save();
+  if(ui.sheet||ui.panel) dismissOverlay();
+  else render();
+  Promise.resolve(flushPending()).catch(()=>{});
 }
 function savePrn(id){
   if(!needWrite())return;
@@ -8847,7 +9104,7 @@ function peditView(){
     <div class="card">
       <label class="field"><span>Hospital no. *</span><input id="ehosp" required value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off"/></label>
       <label class="field"><span>Name</span><input id="ename" value="${esc(d.name||"")}" placeholder="Full name"/></label>
-      <label class="field"><span>Address <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="eaddr" value="${esc(d.addr||"")}" placeholder="Village / town / ward address" autocomplete="street-address"/></label>
+      ${addrFieldHtml('Address <em style="font-style:normal;opacity:.6">(optional)</em>',"eaddr",d.addr||"","Village / town / ward address","pedit_eaddr")}
       <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="ephone" value="${esc(d.phone||"")}" placeholder="Mobile number" inputmode="tel" autocomplete="tel"/></label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <label class="field"><span>Age</span><input id="eage" value="${esc(d.age||"")}" inputmode="numeric"/></label>
@@ -8917,7 +9174,8 @@ async function savePatientEdit(){
     const at=now(), changed=data.changed||Object.keys(ch).filter(k=>PEDIT_LABELS[k]);
     S.patientEdits=S.patientEdits||[];
     changed.forEach(k=>S.patientEdits.unshift({id:editId+"-"+k,pid:p.id,field:k,old:ex[k]??null,new:ch[k]??null,by:S.userId,at,group:data.edit_id||editId}));
-    S.events.unshift({id:"pt-edit-"+(data.edit_id||editId),pid:p.id,title:"Patient details edited",detail:changed.map(k=>PEDIT_LABELS[k]+": "+(ex[k]||"—")+" → "+(ch[k]||"—")).join("\n"),by:S.userId,actorName:(user()&&user().displayName)||rname(S.userId),patientName:p.name,bed:bedOf(p.id),at,ok:true,kind:"note"});
+    const fmtEditVal=(k,v)=>!v?"—":(k==="reason_for_admission"?(reasonLine({reason:v})||v):v);
+    S.events.unshift({id:"pt-edit-"+(data.edit_id||editId),pid:p.id,title:"Patient details edited",detail:changed.map(k=>PEDIT_LABELS[k]+": "+fmtEditVal(k,ex[k])+" → "+fmtEditVal(k,ch[k])).join("\n"),by:S.userId,actorName:(user()&&user().displayName)||rname(S.userId),patientName:p.name,bed:bedOf(p.id),at,ok:true,kind:"note"});
     ui.pedit=null; save(); toast("Details updated","ok"); go("snap",p.id);
   }catch(e){toast(e.message||String(e),"bad")}
   finally{setBusy(false);render()}
