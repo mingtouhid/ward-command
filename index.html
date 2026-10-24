@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.108 pdf-heading -->
+<!-- WARD SYNC RELEASE: R1.3.109 med-shift-log -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1223,6 +1223,17 @@ html[data-theme="night"] .notify-title{color:#fff}
 .rec-item:last-child .rec-rail:before{display:none}
 .rec-dot{width:12px;height:12px;border-radius:50%;margin-top:8px;background:#14b8a6;box-shadow:0 0 0 4px rgba(20,184,166,.12)}
 .rec-item.rec-med .rec-dot{background:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.12)}
+.rec-msum{margin:2px 0 0;color:var(--muted);font-size:13px}
+.rec-meds{list-style:none;margin:8px 0 2px;padding:0;display:grid;gap:7px}
+.rec-med{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:start;font-size:14px;line-height:1.4}
+.rec-med.earlier{opacity:.5}
+.rec-mdot{width:8px;height:8px;border-radius:50%;margin-top:6px;background:transparent}
+.rec-mdot.new{background:var(--ok);box-shadow:0 0 0 3px var(--ok-bg)}
+.rec-mtxt{min-width:0;overflow-wrap:anywhere}
+.rec-mchg{display:block;font-size:12px;color:var(--warn);font-weight:600}
+.rec-pill{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;line-height:1.5;margin-top:1px}
+.rec-pill.stop{color:var(--danger);background:var(--danger-bg)}
+.rec-pill.warn{color:var(--warn);background:var(--warn-bg)}
 .rec-item.rec-ect .rec-dot{background:#7c3aed;box-shadow:0 0 0 4px rgba(124,58,237,.12)}
 .rec-item.rec-pgt .rec-dot{background:#0f766e;box-shadow:0 0 0 4px rgba(15,118,110,.12)}
 .rec-item.rec-crit .rec-dot{background:#e11d48;box-shadow:0 0 0 4px rgba(225,29,72,.12)}
@@ -2225,7 +2236,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.108";
+const APP_VERSION="R1.3.109";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -7895,6 +7906,139 @@ function recSkipEventTitle(title){
   const s=(title||"").toLowerCase();
   return /notification (dispatched|sent)/.test(s) || /^failed\b/.test(s) || /^admission notification|^discharge notification|^transfer notification|^ect notification|^task notification|^handover notification|^critical status update sent/.test(s);
 }
+/* R1.3.109: medication history reconstruction (no DB migration).
+   stop_date is DATE-only, edits supersede rows, so precise times come from created_at,
+   successor rows and activity_log ("Started/Stopped/Changed/Paused/Resumed <drug>"). */
+const MED_ENTRY_WINDOW_MS=10*60000;
+function medParseTs(v){
+  const s=String(v||"").trim(); if(!s) return 0;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return Date.parse(s+"T00:00:00+05:30")||0;
+  return Date.parse(s)||0;
+}
+function medIstDay(ts){return ts?new Date(ts+330*60000).toISOString().slice(0,10):""}
+function medShiftOf(ts){
+  const d=new Date(ts+330*60000); const h=d.getUTCHours()+d.getUTCMinutes()/60;
+  let day=d.toISOString().slice(0,10), shift;
+  if(h>=8&&h<14) shift="morning"; else if(h>=14&&h<22) shift="evening";
+  else { shift="night"; if(h<8) day=new Date(Date.parse(day+"T00:00:00Z")-864e5).toISOString().slice(0,10); }
+  const start=Date.parse(day+"T00:00:00+05:30")+({morning:8,evening:14,night:22}[shift])*3600e3;
+  return {key:day+"|"+shift,shift,day,start,end:start+({morning:6,evening:8,night:10}[shift])*3600e3};
+}
+function medEvents(pid,verb,drug){
+  const d=(verb+" "+String(drug||"").trim()).toLowerCase();
+  return (S.events||[]).filter(e=>{
+    if(String(e.pid)!==String(pid)) return false;
+    const t=String(e.title||"").toLowerCase().trim();
+    return t===d||t.startsWith(d+" ")||t.startsWith(d+":");
+  }).map(e=>({e,ts:Date.parse(e.at||0)||0})).filter(x=>x.ts).sort((a,b)=>a.ts-b.ts);
+}
+function medEvName(e){return e?((e.actorName&&e.actorName!=="?")?e.actorName:(rname(e.by)||"")):""}
+function medNearest(list,ts,maxMs){
+  let best=null,bd=Infinity;
+  list.forEach(x=>{const d=Math.abs(x.ts-ts);if(d<bd){bd=d;best=x}});
+  return (best&&bd<=maxMs)?best:null;
+}
+function medRowLine(o){return [o.drug,o.dose,o.route||"PO",o.freq||"OD"].filter(Boolean).join(" · ")}
+function medDiff(a,b){
+  const out=[];
+  [["dose"],["route"],["freq"],["time"]].forEach(([k])=>{
+    const x=String(a[k]||"").trim(), y=String(b[k]||"").trim();
+    if(x!==y) out.push((x||"—")+" → "+(y||"—"));
+  });
+  if(String(a.drug||"").trim()!==String(b.drug||"").trim()) out.unshift(String(a.drug||"")+" → "+String(b.drug||""));
+  return out.join(", ");
+}
+function medHistory(pid){
+  const orders=(S.orders||[]).filter(o=>String(o.pid)===String(pid));
+  const byId=new Map(orders.map(o=>[o.id,o]));
+  const succ=new Map();
+  orders.forEach(o=>{if(o.supersedes&&byId.has(o.supersedes)&&o.supersedes!==o.id) succ.set(o.supersedes,o)});
+  const rootOf=o=>{let r=o,g=0;while(r.supersedes&&byId.has(r.supersedes)&&r.supersedes!==r.id&&g++<50) r=byId.get(r.supersedes);return r};
+  const startOf=o=>{
+    const at=medParseTs(o.at); if(at) return at;
+    const st=medParseTs(o.start);
+    const ev=medNearest(medEvents(pid,"started",o.drug),st||Date.now(),36*3600e3);
+    return ev?ev.ts:st;
+  };
+  const V=new Map(); orders.forEach(o=>V.set(o.id,{o,start:startOf(o),stop:0,stopBy:null,stopName:""}));
+  V.forEach(v=>{
+    const o=v.o; const n=succ.get(o.id);
+    if(n){v.stop=V.get(n.id).start;return}
+    if(!o.stop && o.status!=="stopped") return;
+    const raw=String(o.stop||"").trim();
+    const day=/^\d{4}-\d{2}-\d{2}/.test(raw)?raw.slice(0,10):"";
+    const evs=medEvents(pid,"stopped",o.drug).filter(x=>x.ts>=v.start-60000);
+    const evDay=evs.find(x=>day&&medIstDay(x.ts)===day)||(!day?evs[0]:null);
+    if(raw.includes("T")){v.stop=medParseTs(raw);const m=medNearest(evs,v.stop,10*60000);if(m){v.stopBy=m.e.by;v.stopName=medEvName(m.e)}return}
+    if(evDay){v.stop=evDay.ts;v.stopBy=evDay.e.by;v.stopName=medEvName(evDay.e);return}
+    const up=medParseTs(o.updatedAt);
+    if(up&&(!day||medIstDay(up)===day)){v.stop=up;return}
+    v.stop=medParseTs(raw)||up||0;
+  });
+  const chains=new Map();
+  V.forEach(v=>{const r=rootOf(v.o);if(!chains.has(r.id)) chains.set(r.id,{id:r.id,versions:[]});chains.get(r.id).versions.push(v)});
+  const list=[...chains.values()].map(c=>{c.versions.sort((a,b)=>a.start-b.start);c.start=c.versions[0].start;c.first=c.versions[0].o;return c}).filter(c=>c.start).sort((a,b)=>a.start-b.start||String(a.first.drug).localeCompare(String(b.first.drug)));
+  const events=[];
+  list.forEach(c=>{
+    const f=c.versions[0];
+    const sEv=medNearest(medEvents(pid,"started",f.o.drug),f.start,15*60000);
+    events.push({type:"start",chain:c,ts:f.start,by:(sEv&&sEv.e.by)||f.o.by||null,byName:sEv?medEvName(sEv.e):""});
+    for(let i=1;i<c.versions.length;i++){
+      const a=c.versions[i-1], b=c.versions[i];
+      const cEv=medNearest(medEvents(pid,"changed",a.o.drug),b.start,15*60000);
+      events.push({type:"change",chain:c,ts:b.start,from:a.o,to:b.o,diff:medDiff(a.o,b.o),by:(cEv&&cEv.e.by)||b.o.by||null,byName:cEv?medEvName(cEv.e):""});
+    }
+    const last=c.versions[c.versions.length-1];
+    if(last.stop) events.push({type:"stop",chain:c,ts:last.stop,by:last.stopBy,byName:last.stopName});
+    const lifeEnd=last.stop||Infinity;
+    const drugs=[...new Set(c.versions.map(v=>v.o.drug))];
+    ["paused","resumed"].forEach(verb=>drugs.forEach(dg=>medEvents(pid,verb,dg).forEach(x=>{
+      if(x.ts>=c.start-60000&&x.ts<=lifeEnd+60000) events.push({type:verb==="paused"?"pause":"resume",chain:c,ts:x.ts,by:x.e.by,byName:medEvName(x.e)});
+    })));
+  });
+  events.sort((a,b)=>a.ts-b.ts);
+  return {chains:list,events};
+}
+function medChainAt(c,T){
+  let cur=null; c.versions.forEach(v=>{if(v.start<=T) cur=v});
+  return cur;
+}
+function medChangeCards(pid,MH,shown){
+  const evs=MH.events.filter(e=>!(e.type==="start"&&shown.has(e.chain.id)));
+  const groups=new Map();
+  evs.forEach(e=>{const s=medShiftOf(e.ts);if(!groups.has(s.key)) groups.set(s.key,{s,evs:[]});groups.get(s.key).evs.push(e)});
+  const cards=[];
+  [...groups.values()].sort((a,b)=>a.s.start-b.s.start).forEach(g=>{
+    const first=g.evs[0].ts, ref=g.evs[g.evs.length-1].ts, T=Math.min(g.s.end,Math.max(ref,Date.now()));
+    const rows=[];
+    let nS=0,nC=0,nX=0,nP=0;
+    MH.chains.forEach(c=>{
+      if(c.start>T) return;
+      const v=medChainAt(c,T); if(!v) return;
+      const isLast=v===c.versions[c.versions.length-1];
+      const stopped=isLast&&v.stop&&v.stop<=T;
+      const stopThis=stopped&&v.stop>=g.s.start;
+      const chg=g.evs.filter(e=>e.chain===c&&e.type==="change");
+      const pr=MH.events.filter(e=>e.chain===c&&(e.type==="pause"||e.type==="resume")&&e.ts<=T).slice(-1)[0];
+      const paused=!stopped&&pr&&pr.type==="pause";
+      const isNew=!stopped&&c.start<=ref&&c.start>ref-24*3600e3;
+      const startedThis=g.evs.some(e=>e.chain===c&&e.type==="start");
+      if(startedThis) nS++; if(chg.length) nC++; if(stopThis) nX++; if(paused&&g.evs.some(e=>e.chain===c&&e.type==="pause")) nP++;
+      let change="";
+      if(chg.length){const a=chg[0].from,b=chg[chg.length-1].to;change=medDiff(a,b)}
+      rows.push({text:medRowLine(v.o),isNew,stopped:!!stopped,stoppedEarlier:!!(stopped&&!stopThis),changed:!!chg.length,change,paused:!!paused,startedThis});
+    });
+    const names=[];
+    g.evs.forEach(e=>{const n=(e.byName&&e.byName!=="?")?e.byName:(rname(e.by)||"");if(n&&n!=="?"&&!names.includes(n)) names.push(n)});
+    const summary=[nS?"Started "+nS:"",nC?"Changed "+nC:"",nX?"Stopped "+nX:"",nP?"Paused "+nP:""].filter(Boolean).join(" · ");
+    const hm=ts=>new Date(ts).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+    const body=[summary].concat(rows.map(r=>(r.isNew?"● ":"")+r.text+(r.change?" ("+r.change+")":"")+(r.stopped?" [Stopped]":r.paused?" [Paused]":r.changed?" [Changed]":""))).filter(Boolean).join("\n");
+    cards.push({kind:"med",medShift:true,title:"Medication changes · "+shiftLabel(g.s.shift)+" shift",at:new Date(first).toISOString(),
+      atLabel:stamp(new Date(first).toISOString())+(hm(ref)!==hm(first)?"–"+hm(ref):""),
+      by:null,byName:names.join(", "),summary,meds:rows,body});
+  });
+  return cards;
+}
 function patientRecordItems(pid){
   const p=patient(pid); if(!p) return [];
   const items=[];
@@ -7948,30 +8092,36 @@ function patientRecordItems(pid){
     if(p.address||p.phone) bits.push([p.address,p.phone].filter(Boolean).join(" · "));
     return bits;
   };
-  const meds=allMeds;
-  const starts=meds.filter(o=>(o.start||o.at) && !medInObs(o)).slice().sort((a,b)=>Date.parse(a.start||a.at||0)-Date.parse(b.start||b.at||0));
+  // R1.3.109: entry cards show only meds started at entry (values at that time); later changes go to per-shift cards.
+  const MH=medHistory(pid);
+  const shownChains=new Set();
+  const entryMeds=(fromTs,toTs)=>{const l=MH.chains.filter(c=>!shownChains.has(c.id)&&c.start<=toTs&&(fromTs==null||c.start>=fromTs));l.forEach(c=>shownChains.add(c.id));return l};
+  const chainLine=c=>medLine(c.first);
   // R1.3.94: a patient who came in under observation gets the first (WARD) card as
   // "Kept under observation on <obs bed>"; the separate duplicate obs card is dropped.
   const firstStay=obsStays[0]||null;
   const firstStayTs=firstStay?(Date.parse(firstStay.at||0)||0):0;
   const obsFirst=!!firstStay && (p.status==="observation" || !admitTs || !firstStayTs || firstStayTs<=admitTs+5*60000);
   obsStays.forEach((s,i)=>{
-    const obsMeds=allMeds.filter(medInObs);
+    const sTs=Date.parse(s.at||0)||0;
+    const evObs0=((S.events||[]).filter(e=>String(e.pid)===String(pid)&&/under observation|kept under observation/i.test(e.title||"")).sort((a,b)=>Math.abs(Date.parse(a.at||0)-sTs)-Math.abs(Date.parse(b.at||0)-sTs))[0])||{};
+    const evObsTs=Date.parse(evObs0.at||0)||0;
+    const obsAnchor=Math.max(sTs,(evObsTs&&Math.abs(evObsTs-sTs)<=12*3600e3)?evObsTs:0);
+    const obsMeds=entryMeds((obsFirst&&i===0)?null:sTs-60000,obsAnchor+MED_ENTRY_WINDOW_MS);
     if(obsFirst && i===0){
-      const sTs=Date.parse(s.at||0)||0;
       const a0=assignsAll.find(a=>Math.abs((Date.parse(a.at||0)||0)-sTs)<=5*60000)||assignsAll[0];
       const obsBed=bedNoById(s.bedId)||(a0?bedNoById(a0.bedId):"")||(p.status==="observation"?bedOf(pid):"");
       const bits=patientBits();
       const sReason=s.reason?(reasonLine({reason:s.reason})||s.reason):"";
       if(sReason&&sReason!==(reasonLine(p)||p.reason)) bits.push(sReason);
-      if(obsMeds.length) bits.push("Medications:\n"+obsMeds.map(medLine).join("\n"));
+      if(obsMeds.length) bits.push("Medications:\n"+obsMeds.map(chainLine).join("\n"));
       const evObs=((S.events||[]).filter(e=>String(e.pid)===String(pid)&&/under observation|kept under observation/i.test(e.title||"")).sort((a,b)=>Math.abs(Date.parse(a.at||0)-sTs)-Math.abs(Date.parse(b.at||0)-sTs))[0])||{};
       const byName=(evObs.actorName&&evObs.actorName!=="?")?evObs.actorName:"";
       add({kind:"admit",obsFirst:true,title:(obsBed&&obsBed!=="—")?("Kept under observation on "+obsBed):"Kept under observation",at:s.at,by:s.by||evObs.by||(a0&&a0.by)||p.by||null,byName:byName,body:bits.join("\n")});
     }else{
       const sReason=s.reason?(reasonLine({reason:s.reason})||s.reason):"";
       const bits=[sReason].filter(Boolean);
-      if(obsMeds.length) bits.push("Medications:\n"+obsMeds.map(medLine).join("\n"));
+      if(obsMeds.length) bits.push("Medications:\n"+obsMeds.map(chainLine).join("\n"));
       add({kind:"obs",title:"Kept under observation",at:s.at,by:s.by,body:bits.join("\n")});
     }
     if(s.endedAt){
@@ -8006,30 +8156,27 @@ function patientRecordItems(pid){
     const firstA=(obsFirst&&admitTs)?(assigns.filter(a=>(Date.parse(a.at||0)||0)<=admitTs+60000).slice(-1)[0]||assigns[assigns.length-1]):assigns[0];
     const bed=firstA?((S.beds||[]).find(x=>x.id===firstA.bedId)||{}).no:bedOf(pid);
     const bits=patientBits();
-    if(starts.length) bits.push("Medications:\n"+starts.map(medLine).join("\n"));
     const evAct=((S.events||[]).filter(e=>String(e.pid)===String(pid)&&/admitted to|admission\b|admitted from/i.test(e.title||"")).sort((a,b)=>Math.abs(Date.parse(a.at||0)-Date.parse(p.admittedAt||0))-Math.abs(Date.parse(b.at||0)-Date.parse(p.admittedAt||0)))[0])||{};
+    const evActTs=Date.parse(evAct.at||0)||0;
+    let admAnchor=Math.max(admitTs,(evActTs&&Math.abs(evActTs-admitTs)<=12*3600e3)?evActTs:0);
+    if(!evActTs){const c0=MH.chains.find(c=>!shownChains.has(c.id)&&c.start>=admitTs-MED_ENTRY_WINDOW_MS);if(c0&&c0.start<=admitTs+12*3600e3) admAnchor=Math.max(admAnchor,c0.start);}
+    const admMeds=entryMeds(fromObs?admAnchor-MED_ENTRY_WINDOW_MS:null,admAnchor+MED_ENTRY_WINDOW_MS);
+    if(admMeds.length) bits.push("Medications:\n"+admMeds.map(chainLine).join("\n"));
     const by=p.by||evAct.by||(firstA&&firstA.by)||null;
     const byName=(evAct.actorName&&evAct.actorName!=="?")?evAct.actorName:"";
     add({kind:"admit",title:bed?("Admitted to "+bed):"Admitted",at:p.admittedAt||(firstA&&firstA.at),by:by,byName:byName,body:bits.join("\n")});
     admitCardAdded=true;
   }
-  if(!admitCardAdded && starts.length){
-    const first=starts[0];
-    const started=medEventActor(pid,first.drug,first.start||first.at,["started ","medication started"]);
-    const lines=starts.map(o=>[o.drug,o.dose,o.route||"PO",o.freq||"OD"].filter(Boolean).join(" · "));
-    add({kind:"med",title:"Medications started",at:first.start||first.at,by:first.by||started.by,byName:first.byName||started.byName,body:lines.join("\n")});
+  if(!admitCardAdded && !obsStays.length){
+    const fc=MH.chains.find(c=>!shownChains.has(c.id));
+    if(fc){
+      const st=entryMeds(null,fc.start+MED_ENTRY_WINDOW_MS);
+      const sEv=MH.events.find(e=>e.type==="start"&&e.chain===fc)||{};
+      add({kind:"med",title:"Medications started",at:new Date(fc.start).toISOString(),by:sEv.by||fc.first.by||null,byName:sEv.byName||"",body:st.map(chainLine).join("\n")});
+    }
   }
-  meds.forEach(o=>{
-    const label=[o.drug,o.dose,o.route||"PO",o.freq||"OD"].filter(Boolean).join(" · ");
-    if(o.hold){
-      const paused=medEventActor(pid,o.drug,o.hold,["paused ","medication paused"]);
-      add({kind:"med",title:"Medication paused · "+(o.drug||""),at:o.hold,by:paused.by,byName:paused.byName,body:label});
-    }
-    if(o.stop){
-      const stopped=medEventActor(pid,o.drug,o.stop,["stopped ","medication stopped"]);
-      add({kind:"med",title:"Medication stopped · "+(o.drug||""),at:o.stop,by:stopped.by,byName:stopped.byName,body:label});
-    }
-  });
+  // R1.3.109: one "Medication changes" card per shift (IST), replacing per-order stop/pause cards.
+  medChangeCards(pid,MH,shownChains).forEach(add);
   (S.ect||[]).filter(e=>e.pid===pid).forEach(e=>{
     add({kind:"ect",title:"ECT planned",at:e.at||e.nextAt,by:e.by,body:[e.indication, (e.sessionsDone?e.sessionsDone+" session(s) recorded":"")].filter(Boolean).join(" · ")});
   });
@@ -8054,6 +8201,7 @@ function patientRecordItems(pid){
     const title=e.title||"Event";
     const low=title.toLowerCase();
     if(/^(started |stopped |paused |resumed |pgt note|ect planned|ect session|admitted from observation|under observation|kept under observation|observation ended|admission\b|admitted to\b)/.test(low)) return;
+    if(/^changed [^:]+:/.test(low) && (e.kind==="med"||/→/.test(low))) return; // R1.3.109: folded into shift med card
     let kind=e.kind||evKind(title);
     if(/transfer/.test(low)) kind="xfer";
     else if(/discharg/.test(low)) kind="dis";
@@ -8066,6 +8214,7 @@ function patientRecordItems(pid){
       if(it.obsFirst) return 0;
       if(fromObs){
         if(it.title==="Kept under observation") return 0;
+        if(it.medShift && admitTs && Date.parse(it.at||0)<admitTs) return 0.5;
         if(it.title==="Admitted from observation") return 1;
         if(it.kind==="admit") return 2;
         if(it.title==="Medications started") return 3;
@@ -8081,14 +8230,22 @@ function patientRecordItems(pid){
   });
   return items;
 }
+// R1.3.109: structured med list for the per-shift "Medication changes" card.
+function recMedRowsHtml(it){
+  const rows=(it.meds||[]).map(r=>{
+    const pill=r.stopped?`<span class="rec-pill stop">Stopped</span>`:r.paused?`<span class="rec-pill warn">Paused</span>`:r.changed?`<span class="rec-pill warn">Changed</span>`:"";
+    return `<li class="rec-med${r.stoppedEarlier?" earlier":""}"><span class="rec-mdot${r.isNew?" new":""}"${r.isNew?' title="Started within 24 h" aria-label="New"':""}></span><span class="rec-mtxt">${esc(r.text)}${r.change?`<span class="rec-mchg">${esc(r.change)}</span>`:""}</span>${pill}</li>`;
+  }).join("");
+  return `${it.summary?`<p class="sm rec-msum">${esc(it.summary)}</p>`:""}<ul class="rec-meds">${rows}</ul>`;
+}
 function recordItemHtml(it){
   const who=recActor(it);
   return `<div class="rec-item rec-${recCss(it.kind)}">
     <div class="rec-rail"><div class="rec-dot"></div></div>
     <div class="rec-card">
       <h3>${esc(it.title||"")}</h3>
-      ${it.body?`<p class="sm">${esc(it.body)}</p>`:""}
-      <p class="tiny">${esc(who)}${who?" · ":""}${esc(stamp(it.at)||fmt(it.at)||"")}</p>
+      ${it.meds?recMedRowsHtml(it):(it.body?`<p class="sm">${esc(it.body)}</p>`:"")}
+      <p class="tiny">${esc(who)}${who?" · ":""}${esc(it.atLabel||stamp(it.at)||fmt(it.at)||"")}</p>
     </div>
   </div>`;
 }
@@ -8169,7 +8326,19 @@ function buildRecordPdf(meta,items){
   items.forEach(it=>{
     const rows=[];
     pdfWrap(pdfWinAnsi(it.title||""),true,11.5,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:true,s:11.5,lh:15,c:[15,23,42]}));
-    if(it.body){rows.push({gap:3});pdfWrap(pdfWinAnsi(it.body),false,10,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:false,s:10,lh:13.5,c:[30,41,59]}))}
+    if(it.meds){
+      // R1.3.109: per-shift med card: green dot = new (<24 h), red pill = Stopped, amber = Changed/Paused, grey = stopped earlier.
+      if(it.summary){rows.push({gap:3});rows.push({t:pdfWinAnsi(it.summary),b:false,s:9.5,lh:13,c:[100,116,139]})}
+      rows.push({gap:3});
+      it.meds.forEach(m=>{
+        const pill=m.stopped?{l:"Stopped",bg:[254,226,226],fg:[185,28,28]}:m.paused?{l:"Paused",bg:[254,243,199],fg:[180,83,9]}:m.changed?{l:"Changed",bg:[254,243,199],fg:[180,83,9]}:null;
+        const pw=pill?pdfTextW(pill.l,true,8)+12:0;
+        const col=m.stoppedEarlier?[148,163,184]:[30,41,59];
+        pdfWrap(pdfWinAnsi(m.text),false,10,CW-2*PAD-6-14-pw-6).forEach((l,k)=>rows.push({t:l,b:false,s:10,lh:13.5,c:col,x:14,dot:k===0&&m.isNew,pill:k===0?pill:null,pw}));
+        if(m.change) pdfWrap(pdfWinAnsi(m.change),true,8.5,CW-2*PAD-6-14).forEach(l=>rows.push({t:l,b:true,s:8.5,lh:11.5,c:m.stoppedEarlier?[203,213,225]:[180,83,9],x:14}));
+        rows.push({gap:2.5});
+      });
+    }else if(it.body){rows.push({gap:3});pdfWrap(pdfWinAnsi(it.body),false,10,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:false,s:10,lh:13.5,c:[30,41,59]}))}
     if(it.foot){rows.push({gap:4});pdfWrap(pdfWinAnsi(it.foot),false,8.5,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:false,s:8.5,lh:11.5,c:[100,116,139]}))}
     const rowH=r=>r.gap!=null?r.gap:r.lh;
     const total=rows.reduce((a,r)=>a+rowH(r),0)+2*PAD;
@@ -8184,7 +8353,15 @@ function buildRecordPdf(meta,items){
       const h=top-(yy-PAD);
       ops.push(`${rgb(248,250,252)} rg ${rgb(226,232,240)} RG 0.8 w ${M} ${pdfNum(top-h)} ${pdfNum(CW)} ${pdfNum(h)} re B`);
       ops.push(`${rgb(37,99,235)} rg ${M} ${pdfNum(top-h)} 3 ${pdfNum(h)} re f`);
-      seg.forEach(([r,ry])=>{if(r.gap==null)text(M+PAD+6,ry-r.s,r.t,r.b,r.s,r.c)});
+      seg.forEach(([r,ry])=>{
+        if(r.gap!=null) return;
+        const bx=M+PAD+6, by=ry-r.s;
+        if(r.dot){const cx=bx+4,cy=by+3.4,rr=2.9,k=rr*0.5523;ops.push(`${rgb(21,128,61)} rg ${pdfNum(cx+rr)} ${pdfNum(cy)} m ${pdfNum(cx+rr)} ${pdfNum(cy+k)} ${pdfNum(cx+k)} ${pdfNum(cy+rr)} ${pdfNum(cx)} ${pdfNum(cy+rr)} c ${pdfNum(cx-k)} ${pdfNum(cy+rr)} ${pdfNum(cx-rr)} ${pdfNum(cy+k)} ${pdfNum(cx-rr)} ${pdfNum(cy)} c ${pdfNum(cx-rr)} ${pdfNum(cy-k)} ${pdfNum(cx-k)} ${pdfNum(cy-rr)} ${pdfNum(cx)} ${pdfNum(cy-rr)} c ${pdfNum(cx+k)} ${pdfNum(cy-rr)} ${pdfNum(cx+rr)} ${pdfNum(cy-k)} ${pdfNum(cx+rr)} ${pdfNum(cy)} c f`)}
+        if(r.pill){const w=r.pw,h=11.5,px=M+CW-PAD-w,py=by-2.6,q=h/2,k=q*0.5523;
+          ops.push(`${rgb(...r.pill.bg)} rg ${pdfNum(px+q)} ${pdfNum(py)} m ${pdfNum(px+w-q)} ${pdfNum(py)} l ${pdfNum(px+w-q+k)} ${pdfNum(py)} ${pdfNum(px+w)} ${pdfNum(py+q-k)} ${pdfNum(px+w)} ${pdfNum(py+q)} c ${pdfNum(px+w)} ${pdfNum(py+q+k)} ${pdfNum(px+w-q+k)} ${pdfNum(py+h)} ${pdfNum(px+w-q)} ${pdfNum(py+h)} c ${pdfNum(px+q)} ${pdfNum(py+h)} l ${pdfNum(px+q-k)} ${pdfNum(py+h)} ${pdfNum(px)} ${pdfNum(py+q+k)} ${pdfNum(px)} ${pdfNum(py+q)} c ${pdfNum(px)} ${pdfNum(py+q-k)} ${pdfNum(px+q-k)} ${pdfNum(py)} ${pdfNum(px+q)} ${pdfNum(py)} c f`);
+          text(px+6,py+3.2,r.pill.l,true,8,r.pill.fg)}
+        text(bx+(r.x||0),by,r.t,r.b,r.s,r.c);
+      });
       y=top-h-8;
       if(i<rows.length) newPage();
     }
@@ -8235,7 +8412,7 @@ function exportPatientRecord(pid){
   const p=patient(pid); if(!p) return;
   try{
     const b=bedObj(pid)||lastBedObj(pid);
-    const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {title:it.title||"",body:it.body||"",foot:`${who}${who?" · ":""}${stamp(it.at)||fmt(it.at)||""}`}});
+    const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {title:it.title||"",body:it.body||"",meds:it.meds||null,summary:it.summary||"",foot:`${who}${who?" · ":""}${it.atLabel||stamp(it.at)||fmt(it.at)||""}`}});
     const ageSex=[p.age,p.sex].filter(x=>x!=null&&x!=="").join(" ");
     const meta={
       name:p.name||"",version:APP_VERSION,dept:RECORD_PDF_DEPT,
