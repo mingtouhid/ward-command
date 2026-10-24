@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.106 record-clean -->
+<!-- WARD SYNC RELEASE: R1.3.107 pdf-export -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -2225,7 +2225,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.106";
+const APP_VERSION="R1.3.107";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -8106,29 +8106,152 @@ function recordView(){
     </div>
     ${items.length?`<div class="record-list">${items.map(recordItemHtml).join("")}</div>`:`<div class="card"><p class="sm">No clinical events recorded yet.</p></div>`}`;
 }
+/* R1.3.107: on-device PDF export (no pop-up, no external library, works offline) */
+const PDF_HELV_W=[[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,350,556,350,222,556,333,1000,556,556,333,1000,667,333,1000,350,611,350,350,222,222,333,333,350,556,1000,333,1000,500,333,944,350,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500],[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,350,556,350,278,556,500,1000,556,556,333,1000,667,333,1000,350,611,350,350,278,278,500,500,350,556,1000,333,1000,556,333,944,350,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556]];
+const PDF_WINANSI_MAP={0x20AC:0x80,0x201A:0x82,0x0192:0x83,0x201E:0x84,0x2026:0x85,0x2020:0x86,0x2021:0x87,0x02C6:0x88,0x2030:0x89,0x0160:0x8A,0x2039:0x8B,0x0152:0x8C,0x017D:0x8E,0x2018:0x91,0x2019:0x92,0x201C:0x93,0x201D:0x94,0x2022:0x95,0x2013:0x96,0x2014:0x97,0x02DC:0x98,0x2122:0x99,0x0161:0x9A,0x203A:0x9B,0x0153:0x9C,0x017E:0x9E,0x0178:0x9F};
+const PDF_ASCII_SUB={"\u2265":">=","\u2264":"<=","\u2192":"->","\u2190":"<-","\u2713":"+","\u2714":"+","\u2717":"x","\u2212":"-","\u2010":"-","\u2011":"-","\u00A0":" ","\u2009":" ","\u200B":"","\u2032":"'","\u2033":"\""};
+function pdfWinAnsi(s){
+  let out="";
+  for(const ch of String(s==null?"":s).replace(/\t/g,"  ").replace(/\r/g,"")){
+    const c=ch.codePointAt(0);
+    if(c===10){out+="\n";continue}
+    if(c>=32&&c<127){out+=ch;continue}
+    if(c>=0xA0&&c<=0xFF){out+=String.fromCharCode(c);continue}
+    if(PDF_WINANSI_MAP[c]){out+=String.fromCharCode(PDF_WINANSI_MAP[c]);continue}
+    if(PDF_ASCII_SUB[ch]!=null){out+=PDF_ASCII_SUB[ch];continue}
+    const base=ch.normalize("NFKD").replace(/[\u0300-\u036f]/g,"");
+    out+=(base&&[...base].every(x=>{const k=x.codePointAt(0);return k>=32&&k<=255}))?base:"?";
+  }
+  return out;
+}
+function pdfTextW(s,bold,size){const w=PDF_HELV_W[bold?1:0];let t=0;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);t+=(c>=32&&c<=255)?(w[c-32]||556):0}return t*size/1000}
+function pdfWrap(text,bold,size,maxW){
+  const lines=[];
+  String(text).split("\n").forEach(par=>{
+    if(!par.trim()){lines.push("");return}
+    const words=par.split(/ +/);let cur="";
+    const push=w=>{ // hard-break words longer than the line
+      while(pdfTextW(w,bold,size)>maxW){let i=1;while(i<w.length&&pdfTextW(w.slice(0,i+1),bold,size)<=maxW)i++;lines.push(w.slice(0,i));w=w.slice(i)}
+      return w;
+    };
+    words.forEach(w=>{
+      const cand=cur?cur+" "+w:w;
+      if(pdfTextW(cand,bold,size)<=maxW){cur=cand;return}
+      if(cur)lines.push(cur);
+      cur=push(w);
+    });
+    lines.push(cur);
+  });
+  return lines;
+}
+function pdfEsc(s){return s.replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)")}
+function pdfNum(n){return (Math.round(n*100)/100).toString()}
+function buildRecordPdf(meta,items){
+  const PW=595.28,PH=841.89,M=40,BOTTOM=56,CW=PW-2*M,PAD=10;
+  const pages=[];let ops=null,y=0;
+  const rgb=(r,g,b)=>`${pdfNum(r/255)} ${pdfNum(g/255)} ${pdfNum(b/255)}`;
+  const text=(x,yy,s,bold,size,col)=>{ops.push(`BT /${bold?"F2":"F1"} ${size} Tf ${rgb(...(col||[15,23,42]))} rg ${pdfNum(x)} ${pdfNum(yy)} Td (${pdfEsc(s)}) Tj ET`)};
+  const newPage=()=>{ops=[];pages.push(ops);y=PH-M};
+  newPage();
+  // Header
+  text(M,y-18,pdfWinAnsi("Clinical record"),true,18);y-=26;
+  text(M,y-13,pdfWinAnsi(meta.name||"Patient"),true,13);y-=19;
+  pdfWrap(pdfWinAnsi(meta.line),false,10,CW).forEach(l=>{text(M,y-10,l,false,10,[71,85,105]);y-=14});
+  text(M,y-9,pdfWinAnsi(meta.gen),false,9,[100,116,139]);y-=16;
+  ops.push(`${rgb(203,213,225)} RG 0.8 w ${M} ${pdfNum(y)} m ${pdfNum(PW-M)} ${pdfNum(y)} l S`);y-=14;
+  if(!items.length){text(M,y-11,"No clinical events recorded yet.",false,11,[71,85,105]);y-=16}
+  items.forEach(it=>{
+    const rows=[];
+    pdfWrap(pdfWinAnsi(it.title||""),true,11.5,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:true,s:11.5,lh:15,c:[15,23,42]}));
+    if(it.body){rows.push({gap:3});pdfWrap(pdfWinAnsi(it.body),false,10,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:false,s:10,lh:13.5,c:[30,41,59]}))}
+    if(it.foot){rows.push({gap:4});pdfWrap(pdfWinAnsi(it.foot),false,8.5,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:false,s:8.5,lh:11.5,c:[100,116,139]}))}
+    const rowH=r=>r.gap!=null?r.gap:r.lh;
+    const total=rows.reduce((a,r)=>a+rowH(r),0)+2*PAD;
+    // keep a card together when it fits on a fresh page
+    if(total>y-BOTTOM && total<=PH-M-BOTTOM) newPage();
+    let i=0;
+    while(i<rows.length){
+      if(y-BOTTOM<2*PAD+16) newPage();
+      const top=y;let yy=y-PAD;const seg=[];
+      while(i<rows.length&&yy-rowH(rows[i])>=BOTTOM+PAD){seg.push([rows[i],yy]);yy-=rowH(rows[i]);i++}
+      if(!seg.length){newPage();continue}
+      const h=top-(yy-PAD);
+      ops.push(`${rgb(248,250,252)} rg ${rgb(226,232,240)} RG 0.8 w ${M} ${pdfNum(top-h)} ${pdfNum(CW)} ${pdfNum(h)} re B`);
+      ops.push(`${rgb(37,99,235)} rg ${M} ${pdfNum(top-h)} 3 ${pdfNum(h)} re f`);
+      seg.forEach(([r,ry])=>{if(r.gap==null)text(M+PAD+6,ry-r.s,r.t,r.b,r.s,r.c)});
+      y=top-h-8;
+      if(i<rows.length) newPage();
+    }
+  });
+  // Footer on every page
+  const N=pages.length;
+  pages.forEach((o,k)=>{
+    ops=o;
+    text(M,24,pdfWinAnsi(`Ward Sync ${meta.version} · ${meta.name||""}`),false,8,[148,163,184]);
+    const pg=`Page ${k+1} of ${N}`;text(PW-M-pdfTextW(pg,false,8),24,pg,false,8,[148,163,184]);
+  });
+  // Assemble PDF objects
+  const objs=[];const add=s=>{objs.push(s);return objs.length};
+  const catalog=add(null),pagesId=add(null);
+  const f1=add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+  const f2=add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  const kids=[];
+  pages.forEach(o=>{
+    const stream=o.join("\n");
+    const cid=add(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+    kids.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /Font << /F1 ${f1} 0 R /F2 ${f2} 0 R >> >> /Contents ${cid} 0 R >>`));
+  });
+  objs[catalog-1]=`<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+  objs[pagesId-1]=`<< /Type /Pages /Kids [${kids.map(k=>k+" 0 R").join(" ")}] /Count ${kids.length} >>`;
+  const info=add(`<< /Title (${pdfEsc(pdfWinAnsi("Clinical record - "+(meta.name||"")))}) /Producer (Ward Sync ${pdfEsc(meta.version)}) >>`);
+  let out="%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";const offs=[];
+  objs.forEach((s,i)=>{offs.push(out.length);out+=`${i+1} 0 obj\n${s}\nendobj\n`});
+  const xref=out.length;
+  out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+offs.map(o=>String(o).padStart(10,"0")+" 00000 n \n").join("");
+  out+=`trailer\n<< /Size ${objs.length+1} /Root ${catalog} 0 R /Info ${info} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  const bytes=new Uint8Array(out.length);for(let i=0;i<out.length;i++)bytes[i]=out.charCodeAt(i)&255;
+  return bytes;
+}
+function recordPdfFileName(p){
+  const clean=s=>String(s||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+  return `Clinical-record_${clean(p.name)||"Patient"}${p.hospitalNo||p.code?"_"+clean(p.hospitalNo||p.code):""}.pdf`;
+}
+function downloadBlob(blob,name){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=name;a.rel="noopener";a.style.display="none";
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{a.remove();URL.revokeObjectURL(url)},60000);
+}
 function exportPatientRecord(pid){
   const p=patient(pid); if(!p) return;
-  const b=bedObj(pid)||lastBedObj(pid);
-  const items=patientRecordItems(pid);
-  const rows=items.map(it=>{
-    const who=recActor(it);
-    return `<div style="border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin:0 0 8px">
-      <div style="font-size:14px;font-weight:700;margin:0">${esc(it.title||"")}</div>
-      ${it.body?`<div style="font-size:13px;margin-top:4px;white-space:pre-wrap">${esc(it.body)}</div>`:""}
-      <div style="font-size:11px;color:#64748b;margin-top:6px">${esc(who)}${who?" · ":""}${esc(stamp(it.at)||fmt(it.at)||"")}</div>
-    </div>`;
-  }).join("")||"<p>No events.</p>";
-  const w=window.open("","_blank","noopener,noreferrer");
-  if(!w){toast("Allow pop-ups to export the record.","bad");return;}
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Clinical record · ${esc(p.name)}</title>
-    <style>body{font-family:Inter,system-ui,sans-serif;color:#0f172a;padding:24px;max-width:720px;margin:0 auto}h1{font-size:20px;margin:0}p{margin:4px 0 16px;color:#64748b}</style>
-    </head><body>
-    <h1>Clinical record</h1>
-    <p>${esc(p.name)} · ${esc(p.age||"")}${esc(p.sex||"")} · ${esc(p.hospitalNo||p.code||"")} · Bed ${esc(b?b.no:"—")}<br>Ward Sync · ${esc(APP_VERSION)}</p>
-    ${rows}
-    <script>setTimeout(function(){window.print()},250)<`+`/script>
-    </body></html>`);
-  w.document.close();
+  try{
+    const b=bedObj(pid)||lastBedObj(pid);
+    const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {title:it.title||"",body:it.body||"",foot:`${who}${who?" · ":""}${stamp(it.at)||fmt(it.at)||""}`}});
+    const ageSex=[p.age,p.sex].filter(x=>x!=null&&x!=="").join(" ");
+    const meta={
+      name:p.name||"",version:APP_VERSION,
+      line:[ageSex?`Age/Sex: ${ageSex}`:"",(p.hospitalNo||p.code)?`Hospital no: ${p.hospitalNo||p.code}`:"",`Bed: ${b?b.no:"—"}`].filter(Boolean).join(" · "),
+      gen:`Ward Sync ${APP_VERSION} · Generated ${stamp(new Date().toISOString())||new Date().toLocaleString()}`
+    };
+    const bytes=buildRecordPdf(meta,items);
+    const name=recordPdfFileName(p);
+    const blob=new Blob([bytes],{type:"application/pdf"});
+    window.__lastRecordPdf={name,size:bytes.length};
+    let file=null;try{file=new File([blob],name,{type:"application/pdf"})}catch(e){}
+    const mobile=(window.matchMedia&&matchMedia("(pointer:coarse)").matches)||/Android|iPhone|iPad|iPod/i.test(navigator.userAgent||"");
+    if(mobile&&file&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:`Clinical record · ${p.name||""}`}).then(()=>toast("PDF ready","ok")).catch(err=>{
+        if(err&&err.name==="AbortError") return;
+        downloadBlob(blob,name);toast("PDF ready · saved to downloads","ok");
+      });
+      return;
+    }
+    downloadBlob(blob,name);
+    toast("PDF ready · "+name,"ok");
+  }catch(err){
+    console.error("PDF export failed",err);
+    toast("Could not create the PDF. Please try again.","bad");
+  }
 }
 
 function openPgtHistory(id){
