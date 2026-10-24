@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.107 pdf-export -->
+<!-- WARD SYNC RELEASE: R1.3.108 pdf-heading -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -2225,7 +2225,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.107";
+const APP_VERSION="R1.3.108";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -8154,7 +8154,13 @@ function buildRecordPdf(meta,items){
   const newPage=()=>{ops=[];pages.push(ops);y=PH-M};
   newPage();
   // Header
-  text(M,y-18,pdfWinAnsi("Clinical record"),true,18);y-=26;
+  const dept=pdfWinAnsi(meta.dept||"");
+  if(dept){
+    let ds=15;while(ds>10&&pdfTextW(dept,true,ds)>CW)ds-=0.5;
+    text(M+(CW-pdfTextW(dept,true,ds))/2,y-ds,dept,true,ds);y-=ds+8;
+    ops.push(`${rgb(148,163,184)} RG 0.6 w ${M} ${pdfNum(y)} m ${pdfNum(PW-M)} ${pdfNum(y)} l S`);y-=8;
+  }
+  text(M,y-16,pdfWinAnsi("Clinical record"),true,16);y-=23;
   text(M,y-13,pdfWinAnsi(meta.name||"Patient"),true,13);y-=19;
   pdfWrap(pdfWinAnsi(meta.line),false,10,CW).forEach(l=>{text(M,y-10,l,false,10,[71,85,105]);y-=14});
   text(M,y-9,pdfWinAnsi(meta.gen),false,9,[100,116,139]);y-=16;
@@ -8187,8 +8193,10 @@ function buildRecordPdf(meta,items){
   const N=pages.length;
   pages.forEach((o,k)=>{
     ops=o;
-    text(M,24,pdfWinAnsi(`Ward Sync ${meta.version} · ${meta.name||""}`),false,8,[148,163,184]);
-    const pg=`Page ${k+1} of ${N}`;text(PW-M-pdfTextW(pg,false,8),24,pg,false,8,[148,163,184]);
+    const pg=`Page ${k+1} of ${N}`;
+    const base=pdfWinAnsi(`Ward Sync ${meta.version} · ${meta.name||""}`);
+    const withDept=dept?dept+pdfWinAnsi(" · ")+base:base;
+    text(M,24,(pdfTextW(withDept,false,8)+pdfTextW(pg,false,8)+16<=CW)?withDept:base,false,8,[148,163,184]);text(PW-M-pdfTextW(pg,false,8),24,pg,false,8,[148,163,184]);
   });
   // Assemble PDF objects
   const objs=[];const add=s=>{objs.push(s);return objs.length};
@@ -8222,6 +8230,7 @@ function downloadBlob(blob,name){
   document.body.appendChild(a);a.click();
   setTimeout(()=>{a.remove();URL.revokeObjectURL(url)},60000);
 }
+const RECORD_PDF_DEPT="Department of Psychiatry - AMCH Dibrugarh";
 function exportPatientRecord(pid){
   const p=patient(pid); if(!p) return;
   try{
@@ -8229,7 +8238,7 @@ function exportPatientRecord(pid){
     const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {title:it.title||"",body:it.body||"",foot:`${who}${who?" · ":""}${stamp(it.at)||fmt(it.at)||""}`}});
     const ageSex=[p.age,p.sex].filter(x=>x!=null&&x!=="").join(" ");
     const meta={
-      name:p.name||"",version:APP_VERSION,
+      name:p.name||"",version:APP_VERSION,dept:RECORD_PDF_DEPT,
       line:[ageSex?`Age/Sex: ${ageSex}`:"",(p.hospitalNo||p.code)?`Hospital no: ${p.hospitalNo||p.code}`:"",`Bed: ${b?b.no:"—"}`].filter(Boolean).join(" · "),
       gen:`Ward Sync ${APP_VERSION} · Generated ${stamp(new Date().toISOString())||new Date().toLocaleString()}`
     };

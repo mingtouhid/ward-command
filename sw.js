@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.107-pdf-export";
+const VERSION = "ward-sync-pwa-r1.3.108-pdf-heading";
 const PRECACHE = [
   "./",
   "./index.html",
