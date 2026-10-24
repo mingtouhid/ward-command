@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.112 freq-addons -->
+<!-- WARD SYNC RELEASE: R1.3.113 bed-accordion -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1778,6 +1778,37 @@ button.dx-opt:hover,button.dx-opt:active,button.dx-opt.active{background:var(--p
 .pick-prev{font-weight:700;font-size:15px;min-width:0}
 .pick-foot .btn{min-height:42px;padding:0 24px;flex:none}
 .pick-foot .btn:disabled{opacity:.45}
+/* R1.3.113: collapsible bed field + ward accordions */
+.bed-field{display:block}
+.field .bedf span{display:inline;margin:0;font-size:inherit;font-weight:inherit;color:inherit;letter-spacing:normal;text-transform:none;line-height:1.25}
+.bedf{border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden}
+.bedf-sum{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:10px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.bedf-sum:focus-visible{outline:2px solid var(--teal);outline-offset:-2px;border-radius:16px}
+.field .bedf .bedf-ph{flex:1;color:var(--muted);font-size:16px}
+.field .bedf .bedf-sel{flex:1;display:flex;align-items:center;gap:10px;min-width:0}
+.bedf-sel b{white-space:nowrap;flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:58px;height:36px;padding:0 12px;border-radius:12px;background:var(--teal);color:var(--btn-ink);font-size:16px;font-weight:800;letter-spacing:.01em}
+.field .bedf .bedf-ward{font-weight:600;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.field .bedf .bedf-change{color:var(--teal);font-weight:700;font-size:14px;flex:none}
+.bedf-chev{flex:none;color:var(--muted);transition:transform .22s ease}
+.bedf.open>.bedf-sum .bedf-chev,.bacc.open>.bacc-h .bedf-chev{transform:rotate(180deg)}
+.bedf-body,.bacc-body{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .22s ease,opacity .2s ease}
+.bedf.open>.bedf-body,.bacc.open>.bacc-body{grid-template-rows:1fr;opacity:1}
+.bedf-inner,.bacc-inner{min-height:0;overflow:hidden}
+.bedf:not(.open)>.bedf-body>.bedf-inner,.bacc:not(.open)>.bacc-body>.bacc-inner{visibility:hidden;transition:visibility 0s .22s}
+.bedf-inner{padding:0 12px}
+.bedf.open>.bedf-body>.bedf-inner{padding-bottom:12px}
+.bedf-inner>input{margin:2px 0 8px}
+.bedf-list{scrollbar-width:none}.bedf-list::-webkit-scrollbar{display:none}
+.bed-acc{gap:6px !important}
+.bed-acc .bacc{border:1px solid var(--line);border-radius:14px;background:var(--bg,transparent);margin:0 !important}
+.bed-acc .bacc.has-sel{border-color:color-mix(in srgb,var(--teal) 55%,var(--line))}
+.bacc-h{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;min-height:46px;padding:8px 12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.bacc-h:focus-visible{outline:2px solid var(--teal);outline-offset:-2px;border-radius:14px}
+.bed-acc .bacc-h .bacc-name{flex:1;font-weight:700;font-size:15px}
+.bed-acc .bacc-h .bacc-n{color:var(--muted);font-size:13px;font-weight:600}
+.bed-acc .bacc-inner>.pills{padding:2px 10px 10px;gap:8px !important;grid-template-columns:repeat(4,minmax(0,1fr)) !important}
+.bed-acc .pill{aspect-ratio:auto !important;min-height:44px}
+@media (prefers-reduced-motion:reduce){.bedf-body,.bacc-body,.bedf-chev{transition:none !important}.bedf:not(.open)>.bedf-body>.bedf-inner,.bacc:not(.open)>.bacc-body>.bacc-inner{transition:none}}
 
 .med-opt-doses{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tel-link{color:var(--teal2);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:3px;padding:1px 6px;margin:-1px -2px;border-radius:6px;background:color-mix(in srgb,var(--teal) 10%,transparent);transition:background .15s}
@@ -2279,7 +2310,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.112";
+const APP_VERSION="R1.3.113";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -5325,17 +5356,74 @@ function groupBeds(shown){
   if(rest.length) groups.push({name:"Other",beds:rest});
   return groups;
 }
-function bedPillsHtml(shown,sel,live,mode){
+// R1.3.113: bed picker = collapsed summary field + search + one accordion per ward. Selecting a bed collapses it.
+const BED_CHEV=`<svg class="bedf-chev" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+function bedUI(kind){ui.bedUI=ui.bedUI||{};return ui.bedUI[kind]=ui.bedUI[kind]||{open:false,secs:{}}}
+function bedKindOf(live,mode){return mode==="xfer"?"xfer":mode==="obs"?"obs":"census"}
+function bedSecName(b){return sectionLabel(((S.sections||[]).find(s=>s.id===b.sectionId)||{}).name||"")||"Other"}
+function bedPillsHtml(shown,sel,live,mode,q){
   const empties=emptyBeds();
   if(!shown.length) return `<span class="tiny">${empties.length?"No bed matches.":"No empty bed."}</span>`;
+  const kind=bedKindOf(live,mode), st=bedUI(kind), searching=!!String(q||"").trim();
   const groups=groupBeds(shown);
-  const click=b=>{
-    if(mode==="xfer") return `doTransfer('${(ui.xfer&&ui.xfer.pid)||""}','${b.id}')`;
-    if(mode==="obs") return `pickObsBed('${b.id}')`;
-    if(live) return `ui.census=ui.census||{};ui.census.bed='${b.id}';[...document.querySelectorAll('#bedpills .pill')].forEach(x=>x.className='pill empty');this.className='pill full'`;
-    return `censusDraft();ui.census.bed='${b.id}';ui.census.bq=document.getElementById('bq')?document.getElementById('bq').value:'';render()`;
-  };
-  return `<div class="bed-pick">${groups.map(g=>`<div class="bed-sec"><p class="bed-sec-label">${esc(g.name)} · ${g.beds.length}</p><div class="pills">${g.beds.map(b=>`<button type="button" class="pill ${sel===b.id?"full":"empty"}" onclick="${click(b)}"><b>${esc(b.no)}</b></button>`).join("")}</div></div>`).join("")}</div>`;
+  const click=b=>mode==="xfer"?`doTransfer('${(ui.xfer&&ui.xfer.pid)||""}','${b.id}')`:`bedfPick('${kind}','${b.id}')`;
+  return `<div class="bed-pick bed-acc">${groups.map(g=>{
+    const hasSel=g.beds.some(b=>b.id===sel);
+    const open=searching||groups.length===1||(st.secs[g.name]!=null?st.secs[g.name]:hasSel);
+    const free=g.beds.filter(b=>!b.patientId).length;
+    const n=free===g.beds.length?`${free} free`:`${free} free · ${g.beds.length-free} current`;
+    return `<div class="bacc ${open?"open":""} ${hasSel?"has-sel":""}" data-sec="${esc(g.name)}">
+      <button type="button" class="bacc-h" aria-expanded="${open}" onclick="bedAccToggle(this,'${kind}')"><span class="bacc-name">${esc(g.name)}</span><span class="bacc-n">${n}</span>${BED_CHEV}</button>
+      <div class="bacc-body"><div class="bacc-inner"><div class="pills">${g.beds.map(b=>`<button type="button" class="pill ${sel===b.id?"full":"empty"}" data-bed="${b.id}" onclick="${click(b)}"><b>${esc(b.no)}</b></button>`).join("")}</div></div></div>
+    </div>`;}).join("")}</div>`;
+}
+function bedAccToggle(btn,kind){
+  const acc=btn.closest(".bacc"); if(!acc) return;
+  const open=!acc.classList.contains("open");
+  acc.classList.toggle("open",open); btn.setAttribute("aria-expanded",String(open));
+  bedUI(kind).secs[acc.getAttribute("data-sec")]=open;
+}
+function bedfSummaryHtml(kind,sel,curId){
+  const b=sel&&(S.beds||[]).find(x=>x.id===sel);
+  if(!b) return `<span class="bedf-ph">Select bed</span>${BED_CHEV}`;
+  return `<span class="bedf-sel"><b>${esc(b.no)}</b><span class="bedf-ward">${esc(bedSecName(b))}${curId&&curId===b.id?" · current":""}</span></span><span class="bedf-change">Change</span>${BED_CHEV}`;
+}
+// kind: census | obs. bodyHtml = search input + pills box.
+function bedFieldHtml(kind,sel,curId,bodyHtml){
+  const st=bedUI(kind);
+  return `<div class="bedf ${st.open?"open":""} ${sel?"has-sel":""}" id="bedf-${kind}">
+    <button type="button" class="bedf-sum" aria-expanded="${!!st.open}" onclick="bedfToggle('${kind}')">${bedfSummaryHtml(kind,sel,curId)}</button>
+    <div class="bedf-body"><div class="bedf-inner">${bodyHtml}</div></div>
+  </div>`;
+}
+function bedfToggle(kind,force){
+  const el=document.getElementById("bedf-"+kind); if(!el) return;
+  const open=force!=null?!!force:!el.classList.contains("open");
+  el.classList.toggle("open",open);
+  const sb=el.querySelector(".bedf-sum"); if(sb) sb.setAttribute("aria-expanded",String(open));
+  bedUI(kind).open=open;
+}
+function bedfPick(kind,id){
+  let curId=null;
+  if(kind==="obs"){
+    ui.obsAdmit=ui.obsAdmit||{}; ui.obsAdmit.to=id;
+    const cur=S.beds.find(b=>b.patientId===ui.obsAdmit.pid); curId=cur&&cur.id;
+    ui.obsAdmit.mode=(!cur||cur.id===id)?"same":"other";
+    const h=document.getElementById("oadmitbed"); if(h) h.value=id;
+  } else {
+    ui.census=ui.census||{}; ui.census.bed=id;
+    const q=document.getElementById("bq"); if(q) ui.census.bq=q.value;
+  }
+  const el=document.getElementById("bedf-"+kind);
+  if(!el){render({fromInput:1});return}
+  el.querySelectorAll(".pill[data-bed]").forEach(x=>x.className="pill "+(x.getAttribute("data-bed")===id?"full":"empty"));
+  el.querySelectorAll(".bacc").forEach(a=>a.classList.toggle("has-sel",!!a.querySelector('.pill[data-bed="'+id+'"]')));
+  // remember the chosen ward as the one to show next time the picker opens
+  const b=S.beds.find(x=>x.id===id), st=bedUI(kind); if(b){st.secs={};st.secs[bedSecName(b)]=true}
+  el.classList.add("has-sel");
+  const sum=el.querySelector(".bedf-sum"); if(sum) sum.innerHTML=bedfSummaryHtml(kind,id,curId);
+  bedfToggle(kind,false);
+  try{const r=el.getBoundingClientRect(); if(r.top<70) window.scrollBy({top:r.top-90,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}catch(_){}
 }
 function filterBedPills(q){
   ui.census=ui.census||{}; ui.census.bq=q;
@@ -5347,7 +5435,7 @@ function filterBedPills(q){
     const sec=(S.sections.find(s=>s.id===b.sectionId)||{}).name||"";
     return (b.no+" "+sec).toLowerCase().includes(nq);
   });
-  box.innerHTML=bedPillsHtml(shown,ui.census.bed,true);
+  box.innerHTML=bedPillsHtml(shown,ui.census.bed,true,"census",q);
 }
 function toggleMulti(key,val){
   censusDraft();
@@ -5588,9 +5676,10 @@ function filterObsBeds(q){
     return (b.no+" "+sec).toLowerCase().includes(nq);
   });
   const sel=ui.obsAdmit.to||(S.beds.find(b=>b.patientId===pid)||{}).id;
-  box.innerHTML=shown.length?bedPillsHtml(shown,sel,false,"obs"):`<span class="tiny">No bed available.</span>`;
+  box.innerHTML=shown.length?bedPillsHtml(shown,sel,false,"obs",q):`<span class="tiny">No bed available.</span>`;
 }
 function pickObsBed(id){
+  if(document.getElementById("bedf-obs")){bedfPick("obs",id);return}
   ui.obsAdmit=ui.obsAdmit||{};
   ui.obsAdmit.to=id;
   const cur=S.beds.find(b=>b.patientId===ui.obsAdmit.pid);
@@ -5617,7 +5706,7 @@ function obsAdmitForm(){
     return (b.no+" "+sec).toLowerCase().includes(nq);
   });
   const reasons=d.reasons||[];
-  const pills=shown.length?bedPillsHtml(shown,d.to,false,"obs"):`<span class="tiny">No bed available.</span>`;
+  const pills=shown.length?bedPillsHtml(shown,d.to,false,"obs",d.bq):`<span class="tiny">No bed available.</span>`;
   const fac=facultyList().length;
   return `<p class="tiny">Admit from observation. Existing details are filled in; check and complete them.</p>
     <label class="field"><span>Hospital no. *</span><input id="oahosp" required value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off"/></label>
@@ -5638,11 +5727,11 @@ function obsAdmitForm(){
     <label class="field"><span>Source of referral</span><input id="oaref" value="${esc(d.ref||"")}" placeholder="Family members / Legal authority / Hospital"/></label>
     <label class="field"><span>Consultant</span>${fac?picker("oacon",facultyOptions(),d.con||"","Consultant"):`<input id="oacon" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
     <label class="field"><span>Consultant 2</span>${fac?picker("oacon2",facultyOptions(),d.con2||"","Optional"):`<input id="oacon2" value="${esc(d.con2||"")}" placeholder="Second consultant, optional"/>`}</label>
-    <label class="field"><span>Bed</span>
-      <input id="oabq" value="${esc(d.bq||"")}" placeholder="Search bed or ward" oninput="filterObsBeds(this.value)" autocomplete="off"/>
-    </label>
-    <p class="tiny">${cur?"Current holding bed "+esc(cur.no)+" is selected unless you pick another.":""}</p>
-    <div class="pills" id="obsbedpills" style="margin:8px 0 12px">${pills}</div>
+    <div class="field bed-field"><span>Bed</span>
+      <input type="hidden" id="oadmitbed" value="${esc(d.to||"")}"/>
+      ${bedFieldHtml("obs",d.to,cur&&cur.id,`<input id="oabq" value="${esc(d.bq||"")}" placeholder="Search bed or ward" oninput="filterObsBeds(this.value)" autocomplete="off"/>
+      <div id="obsbedpills" class="bedf-list">${pills}</div>`)}
+    </div>
     <p class="tiny" style="margin:10px 0 6px">MEDICATIONS <em style="font-style:normal;opacity:.6">(optional, added to current orders)</em></p>
     ${d.meds.map((m,i)=>medRowHtml("oa",i,m)).join("")}
     <button class="btn ghost sm" type="button" onclick="addObsAdmitMed()">Add medication</button>
@@ -5927,10 +6016,10 @@ function censusView(){
       <label class="field"><span>Source of referral</span><input id="aref" value="${esc(d.ref||"")}" placeholder="Family members / Legal authority / Hospital"/></label>
       <label class="field"><span>Consultant</span>${(facultyList().length)?picker("acon",facultyOptions(),d.con||"","Consultant"):`<input id="acon" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
       <label class="field"><span>Consultant 2</span>${(facultyList().length)?picker("acon2",facultyOptions(),d.con2||"","Optional"):`<input id="acon2" value="${esc(d.con2||"")}" placeholder="Second consultant, optional"/>`}</label>
-      <label class="field"><span>Bed</span>
-        <input id="bq" value="${esc(d.bq||"")}" placeholder="Search bed or ward" oninput="filterBedPills(this.value)" autocomplete="off"/>
-      </label>
-      <div class="pills" id="bedpills" style="margin:8px 0 12px">${bedPillsHtml(shown,d.bed,false)}</div>
+      <div class="field bed-field"><span>Bed</span>
+        ${bedFieldHtml("census",d.bed&&empties.some(b=>b.id===d.bed)?d.bed:"",null,`<input id="bq" value="${esc(d.bq||"")}" placeholder="Search bed or ward" oninput="filterBedPills(this.value)" autocomplete="off"/>
+        <div id="bedpills" class="bedf-list">${bedPillsHtml(shown,d.bed,false,"census",d.bq)}</div>`)}
+      </div>
       <p class="tiny" style="margin:10px 0 6px">MEDICATIONS <em style="font-style:normal;opacity:.6">(optional)</em></p>
       ${(d.meds&&d.meds.length?d.meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]).map((m,i)=>medRowHtml("a",i,m)).join("")}
       <button class="btn ghost sm" type="button" onclick="addCensusMed()">Add medication</button>
@@ -9572,7 +9661,7 @@ function transferForm(pid){
   if(!needWrite())return;
   const p=patient(pid);if(!p||p.status==="discharged")return;
   const from=S.beds.find(b=>b.patientId===pid);
-  ui.xfer={pid,bq:""};
+  ui.xfer={pid,bq:""}; if(ui.bedUI) delete ui.bedUI.xfer;
   const empties=emptyBeds();
   ui.sheet=`<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
     <div class="row"><h2>Transfer</h2><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
@@ -9580,7 +9669,7 @@ function transferForm(pid){
     <label class="field"><span>Empty bed</span>
       <input id="xq" placeholder="Search bed or ward" oninput="filterXferPills(this.value)" autocomplete="off"/>
     </label>
-    <div id="xferpills" style="margin:8px 0 12px">${empties.length?bedPillsHtml(empties,"",false,"xfer"):`<span class="tiny">No empty bed.</span>`}</div>
+    <div id="xferpills" class="bedf-list" style="margin:8px 0 12px">${empties.length?bedPillsHtml(empties,"",false,"xfer"):`<span class="tiny">No empty bed.</span>`}</div>
   </div></div>`;
   render();
 }
@@ -9593,7 +9682,7 @@ function filterXferPills(q){
     const sec=(S.sections.find(s=>s.id===b.sectionId)||{}).name||"";
     return (b.no+" "+sec).toLowerCase().includes(nq);
   });
-  box.innerHTML=shown.length?bedPillsHtml(shown,"",false,"xfer"):`<span class="tiny">No bed matches.</span>`;
+  box.innerHTML=shown.length?bedPillsHtml(shown,"",false,"xfer",q):`<span class="tiny">No bed matches.</span>`;
 }
 function doTransfer(pid,bedId){
   if(!needWrite())return;
