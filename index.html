@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.109 med-shift-log -->
+<!-- WARD SYNC RELEASE: R1.3.110 dx-ml -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -301,6 +301,7 @@ a{color:var(--teal2);text-decoration:none}
 .tag-intake{background:#3b2f1a;color:#fdba74}
 .tag-leave{background:#312e81;color:#c7d2fe}
 .tag-jail{background:#44403c;color:#fcd34d}
+.tag-ml{background:#44403c;color:#fcd34d}
 .chart{width:100%;border-collapse:collapse;font-size:12px}
 .chart th{color:var(--muted);font-weight:500;text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);font-size:10px;text-transform:uppercase}
 .chart td{padding:8px 4px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -1542,6 +1543,7 @@ html[data-theme="light"] .tag-obs { background: #dcfce7; color: #166534; }
 html[data-theme="light"] .tag-intake { background: #ffedd5; color: #c2410c; }
 html[data-theme="light"] .tag-leave { background: #e0e7ff; color: #3730a3; }
 html[data-theme="light"] .tag-jail { background: #fef9c3; color: #854d0e; }
+html[data-theme="light"] .tag-ml { background: #fef9c3; color: #854d0e; }
 
 /* Snapshot Critical Button: Softened from solid red to danger outline */
 .pgt-actions .pgt-critical {
@@ -1737,6 +1739,18 @@ button.dx-opt:hover,button.dx-opt:active,button.dx-opt.active{background:var(--p
 .dx-opt-name{font-weight:600;color:var(--ink);min-width:0;flex:1}
 .dx-opt-code{flex:none;font-size:11px;font-weight:800;letter-spacing:.03em;padding:2px 7px;border-radius:999px;background:var(--pill-full);color:var(--pill-full-ink);border:1px solid var(--pill-full-line)}
 .med-ac-wrap .dx-suggest{margin:6px 0 2px}
+/* R1.3.110: Jail / ML legal flags as big bold orange text; extra diagnoses */
+.legal-badges{display:inline-flex;align-items:baseline;gap:10px;margin-left:10px;vertical-align:baseline;white-space:nowrap}
+.legal-badge{color:var(--warn);font-weight:800;font-size:20px;line-height:1;letter-spacing:.02em}
+.rec-card{position:relative}
+.rec-card .legal-badges.rec-legal{position:absolute;top:11px;right:14px;margin:0}
+.rec-card.has-legal h3{padding-right:96px}
+.snap-dx{margin-top:4px}
+.snap-dx-row{margin-top:6px}
+.snap-dx-row:first-child{margin-top:0}
+.snap-dx-row b{display:block}
+.legal-chips{margin:2px 0 12px}
+
 .med-opt-doses{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tel-link{color:var(--teal2);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:3px;padding:1px 6px;margin:-1px -2px;border-radius:6px;background:color-mix(in srgb,var(--teal) 10%,transparent);transition:background .15s}
 .tel-link:hover,.tel-link:active{background:color-mix(in srgb,var(--teal) 18%,transparent);text-decoration:underline}
@@ -2119,7 +2133,8 @@ const TAGS=[
   {id:"obs",label:"1:1 obs"},
   {id:"intake",label:"Poor intake"},
   {id:"leave",label:"Leave"},
-  {id:"jail",label:"Jail"}
+  {id:"jail",label:"Jail"},
+  {id:"ml",label:"ML"}
 ];
 function packWatch(sn){const tags=(sn.tags||[]).filter(Boolean);return (tags.length?"["+tags.join(",")+"] ":"")+(sn.watch||"")}
 function unpackWatch(s){const m=String(s||"").match(/^\[([^\]]*)\]\s*([\s\S]*)/);if(m)return {tags:m[1].split(",").map(x=>x.trim()).filter(Boolean),watch:m[2]};return {tags:[],watch:s||""}}
@@ -2236,7 +2251,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.109";
+const APP_VERSION="R1.3.110";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2506,7 +2521,7 @@ function qEct(e){
   queue("ect_plans",{id:e.id,patient_id:e.pid,indication:e.indication||"",sessions_done:e.sessionsDone||0,next_session_at:e.nextAt||null,npo:e.npo!==false,status:["planned","completed","cancelled"].includes(e.status)?e.status:"planned",created_by:e.by||S.userId||null,created_at:e.at||now(),updated_at:now()});
 }
 function qEctSession(x){if(!x||!x.id||!x.planId||!x.pid)return;queue("ect_sessions",{id:x.id,plan_id:x.planId,patient_id:x.pid,session_number:x.sessionNumber,session_at:x.at||now(),next_session_at:x.nextAt||null,anaesthesia:x.anaesthesia||null,stimulus:x.stimulus||null,seizure_seconds:x.seizureSeconds==null?null:x.seizureSeconds,complications:x.complications||null,response:x.response||null,next_plan:x.nextPlan||null,recorded_by:x.by||S.userId||null})}
-function qPatient(p){if(!p)return;queue("patients",{id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,consultant_name_2:p.consultant2||null,admitted_at:p.admittedAt||now(),discharged_at:p.dischargedAt||null,discharge_mode:p.dischargeMode||null,discharge_outcome:p.dischargeOutcome||null,treatment_mode:p.treatmentMode||null,active_status:p.status||"admitted",address:p.address||null,phone:p.phone||null,updated_by:S.userId||null,created_at:p.admittedAt||now(),updated_at:now()})}
+function qPatient(p){if(!p)return;queue("patients",{id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",secondary_dx:(p.dx2||"").trim()||null,tertiary_dx:(p.dx3||"").trim()||null,comorbidities:normComorb(p.comorb)||null,reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,consultant_name_2:p.consultant2||null,admitted_at:p.admittedAt||now(),discharged_at:p.dischargedAt||null,discharge_mode:p.dischargeMode||null,discharge_outcome:p.dischargeOutcome||null,treatment_mode:p.treatmentMode||null,active_status:p.status||"admitted",address:p.address||null,phone:p.phone||null,updated_by:S.userId||null,created_at:p.admittedAt||now(),updated_at:now()})}
 function qBed(b){if(!b)return;queue("beds",{id:b.id,bed_number:b.no,section_id:b.sectionId,active:b.active!==false,current_patient_id:b.patientId||null,created_at:now(),updated_at:now()})}
 function qAssign(a){if(!a)return;queue("patient_bed_assignments",{id:a.id,patient_id:a.patientId,bed_id:a.bedId,assigned_at:a.at||now(),released_at:a.released||null,assigned_by:a.by||S.userId||null})}
 
@@ -2969,7 +2984,7 @@ async function doCloudPull(opts){
   const occupancyHold=unresolved.some(o=>["patients","beds","patient_bed_assignments"].includes(o.table));
   if(!occupancyHold){
     S.beds=beds.map(r=>({id:r.id,no:r.bed_number,sectionId:r.section_id,active:r.active!==false,patientId:r.current_patient_id||null}));
-    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
+    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
     S.assignments=assigns.map(r=>({id:r.id,patientId:r.patient_id,bedId:r.bed_id,at:r.assigned_at,released:r.released_at,by:r.assigned_by}));
   }
   const nextSnaps={}; snaps.forEach(r=>{nextSnaps[r.patient_id]=rowSnap(r)});
@@ -3915,7 +3930,7 @@ function patientsView(){
   const tag=ui.ptag||"";
   const qTags=tagSearchIds(q);
   const match=p=>{
-    const text=!q||(p.name+" "+(p.diagnosis||"")+" "+(p.hospitalNo||p.code||"")+" "+bedOf(p.id)).toLowerCase().includes(q)||qTags.some(id=>hasSnapTag(p.id,id)||(id==="ect"&&ectPlan(p.id))||(id==="restrained"&&restrainHeld(p.id))||(id==="delirium"&&isDelirium(p.id)));
+    const text=!q||(p.name+" "+(p.diagnosis||"")+" "+(p.dx2||"")+" "+(p.dx3||"")+" "+(p.comorb||"")+" "+(p.hospitalNo||p.code||"")+" "+bedOf(p.id)).toLowerCase().includes(q)||qTags.some(id=>hasSnapTag(p.id,id)||(id==="ect"&&ectPlan(p.id))||(id==="restrained"&&restrainHeld(p.id))||(id==="delirium"&&isDelirium(p.id)));
     if(!text) return false;
     if(isConsultant()){
       if(tag==="mine") return isMyPatient(p);
@@ -3965,7 +3980,7 @@ function snapView(){
     <div class="card snap-identity">
       ${canEditPatient(p)?`<button class="pedit-btn" type="button" aria-label="Edit patient details" title="Edit patient details" onclick="openPatientEdit('${p.id}')">${PEDIT_ICON}</button>`:""}
       <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span>${ectPlan(p.id)?'<span class="badge r-high">ECT</span>':""}${isDelirium(p.id)?` <span class="${rcls("high")}">delirium</span>`:""}</span></div>
-      <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}</h2>
+      <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}${legalBadgesHtml(p.id)}</h2>
       <p class="tiny" style="margin-top:4px">${p.age}${p.sex} · ${esc(p.hospitalNo||p.code)}</p>
       ${(p.address||p.phone)?`<p class="tiny" style="margin-top:4px">${p.address?esc(p.address):""}${p.address&&p.phone?" · ":""}${p.phone?phoneLinkHtml(p.phone):""}</p>`:""}
       <div class="meta">
@@ -3973,7 +3988,7 @@ function snapView(){
         <div><b>Ward days</b>${Math.max(1,Math.round((Date.now()-new Date(p.admittedAt))/86400000))}</div>
         ${(()=>{const st=(S.obsStays||[]).filter(s=>s.pid===p.id).sort((a,b)=>new Date(b.at||0)-new Date(a.at||0))[0];return st?`<div><b>Observed</b>${fmt(st.at)}</div>`:""})()}
       </div>
-      <p class="sm" style="margin-top:4px"><b>Diagnosis</b><br>${esc(p.diagnosis)}</p>
+      ${snapDxHtml(p)}
       ${dxHistoryHtml(p)}
       ${snapAdmitRows(p)}
       ${(p.status==="observation")?`<div class="card" style="margin:10px 0 0;padding:10px">
@@ -4201,6 +4216,7 @@ function censusDraft(){
   if(g("aage")) ui.census.age=g("aage").value;
   if(g("asex")|| (ui.fields&&ui.fields.asex!=null)) ui.census.sex=val("asex")||ui.census.sex;
   if(g("adx")) ui.census.dx=g("adx").value;
+  readDxExtra(ui.census,"a");
   if(g("aref")) ui.census.ref=g("aref").value;
   if(g("acon")||(ui.fields&&ui.fields.acon!=null)) ui.census.con=val("acon")||ui.census.con;
   if(g("acon2")||(ui.fields&&ui.fields.acon2!=null)) ui.census.con2=val("acon2")||ui.census.con2;
@@ -4292,6 +4308,7 @@ function autofillReturningPatient(kind,pid){
     ui.obs.addr=p.address||"";
     ui.obs.phone=p.phone||"";
     if(cleanDx) ui.obs.dx=cleanDx;
+    if(p.dx2) ui.obs.dx2=p.dx2; if(p.dx3) ui.obs.dx3=p.dx3; if(p.comorb) ui.obs.comorb=p.comorb;
     ui.fields=ui.fields||{};
     ui.fields.osex=p.sex||"M";
     render();
@@ -4320,6 +4337,7 @@ function autofillReturningPatient(kind,pid){
   ui.census.addr=p.address||"";
   ui.census.phone=p.phone||"";
   if(cleanDx) ui.census.dx=cleanDx;
+  if(p.dx2) ui.census.dx2=p.dx2; if(p.dx3) ui.census.dx3=p.dx3; if(p.comorb) ui.census.comorb=p.comorb;
   if(p.consultant&&!ui.census.con) ui.census.con=p.consultant;
   if(p.consultant2&&!ui.census.con2) ui.census.con2=p.consultant2;
   ui.fields=ui.fields||{};
@@ -4450,13 +4468,14 @@ function syncDxDraft(el,mode,extraPid){
   else if(mode==="fields_adx"){ui.fields=ui.fields||{};ui.fields.adx=v;}
   else if(mode==="fields_ddx"){ui.fields=ui.fields||{};ui.fields.ddx=v;}
   else if(mode==="pedit_edx"){ui.pedit=ui.pedit||{};ui.pedit.dx=v;}
+  else if(/^(x|cm):/.test(mode||"")){const [o,k]=mode.slice(mode.indexOf(":")+1).split(".");if(o&&k){ui[o]=ui[o]||{};ui[o][k]=v;}}
 }
 function onDxInput(el,mode,extraPid){
   if(!el) return;
   syncDxDraft(el,mode,extraPid);
   const wrap=el.closest(".dx-wrap");
   const box=wrap&&wrap.querySelector(".dx-suggest");
-  if(box) box.innerHTML=dxSuggestItemsHtml(el.value,el.value);
+  if(box) box.innerHTML=/^cm:/.test(mode||"")?comorbSuggestItemsHtml(el.value):dxSuggestItemsHtml(el.value,el.value);
 }
 function closeDxSuggest(el){
   const wrap=el&&el.closest?el.closest(".dx-wrap"):null;
@@ -4476,7 +4495,10 @@ function pickDxSuggest(btn){
   const input=wrap&&wrap.querySelector("input");
   const val=btn.getAttribute("data-val")||"";
   if(input){
-    input.value=val;
+    if(/^cm:/.test(input.getAttribute("data-dx-mode")||"")){
+      const parts=input.value.split(",");parts[parts.length-1]=val;
+      input.value=parts.map(x=>x.trim()).filter(Boolean).join(", ")+", ";
+    }else input.value=val;
     syncDxDraft(input,input.getAttribute("data-dx-mode")||"",input.getAttribute("data-dx-pid")||"");
   }
   const box=wrap&&wrap.querySelector(".dx-suggest");
@@ -4495,6 +4517,125 @@ function onDxKey(ev,el){
 }
 function dxFieldHtml(labelHtml,inputId,valStr,placeholder,mode,extraPid){
   return `<div class="dx-wrap"><label class="field"><span>${labelHtml}</span><input id="${inputId}" value="${esc(valStr||"")}" placeholder="${esc(placeholder||"Diagnosis")}" autocomplete="off" data-dx-mode="${esc(mode||"")}" data-dx-pid="${esc(extraPid||"")}" oninput="onDxInput(this,'${esc(mode||"")}','${esc(extraPid||"")}')" onkeydown="onDxKey(event,this)" onblur="closeDxSuggestLater(this)"/></label><div class="dx-suggest" role="listbox" aria-label="Diagnosis suggestions"></div></div>`;
+}
+
+// R1.3.110: secondary / tertiary diagnosis, comorbidities and Jail / ML legal flags.
+const COMORBIDITY_CATALOG=[
+  {val:"T2DM",full:"Type 2 diabetes mellitus",code:"E11",alias:"diabetes dm sugar t2dm niddm"},
+  {val:"T1DM",full:"Type 1 diabetes mellitus",code:"E10",alias:"diabetes dm iddm insulin"},
+  {val:"Hypertension",full:"Systemic hypertension",code:"I10",alias:"htn bp high blood pressure"},
+  {val:"Hypothyroidism",full:"Hypothyroidism",code:"E03.9",alias:"thyroid low"},
+  {val:"Hyperthyroidism",full:"Hyperthyroidism",code:"E05",alias:"thyroid thyrotoxicosis graves"},
+  {val:"Dyslipidaemia",full:"Dyslipidaemia",code:"E78",alias:"cholesterol lipid dyslipidemia hyperlipidaemia"},
+  {val:"Obesity",full:"Obesity",code:"E66",alias:"overweight bmi"},
+  {val:"COPD",full:"Chronic obstructive pulmonary disease",code:"J44",alias:"copd lung smoker emphysema bronchitis"},
+  {val:"Bronchial asthma",full:"Bronchial asthma",code:"J45",alias:"asthma wheeze"},
+  {val:"CAD",full:"Coronary artery disease",code:"I25",alias:"ihd ischaemic heart mi angina coronary"},
+  {val:"Heart failure",full:"Heart failure",code:"I50",alias:"ccf chf cardiac failure"},
+  {val:"Atrial fibrillation",full:"Atrial fibrillation",code:"I48",alias:"af arrhythmia"},
+  {val:"CKD",full:"Chronic kidney disease",code:"N18",alias:"renal kidney ckd"},
+  {val:"Chronic liver disease/ALD",full:"Chronic liver disease / alcoholic liver disease",code:"K70",alias:"cld ald liver cirrhosis alcoholic hepatitis"},
+  {val:"Hepatic encephalopathy history",full:"History of hepatic encephalopathy",code:"K72",alias:"he liver encephalopathy"},
+  {val:"Epilepsy",full:"Epilepsy / seizure disorder",code:"G40",alias:"seizure fits convulsion"},
+  {val:"Head injury history",full:"History of head injury",code:"T90",alias:"tbi trauma head injury"},
+  {val:"Stroke",full:"Stroke / cerebrovascular accident",code:"I69",alias:"cva hemiplegia paralysis"},
+  {val:"Parkinson's",full:"Parkinson's disease",code:"G20",alias:"parkinsonism parkinson"},
+  {val:"Migraine",full:"Migraine",code:"G43",alias:"headache"},
+  {val:"HIV",full:"HIV infection",code:"B20",alias:"aids retroviral rvd plhiv"},
+  {val:"Hepatitis B",full:"Chronic hepatitis B",code:"B18.1",alias:"hbv hbsag jaundice"},
+  {val:"Hepatitis C",full:"Chronic hepatitis C",code:"B18.2",alias:"hcv jaundice"},
+  {val:"TB",full:"Tuberculosis",code:"A15",alias:"tuberculosis koch att pulmonary"},
+  {val:"Anaemia",full:"Anaemia",code:"D64.9",alias:"anemia low hb haemoglobin"},
+  {val:"GERD",full:"Gastro-oesophageal reflux disease",code:"K21",alias:"acid reflux gastritis apd"},
+  {val:"Peptic ulcer disease",full:"Peptic ulcer disease",code:"K27",alias:"pud ulcer gastritis"},
+  {val:"BPH",full:"Benign prostatic hyperplasia",code:"N40",alias:"prostate luts"},
+  {val:"Psoriasis",full:"Psoriasis",code:"L40",alias:"skin"},
+  {val:"Rheumatoid arthritis",full:"Rheumatoid arthritis",code:"M06",alias:"ra joint arthritis"},
+  {val:"Osteoarthritis",full:"Osteoarthritis",code:"M19",alias:"oa knee joint"},
+  {val:"Vitamin B12 deficiency",full:"Vitamin B12 deficiency",code:"E53.8",alias:"b12 cobalamin"},
+  {val:"Hyponatraemia",full:"Hyponatraemia",code:"E87.1",alias:"low sodium hyponatremia na"},
+  {val:"Pregnancy",full:"Pregnancy",code:"Z33",alias:"pregnant antenatal"}
+];
+function normComorb(v){return String(v||"").split(",").map(x=>x.trim()).filter(Boolean).join(", ")}
+function comorbTokens(v){return String(v||"").split(",").map(x=>x.trim()).filter(Boolean)}
+function searchComorbCatalog(raw){
+  const parts=String(raw||"").split(",");
+  const q=(parts[parts.length-1]||"").trim().toLowerCase();
+  const chosen=new Set(parts.slice(0,-1).map(x=>x.trim().toLowerCase()).filter(Boolean));
+  const pool=COMORBIDITY_CATALOG.filter(it=>!chosen.has(it.val.toLowerCase()));
+  if(!q) return pool.slice(0,8);
+  const scored=[];
+  pool.forEach((it,ix)=>{
+    const v=it.val.toLowerCase(), f=it.full.toLowerCase(), a=it.alias;
+    let sc=0;
+    if(v===q) sc=100; else if(v.startsWith(q)) sc=80; else if(f.startsWith(q)) sc=70;
+    else if(v.includes(q)||f.includes(q)) sc=50; else if((" "+a).includes(" "+q)) sc=40; else if(a.includes(q)) sc=20;
+    if(sc) scored.push({it,sc,ix});
+  });
+  scored.sort((x,y)=>y.sc-x.sc||x.ix-y.ix);
+  return scored.slice(0,6).map(x=>x.it);
+}
+function comorbSuggestItemsHtml(raw){
+  const list=searchComorbCatalog(raw);
+  if(!list.length) return "";
+  const last=String(raw||"").split(",").pop().trim().toLowerCase();
+  if(list.length===1&&last&&last===list[0].val.toLowerCase()) return "";
+  return list.map((it,i)=>`<button type="button" class="dx-opt${i===0?" active":""}" role="option" data-val="${esc(it.val)}" onmousedown="event.preventDefault()" onclick="pickDxSuggest(this)"><span class="dx-opt-name">${esc(it.val)}${it.full!==it.val?` <span style="opacity:.6;font-weight:400">· ${esc(it.full)}</span>`:""}</span><span class="dx-opt-code">${esc(it.code)}</span></button>`).join("");
+}
+function comorbFieldHtml(labelHtml,inputId,valStr,mode){
+  return `<div class="dx-wrap"><label class="field"><span>${labelHtml}</span><input id="${inputId}" value="${esc(valStr||"")}" placeholder="e.g. T2DM, Hypertension" autocomplete="off" data-dx-mode="${esc(mode)}" data-dx-pid="" oninput="onDxInput(this,'${esc(mode)}','')" onfocus="onDxInput(this,'${esc(mode)}','')" onkeydown="onDxKey(event,this)" onblur="closeDxSuggestLater(this)"/></label><div class="dx-suggest" role="listbox" aria-label="Comorbidity suggestions"></div></div>`;
+}
+const OPT_LBL=' <em style="font-style:normal;opacity:.6">(optional)</em>';
+function dxExtraFieldsHtml(obj,prefix,d){
+  return dxFieldHtml("Secondary diagnosis"+OPT_LBL,prefix+"dx2",d.dx2||"","Secondary diagnosis","x:"+obj+".dx2")
+    +dxFieldHtml("Tertiary diagnosis"+OPT_LBL,prefix+"dx3",d.dx3||"","Tertiary diagnosis","x:"+obj+".dx3")
+    +comorbFieldHtml("Comorbidities"+OPT_LBL,prefix+"comorb",d.comorb||"","cm:"+obj+".comorb");
+}
+function readDxExtra(d,prefix){
+  if(!d) return;
+  const g=id=>document.getElementById(id);
+  if(g(prefix+"dx2")) d.dx2=g(prefix+"dx2").value;
+  if(g(prefix+"dx3")) d.dx3=g(prefix+"dx3").value;
+  if(g(prefix+"comorb")) d.comorb=g(prefix+"comorb").value;
+}
+const LEGAL_TAGS=[["jail","JAIL","Jail"],["ml","ML","ML"]];
+function legalTagsOf(pid){return LEGAL_TAGS.filter(([id])=>hasSnapTag(pid,id))}
+function legalBadgesHtml(pid,cls){
+  const l=legalTagsOf(pid);
+  return l.length?`<span class="legal-badges${cls?" "+cls:""}">${l.map(([id,lb])=>`<span class="legal-badge legal-${id}" title="${id==="ml"?"Medico-legal case":"Jail case"}">${lb}</span>`).join("")}</span>`:"";
+}
+function legalChipsHtml(obj,d){
+  const on=d.legal||[];
+  return `<label class="field"><span>Legal status${OPT_LBL}</span><div class="multi legal-chips">${LEGAL_TAGS.map(([id,,lb])=>`<button type="button" class="chip ${on.includes(id)?"on":""}" onclick="toggleLegalDraft('${obj}','${id}')">${lb}</button>`).join("")}</div></label>`;
+}
+function toggleLegalDraft(obj,id){
+  const fn={census:()=>censusDraft(),obs:()=>obsDraft(),obsAdmit:()=>obsAdmitDraft(),pedit:()=>peditDraft()}[obj];
+  if(fn) fn();
+  ui[obj]=ui[obj]||{};
+  const s=new Set(ui[obj].legal||[]);
+  s.has(id)?s.delete(id):s.add(id);
+  ui[obj].legal=[...s];
+  render({fromInput:1});
+}
+// Bring the Jail / ML flags on a patient's snapshot in line with a form choice (same queue + audit event as the Watch chips).
+function applyLegalTags(pid,want,opts){
+  if(!pid||!Array.isArray(want)) return;
+  const sn=S.snaps[pid]||(S.snaps[pid]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[]});
+  const cur=new Set(sn.tags||[]);
+  LEGAL_TAGS.forEach(([id])=>{
+    const w=want.includes(id), has=cur.has(id);
+    if(w&&!has){cur.add(id);ev(pid,"Flagged "+id);qSnapTag(pid,id,"add");}
+    else if(!w&&has){cur.delete(id);ev(pid,"Cleared "+id);qSnapTag(pid,id,"remove");}
+    else if(!w&&opts&&opts.forceClear){qSnapTag(pid,id,"remove");}
+  });
+  sn.tags=[...cur];
+}
+function dxExtraOf(p){return {dx2:String(p&&p.dx2||"").trim(),dx3:String(p&&p.dx3||"").trim(),comorb:normComorb(p&&p.comorb)}}
+function snapDxHtml(p){
+  const x=dxExtraOf(p);
+  const multi=!!(x.dx2||x.dx3);
+  const row=(k,v)=>`<div class="snap-dx-row"><b>${k}</b>${esc(v)}</div>`;
+  return `<div class="sm snap-dx">${row(multi?"Primary diagnosis":"Diagnosis",p.diagnosis||"—")}${x.dx2?row("Secondary diagnosis",x.dx2):""}${x.dx3?row("Tertiary diagnosis",x.dx3):""}${x.comorb?row("Comorbidities",x.comorb):""}</div>`;
 }
 
 function phoneLinkHtml(phone){
@@ -5164,6 +5305,7 @@ function obsDraft(){
   if(g("oaddr")) ui.obs.addr=g("oaddr").value;
   if(g("ophone")) ui.obs.phone=g("ophone").value;
   if(g("odx")) ui.obs.dx=g("odx").value;
+  readDxExtra(ui.obs,"o");
   if(g("obed")||(ui.fields&&ui.fields.obed!=null)) ui.obs.bed=val("obed")||ui.obs.bed;
   ui.obs.meds=readMedRows("o",ui.obs.meds||[{drug:"",dose:"",route:"PO",freq:"OD"}]);
 }
@@ -5247,7 +5389,9 @@ function observeView(){
       </div>
       ${addrFieldHtml('Address <em style="font-style:normal;opacity:.6">(optional)</em>',"oaddr",d.addr||"","Village / town, District","obs_oaddr")}
       <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="ophone" value="${esc(d.phone||"")}" inputmode="tel" placeholder="Mobile number"/></label>
-      ${dxFieldHtml("Provisional diagnosis","odx",d.dx||"","Working diagnosis","obs_odx")}
+      ${dxFieldHtml("Primary diagnosis","odx",d.dx||"","Provisional diagnosis","obs_odx")}
+      ${dxExtraFieldsHtml("obs","o",d)}
+      ${legalChipsHtml("obs",d)}
       <label class="field"><span>Bed</span>${picker("obed",(empties.length?empties.map(b=>[b.id,b.no+" · "+((S.sections.find(s=>s.id===b.sectionId)||{}).name||"")]):[["","No empty bed"]]),d.bed||(empties[0]&&empties[0].id)||"","Bed")}</label>
       <p class="tiny" style="margin:10px 0 6px">MEDICATIONS</p>
       ${meds.map((m,i)=>medRowHtml("o",i,m)).join("")}
@@ -5279,12 +5423,13 @@ async function startObservation(){
   if(workflowLocked("observation",bed.id))return;
   const prevRet=(S.patients||[]).find(x=>x.hospitalNo&&x.hospitalNo.toLowerCase()===hosp.toLowerCase()&&x.status==="discharged");
   const id=prevRet?prevRet.id:uid("p"), asg=uid("as"), stay=uid("os");
-  const p={id,code:hosp,hospitalNo:hosp,name,age:+(d.age||0),sex:d.sex||"O",diagnosis:dx,address:(d.addr||"").trim(),phone:(d.phone||"").trim(),admittedAt:now(),status:"observation"};
+  const p={id,code:hosp,hospitalNo:hosp,name,age:+(d.age||0),sex:d.sex||"O",diagnosis:dx,dx2:(d.dx2||"").trim(),dx3:(d.dx3||"").trim(),comorb:normComorb(d.comorb),address:(d.addr||"").trim(),phone:(d.phone||"").trim(),admittedAt:now(),status:"observation"};
+  const legalWant=(d.legal||[]).slice();
   setBusy(true,"Saving observation\u2026");
   try{
     const {data,error}=await sb.rpc("ward_start_observation",{
       p_token:sessionTok,
-      p_patient:{id,patient_code:hosp,hospital_no:hosp,name,age:p.age,sex:p.sex,diagnosis:dx,address:p.address||null,phone:p.phone||null},
+      p_patient:{id,patient_code:hosp,hospital_no:hosp,name,age:p.age,sex:p.sex,diagnosis:dx,address:p.address||null,phone:p.phone||null,secondary_dx:p.dx2||null,tertiary_dx:p.dx3||null,comorbidities:p.comorb||null},
       p_bed_id:bed.id,
       p_assignment:{id:asg},
       p_stay:{id:stay,reason:"",note:""},
@@ -5300,6 +5445,7 @@ async function startObservation(){
     S.obsStays=S.obsStays||[];
     S.obsStays.unshift({id:stay,pid:id,bedId:bed.id,at:now(),by:S.userId,endedAt:null});
     S.snaps[id]={state:"Under observation.",risk:"moderate",plan:dx,tags:[],at:now(),by:S.userId};
+    applyLegalTags(id,legalWant,{forceClear:!!prevRet});
     meds.forEach(m=>S.orders.unshift({id:uid("mo"),pid:id,drug:m.drug,dose:m.dose,route:m.route,freq:m.freq,status:"active",start:now()}));
     ev(id,"Under observation \u00b7 "+bed.no,true,"note");
     try{
@@ -5345,6 +5491,7 @@ function obsAdmitDraft(){
   if(g("oaage")) d.age=g("oaage").value;
   if(g("oasex")||(ui.fields&&ui.fields.oasex!=null)) d.sex=val("oasex")||d.sex;
   if(g("oadx")) d.dx=g("oadx").value;
+  readDxExtra(d,"oa");
   if(g("oaref")) d.ref=g("oaref").value;
   if(g("oacon")||(ui.fields&&ui.fields.oacon!=null)) d.con=val("oacon");
   if(g("oacon2")||(ui.fields&&ui.fields.oacon2!=null)) d.con2=val("oacon2");
@@ -5386,7 +5533,7 @@ function obsAdmitForm(){
   // R1.3.81: same fields, labels, order and validation as the main census Admit form; prefilled from the observation record.
   const pre={pid,hosp:p.hospitalNo||p.code||"",name:p.name||"",addr:p.address||"",phone:p.phone||"",age:p.age?String(p.age):"",sex:p.sex||"M",
     reasons:String(p.reason||"").split(",").map(x=>x.trim()).filter(Boolean),adate:localStamp(),
-    dx:(p.diagnosis&&p.diagnosis!=="Diagnosis pending")?p.diagnosis:"",ref:p.referredBy||"",con:p.consultant||"",con2:p.consultant2||"",
+    dx:(p.diagnosis&&p.diagnosis!=="Diagnosis pending")?p.diagnosis:"",dx2:p.dx2||"",dx3:p.dx3||"",comorb:p.comorb||"",legal:legalTagsOf(pid).map(x=>x[0]),ref:p.referredBy||"",con:p.consultant||"",con2:p.consultant2||"",
     to:(S.beds.find(b=>b.patientId===pid)||{}).id,mode:"same",meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]};
   const d=ui.obsAdmit=Object.assign(pre,ui.obsAdmit||{},{pid});
   if(d.hosp==null) d.hosp=pre.hosp;
@@ -5415,7 +5562,9 @@ function obsAdmitForm(){
     <label class="field"><span>Reason for referral</span>
       <div class="multi">${ADMIT_REASONS.map(([id,lb])=>`<button type="button" class="chip ${reasons.includes(id)?"on":""}" onclick="toggleObsReason('${id}')">${lb}</button>`).join("")}</div>
     </label>
-    ${dxFieldHtml("Working diagnosis","oadx",d.dx||"","Diagnosis","obs_oadx")}
+    ${dxFieldHtml("Primary diagnosis","oadx",d.dx||"","Working diagnosis","obs_oadx")}
+    ${dxExtraFieldsHtml("obsAdmit","oa",d)}
+    ${legalChipsHtml("obsAdmit",d)}
     <label class="field"><span>Referred by</span><input id="oaref" value="${esc(d.ref||"")}" placeholder="OPD / casualty / hospital"/></label>
     <label class="field"><span>Consultant</span>${fac?picker("oacon",facultyOptions(),d.con||"","Consultant"):`<input id="oacon" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
     <label class="field"><span>Consultant 2</span>${fac?picker("oacon2",facultyOptions(),d.con2||"","Optional"):`<input id="oacon2" value="${esc(d.con2||"")}" placeholder="Second consultant, optional"/>`}</label>
@@ -5465,6 +5614,7 @@ async function convertObservation(pid){
         consultant_name:con||null,
         consultant_name_2:con2||null,
         diagnosis:dx,
+        secondary_dx:(d.dx2||"").trim()||null,tertiary_dx:(d.dx3||"").trim()||null,comorbidities:normComorb(d.comorb)||null,
         patient_code:hosp||null,hospital_no:hosp||null,
         name:name||null,age:age||null,sex:sex||null,
         address:(d.addr||"").trim()||null,phone:(d.phone||"").trim()||null
@@ -5482,10 +5632,12 @@ async function convertObservation(pid){
     p.address=(d.addr||"").trim()||p.address||"";
     p.phone=(d.phone||"").trim()||p.phone||"";
     p.diagnosis=dx;
+    p.dx2=(d.dx2||"").trim(); p.dx3=(d.dx3||"").trim(); p.comorb=normComorb(d.comorb);
     // Server RPC (pre-migration) ignores consultant 2 / identity fields; queue a patient upsert so they still persist.
     try{qPatient(p)}catch(_){}
     if(con||con2) qPatientConsultantFromText(pid,p.consultant,p.consultant2);
     S.snaps[pid]=Object.assign({},S.snaps[pid]||{},{state:"Admitted from observation.",at:admittedAt,by:S.userId});
+    if(Array.isArray(d.legal)) applyLegalTags(pid,d.legal);
     if(!same&&destId&&from){
       from.patientId=null;
       const dest=S.beds.find(b=>b.id===destId); if(dest) dest.patientId=pid;
@@ -5699,7 +5851,9 @@ function censusView(){
       <label class="field"><span>Reason for referral</span>
         <div class="multi">${ADMIT_REASONS.map(([id,lb])=>`<button type="button" class="chip ${reasons.includes(id)?"on":""}" onclick="toggleMulti('reasons','${id}')">${lb}</button>`).join("")}</div>
       </label>
-      ${dxFieldHtml("Working diagnosis","adx",d.dx||"","Diagnosis","census_adx")}
+      ${dxFieldHtml("Primary diagnosis","adx",d.dx||"","Working diagnosis","census_adx")}
+      ${dxExtraFieldsHtml("census","a",d)}
+      ${legalChipsHtml("census",d)}
       <label class="field"><span>Referred by</span><input id="aref" value="${esc(d.ref||"")}" placeholder="OPD / casualty / hospital"/></label>
       <label class="field"><span>Consultant</span>${(facultyList().length)?picker("acon",facultyOptions(),d.con||"","Consultant"):`<input id="acon" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
       <label class="field"><span>Consultant 2</span>${(facultyList().length)?picker("acon2",facultyOptions(),d.con2||"","Optional"):`<input id="acon2" value="${esc(d.con2||"")}" placeholder="Second consultant, optional"/>`}</label>
@@ -5729,10 +5883,10 @@ function admitFromCensus(){
   const prevSnapBackup=prevRet&&S.snaps[prevRet.id]?JSON.parse(JSON.stringify(S.snaps[prevRet.id])):null;
   const id=prevRet?prevRet.id:uid("p");
   const reasons=(d.reasons||[]).join(",");
-  const p={id,code:(prevRet&&prevRet.code)||hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:(d.dx||"").trim()||"Diagnosis pending",reason:reasons,referredBy:(d.ref||"").trim(),consultant:(d.con||"").trim(),consultant2:(d.con2||"").trim(),admittedAt:d.adate?new Date(d.adate).toISOString():now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:null,status:"admitted",address:(d.addr||"").trim(),phone:(d.phone||"").trim()};
+  const p={id,code:(prevRet&&prevRet.code)||hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:(d.dx||"").trim()||"Diagnosis pending",dx2:(d.dx2||"").trim(),dx3:(d.dx3||"").trim(),comorb:normComorb(d.comorb),reason:reasons,referredBy:(d.ref||"").trim(),consultant:(d.con||"").trim(),consultant2:(d.con2||"").trim(),admittedAt:d.adate?new Date(d.adate).toISOString():now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:null,status:"admitted",address:(d.addr||"").trim(),phone:(d.phone||"").trim()};
   S.patients=S.patients.filter(x=>x.id!==id);
   S.patients.unshift(p);
-  S.snaps[id]={state:"Newly admitted.",risk:"moderate",sleep:"slept-well",watch:"",plan:"",by:S.userId,at:now()};
+  S.snaps[id]={state:"Newly admitted.",risk:"moderate",sleep:"slept-well",watch:"",plan:"",tags:LEGAL_TAGS.map(x=>x[0]).filter(t=>(d.legal||[]).includes(t)),by:S.userId,at:now()};
   bed.patientId=id;
   const asg={id:uid("as"),patientId:id,bedId:bed.id,at:now(),released:null,by:S.userId};
   S.assignments.unshift(asg);
@@ -5770,23 +5924,25 @@ function admitPayload(p){
     patient_code:p.code||p.hospitalNo||null,hospital_no:p.hospitalNo||null,
     reason_for_admission:(p.reason||"").trim()||null,referred_by:(p.referredBy||"").trim()||null,
     consultant_name:(p.consultant||"").trim()||null,consultant_name_2:(p.consultant2||"").trim()||null,
-    admitted_at:p.admittedAt||null,treatment_mode:p.treatmentMode||null
+    admitted_at:p.admittedAt||null,treatment_mode:p.treatmentMode||null,
+    secondary_dx:(p.dx2||"").trim()||null,tertiary_dx:(p.dx3||"").trim()||null,comorbidities:normComorb(p.comorb)||null
   });
 }
 async function admitCommit(id,p,bed,asg,hosp,prevBackup,prevSnapBackup){setBusy(true);
   try{
     const atomic=await callAtomicWorkflow("ward_admit_patient",{
       p_token:sessionTok,p_patient:admitPayload(p),
-      p_snapshot:{patient_id:id,clinical_state:"Newly admitted.",risk_level:"moderate",sleep_status:"slept-well",watch_points:"",current_plan:"",tags:[],updated_by:S.userId,updated_at:S.snaps[id]?.at||now()},
+      p_snapshot:{patient_id:id,clinical_state:"Newly admitted.",risk_level:"moderate",sleep_status:"slept-well",watch_points:"",current_plan:"",tags:(S.snaps[id]&&S.snaps[id].tags)||[],updated_by:S.userId,updated_at:S.snaps[id]?.at||now()},
       p_bed_id:bed.id,p_assignment:asg
     });
     if(!atomic.used){
       const hold=pending.slice(); pending.length=0;
-      qPatient(p);qSnapField(id,"state","Newly admitted.");qSnapField(id,"risk","moderate");qSnapField(id,"sleep","slept-well");qBed(bed);qAssign(asg);
+      qPatient(p);qSnapField(id,"state","Newly admitted.");qSnapField(id,"risk","moderate");qSnapField(id,"sleep","slept-well");qBed(bed);qAssign(asg);((S.snaps[id]&&S.snaps[id].tags)||[]).forEach(t=>qSnapTag(id,t,"add"));
       const ops=pending.splice(0); pending=hold.concat(pending);
       for(const op of ops) await upsert(op.table,[op.row]);
     }
     ev(id,"Admitted to "+bed.no+(hosp?" · "+hosp:""),true,"note");
+    ((S.snaps[id]&&S.snaps[id].tags)||[]).filter(t=>LEGAL_TAGS.some(x=>x[0]===t)).forEach(t=>ev(id,"Flagged "+t));
     qPatientConsultantFromText(id,p.consultant||p.consultant_name,p.consultant2||p.consultant_name_2);
     commitOrders(id,((ui.census||{}).meds||[]).filter(m=>(m.drug||"").trim()));
     if(ui.census) ui.census.meds=[{drug:"",dose:"",route:"PO",freq:"OD"}];
@@ -5943,7 +6099,7 @@ function admitFormBody(){
       <label class="field"><span>Age</span><input id="aage" value="${esc(val("aage")||"30")}" oninput="ui.fields=ui.fields||{};ui.fields.aage=this.value"/></label>
       <label class="field"><span>Sex</span>${picker("asex",[["M","M"],["F","F"],["O","O"]],val("asex")||"M","Sex")}</label>
     </div>
-    ${dxFieldHtml("Diagnosis","adx",val("adx"),"Working diagnosis","fields_adx")}
+    ${dxFieldHtml("Primary diagnosis","adx",val("adx"),"Working diagnosis","fields_adx")}
     <button class="btn block" ${empties.length?"":"disabled"} onclick="admitPatient()">Admit to bed</button>`;
 }
 function admitPatient(){
@@ -7153,7 +7309,7 @@ function reasonLine(p){
   }).filter(Boolean).join("; ");
 }
 function reportHeaders(){
-  return ["S. No.","Hospital No.","Date of admission","Consultant","Patient name","Age","Sex","Address","Phone no.","Referred by","Reason for referral","Diagnosis","Mode of treatment","Date of discharge","Outcome"];
+  return ["S. No.","Hospital No.","Date of admission","Consultant","Patient name","Age","Sex","Address","Phone no.","Referred by","Reason for referral","Diagnosis","Comorbidities","Mode of treatment","Date of discharge","Outcome"];
 }
 function obsStaysOf(pid){
   return (S.obsStays||[]).filter(s=>s.pid===pid);
@@ -7185,7 +7341,8 @@ function reportRow(p,i){
     (p.phone||"").trim(),
     p.referredBy||"",
     reasonLine(p),
-    p.diagnosis||"",
+    [p.diagnosis,p.dx2,p.dx3].map(x=>String(x||"").trim()).filter(Boolean).join("; "),
+    normComorb(p.comorb),
     treatLabel(p.treatmentMode),
     dmy(p.dischargedAt),
     p.dischargedAt?(labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome)||p.dischargeOutcome||""):""
@@ -7201,7 +7358,7 @@ function downloadSheet(filename,sheets){
     const wb=XLSX.utils.book_new();
     sheets.forEach(([name,aoa])=>{
       const ws=XLSX.utils.aoa_to_sheet(aoa);
-      ws["!cols"]=reportHeaders().map((h,i)=>({wch:i===4||i===3||i===7||i===11?22:i===8||i===10?18:14}));
+      ws["!cols"]=reportHeaders().map((h,i)=>({wch:i===4||i===3||i===7||i===11||i===12?22:i===8||i===10?18:14}));
       XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31));
     });
     XLSX.writeFile(wb,filename.replace(/\.csv$/,".xlsx"));
@@ -8082,7 +8239,11 @@ function patientRecordItems(pid){
   const patientBits=()=>{
     const bits=[];
     if(p.hospitalNo) bits.push("Hospital no: "+p.hospitalNo);
-    if(p.diagnosis) bits.push("Diagnosis: "+p.diagnosis);
+    const dxx=dxExtraOf(p);
+    if(p.diagnosis) bits.push(((dxx.dx2||dxx.dx3)?"Primary diagnosis: ":"Diagnosis: ")+p.diagnosis);
+    if(dxx.dx2) bits.push("Secondary diagnosis: "+dxx.dx2);
+    if(dxx.dx3) bits.push("Tertiary diagnosis: "+dxx.dx3);
+    if(dxx.comorb) bits.push("Comorbidities: "+dxx.comorb);
     const cons=snapConsultantNames(p);
     if(cons.length===1) bits.push("Consultant: "+cons[0]);
     else if(cons.length>1){bits.push("Consultant: "+cons[0]);cons.slice(1).forEach((c,i)=>bits.push("Consultant "+(i+2)+": "+c));}
@@ -8238,11 +8399,12 @@ function recMedRowsHtml(it){
   }).join("");
   return `${it.summary?`<p class="sm rec-msum">${esc(it.summary)}</p>`:""}<ul class="rec-meds">${rows}</ul>`;
 }
-function recordItemHtml(it){
+function recordItemHtml(it,pid){
   const who=recActor(it);
+  const legal=(it.kind==="admit"&&typeof pid==="string")?legalBadgesHtml(pid,"rec-legal"):"";
   return `<div class="rec-item rec-${recCss(it.kind)}">
     <div class="rec-rail"><div class="rec-dot"></div></div>
-    <div class="rec-card">
+    <div class="rec-card${legal?" has-legal":""}">${legal}
       <h3>${esc(it.title||"")}</h3>
       ${it.meds?recMedRowsHtml(it):(it.body?`<p class="sm">${esc(it.body)}</p>`:"")}
       <p class="tiny">${esc(who)}${who?" · ":""}${esc(it.atLabel||stamp(it.at)||fmt(it.at)||"")}</p>
@@ -8261,7 +8423,7 @@ function recordView(){
       </div>
       <div class="record-actions"><button class="btn sm ghost" onclick="exportPatientRecord('${p.id}')">Export PDF</button></div>
     </div>
-    ${items.length?`<div class="record-list">${items.map(recordItemHtml).join("")}</div>`:`<div class="card"><p class="sm">No clinical events recorded yet.</p></div>`}`;
+    ${items.length?`<div class="record-list">${items.map(it=>recordItemHtml(it,p.id)).join("")}</div>`:`<div class="card"><p class="sm">No clinical events recorded yet.</p></div>`}`;
 }
 /* R1.3.107: on-device PDF export (no pop-up, no external library, works offline) */
 const PDF_HELV_W=[[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,350,556,350,222,556,333,1000,556,556,333,1000,667,333,1000,350,611,350,350,222,222,333,333,350,556,1000,333,1000,500,333,944,350,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500],[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,350,556,350,278,556,500,1000,556,556,333,1000,667,333,1000,350,611,350,350,278,278,500,500,350,556,1000,333,1000,556,333,944,350,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556]];
@@ -8318,14 +8480,21 @@ function buildRecordPdf(meta,items){
     ops.push(`${rgb(148,163,184)} RG 0.6 w ${M} ${pdfNum(y)} m ${pdfNum(PW-M)} ${pdfNum(y)} l S`);y-=8;
   }
   text(M,y-16,pdfWinAnsi("Clinical record"),true,16);y-=23;
-  text(M,y-13,pdfWinAnsi(meta.name||"Patient"),true,13);y-=19;
+  // R1.3.110: Jail / ML flags in bold orange beside the name.
+  const LEGAL_RGB=[180,83,9];
+  const nameS=pdfWinAnsi(meta.name||"Patient");
+  text(M,y-13,nameS,true,13);
+  if(meta.legal&&meta.legal.length){let lx=M+pdfTextW(nameS,true,13)+12;meta.legal.forEach(l=>{text(lx,y-13,l,true,14,LEGAL_RGB);lx+=pdfTextW(l,true,14)+10})}
+  y-=19;
   pdfWrap(pdfWinAnsi(meta.line),false,10,CW).forEach(l=>{text(M,y-10,l,false,10,[71,85,105]);y-=14});
   text(M,y-9,pdfWinAnsi(meta.gen),false,9,[100,116,139]);y-=16;
   ops.push(`${rgb(203,213,225)} RG 0.8 w ${M} ${pdfNum(y)} m ${pdfNum(PW-M)} ${pdfNum(y)} l S`);y-=14;
   if(!items.length){text(M,y-11,"No clinical events recorded yet.",false,11,[71,85,105]);y-=16}
   items.forEach(it=>{
     const rows=[];
-    pdfWrap(pdfWinAnsi(it.title||""),true,11.5,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:true,s:11.5,lh:15,c:[15,23,42]}));
+    const legalStr=(it.legal&&it.legal.length)?it.legal.join("  "):"";
+    const legalW=legalStr?pdfTextW(legalStr,true,13):0;
+    pdfWrap(pdfWinAnsi(it.title||""),true,11.5,CW-2*PAD-6-(legalW?legalW+10:0)).forEach(l=>rows.push({t:l,b:true,s:11.5,lh:15,c:[15,23,42]}));
     if(it.meds){
       // R1.3.109: per-shift med card: green dot = new (<24 h), red pill = Stopped, amber = Changed/Paused, grey = stopped earlier.
       if(it.summary){rows.push({gap:3});rows.push({t:pdfWinAnsi(it.summary),b:false,s:9.5,lh:13,c:[100,116,139]})}
@@ -8353,6 +8522,7 @@ function buildRecordPdf(meta,items){
       const h=top-(yy-PAD);
       ops.push(`${rgb(248,250,252)} rg ${rgb(226,232,240)} RG 0.8 w ${M} ${pdfNum(top-h)} ${pdfNum(CW)} ${pdfNum(h)} re B`);
       ops.push(`${rgb(37,99,235)} rg ${M} ${pdfNum(top-h)} 3 ${pdfNum(h)} re f`);
+      if(legalStr&&seg[0]&&seg[0][0]===rows[0]){text(M+CW-PAD-legalW,top-PAD-12,legalStr,true,13,LEGAL_RGB)}
       seg.forEach(([r,ry])=>{
         if(r.gap!=null) return;
         const bx=M+PAD+6, by=ry-r.s;
@@ -8412,10 +8582,11 @@ function exportPatientRecord(pid){
   const p=patient(pid); if(!p) return;
   try{
     const b=bedObj(pid)||lastBedObj(pid);
-    const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {title:it.title||"",body:it.body||"",meds:it.meds||null,summary:it.summary||"",foot:`${who}${who?" · ":""}${it.atLabel||stamp(it.at)||fmt(it.at)||""}`}});
+    const legal=legalTagsOf(pid).map(x=>x[1]);
+    const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {legal:(it.kind==="admit"&&legal.length)?legal:null,title:it.title||"",body:it.body||"",meds:it.meds||null,summary:it.summary||"",foot:`${who}${who?" · ":""}${it.atLabel||stamp(it.at)||fmt(it.at)||""}`}});
     const ageSex=[p.age,p.sex].filter(x=>x!=null&&x!=="").join(" ");
     const meta={
-      name:p.name||"",version:APP_VERSION,dept:RECORD_PDF_DEPT,
+      name:p.name||"",legal,version:APP_VERSION,dept:RECORD_PDF_DEPT,
       line:[ageSex?`Age/Sex: ${ageSex}`:"",(p.hospitalNo||p.code)?`Hospital no: ${p.hospitalNo||p.code}`:"",`Bed: ${b?b.no:"—"}`].filter(Boolean).join(" · "),
       gen:`Ward Sync ${APP_VERSION} · Generated ${stamp(new Date().toISOString())||new Date().toLocaleString()}`
     };
@@ -9389,9 +9560,9 @@ async function transferCommit(p,from,dest,asg){setBusy(true);
 
 // R1.3.90 PATIENT EDIT: audited edit of admission particulars (same fields/markup as the Admit form; no bed, no meds)
 const PEDIT_ICON=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
-const PEDIT_LABELS={hospital_no:"Hospital no.",name:"Name",address:"Address",phone:"Phone",age:"Age",sex:"Sex",admitted_at:"Date of admission",reason_for_admission:"Reason for referral",diagnosis:"Diagnosis",referred_by:"Referred by",consultant_name:"Consultant",consultant_name_2:"Consultant 2"};
+const PEDIT_LABELS={hospital_no:"Hospital no.",name:"Name",address:"Address",phone:"Phone",age:"Age",sex:"Sex",admitted_at:"Date of admission",reason_for_admission:"Reason for referral",diagnosis:"Primary diagnosis",secondary_dx:"Secondary diagnosis",tertiary_dx:"Tertiary diagnosis",comorbidities:"Comorbidities",referred_by:"Referred by",consultant_name:"Consultant",consultant_name_2:"Consultant 2"};
 function canEditPatient(p){return !!p&&canWrite()&&p.status!=="discharged"}
-function peditFromPatient(p){return {hosp:p.hospitalNo||"",name:p.name||"",addr:p.address||"",phone:p.phone||"",age:p.age!=null&&p.age!==0?String(p.age):"",sex:p.sex||"O",adate:p.admittedAt?localStamp(new Date(p.admittedAt)):"",reasons:String(p.reason||"").split(",").map(x=>x.trim()).filter(Boolean),dx:p.diagnosis||"",ref:p.referredBy||"",con:p.consultant||"",con2:p.consultant2||""}}
+function peditFromPatient(p){return {hosp:p.hospitalNo||"",name:p.name||"",addr:p.address||"",phone:p.phone||"",age:p.age!=null&&p.age!==0?String(p.age):"",sex:p.sex||"O",adate:p.admittedAt?localStamp(new Date(p.admittedAt)):"",reasons:String(p.reason||"").split(",").map(x=>x.trim()).filter(Boolean),dx:p.diagnosis||"",dx2:p.dx2||"",dx3:p.dx3||"",comorb:p.comorb||"",legal:legalTagsOf(p.id).map(x=>x[0]),ref:p.referredBy||"",con:p.consultant||"",con2:p.consultant2||""}}
 function openPatientEdit(pid){
   if(!needWrite())return;
   const p=patient(pid); if(!canEditPatient(p))return;
@@ -9410,6 +9581,7 @@ function peditDraft(){
   if(g("esex")||(ui.fields&&ui.fields.esex!=null)) d.sex=val("esex")||d.sex;
   if(g("eadate")) d.adate=g("eadate").value;
   if(g("edx")) d.dx=g("edx").value;
+  readDxExtra(d,"e");
   if(g("eref")) d.ref=g("eref").value;
   if(g("econ")||(ui.fields&&ui.fields.econ!=null)) d.con=val("econ")||d.con;
   if(g("econ2")||(ui.fields&&ui.fields.econ2!=null)) d.con2=val("econ2")||d.con2;
@@ -9436,7 +9608,9 @@ function peditView(){
       <label class="field"><span>Reason for referral</span>
         <div class="multi">${ADMIT_REASONS.map(([id,lb])=>`<button type="button" class="chip ${reasons.includes(id)?"on":""}" onclick="peditToggle('${id}')">${lb}</button>`).join("")}</div>
       </label>
-      ${dxFieldHtml("Working diagnosis","edx",d.dx||"","Diagnosis","pedit_edx")}
+      ${dxFieldHtml("Primary diagnosis","edx",d.dx||"","Working diagnosis","pedit_edx")}
+      ${dxExtraFieldsHtml("pedit","e",d)}
+      ${legalChipsHtml("pedit",d)}
       <label class="field"><span>Referred by</span><input id="eref" value="${esc(d.ref||"")}" placeholder="OPD / casualty / hospital"/></label>
       <label class="field"><span>Consultant</span>${(facultyList().length)?picker("econ",facultyOptions(),d.con||"","Consultant"):`<input id="econ" value="${esc(d.con||"")}" placeholder="Name of consultant"/>`}</label>
       <label class="field"><span>Consultant 2</span>${(facultyList().length)?picker("econ2",facultyOptions(),d.con2||"","Optional"):`<input id="econ2" value="${esc(d.con2||"")}" placeholder="Second consultant, optional"/>`}</label>
@@ -9459,6 +9633,9 @@ function peditDiff(p,d){
   const rs=(d.reasons||[]).join(","), oldRs=String(p.reason||"").split(",").map(x=>x.trim()).filter(Boolean).join(",");
   if(rs!==oldRs){ch.reason_for_admission=rs||null;ex.reason_for_admission=p.reason||null}
   put("diagnosis",d.dx.trim(),p.diagnosis||"");
+  put("secondary_dx",String(d.dx2||"").trim(),p.dx2||"");
+  put("tertiary_dx",String(d.dx3||"").trim(),p.dx3||"");
+  put("comorbidities",normComorb(d.comorb),normComorb(p.comorb));
   put("referred_by",d.ref.trim(),p.referredBy||"");
   if((d.con||"").trim()!==(p.consultant||"")){ch.consultant_name=(d.con||"").trim()||null;ex.consultant_name=p.consultant||null;ch.consultant_id=facultyIdForText(d.con)||null}
   if((d.con2||"").trim()!==(p.consultant2||"")){ch.consultant_name_2=(d.con2||"").trim()||null;ex.consultant_name_2=p.consultant2||null;ch.consultant_id_2=facultyIdForText(d.con2)||null}
@@ -9476,7 +9653,13 @@ async function savePatientEdit(){
   const h=d.hosp.trim().toLowerCase();
   if(S.patients.some(x=>x.id!==p.id&&x.hospitalNo&&x.hospitalNo.toLowerCase()===h&&x.status!=="discharged")){toast("This hospital number is already on the ward.","bad");return}
   const {ch,ex}=peditDiff(p,d);
-  if(!Object.keys(ch).length){toast("Nothing changed.","bad");return}
+  const legalWant=Array.isArray(d.legal)?d.legal.slice():null;
+  const legalNow=legalTagsOf(p.id).map(x=>x[0]);
+  const legalChanged=!!legalWant&&(legalWant.slice().sort().join()!==legalNow.slice().sort().join());
+  if(!Object.keys(ch).length){
+    if(legalChanged){applyLegalTags(p.id,legalWant);ui.pedit=null;save();toast("Details updated","ok");go("snap",p.id);render();return}
+    toast("Nothing changed.","bad");return;
+  }
   const editId=uid("pe");
   setBusy(true,"Saving details…");
   try{
@@ -9489,15 +9672,16 @@ async function savePatientEdit(){
       throw new Error(msg);
     }
     if(!data||data.ok===false) throw new Error((data&&data.error)||"Could not save the change");
-    if(data.nochange){toast("Nothing changed.","bad");return}
+    if(data.nochange){if(legalChanged){applyLegalTags(p.id,legalWant);ui.pedit=null;save();toast("Details updated","ok");go("snap",p.id);return}toast("Nothing changed.","bad");return}
     const r=data.patient||{};
-    Object.assign(p,{hospitalNo:r.hospital_no||"",code:r.patient_code||p.code,name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at||p.admittedAt,address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null});
+    Object.assign(p,{hospitalNo:r.hospital_no||"",code:r.patient_code||p.code,name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx!==undefined?(r.secondary_dx||""):(p.dx2||""),dx3:r.tertiary_dx!==undefined?(r.tertiary_dx||""):(p.dx3||""),comorb:r.comorbidities!==undefined?(r.comorbidities||""):(p.comorb||""),reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at||p.admittedAt,address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null});
     if(r.consultant_id!==undefined){p.consultantId=r.consultant_id||null;p.consultantId2=r.consultant_id_2||null;S.consLinks=S.consLinks||{};S.consLinks[p.id]=[p.consultantId,p.consultantId2]}
     const at=now(), changed=data.changed||Object.keys(ch).filter(k=>PEDIT_LABELS[k]);
     S.patientEdits=S.patientEdits||[];
     changed.forEach(k=>S.patientEdits.unshift({id:editId+"-"+k,pid:p.id,field:k,old:ex[k]??null,new:ch[k]??null,by:S.userId,at,group:data.edit_id||editId}));
     const fmtEditVal=(k,v)=>!v?"—":(k==="reason_for_admission"?(reasonLine({reason:v})||v):v);
     S.events.unshift({id:"pt-edit-"+(data.edit_id||editId),pid:p.id,title:"Patient details edited",detail:changed.map(k=>PEDIT_LABELS[k]+": "+fmtEditVal(k,ex[k])+" → "+fmtEditVal(k,ch[k])).join("\n"),by:S.userId,actorName:(user()&&user().displayName)||rname(S.userId),patientName:p.name,bed:bedOf(p.id),at,ok:true,kind:"note"});
+    if(legalChanged) applyLegalTags(p.id,legalWant);
     ui.pedit=null; save(); toast("Details updated","ok"); go("snap",p.id);
   }catch(e){toast(e.message||String(e),"bad")}
   finally{setBusy(false);render()}

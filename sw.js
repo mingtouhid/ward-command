@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.109-med-shift-log";
+const VERSION = "ward-sync-pwa-r1.3.110-dx-ml";
 const PRECACHE = [
   "./",
   "./index.html",
