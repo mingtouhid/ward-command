@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.111-referral-chips";
+const VERSION = "ward-sync-pwa-r1.3.112-freq-addons";
 const PRECACHE = [
   "./",
   "./index.html",

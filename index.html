@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.111 referral-chips -->
+<!-- WARD SYNC RELEASE: R1.3.112 freq-addons -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1757,6 +1757,27 @@ button.dx-opt:hover,button.dx-opt:active,button.dx-opt.active{background:var(--p
 .legal-grid .chip{min-height:50px;padding:10px 12px;font-size:15px;font-weight:700;letter-spacing:.01em}
 .reason-grid .chip.on,.legal-grid .chip.on{transform:none}
 @media (max-width:370px){.reason-grid .chip{font-size:12.5px;padding:8px 6px}}
+/* R1.3.112: compact pickers (consultant, route, frequency and other select sheets) */
+.pick-compact .box{padding:12px 12px 12px !important}
+.pick-compact .box>.row:first-child{margin-bottom:8px;align-items:center}
+.pick-compact .box>.row:first-child h2{font-size:17px;margin:0;line-height:1.2}
+.pick-compact .box>.row:first-child .btn{min-height:36px;padding:6px 12px}
+.pick-compact .pick-opt{min-height:42px;padding:8px 12px;margin:0 0 6px;border-radius:12px;font-size:15px;line-height:1.25}
+.pick-compact .pick-list .pick-opt:last-child{margin-bottom:0}
+.pick-compact .pick-tick{color:var(--teal);font-weight:800;margin-left:8px}
+.pick-grid{display:grid;gap:6px}
+.pick-grid.g1{grid-template-columns:1fr}
+.pick-grid.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pick-grid.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pick-grid.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pick-compact .pick-grid .pick-opt{margin:0;justify-content:center;text-align:center;min-height:44px;padding:8px 4px;font-weight:650;min-width:0;overflow-wrap:anywhere}
+.pick-compact .pick-grid .pick-opt.on{background:var(--teal);color:var(--btn-ink);border-color:var(--teal)}
+.pick-sub{font-size:12.5px;color:var(--muted);margin:2px 2px 6px;font-weight:600}
+.pick-grid+.pick-sub{margin-top:12px}
+.pick-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+.pick-prev{font-weight:700;font-size:15px;min-width:0}
+.pick-foot .btn{min-height:42px;padding:0 24px;flex:none}
+.pick-foot .btn:disabled{opacity:.45}
 
 .med-opt-doses{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tel-link{color:var(--teal2);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:3px;padding:1px 6px;margin:-1px -2px;border-radius:6px;background:color-mix(in srgb,var(--teal) 10%,transparent);transition:background .15s}
@@ -2258,7 +2279,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.111";
+const APP_VERSION="R1.3.112";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2459,6 +2480,30 @@ function qDose(d){if(!d||!d.oid)return;queue("medication_doses",{id:d.id,order_i
 function qOrder(o){if(!o)return;queue("medication_orders",{id:o.id,patient_id:o.pid,drug:o.drug,dose:o.dose,route:o.route||"PO",frequency:o.freq||"OD",scheduled_time:o.time||null,start_date:asDate(o.start)||asDate(now()),stop_date:asDate(o.stop),status:o.status||"active",hold_at:o.hold||null,indication:o.indication||null,created_at:o.at||o.start||now(),updated_at:now()})}
 const MED_ROUTES=[["PO","PO"],["IM","IM"],["IV","IV"],["SC","SC"],["SL","SL"],["PR","PR"],["inhale","Inhale"],["topical","Topical"]];
 const MED_FREQS=[["STAT","STAT"],["OD","OD"],["BD","BD"],["TDS","TDS"],["QID","QID"],["HS","HS"],["SOS","SOS"],["PRN","PRN"],["weekly","Weekly"],["monthly","Monthly"]];
+// R1.3.112: a frequency is ONE regular schedule plus optional SOS/PRN and/or STAT add-ons, stored in the same
+// text column joined with "+" (e.g. "BD+SOS", "TDS+STAT", "BD+SOS+STAT"). Plain legacy values parse unchanged.
+const MED_FREQ_REGULAR=[["OD","OD"],["BD","BD"],["TDS","TDS"],["QID","QID"],["HS","HS"],["weekly","Weekly"],["monthly","Monthly"]];
+const MED_FREQ_ADDONS=[["SOS","SOS"],["PRN","PRN"],["STAT","STAT"]];
+function freqParts(f){
+  const r={reg:"",sos:false,prn:false,stat:false,other:[]};
+  String(f==null?"":f).split("+").map(t=>t.trim()).filter(Boolean).forEach(t=>{
+    const u=t.toUpperCase();
+    if(u==="SOS") r.sos=true; else if(u==="PRN") r.prn=true; else if(u==="STAT") r.stat=true;
+    else{const hit=MED_FREQ_REGULAR.find(x=>x[0].toUpperCase()===u); const v=hit?hit[0]:t; if(!r.reg) r.reg=v; else r.other.push(v)}
+  });
+  return r;
+}
+function freqCompose(p){return [p.reg].concat(p.other||[],p.sos?["SOS"]:[],p.prn?["PRN"]:[],p.stat?["STAT"]:[]).filter(Boolean).join("+")}
+function freqLabel(f){
+  const raw=String(f==null?"":f).trim(); if(!raw) return "OD";
+  const one=x=>{const l=labelOf(MED_FREQS,x);return l&&l!=="—"?l:x};
+  if(raw.indexOf("+")<0) return one(raw);
+  return raw.split("+").map(t=>t.trim()).filter(Boolean).map(one).join(" + ");
+}
+function oFreq(o){return (o&&o.freq)||"OD"}
+function hasSos(o){const p=freqParts(oFreq(o));return p.sos||p.prn}
+function hasStat(o){return !!o&&freqParts(oFreq(o)).stat}
+function regularFreq(o){return freqParts(oFreq(o)).reg}
 function medRowHtml(prefix,i,m){
   m=m||{};
   return `<div class="obs-med-block">
@@ -2485,22 +2530,32 @@ function commitOrders(pid,meds){
   (meds||[]).filter(m=>(m.drug||"").trim()).forEach(m=>{
     const ord={id:uid("o"),pid,drug:m.drug.trim(),dose:(m.dose||"").trim()||"—",route:(m.route||"PO").trim()||"PO",freq:(m.freq||"OD").trim()||"OD",time:"08:00",start:now(),stop:null,hold:null,status:"active"};
     S.orders.unshift(ord);
-    ev(pid,"Started "+ord.drug+" "+ord.dose+" "+ord.route+" "+ord.freq,true,"med");
+    ev(pid,"Started "+ord.drug+" "+ord.dose+" "+ord.route+" "+freqLabel(ord.freq),true,"med");
     qOrder(ord);qStatSlot(ord);
   });
 }
 // R1.3.78 STAT: one dose due at order time; once given the order is complete (no further doses due).
 function isStat(o){return !!o&&/^stat$/i.test(String(o.freq||"").trim())}
-function statGiven(o){return (S.doses||[]).filter(d=>d.oid===o.id&&d.status==="given").sort((a,b)=>new Date(b.at)-new Date(a.at))[0]||null}
+function statGiven(o){
+  if(!o) return null;
+  if(!isStat(o)){
+    // R1.3.112 STAT add-on: the STAT slot is the dose created at order time; given once nothing is pending.
+    if(!hasStat(o)) return null;
+    const mine=(S.doses||[]).filter(d=>d.oid===o.id);
+    if(mine.some(d=>d.status==="pending")) return null;
+    return mine.filter(d=>d.status==="given").sort((a,b)=>new Date(a.at)-new Date(b.at))[0]||null;
+  }
+  return (S.doses||[]).filter(d=>d.oid===o.id&&d.status==="given").sort((a,b)=>new Date(b.at)-new Date(a.at))[0]||null;
+}
 function statDone(o){return isStat(o)&&!!statGiven(o)}
 function qStatSlot(o){
-  if(!isStat(o)||(S.doses||[]).some(d=>d.oid===o.id)) return;
+  if(!hasStat(o)||(S.doses||[]).some(d=>d.oid===o.id)) return;
   const d={id:uid("d"),oid:o.id,pid:o.pid,at:o.start||now(),status:"pending",by:null};
   S.doses.unshift(d); qDose(d);
 }
 function giveStat(oid){
   if(!needWrite())return;
-  const o=(S.orders||[]).find(x=>x.id===oid); if(!o||!isStat(o)||statDone(o))return;
+  const o=(S.orders||[]).find(x=>x.id===oid); if(!o||!hasStat(o)||statGiven(o))return;
   let d=(S.doses||[]).find(x=>x.oid===oid&&x.status==="pending");
   if(!d){d={id:uid("d"),oid:o.id,pid:o.pid,at:now(),status:"pending"};S.doses.unshift(d)}
   d.status="given";d.by=S.userId;d.givenAt=now();
@@ -2512,7 +2567,8 @@ function isPrn(o){return o&&!o.stop&&(o.status||"active")==="active"&&/\b(prn|so
 function prnLabel(o){return /\bsos\b/i.test((o&&o.freq)||"")?"SOS":"PRN"}
 function prnOrders(pid){return (S.orders||[]).filter(o=>o.pid===pid&&isPrn(o))}
 function prnStats(oid){
-  const given=(S.doses||[]).filter(d=>d.oid===oid&&d.status==="given").sort((a,b)=>new Date(b.at)-new Date(a.at));
+  const o=(S.orders||[]).find(x=>x.id===oid), sd=o&&hasStat(o)?statGiven(o):null;
+  const given=(S.doses||[]).filter(d=>d.oid===oid&&d.status==="given"&&d!==sd).sort((a,b)=>new Date(b.at)-new Date(a.at));
   const start=new Date(); start.setHours(0,0,0,0);
   const today=given.filter(d=>new Date(d.at)>=start).length;
   return {last:given[0]||null, today, total:given.length};
@@ -2559,7 +2615,7 @@ const lastBedObj=pid=>{
 const lastBedNo=pid=>{const b=lastBedObj(pid);return b?b.no:"—"};
 const onBed=b=>b.patientId?patient(b.patientId):null;
 const occupied=()=>S.beds.filter(b=>b.active&&b.patientId).sort((a,b)=>a.no.localeCompare(b.no,undefined,{numeric:true}));
-const dueFor=pid=>S.doses.filter(d=>d.pid===pid&&d.status==="pending"&&!isPrn((S.orders||[]).find(o=>o.id===d.oid)));
+const dueFor=pid=>S.doses.filter(d=>d.pid===pid&&d.status==="pending"&&(()=>{const o=(S.orders||[]).find(o=>o.id===d.oid);return !(isPrn(o)&&!hasStat(o))})());
 const openTasks=pid=>S.tasks.filter(t=>t.pid===pid&&t.status!=="done");
 function ev(pid,title,ok,kind,detail){
   const p=pid?patient(pid):null;
@@ -4043,10 +4099,17 @@ function snapView(){
             : o.status==="held"
               ? "Paused · "+(stamp(o.hold)||fmt(o.hold)||"")
               : isStat(o) ? (statGiven(o)?"STAT · given "+(stamp(statGiven(o).givenAt||statGiven(o).at)||fmt(statGiven(o).at)):"STAT · due now")
-              : prn ? prnLabel(o)+" as needed" : (()=>{const ch=medChain(o);return ch.length?"Ongoing since "+(fmt(ch[ch.length-1].start)||"")+" · changed "+(fmt(o.start)||""):"Ongoing since "+(fmt(o.start)||"")})();
+              : (()=>{
+                const fp=freqParts(oFreq(o));
+                const ongoing=()=>{const ch=medChain(o);return ch.length?"Ongoing since "+(fmt(ch[ch.length-1].start)||"")+" · changed "+(fmt(o.start)||""):"Ongoing since "+(fmt(o.start)||"")};
+                if(prn&&!fp.reg&&!fp.stat) return prnLabel(o)+" as needed";
+                if(!fp.stat&&!prn) return ongoing();
+                const sg=fp.stat?statGiven(o):null;
+                return [fp.stat?(sg?"STAT · given "+(stamp(sg.givenAt||sg.at)||fmt(sg.at)):"STAT · due now"):"",fp.reg?ongoing():"",prn?prnLabel(o)+" as needed":""].filter(Boolean).join(" · ");
+              })();
           return `<tr class="${o.stop?"stopped":(o.status==="held"?"held":(statDone(o)?"stat-done":""))}">
           <td><div class="med-primary">${esc(o.drug)}</div><div class="med-meta">${esc(o.dose||"—")}${ds&&ds.last?" · last "+rel(ds.last.at):""}${ds&&ds.today?" · "+ds.today+" today":""}</div>
-            ${isStat(o)&&!o.stop&&!statDone(o)&&o.status!=="held"&&canWrite()?`<div class="med-row-actions"><button class="btn sm" onclick="giveStat('${o.id}')">Give STAT</button></div>`:""}
+            ${hasStat(o)&&!o.stop&&!statGiven(o)&&o.status!=="held"&&canWrite()?`<div class="med-row-actions"><button class="btn sm" onclick="giveStat('${o.id}')">Give STAT</button></div>`:""}
             ${prn&&!o.stop&&o.status!=="held"&&canWrite()?`<div class="med-row-actions"><button class="btn sm" onclick="givePrn('${o.id}')">Give SOS</button></div>`:""}
             ${!o.stop&&!statDone(o)&&canWrite()?`<div class="med-row-actions">
               ${o.status==="held"?`<button class="btn ghost sm" onclick="resumeMed('${o.id}')">Resume</button>`:`<button class="btn ghost sm" onclick="holdMed('${o.id}')">Pause</button>`}
@@ -4056,7 +4119,7 @@ function snapView(){
             ${medHistoryHtml(o)}
           </td>
           <td>${esc(o.route||"PO")}</td>
-          <td>${esc(o.freq||"OD")}</td>
+          <td>${esc(freqLabel(o.freq))}</td>
           <td><span class="tiny">${statusLine}</span></td>
         </tr>`;
         }).join("")}
@@ -5113,7 +5176,7 @@ function setMedPickerSilent(pickId,newVal){
   ui.fields=ui.fields||{};
   ui.fields[pickId]=newVal;
   const btn=document.getElementById(pickId);
-  const label=labelOf(MED_ROUTES,newVal)!=="—"?labelOf(MED_ROUTES,newVal):(labelOf(MED_FREQS,newVal)!=="—"?labelOf(MED_FREQS,newVal):newVal);
+  const label=labelOf(MED_ROUTES,newVal)!=="—"?labelOf(MED_ROUTES,newVal):freqLabel(newVal);
   if(btn){
     btn.setAttribute("data-val",newVal);
     const sp=btn.querySelector("span");
@@ -7930,7 +7993,8 @@ function picker(id,rows,sel,title){
   ui.pickDefs=ui.pickDefs||{};
   ui.pickDefs[id]={rows:rows||[],title:title||"Choose"};
   const cur=(ui.fields&&ui.fields[id]!=null&&ui.fields[id]!=="")?ui.fields[id]:sel;
-  const lab=labelOf(rows,cur);
+  const isFreq=rows===MED_FREQS; ui.pickDefs[id].freq=isFreq;
+  const lab=isFreq?(cur?freqLabel(cur):""):labelOf(rows,cur);
   const shown=lab&&lab!=="—"?lab:"Select";
   return `<button type="button" class="pick" id="${id}" data-val="${esc(cur||"")}" onclick="openPick('${id}')"><span>${esc(shown)}</span><span class="caret">▾</span></button>`;
 }
@@ -7954,13 +8018,14 @@ function openPick(id){
   def.rows=usable;
   snapshotMedInputs();
   ui.pick={id,title:def.title,rows:def.rows,cur:val(id)};
+  if(def.freq){ui.pick.freq=true;ui.pick.draft=freqParts(ui.pick.cur||"")}
   render();
 }
 function patchFrozenSheetPick(id,v){
   if(!ui.sheet) return;
   const def=(ui.pickDefs||{})[id];
   const row=(def&&def.rows||[]).find(r=>String(r[0])===String(v));
-  const label=row?String(row[1]):"Select";
+  const label=def&&def.freq?(v?freqLabel(v):"Select"):(row?String(row[1]):"Select");
   const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
   const safeId=id.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
   const re=new RegExp('(<button\\b[^>]*\\bid="'+safeId+'"[^>]*data-val=")[^"]*("[^>]*>\\s*<span>)[\\s\\S]*?(</span>)','i');
@@ -8012,15 +8077,56 @@ function setPick(id,v){
 }
 
 
+// R1.3.112: compact picker. Short option sets render as a chip grid; long labels (consultants, patients) as a tight list.
+function pickGridCols(rows){
+  const n=rows.length, mx=Math.max(0,...rows.map(r=>String(r[1]||"").length));
+  if(n<2||n>16||mx>10) return 0;
+  if(n<=3) return n;
+  if(n===4) return mx<=5?4:2;
+  return mx<=5?4:3;
+}
+function freqPickHtml(p){
+  const d=p.draft||freqParts(p.cur||"");
+  const regBtn=([v,lb])=>`<button type="button" class="pick-opt ${d.reg===v?"on":""}" data-freq-reg="${esc(v)}" onclick="freqPickTap('reg','${esc(String(v).replace(/'/g,"\\'"))}')">${esc(lb)}</button>`;
+  const addOn=([v,lb])=>`<button type="button" class="pick-opt ${d[v.toLowerCase()]?"on":""}" data-freq-add="${esc(v)}" onclick="freqPickTap('add','${v}')">${esc(lb)}</button>`;
+  const extra=d.reg&&!MED_FREQ_REGULAR.some(x=>x[0]===d.reg)?[[d.reg,d.reg]]:[];
+  const prev=freqCompose(d);
+  return `<p class="pick-sub">Regular</p>
+    <div class="pick-grid g4">${extra.concat(MED_FREQ_REGULAR).map(regBtn).join("")}</div>
+    <p class="pick-sub">Add-on (optional, can be used alone)</p>
+    <div class="pick-grid g3">${MED_FREQ_ADDONS.map(addOn).join("")}</div>
+    <div class="pick-foot"><span class="pick-prev" id="freqPrev">${esc(prev?freqLabel(prev):"Nothing selected")}</span><button type="button" class="btn" id="freqDone" ${prev?"":"disabled"} onclick="freqPickDone()">Done</button></div>`;
+}
+function freqPickTap(kind,v){
+  const p=ui.pick; if(!p||!p.freq) return;
+  const d=p.draft=p.draft||freqParts(p.cur||"");
+  if(kind==="reg"){d.reg=d.reg===v?"":v;d.other=[]}
+  else{const k=v.toLowerCase();d[k]=!d[k];if(k==="sos"&&d.sos)d.prn=false;if(k==="prn"&&d.prn)d.sos=false}
+  const box=document.querySelector(".pick-layer .box");
+  if(!box){render();return}
+  box.querySelectorAll("[data-freq-reg]").forEach(b=>b.classList.toggle("on",b.getAttribute("data-freq-reg")===d.reg));
+  box.querySelectorAll("[data-freq-add]").forEach(b=>b.classList.toggle("on",!!d[b.getAttribute("data-freq-add").toLowerCase()]));
+  const prev=freqCompose(d), pv=document.getElementById("freqPrev"), dn=document.getElementById("freqDone");
+  if(pv) pv.textContent=prev?freqLabel(prev):"Nothing selected";
+  if(dn) dn.disabled=!prev;
+}
+function freqPickDone(){
+  const p=ui.pick; if(!p||!p.freq) return;
+  const v=freqCompose(p.draft||freqParts(p.cur||""));
+  if(!v){toast("Choose a frequency.","bad");return}
+  setPick(p.id,v);
+}
 function pickOverlay(){
   if(!ui.pick)return "";
   const p=ui.pick;
-  return `<div class="sheet mid pick-layer"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
+  const cols=p.freq?0:pickGridCols(p.rows);
+  const opt=r=>{
+    const v=r[0],lb=r[1],on=String(p.cur)===String(v);
+    return `<button type="button" class="pick-opt ${on?"on":""}" onclick="setPick('${p.id}','${String(v).replace(/'/g,"\'")}')"><span>${esc(lb)}</span>${on&&!cols?"<b class=\"pick-tick\">✓</b>":""}</button>`;
+  };
+  return `<div class="sheet mid pick-layer pick-compact"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
     <div class="row"><h2>${esc(p.title||"Choose")}</h2><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
-    ${p.rows.map(r=>{
-      const v=r[0],lb=r[1];
-      return `<button type="button" class="pick-opt ${String(p.cur)===String(v)?"on":""}" onclick="setPick('${p.id}','${String(v).replace(/'/g,"\'")}')"><span>${esc(lb)}</span>${String(p.cur)===String(v)?"✓":""}</button>`;
-    }).join("")}
+    ${p.freq?freqPickHtml(p):cols?`<div class="pick-grid g${cols}">${p.rows.map(opt).join("")}</div>`:`<div class="pick-list">${p.rows.map(opt).join("")}</div>`}
   </div></div>`;
 }
 function pgtNotes(id){
@@ -8102,12 +8208,12 @@ function medNearest(list,ts,maxMs){
   list.forEach(x=>{const d=Math.abs(x.ts-ts);if(d<bd){bd=d;best=x}});
   return (best&&bd<=maxMs)?best:null;
 }
-function medRowLine(o){return [o.drug,o.dose,o.route||"PO",o.freq||"OD"].filter(Boolean).join(" · ")}
+function medRowLine(o){return [o.drug,o.dose,o.route||"PO",freqLabel(o.freq)].filter(Boolean).join(" · ")}
 function medDiff(a,b){
   const out=[];
   [["dose"],["route"],["freq"],["time"]].forEach(([k])=>{
     const x=String(a[k]||"").trim(), y=String(b[k]||"").trim();
-    if(x!==y) out.push((x||"—")+" → "+(y||"—"));
+    if(x!==y) out.push(k==="freq"?(freqLabel(x)+" → "+freqLabel(y)):((x||"—")+" → "+(y||"—")));
   });
   if(String(a.drug||"").trim()!==String(b.drug||"").trim()) out.unshift(String(a.drug||"")+" → "+String(b.drug||""));
   return out.join(", ");
@@ -8220,8 +8326,8 @@ function patientRecordItems(pid){
   const obsStays=(S.obsStays||[]).filter(s=>s.pid===pid).slice().sort((a,b)=>Date.parse(a.at||0)-Date.parse(b.at||0));
   const fromObs=obsStays.some(s=>s.outcome==="admitted"||/admitted from observation/i.test(s.outcome||""));
   const admitTs=Date.parse(p.admittedAt||0)||0;
-  const medLine=o=>[o.drug,o.dose,o.route||"PO",o.freq||"OD"].filter(Boolean).join(" · ");
-  const allMeds=(S.orders||[]).filter(o=>o.pid===pid && !isPrn(o));
+  const medLine=o=>[o.drug,o.dose,o.route||"PO",freqLabel(o.freq)].filter(Boolean).join(" · ");
+  const allMeds=(S.orders||[]).filter(o=>o.pid===pid && !(isPrn(o)&&!regularFreq(o)&&!hasStat(o)));
   const medInObs=o=>{
     if(!obsStays.length) return false;
     if(p.status==="observation") return true;
@@ -9701,7 +9807,7 @@ function dxHistoryHtml(p){
 // R1.3.89 MED EDIT: versioned edit (old order stopped, linked new order created server-side)
 function medSupersededIds(){const s=new Set();(S.orders||[]).forEach(o=>{if(o.supersedes)s.add(o.supersedes)});return s}
 function medChain(o){const out=[];let cur=o,guard=0;while(cur&&cur.supersedes&&guard++<50){const prev=(S.orders||[]).find(x=>x.id===cur.supersedes);if(!prev)break;out.push(prev);cur=prev}return out}
-function medSum(o){return [o.dose||"—",o.route||"PO",o.freq||"OD"].join(" ")+(o.time&&o.time!=="08:00"?" @"+o.time:"")}
+function medSum(o){return [o.dose||"—",o.route||"PO",freqLabel(o.freq)].join(" ")+(o.time&&o.time!=="08:00"?" @"+o.time:"")}
 function medHistoryHtml(o){
   const ch=medChain(o); if(!ch.length) return "";
   return `<details class="med-hist"><summary>History · ${ch.length} change${ch.length>1?"s":""}</summary>${ch.map(x=>`<div class="med-hist-row">${esc(medSum(x))} <span>· ${esc(fmt(x.start))} – ${esc(x.stop?fmt(x.stop):"")}${x.note?" · "+esc(x.note):""}</span></div>`).join("")}${o.note?`<div class="med-hist-row"><span>Latest change: ${esc(o.note)}</span></div>`:""}</details>`;
@@ -9763,7 +9869,8 @@ async function saveMedEdit(id){
     const oldR=data.old||{}, newR=data.new||{};
     Object.assign(o,{stop:oldR.stop_date||asDate(now()),status:"stopped",hold:null});
     const n=orderFromRow(newR); if(!(S.orders||[]).some(x=>x.id===n.id)) S.orders.unshift(n);
-    if(isStat(o)&&isStat(n)) (S.doses||[]).forEach(d=>{if(d.oid===o.id&&d.status==="pending")d.oid=n.id});
+    if(hasStat(o)&&hasStat(n)) (S.doses||[]).forEach(d=>{if(d.oid===o.id&&d.status==="pending")d.oid=n.id});
+    else if(hasStat(n)&&!isStat(n)) qStatSlot(n); // R1.3.112: STAT add-on newly added on edit -> one dose due now
     const p=patient(o.pid);
     S.events.unshift({id:"med-edit-"+n.id,pid:o.pid,title:"Changed "+o.drug+": "+medSum(o)+" → "+medSum(n),detail:note?("Reason: "+note):"",by:S.userId,actorName:(user()&&user().displayName)||rname(S.userId),patientName:p?p.name:"",bed:bedOf(o.pid),at:now(),ok:true,kind:"med"});
     ui.sheet=null;ui.medEditId=null;
@@ -9803,7 +9910,7 @@ function addMed(pid){
   const freq=val("mfreq")||"OD";
   const run=()=>{
     const ord={id:uid("o"),pid,drug,dose,route,freq,time:"08:00",start:now(),stop:null,hold:null,status:"active",by:S.userId||null};S.orders.unshift(ord);
-    ev(pid,"Started "+drug+" "+dose+" "+route+" "+freq,true,"med");qOrder(ord);qStatSlot(ord);ui.medPid=null;if(ui.fields){delete ui.fields.md;delete ui.fields.mds}ui.sheet=null;save();
+    ev(pid,"Started "+drug+" "+dose+" "+route+" "+freqLabel(freq),true,"med");qOrder(ord);qStatSlot(ord);ui.medPid=null;if(ui.fields){delete ui.fields.md;delete ui.fields.mds}ui.sheet=null;save();
     setBusy(true,"Saving medication…");
     Promise.resolve(flushPending()).finally(()=>setBusy(false));
   };
