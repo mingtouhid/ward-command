@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.118 pgt-note-popup -->
+<!-- WARD SYNC RELEASE: R1.3.119 mrd-no -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1749,6 +1749,8 @@ button.hero-ward{border:0;background:transparent;padding:0;margin:0;box-shadow:n
 button.hero-ward:active{opacity:.72;transform:scale(.98)}
 button.hero-ward:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
 .psec-row{margin-bottom:8px}
+.mrd-err{color:#e11d48;font-size:13px;font-weight:650;margin:-4px 0 10px}.mrd-err[hidden]{display:none}
+.mrd-chip{white-space:nowrap}
 .hosp-autofill{margin:-2px 0 10px;padding:10px 12px;border-radius:12px;background:var(--pill-full);border:1px solid var(--pill-full-line);display:flex;align-items:center;justify-content:space-between;gap:10px}
 .hosp-autofill-meta{min-width:0;flex:1}
 .hosp-autofill-k{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--pill-full-ink)}
@@ -2380,7 +2382,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.118";
+const APP_VERSION="R1.3.119";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2685,7 +2687,7 @@ function qEct(e){
   queue("ect_plans",{id:e.id,patient_id:e.pid,indication:e.indication||"",sessions_done:e.sessionsDone||0,next_session_at:e.nextAt||null,npo:e.npo!==false,status:["planned","completed","cancelled"].includes(e.status)?e.status:"planned",created_by:e.by||S.userId||null,created_at:e.at||now(),updated_at:now()});
 }
 function qEctSession(x){if(!x||!x.id||!x.planId||!x.pid)return;queue("ect_sessions",{id:x.id,plan_id:x.planId,patient_id:x.pid,session_number:x.sessionNumber,session_at:x.at||now(),next_session_at:x.nextAt||null,anaesthesia:x.anaesthesia||null,stimulus:x.stimulus||null,seizure_seconds:x.seizureSeconds==null?null:x.seizureSeconds,complications:x.complications||null,response:x.response||null,next_plan:x.nextPlan||null,recorded_by:x.by||S.userId||null})}
-function qPatient(p){if(!p)return;queue("patients",{id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",secondary_dx:(p.dx2||"").trim()||null,tertiary_dx:(p.dx3||"").trim()||null,comorbidities:normComorb(p.comorb)||null,reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,consultant_name_2:p.consultant2||null,admitted_at:p.admittedAt||now(),discharged_at:p.dischargedAt||null,discharge_mode:p.dischargeMode||null,discharge_outcome:p.dischargeOutcome||null,treatment_mode:p.treatmentMode||null,active_status:p.status||"admitted",address:p.address||null,phone:p.phone||null,updated_by:S.userId||null,created_at:p.admittedAt||now(),updated_at:now()})}
+function qPatient(p){if(!p)return;queue("patients",{id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,...(normMrd(p.mrdNo)?{mrd_no:normMrd(p.mrdNo)}:{}),name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",secondary_dx:(p.dx2||"").trim()||null,tertiary_dx:(p.dx3||"").trim()||null,comorbidities:normComorb(p.comorb)||null,reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,consultant_name_2:p.consultant2||null,admitted_at:p.admittedAt||now(),discharged_at:p.dischargedAt||null,discharge_mode:p.dischargeMode||null,discharge_outcome:p.dischargeOutcome||null,treatment_mode:p.treatmentMode||null,active_status:p.status||"admitted",address:p.address||null,phone:p.phone||null,updated_by:S.userId||null,created_at:p.admittedAt||now(),updated_at:now()})}
 function qBed(b){if(!b)return;queue("beds",{id:b.id,bed_number:b.no,section_id:b.sectionId,active:b.active!==false,current_patient_id:b.patientId||null,created_at:now(),updated_at:now()})}
 function qAssign(a){if(!a)return;queue("patient_bed_assignments",{id:a.id,patient_id:a.patientId,bed_id:a.bedId,assigned_at:a.at||now(),released_at:a.released||null,assigned_by:a.by||S.userId||null})}
 
@@ -3148,7 +3150,7 @@ async function doCloudPull(opts){
   const occupancyHold=unresolved.some(o=>["patients","beds","patient_bed_assignments"].includes(o.table));
   if(!occupancyHold){
     S.beds=beds.map(r=>({id:r.id,no:r.bed_number,sectionId:r.section_id,active:r.active!==false,patientId:r.current_patient_id||null}));
-    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
+    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",mrdNo:r.mrd_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
     S.assignments=assigns.map(r=>({id:r.id,patientId:r.patient_id,bedId:r.bed_id,at:r.assigned_at,released:r.released_at,by:r.assigned_by}));
   }
   const nextSnaps={}; snaps.forEach(r=>{nextSnaps[r.patient_id]=rowSnap(r)});
@@ -3876,6 +3878,7 @@ function clinicianCopy(msg,table){
   if(/handover sender must be/.test(low)) return "This handover belongs to another resident.";
   if(/bed is already occupied/.test(low)) return "Bed taken.";
   if(/hospital number already/.test(low)) return "Hospital number already on file.";
+  if(/mrd no\. already/.test(low)) return s.replace(/^[\s\S]*?(MRD No\. already)/i,"$1").replace(/[.\s]+$/,"")+".";
   if(/not under observation/.test(low)) return "That patient is not under observation.";
   if(/already under observation/.test(low)) return "Already under observation.";
   if(/provisional diagnosis is required|at least one medication/.test(low)) return "Diagnosis and at least one medicine are required.";
@@ -4078,7 +4081,7 @@ function patientCard(p, bed){
           <div>
             <div class="patient-name">${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}</div>
             ${p.diagnosis?`<div class="patient-dx">${esc(p.diagnosis)}</div>`:""}
-            <p class="patient-meta" style="margin-top:3px">${p.age||""}${p.sex||""}${p.hospitalNo?` · ${esc(p.hospitalNo)}`:""}</p>
+            <p class="patient-meta" style="margin-top:3px">${p.age||""}${p.sex||""}${p.hospitalNo?` · ${esc(p.hospitalNo)}`:""}${mrdLabel(p)?` · <span class="mrd-chip">${esc(mrdLabel(p))}</span>`:""}</p>
             ${(()=>{const ai=wardAdmissionInfo(p);return ai?`<div class="admission-age ${ai.today?"is-today":""}" style="margin-top:4px">${ai.today?'<span class="today-dot"></span>':""}<span>${esc(ai.text)}</span></div>`:""})()}
           </div>
           <div class="patient-priority">
@@ -4095,7 +4098,7 @@ function patientsView(){
   const tag=ui.ptag||"";
   const qTags=tagSearchIds(q);
   const match=p=>{
-    const text=!q||(p.name+" "+(p.diagnosis||"")+" "+(p.dx2||"")+" "+(p.dx3||"")+" "+(p.comorb||"")+" "+(p.hospitalNo||p.code||"")+" "+bedOf(p.id)).toLowerCase().includes(q)||qTags.some(id=>hasSnapTag(p.id,id)||(id==="ect"&&ectPlan(p.id))||(id==="restrained"&&restrainHeld(p.id))||(id==="delirium"&&isDelirium(p.id)));
+    const text=!q||(p.name+" "+(p.diagnosis||"")+" "+(p.dx2||"")+" "+(p.dx3||"")+" "+(p.comorb||"")+" "+(p.hospitalNo||p.code||"")+" "+normMrd(p.mrdNo)+" "+bedOf(p.id)).toLowerCase().includes(q)||qTags.some(id=>hasSnapTag(p.id,id)||(id==="ect"&&ectPlan(p.id))||(id==="restrained"&&restrainHeld(p.id))||(id==="delirium"&&isDelirium(p.id)));
     if(!text) return false;
     if(isConsultant()){
       if(tag==="mine") return isMyPatient(p);
@@ -4146,7 +4149,7 @@ function snapView(){
       ${canEditPatient(p)?`<button class="pedit-btn" type="button" aria-label="Edit patient details" title="Edit patient details" onclick="openPatientEdit('${p.id}')">${PEDIT_ICON}</button>`:""}
       <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span>${ectPlan(p.id)?'<span class="badge r-high">ECT</span>':""}${isDelirium(p.id)?` <span class="${rcls("high")}">delirium</span>`:""}</span></div>
       <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}${legalBadgesHtml(p.id)}</h2>
-      <p class="tiny" style="margin-top:4px">${p.age}${p.sex} · ${esc(p.hospitalNo||p.code)}</p>
+      <p class="tiny" style="margin-top:4px">${p.age}${p.sex} · ${esc(p.hospitalNo||p.code)}${mrdLabel(p)?` · <span class="mrd-chip">${esc(mrdLabel(p))}</span>`:""}</p>
       ${(p.address||p.phone)?`<p class="tiny" style="margin-top:4px">${p.address?esc(p.address):""}${p.address&&p.phone?" · ":""}${p.phone?phoneLinkHtml(p.phone):""}</p>`:""}
       <div class="meta">
         <div><b>Admitted</b>${fmt(p.admittedAt)}</div>
@@ -4379,6 +4382,7 @@ function censusDraft(){
   ui.census.meds=readMedRows("a",ui.census.meds);
   const g=id=>document.getElementById(id);
   if(g("ahosp")) ui.census.hosp=g("ahosp").value;
+  if(g("amrd")) ui.census.mrd=g("amrd").value;
   if(g("aname")) ui.census.name=g("aname").value;
   if(g("aaddr")) ui.census.addr=g("aaddr").value;
   if(g("aphone")) ui.census.phone=g("aphone").value;
@@ -4423,6 +4427,67 @@ function openSnapDischarge(pid){
     ddxPid:p.id
   });
   go("census",null,1);
+}
+// R1.3.119 MRD No.: optional, unique across all patients (case/space-insensitive) when present.
+function normMrd(v){return String(v==null?"":v).trim()}
+function mrdOwner(mrd,selfId){const q=normMrd(mrd).toLowerCase();if(!q)return null;return (S.patients||[]).find(x=>x.id!==selfId&&normMrd(x.mrdNo).toLowerCase()===q)||null}
+function mrdDupMsg(o){return "MRD No. already belongs to "+((o&&o.name)||"another patient")}
+function mrdLabel(p){const m=normMrd(p&&p.mrdNo);return m?"MRD "+m:""}
+function mrdRetId(hosp){const h=String(hosp||"").trim().toLowerCase();if(!h)return "";const r=(S.patients||[]).find(x=>x.hospitalNo&&x.hospitalNo.toLowerCase()===h&&x.status==="discharged");return r?r.id:""}
+function mrdSelfId(id){
+  if(id==="amrd") return mrdRetId((ui.census||{}).hosp);
+  if(id==="pmrd") return mrdRetId(val("ahosp"));
+  if(id==="omrd") return mrdRetId((ui.obs||{}).hosp);
+  if(id==="oamrd") return (ui.obsAdmit||{}).pid||"";
+  if(id==="emrd") return (ui.pedit||{}).pid||"";
+  return "";
+}
+function mrdStore(id,v){
+  if(id==="amrd"){ui.census=ui.census||{};ui.census.mrd=v}
+  else if(id==="pmrd"){ui.fields=ui.fields||{};ui.fields.pmrd=v}
+  else if(id==="omrd"){ui.obs=ui.obs||{};ui.obs.mrd=v}
+  else if(id==="oamrd"){ui.obsAdmit=ui.obsAdmit||{};ui.obsAdmit.mrd=v}
+  else if(id==="emrd"){if(ui.pedit)ui.pedit.mrd=v}
+}
+function mrdErrText(id,v){
+  const o=mrdOwner(v,mrdSelfId(id));
+  if(o) return mrdDupMsg(o);
+  if(ui.mrdErr&&ui.mrdErr.id===id&&normMrd(ui.mrdErr.v).toLowerCase()===normMrd(v).toLowerCase()) return ui.mrdErr.msg;
+  return "";
+}
+function mrdFieldHtml(id,v){
+  const e=mrdErrText(id,v);
+  return `<label class="field"><span>MRD No. <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="${id}" value="${esc(v||"")}" placeholder="MRD number" autocomplete="off" autocapitalize="characters" oninput="onMrdInput('${id}',this.value)"/></label>
+      <p class="mrd-err" id="${id}Err" role="alert"${e?"":" hidden"}>${esc(e)}</p>`;
+}
+function onMrdInput(id,v){
+  mrdStore(id,v);
+  if(ui.mrdErr&&ui.mrdErr.id===id) ui.mrdErr=null;
+  mrdShowErr(id,mrdErrText(id,v),false);
+}
+function mrdShowErr(id,msg,focus){
+  const el=document.getElementById(id+"Err");
+  if(el){el.textContent=msg||"";el.hidden=!msg}
+  if(msg&&focus){const inp=document.getElementById(id);if(inp){try{inp.scrollIntoView({block:"center"})}catch(_){}try{inp.focus({preventScroll:true})}catch(_){}}}
+}
+// Client pre-check before submit. Returns true when blocked.
+function mrdBlocked(id,v,selfId){
+  const o=mrdOwner(v,selfId);
+  if(!o) return false;
+  const msg=mrdDupMsg(o);
+  mrdShowErr(id,msg,true);
+  toast(msg+".","bad");
+  return true;
+}
+// Server duplicate error -> inline. Returns true when handled.
+function mrdServerErr(id,e,v){
+  const m=String((e&&(e.supabase&&e.supabase.message||e.message))||e||"");
+  const mm=m.match(/MRD No\. already (belongs to [^\n]+|on file)/i);
+  if(!mm) return false;
+  const msg=("MRD No. already "+mm[1]).replace(/[.\s]+$/,"");
+  ui.mrdErr={id,v:normMrd(v),msg};
+  mrdShowErr(id,msg,true);
+  return msg;
 }
 function findReturningPatient(hosp){
   const q=String(hosp||"").trim().toLowerCase();
@@ -4476,6 +4541,7 @@ function autofillReturningPatient(kind,pid){
     ui.obs.sex=p.sex||"M";
     ui.obs.addr=p.address||"";
     ui.obs.phone=p.phone||"";
+    if(p.mrdNo&&!normMrd(ui.obs.mrd)) ui.obs.mrd=p.mrdNo;
     if(cleanDx) ui.obs.dx=cleanDx;
     if(p.dx2) ui.obs.dx2=p.dx2; if(p.dx3) ui.obs.dx3=p.dx3; if(p.comorb) ui.obs.comorb=p.comorb;
     ui.fields=ui.fields||{};
@@ -4492,6 +4558,7 @@ function autofillReturningPatient(kind,pid){
     ui.fields.asex=p.sex||"M";
     ui.fields.aaddr=p.address||"";
     ui.fields.aphone=p.phone||"";
+    if(p.mrdNo&&!normMrd(ui.fields.pmrd)) ui.fields.pmrd=p.mrdNo;
     if(cleanDx) ui.fields.adx=cleanDx;
     render();
     toast("Autofilled "+p.name,"ok");
@@ -4505,6 +4572,7 @@ function autofillReturningPatient(kind,pid){
   ui.census.sex=p.sex||"M";
   ui.census.addr=p.address||"";
   ui.census.phone=p.phone||"";
+  if(p.mrdNo&&!normMrd(ui.census.mrd)) ui.census.mrd=p.mrdNo;
   if(cleanDx) ui.census.dx=cleanDx;
   if(p.dx2) ui.census.dx2=p.dx2; if(p.dx3) ui.census.dx3=p.dx3; if(p.comorb) ui.census.comorb=p.comorb;
   if(p.consultant&&!ui.census.con) ui.census.con=p.consultant;
@@ -6752,6 +6820,7 @@ function obsDraft(){
   ui.obs=ui.obs||{meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]};
   const g=id=>document.getElementById(id);
   if(g("ohosp")) ui.obs.hosp=g("ohosp").value;
+  if(g("omrd")) ui.obs.mrd=g("omrd").value;
   if(g("oname")) ui.obs.name=g("oname").value;
   if(g("oage")) ui.obs.age=g("oage").value;
   if(g("osex")||(ui.fields&&ui.fields.osex!=null)) ui.obs.sex=val("osex")||ui.obs.sex;
@@ -6784,7 +6853,7 @@ function observeView(){
       const p=patient(stay.pid);
       if(!p) return false;
       const b=(S.beds||[]).find(x=>x.id===stay.bedId)||lastBedObj(stay.pid);
-      const hay=[p.name,p.hospitalNo,p.code,p.diagnosis,p.address,b?b.no:"",stay.referralTo,stay.note].filter(Boolean).join(" ").toLowerCase();
+      const hay=[p.name,p.hospitalNo,p.mrdNo,p.code,p.diagnosis,p.address,b?b.no:"",stay.referralTo,stay.note].filter(Boolean).join(" ").toLowerCase();
       return hay.includes(oq);
     });
     const list=prev.length?prev.map(stay=>{
@@ -6823,7 +6892,7 @@ function observeView(){
       return `<div class="card">
         <div class="row"><div class="bedno">${esc(b?b.no:"—")}</div><div style="display:flex;gap:6px;align-items:center">${obsElapsedBadgeHtml(p)}<span class="badge r-moderate">OBS</span></div></div>
         <b onclick="go('snap','${p.id}')">${esc(p.name)}</b>
-        <p class="tiny">${esc(p.hospitalNo||p.code)} · ${p.age||""}${p.sex||""} · ${esc(p.diagnosis||"")}</p>
+        <p class="tiny">${esc(p.hospitalNo||p.code)}${mrdLabel(p)?" · "+esc(mrdLabel(p)):""} · ${p.age||""}${p.sex||""} · ${esc(p.diagnosis||"")}</p>
         ${canWrite()?`<div class="btns" style="margin-top:8px">
           <button class="btn sm ghost" onclick="transferForm('${p.id}')">Transfer</button>
           <button class="btn sm" onclick="obsAdmitAsk('${p.id}')">Admit</button>
@@ -6836,6 +6905,7 @@ function observeView(){
       <p class="tiny">KEEP UNDER OBSERVATION</p>
       <label class="field"><span>Hospital no.</span><input id="ohosp" value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off" oninput="onObsHospInput(this.value)"/></label>
       <div id="ohospMatch">${hospMatchBannerHtml("obs",d.hosp)}</div>
+      ${mrdFieldHtml("omrd",d.mrd||"")}
       <label class="field"><span>Name</span><input id="oname" value="${esc(d.name||"")}" placeholder="Full name"/></label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <label class="field"><span>Age</span><input id="oage" value="${esc(d.age||"")}" inputmode="numeric"/></label>
@@ -6874,16 +6944,18 @@ async function startObservation(){
   if(S.patients.some(x=>x.hospitalNo&&x.hospitalNo.toLowerCase()===hosp.toLowerCase()&&x.status!=="discharged")){
     toast("This hospital number is already on the ward.","bad");return;
   }
+  const mrd=normMrd(d.mrd);
+  if(mrd&&mrdBlocked("omrd",mrd,mrdRetId(hosp)))return;
   if(workflowLocked("observation",bed.id))return;
   const prevRet=(S.patients||[]).find(x=>x.hospitalNo&&x.hospitalNo.toLowerCase()===hosp.toLowerCase()&&x.status==="discharged");
   const id=prevRet?prevRet.id:uid("p"), asg=uid("as"), stay=uid("os");
-  const p={id,code:hosp,hospitalNo:hosp,name,age:+(d.age||0),sex:d.sex||"O",diagnosis:dx,dx2:(d.dx2||"").trim(),dx3:(d.dx3||"").trim(),comorb:normComorb(d.comorb),address:(d.addr||"").trim(),phone:(d.phone||"").trim(),admittedAt:now(),status:"observation"};
+  const p={id,code:hosp,hospitalNo:hosp,mrdNo:mrd||(prevRet&&prevRet.mrdNo)||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:dx,dx2:(d.dx2||"").trim(),dx3:(d.dx3||"").trim(),comorb:normComorb(d.comorb),address:(d.addr||"").trim(),phone:(d.phone||"").trim(),admittedAt:now(),status:"observation"};
   const legalWant=(d.legal||[]).slice();
   setBusy(true,"Saving observation\u2026");
   try{
     const {data,error}=await sb.rpc("ward_start_observation",{
       p_token:sessionTok,
-      p_patient:{id,patient_code:hosp,hospital_no:hosp,name,age:p.age,sex:p.sex,diagnosis:dx,address:p.address||null,phone:p.phone||null,secondary_dx:p.dx2||null,tertiary_dx:p.dx3||null,comorbidities:p.comorb||null},
+      p_patient:{id,patient_code:hosp,hospital_no:hosp,...(mrd?{mrd_no:mrd}:{}),name,age:p.age,sex:p.sex,diagnosis:dx,address:p.address||null,phone:p.phone||null,secondary_dx:p.dx2||null,tertiary_dx:p.dx3||null,comorbidities:p.comorb||null},
       p_bed_id:bed.id,
       p_assignment:{id:asg},
       p_stay:{id:stay,reason:"",note:""},
@@ -6916,7 +6988,8 @@ async function startObservation(){
     ui.obs={meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]};
     toast("Kept under observation","ok");ui.obsForm=false;save();render();
   }catch(e){
-    toast(clinicianCopy(e.message||e)||String(e.message||e),"bad");
+    const mrdMsg=mrdServerErr("omrd",e,mrd);
+    toast(mrdMsg?mrdMsg+".":(clinicianCopy(e.message||e)||String(e.message||e)),"bad");
   }finally{workflowUnlock("observation",bed.id);setBusy(false)}
 }
 function obsAdmitAsk(pid){
@@ -6939,6 +7012,7 @@ function obsAdmitDraft(){
   ui.obsAdmit=ui.obsAdmit||{};
   const d=ui.obsAdmit;
   if(g("oahosp")) d.hosp=g("oahosp").value;
+  if(g("oamrd")) d.mrd=g("oamrd").value;
   if(g("oaname")) d.name=g("oaname").value;
   if(g("oaaddr")) d.addr=g("oaaddr").value;
   if(g("oaphone")) d.phone=g("oaphone").value;
@@ -6986,7 +7060,7 @@ function obsAdmitForm(){
   const pid=(ui.panel&&ui.panel.pid)||(ui.obsAdmit&&ui.obsAdmit.pid);
   const p=patient(pid);if(!p)return "";
   // R1.3.81: same fields, labels, order and validation as the main census Admit form; prefilled from the observation record.
-  const pre={pid,hosp:p.hospitalNo||p.code||"",name:p.name||"",addr:p.address||"",phone:p.phone||"",age:p.age?String(p.age):"",sex:p.sex||"M",
+  const pre={pid,hosp:p.hospitalNo||p.code||"",mrd:p.mrdNo||"",name:p.name||"",addr:p.address||"",phone:p.phone||"",age:p.age?String(p.age):"",sex:p.sex||"M",
     reasons:String(p.reason||"").split(",").map(x=>x.trim()).filter(Boolean),adate:localStamp(),
     dx:(p.diagnosis&&p.diagnosis!=="Diagnosis pending")?p.diagnosis:"",dx2:p.dx2||"",dx3:p.dx3||"",comorb:p.comorb||"",legal:legalTagsOf(pid).map(x=>x[0]),ref:p.referredBy||"",con:p.consultant||"",con2:p.consultant2||"",
     to:(S.beds.find(b=>b.patientId===pid)||{}).id,mode:"same",meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]};
@@ -7006,6 +7080,7 @@ function obsAdmitForm(){
   const fac=facultyList().length;
   return `<p class="tiny">Admit from observation. Existing details are filled in; check and complete them.</p>
     <label class="field"><span>Hospital no. *</span><input id="oahosp" required value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off"/></label>
+    ${mrdFieldHtml("oamrd",d.mrd==null?(p.mrdNo||""):d.mrd)}
     <label class="field"><span>Name</span><input id="oaname" value="${esc(d.name||"")}" placeholder="Full name"/></label>
     ${addrFieldHtml('Address <em style="font-style:normal;opacity:.6">(optional)</em>',"oaaddr",d.addr||"","Village / town / ward address","obs_oaaddr")}
     <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="oaphone" value="${esc(d.phone||"")}" placeholder="Mobile number" inputmode="tel" autocomplete="tel"/></label>
@@ -7049,6 +7124,9 @@ async function convertObservation(pid){
   if(S.patients.some(x=>x.id!==pid&&x.hospitalNo&&x.hospitalNo.toLowerCase()===hosp.toLowerCase()&&x.status!=="discharged")){
     toast("This hospital number is already in the ward. Use Transfer if the bed is wrong.","bad");return;
   }
+  const mrd=normMrd(d.mrd==null?p.mrdNo:d.mrd);
+  if(mrd&&mrdBlocked("oamrd",mrd,pid))return;
+  const mrdSend=(mrd||normMrd(p.mrdNo))?{mrd_no:mrd||null}:{};
   if(workflowLocked("obs-admit",pid))return;
   setBusy(true,"Admitting\u2026");
   try{
@@ -7070,7 +7148,7 @@ async function convertObservation(pid){
         consultant_name_2:con2||null,
         diagnosis:dx,
         secondary_dx:(d.dx2||"").trim()||null,tertiary_dx:(d.dx3||"").trim()||null,comorbidities:normComorb(d.comorb)||null,
-        patient_code:hosp||null,hospital_no:hosp||null,
+        patient_code:hosp||null,hospital_no:hosp||null,...mrdSend,
         name:name||null,age:age||null,sex:sex||null,
         address:(d.addr||"").trim()||null,phone:(d.phone||"").trim()||null
       }
@@ -7082,7 +7160,7 @@ async function convertObservation(pid){
     p.referredBy=(d.ref||"").trim()||p.referredBy;
     p.consultant=con||p.consultant;
     p.consultant2=con2||p.consultant2;
-    p.hospitalNo=hosp; p.code=hosp||p.code; p.name=name;
+    p.hospitalNo=hosp; p.code=hosp||p.code; p.name=name; p.mrdNo=mrd;
     if(age) p.age=age; p.sex=sex;
     p.address=(d.addr||"").trim()||p.address||"";
     p.phone=(d.phone||"").trim()||p.phone||"";
@@ -7111,7 +7189,7 @@ async function convertObservation(pid){
       });
     }catch(ne){ evFail(pid,"Admission notification",ne); }
     closePanel();toast("Admitted "+p.name,"ok");save();render();
-  }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
+  }catch(e){const mrdMsg=mrdServerErr("oamrd",e,mrd);toast(mrdMsg?mrdMsg+".":(clinicianCopy(e.message||e)||String(e.message||e)),"bad")}
   finally{workflowUnlock("obs-admit",pid);setBusy(false)}
 }
 /* R1.3.116 — optional "Medications on referral / disposal" for observation close */
@@ -7360,7 +7438,7 @@ function censusView(){
   const recent=recentAll.filter(x=>{
     if(!dq) return true;
     const bno=lastBedNo(x.id);
-    const hay=[x.name,x.hospitalNo,x.code,x.diagnosis,bno!=="-"?bno:""].filter(Boolean).join(" ").toLowerCase();
+    const hay=[x.name,x.hospitalNo,x.mrdNo,x.code,x.diagnosis,bno!=="-"?bno:""].filter(Boolean).join(" ").toLowerCase();
     return hay.includes(dq);
   });
   const seg=`<div class="seg">
@@ -7378,7 +7456,7 @@ function censusView(){
     const disSearch=`<input id="disQ" placeholder="Search name, hospital no., diagnosis or bed" value="${esc(ui.disQ||"")}" oninput="ui.disQ=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>`;
     const disCards=recent.length?recent.map(x=>{
       const bno=lastBedNo(x.id);
-      return `<div class="card" style="cursor:pointer" onclick="go('record','${x.id}',1)"><b>${esc(x.name)}</b><p class="tiny">${esc(x.hospitalNo||x.code)}${bno&&bno!=="—"?" · Bed "+esc(bno):""}${x.diagnosis?" · "+esc(x.diagnosis):""} · ${labelOf(DISCHARGE_MODES,x.dischargeMode)} · ${labelOf(DISCHARGE_OUTCOMES,x.dischargeOutcome)} · ${x.dischargedAt?fmt(x.dischargedAt):""}</p></div>`;
+      return `<div class="card" style="cursor:pointer" onclick="go('record','${x.id}',1)"><b>${esc(x.name)}</b><p class="tiny">${esc(x.hospitalNo||x.code)}${mrdLabel(x)?" · "+esc(mrdLabel(x)):""}${bno&&bno!=="—"?" · Bed "+esc(bno):""}${x.diagnosis?" · "+esc(x.diagnosis):""} · ${labelOf(DISCHARGE_MODES,x.dischargeMode)} · ${labelOf(DISCHARGE_OUTCOMES,x.dischargeOutcome)} · ${x.dischargedAt?fmt(x.dischargedAt):""}</p></div>`;
     }).join(""):`<div class="card"><p class="sm">${dq?"No matching discharged patients.":"No recent discharges."}</p></div>`;
     if(ui.disListOnly){
       return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
@@ -7395,7 +7473,7 @@ function censusView(){
         <label class="field"><span>Patient</span>
           ${picker("disel",[["","Select admitted patient"]].concat(occ.map(b=>{const x=onBed(b);return x&&x.status==="admitted"?[x.id, b.no+" · "+x.name]:null}).filter(Boolean)),pid,"Patient")}
         </label>
-        ${p?`<p class="tiny">${esc(p.hospitalNo||p.code)} · ${p.age}${p.sex} · ${esc(p.diagnosis||"")}</p>`:`<p class="tiny">Choose a patient to enable discharge.</p>`}
+        ${p?`<p class="tiny">${esc(p.hospitalNo||p.code)}${mrdLabel(p)?" · "+esc(mrdLabel(p)):""} · ${p.age}${p.sex} · ${esc(p.diagnosis||"")}</p>`:`<p class="tiny">Choose a patient to enable discharge.</p>`}
       </div>
       <button class="btn block ${p?"danger":"idle"}" ${p?"":"disabled"} onclick="if(!ui.disId)return;censusDraft();ui.disForm=true;render()" style="margin-bottom:10px">Discharge</button>
       ${form?`<div class="card">
@@ -7425,6 +7503,7 @@ function censusView(){
     <div class="card">
       <label class="field"><span>Hospital no. *</span><input id="ahosp" required value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off" oninput="onAdmitHospInput(this.value)"/></label>
       <div id="ahospMatch">${hospMatchBannerHtml("admit",d.hosp)}</div>
+      ${mrdFieldHtml("amrd",d.mrd||"")}
       <label class="field"><span>Name</span><input id="aname" value="${esc(d.name||"")}" placeholder="Full name"/></label>
       ${addrFieldHtml('Address <em style="font-style:normal;opacity:.6">(optional)</em>',"aaddr",d.addr||"","Village / town / ward address","census_aaddr")}
       <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="aphone" value="${esc(d.phone||"")}" placeholder="Mobile number" inputmode="tel" autocomplete="tel"/></label>
@@ -7462,13 +7541,15 @@ function admitFromCensus(){
   if(S.patients.some(x=>x.hospitalNo && x.hospitalNo.toLowerCase()===hosp.toLowerCase() && x.status!=="discharged")){
     flashBtn(".card .btn.block","bad");toast("This hospital number is already in the ward. Use Transfer if the bed is wrong.","bad");return;
   }
+  const mrd=normMrd(d.mrd);
+  if(mrd&&mrdBlocked("amrd",mrd,mrdRetId(hosp))){flashBtn(".card .btn.block","bad");return}
   if(workflowLocked("admission",bid))return;
   const prevRet=(S.patients||[]).find(x=>x.hospitalNo&&x.hospitalNo.toLowerCase()===hosp.toLowerCase()&&x.status==="discharged");
   const prevBackup=prevRet?JSON.parse(JSON.stringify(prevRet)):null;
   const prevSnapBackup=prevRet&&S.snaps[prevRet.id]?JSON.parse(JSON.stringify(S.snaps[prevRet.id])):null;
   const id=prevRet?prevRet.id:uid("p");
   const reasons=(d.reasons||[]).join(",");
-  const p={id,code:(prevRet&&prevRet.code)||hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:(d.dx||"").trim()||"Diagnosis pending",dx2:(d.dx2||"").trim(),dx3:(d.dx3||"").trim(),comorb:normComorb(d.comorb),reason:reasons,referredBy:(d.ref||"").trim(),consultant:(d.con||"").trim(),consultant2:(d.con2||"").trim(),admittedAt:d.adate?new Date(d.adate).toISOString():now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:null,status:"admitted",address:(d.addr||"").trim(),phone:(d.phone||"").trim()};
+  const p={id,code:(prevRet&&prevRet.code)||hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",mrdNo:mrd||(prevRet&&prevRet.mrdNo)||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:(d.dx||"").trim()||"Diagnosis pending",dx2:(d.dx2||"").trim(),dx3:(d.dx3||"").trim(),comorb:normComorb(d.comorb),reason:reasons,referredBy:(d.ref||"").trim(),consultant:(d.con||"").trim(),consultant2:(d.con2||"").trim(),admittedAt:d.adate?new Date(d.adate).toISOString():now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:null,status:"admitted",address:(d.addr||"").trim(),phone:(d.phone||"").trim()};
   S.patients=S.patients.filter(x=>x.id!==id);
   S.patients.unshift(p);
   S.snaps[id]={state:"Newly admitted.",risk:"moderate",sleep:"slept-well",watch:"",plan:"",tags:LEGAL_TAGS.map(x=>x[0]).filter(t=>(d.legal||[]).includes(t)),by:S.userId,at:now()};
@@ -7507,6 +7588,7 @@ async function callAtomicWorkflow(name,args){
 function admitPayload(p){
   return Object.assign({},p,{
     patient_code:p.code||p.hospitalNo||null,hospital_no:p.hospitalNo||null,
+    ...(normMrd(p.mrdNo)?{mrd_no:normMrd(p.mrdNo)}:{}),
     reason_for_admission:(p.reason||"").trim()||null,referred_by:(p.referredBy||"").trim()||null,
     consultant_name:(p.consultant||"").trim()||null,consultant_name_2:(p.consultant2||"").trim()||null,
     admitted_at:p.admittedAt||null,treatment_mode:p.treatmentMode||null,
@@ -7590,8 +7672,11 @@ async function admitCommit(id,p,bed,asg,hosp,prevBackup,prevSnapBackup){setBusy(
     ].filter(Boolean).join("\n");
     ev(null,diagnosticText,false);
     flashBtn(".card .btn.block","bad");
-    toast("Admission failed — see Diagnostics for the exact server error","bad");
+    const mrdId=document.getElementById("amrd")?"amrd":"pmrd";
+    const mrdMsg=mrdServerErr(mrdId,e,p&&p.mrdNo);
+    toast(mrdMsg?mrdMsg+".":"Admission failed — see Diagnostics for the exact server error","bad");
     save();render();
+    if(mrdMsg) mrdShowErr(mrdId,mrdMsg,true);
   }finally{workflowUnlock("admission",bed&&bed.id);setBusy(false);}
 }
 function dischargeFromCensus(){
@@ -7677,6 +7762,7 @@ function admitFormBody(){
   return `<label class="field"><span>Bed</span>${picker("abed",empties.length?empties.map(b=>[b.id,b.no]):[["","No empty bed"]],d.bed|| (empties[0]&&empties[0].id)||"","Bed")}</label>
     <label class="field"><span>Hospital no. *</span><input id="ahosp" required placeholder="UHID / IP number" autocomplete="off" value="${esc(val("ahosp"))}" oninput="onAdmitPanelHospInput(this.value)"/></label>
     <div id="ahospPanelMatch">${hospMatchBannerHtml("admitPanel",val("ahosp"))}</div>
+    ${mrdFieldHtml("pmrd",val("pmrd"))}
     <label class="field"><span>Name</span><input id="aname" placeholder="Full name" value="${esc(val("aname"))}" oninput="ui.fields=ui.fields||{};ui.fields.aname=this.value"/></label>
     ${addrFieldHtml("Address (optional)","aaddr",val("aaddr"),"Village / town / ward address","fields_aaddr")}
     <label class="field"><span>Phone (optional)</span><input id="aphone" placeholder="Mobile number" inputmode="tel" value="${esc(val("aphone"))}" oninput="ui.fields=ui.fields||{};ui.fields.aphone=this.value"/></label>
@@ -7695,6 +7781,8 @@ function admitPatient(){
   if(S.patients.some(x=>x.hospitalNo && x.hospitalNo.toLowerCase()===hosp.toLowerCase() && x.status!=="discharged")){
     toast("This hospital number is already in the ward.","bad");return;
   }
+  const mrd=normMrd(val("pmrd"));
+  if(mrd&&mrdBlocked("pmrd",mrd,mrdRetId(hosp)))return;
   const prevRet=(S.patients||[]).find(x=>x.hospitalNo&&x.hospitalNo.toLowerCase()===hosp.toLowerCase()&&x.status==="discharged");
   const prevBackup=prevRet?JSON.parse(JSON.stringify(prevRet)):null;
   const prevSnapBackup=prevRet&&S.snaps[prevRet.id]?JSON.parse(JSON.stringify(S.snaps[prevRet.id])):null;
@@ -7702,7 +7790,7 @@ function admitPatient(){
   const c1=((ui.census&&ui.census.con)||val("acon")||"").trim();
   const c2=((ui.census&&ui.census.con2)||val("acon2")||"").trim();
   const code=(prevRet&&prevRet.code)||hosp||("PSY-"+id.slice(-6).toUpperCase());
-  const p={id,code,patient_code:code,hospitalNo:hosp||"",hospital_no:hosp||null,name,age:+val("aage")||0,sex:val("asex")||"O",diagnosis:dx,admittedAt:now(),admitted_at:now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:"conservative",status:"admitted",address:(val("aaddr")||"").trim(),phone:(val("aphone")||"").trim(),consultant:c1,consultant2:c2,consultant_name:c1||null,consultant_name_2:c2||null,reason:(ui.census&&ui.census.reason)||"",reason_for_admission:(ui.census&&ui.census.reason)||null,referredBy:((ui.census&&ui.census.ref)||val("aref")||"").trim(),referred_by:((ui.census&&ui.census.ref)||val("aref")||"").trim()||null};
+  const p={id,code,patient_code:code,hospitalNo:hosp||"",hospital_no:hosp||null,mrdNo:mrd||(prevRet&&prevRet.mrdNo)||"",name,age:+val("aage")||0,sex:val("asex")||"O",diagnosis:dx,admittedAt:now(),admitted_at:now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:"conservative",status:"admitted",address:(val("aaddr")||"").trim(),phone:(val("aphone")||"").trim(),consultant:c1,consultant2:c2,consultant_name:c1||null,consultant_name_2:c2||null,reason:(ui.census&&ui.census.reason)||"",reason_for_admission:(ui.census&&ui.census.reason)||null,referredBy:((ui.census&&ui.census.ref)||val("aref")||"").trim(),referred_by:((ui.census&&ui.census.ref)||val("aref")||"").trim()||null};
   S.patients=S.patients.filter(x=>x.id!==id);
   S.patients.unshift(p);
   S.snaps[id]={state:"Newly admitted.",risk:"moderate",sleep:"slept-well",watch:"",plan:"",by:S.userId,at:now()};
@@ -9987,6 +10075,7 @@ function patientRecordItems(pid){
   const patientBits=()=>{
     const bits=[];
     if(p.hospitalNo) bits.push("Hospital no: "+p.hospitalNo);
+    if(normMrd(p.mrdNo)) bits.push("MRD No: "+normMrd(p.mrdNo));
     const dxx=dxExtraOf(p);
     if(p.diagnosis) bits.push(((dxx.dx2||dxx.dx3)?"Primary diagnosis: ":"Diagnosis: ")+p.diagnosis);
     if(dxx.dx2) bits.push("Secondary diagnosis: "+dxx.dx2);
@@ -10168,7 +10257,7 @@ function recordView(){
     <div class="record-head">
       <div>
         <h2 class="page-title">Clinical record</h2>
-        <p class="tiny" style="margin-top:2px">${esc(p.name)} · ${esc(b?b.no:"—")}${p.hospitalNo?` · ${esc(p.hospitalNo)}`:""}</p>
+        <p class="tiny" style="margin-top:2px">${esc(p.name)} · ${esc(b?b.no:"—")}${p.hospitalNo?` · ${esc(p.hospitalNo)}`:""}${mrdLabel(p)?` · ${esc(mrdLabel(p))}`:""}</p>
       </div>
       <div class="record-actions"><button class="btn sm ghost" onclick="exportPatientRecord('${p.id}')">Export PDF</button></div>
     </div>
@@ -10336,7 +10425,7 @@ function exportPatientRecord(pid){
     const ageSex=[p.age,p.sex].filter(x=>x!=null&&x!=="").join(" ");
     const meta={
       name:p.name||"",legal,version:APP_VERSION,dept:RECORD_PDF_DEPT,
-      line:[ageSex?`Age/Sex: ${ageSex}`:"",(p.hospitalNo||p.code)?`Hospital no: ${p.hospitalNo||p.code}`:"",`Bed: ${b?b.no:"—"}`].filter(Boolean).join(" · "),
+      line:[ageSex?`Age/Sex: ${ageSex}`:"",(p.hospitalNo||p.code)?`Hospital no: ${p.hospitalNo||p.code}`:"",normMrd(p.mrdNo)?`MRD No: ${normMrd(p.mrdNo)}`:"",`Bed: ${b?b.no:"—"}`].filter(Boolean).join(" · "),
       gen:`Ward Sync ${APP_VERSION} · Generated ${stamp(new Date().toISOString())||new Date().toLocaleString()}`
     };
     const bytes=buildRecordPdf(meta,items);
@@ -11324,9 +11413,9 @@ async function transferCommit(p,from,dest,asg){setBusy(true);
 
 // R1.3.90 PATIENT EDIT: audited edit of admission particulars (same fields/markup as the Admit form; no bed, no meds)
 const PEDIT_ICON=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
-const PEDIT_LABELS={hospital_no:"Hospital no.",name:"Name",address:"Address",phone:"Phone",age:"Age",sex:"Sex",admitted_at:"Date of admission",reason_for_admission:"Reason for referral",diagnosis:"Primary diagnosis",secondary_dx:"Secondary diagnosis",tertiary_dx:"Tertiary diagnosis",comorbidities:"Comorbidities",referred_by:"Source of referral",consultant_name:"Consultant",consultant_name_2:"Consultant 2"};
+const PEDIT_LABELS={hospital_no:"Hospital no.",mrd_no:"MRD No.",name:"Name",address:"Address",phone:"Phone",age:"Age",sex:"Sex",admitted_at:"Date of admission",reason_for_admission:"Reason for referral",diagnosis:"Primary diagnosis",secondary_dx:"Secondary diagnosis",tertiary_dx:"Tertiary diagnosis",comorbidities:"Comorbidities",referred_by:"Source of referral",consultant_name:"Consultant",consultant_name_2:"Consultant 2"};
 function canEditPatient(p){return !!p&&canWrite()&&p.status!=="discharged"}
-function peditFromPatient(p){return {hosp:p.hospitalNo||"",name:p.name||"",addr:p.address||"",phone:p.phone||"",age:p.age!=null&&p.age!==0?String(p.age):"",sex:p.sex||"O",adate:p.admittedAt?localStamp(new Date(p.admittedAt)):"",reasons:String(p.reason||"").split(",").map(x=>x.trim()).filter(Boolean),dx:p.diagnosis||"",dx2:p.dx2||"",dx3:p.dx3||"",comorb:p.comorb||"",legal:legalTagsOf(p.id).map(x=>x[0]),ref:p.referredBy||"",con:p.consultant||"",con2:p.consultant2||""}}
+function peditFromPatient(p){return {hosp:p.hospitalNo||"",mrd:p.mrdNo||"",name:p.name||"",addr:p.address||"",phone:p.phone||"",age:p.age!=null&&p.age!==0?String(p.age):"",sex:p.sex||"O",adate:p.admittedAt?localStamp(new Date(p.admittedAt)):"",reasons:String(p.reason||"").split(",").map(x=>x.trim()).filter(Boolean),dx:p.diagnosis||"",dx2:p.dx2||"",dx3:p.dx3||"",comorb:p.comorb||"",legal:legalTagsOf(p.id).map(x=>x[0]),ref:p.referredBy||"",con:p.consultant||"",con2:p.consultant2||""}}
 function openPatientEdit(pid){
   if(!needWrite())return;
   const p=patient(pid); if(!canEditPatient(p))return;
@@ -11338,6 +11427,7 @@ function peditDraft(){
   const d=ui.pedit; if(!d)return;
   const g=id=>document.getElementById(id);
   if(g("ehosp")) d.hosp=g("ehosp").value;
+  if(g("emrd")) d.mrd=g("emrd").value;
   if(g("ename")) d.name=g("ename").value;
   if(g("eaddr")) d.addr=g("eaddr").value;
   if(g("ephone")) d.phone=g("ephone").value;
@@ -11361,6 +11451,7 @@ function peditView(){
     <h2 class="page-title">Edit details</h2>
     <div class="card">
       <label class="field"><span>Hospital no. *</span><input id="ehosp" required value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off"/></label>
+      ${mrdFieldHtml("emrd",d.mrd||"")}
       <label class="field"><span>Name</span><input id="ename" value="${esc(d.name||"")}" placeholder="Full name"/></label>
       ${addrFieldHtml('Address <em style="font-style:normal;opacity:.6">(optional)</em>',"eaddr",d.addr||"","Village / town / ward address","pedit_eaddr")}
       <label class="field"><span>Phone <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="ephone" value="${esc(d.phone||"")}" placeholder="Mobile number" inputmode="tel" autocomplete="tel"/></label>
@@ -11387,6 +11478,7 @@ function peditDiff(p,d){
   const ch={},ex={};
   const put=(k,newV,oldV)=>{if(String(newV??"")!==String(oldV??"")){ch[k]=newV;ex[k]=oldV??null}};
   put("hospital_no",d.hosp.trim(),p.hospitalNo||"");
+  if(d.mrd!==undefined&&normMrd(d.mrd)!==normMrd(p.mrdNo)){ch.mrd_no=normMrd(d.mrd)||null;ex.mrd_no=normMrd(p.mrdNo)||null}
   put("name",d.name.trim(),p.name||"");
   put("address",d.addr.trim(),p.address||"");
   put("phone",d.phone.trim(),p.phone||"");
@@ -11416,6 +11508,7 @@ async function savePatientEdit(){
   if(d.adate&&new Date(d.adate).getTime()>Date.now()+10*60000){toast("Date of admission can't be in the future.","bad");return}
   const h=d.hosp.trim().toLowerCase();
   if(S.patients.some(x=>x.id!==p.id&&x.hospitalNo&&x.hospitalNo.toLowerCase()===h&&x.status!=="discharged")){toast("This hospital number is already on the ward.","bad");return}
+  if(normMrd(d.mrd)&&mrdBlocked("emrd",normMrd(d.mrd),p.id))return;
   const {ch,ex}=peditDiff(p,d);
   const legalWant=Array.isArray(d.legal)?d.legal.slice():null;
   const legalNow=legalTagsOf(p.id).map(x=>x[0]);
@@ -11438,7 +11531,7 @@ async function savePatientEdit(){
     if(!data||data.ok===false) throw new Error((data&&data.error)||"Could not save the change");
     if(data.nochange){if(legalChanged){applyLegalTags(p.id,legalWant);ui.pedit=null;save();toast("Details updated","ok");go("snap",p.id);return}toast("Nothing changed.","bad");return}
     const r=data.patient||{};
-    Object.assign(p,{hospitalNo:r.hospital_no||"",code:r.patient_code||p.code,name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx!==undefined?(r.secondary_dx||""):(p.dx2||""),dx3:r.tertiary_dx!==undefined?(r.tertiary_dx||""):(p.dx3||""),comorb:r.comorbidities!==undefined?(r.comorbidities||""):(p.comorb||""),reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at||p.admittedAt,address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null});
+    Object.assign(p,{hospitalNo:r.hospital_no||"",mrdNo:r.mrd_no!==undefined?(r.mrd_no||""):(p.mrdNo||""),code:r.patient_code||p.code,name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx!==undefined?(r.secondary_dx||""):(p.dx2||""),dx3:r.tertiary_dx!==undefined?(r.tertiary_dx||""):(p.dx3||""),comorb:r.comorbidities!==undefined?(r.comorbidities||""):(p.comorb||""),reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at||p.admittedAt,address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null});
     if(r.consultant_id!==undefined){p.consultantId=r.consultant_id||null;p.consultantId2=r.consultant_id_2||null;S.consLinks=S.consLinks||{};S.consLinks[p.id]=[p.consultantId,p.consultantId2]}
     const at=now(), changed=data.changed||Object.keys(ch).filter(k=>PEDIT_LABELS[k]);
     S.patientEdits=S.patientEdits||[];
@@ -11447,7 +11540,7 @@ async function savePatientEdit(){
     S.events.unshift({id:"pt-edit-"+(data.edit_id||editId),pid:p.id,title:"Patient details edited",detail:changed.map(k=>PEDIT_LABELS[k]+": "+fmtEditVal(k,ex[k])+" → "+fmtEditVal(k,ch[k])).join("\n"),by:S.userId,actorName:(user()&&user().displayName)||rname(S.userId),patientName:p.name,bed:bedOf(p.id),at,ok:true,kind:"note"});
     if(legalChanged) applyLegalTags(p.id,legalWant);
     ui.pedit=null; save(); toast("Details updated","ok"); go("snap",p.id);
-  }catch(e){toast(e.message||String(e),"bad")}
+  }catch(e){const mrdMsg=mrdServerErr("emrd",e,d&&d.mrd);toast(mrdMsg?mrdMsg+".":(e.message||String(e)),"bad")}
   finally{setBusy(false);render()}
 }
 function dxHistoryHtml(p){

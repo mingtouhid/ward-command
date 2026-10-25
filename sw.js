@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.118-pgt-note-popup";
+const VERSION = "ward-sync-pwa-r1.3.119-mrd-no";
 const PRECACHE = [
   "./",
   "./index.html",
