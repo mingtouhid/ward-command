@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.117 modal-keep-kb-fit -->
+<!-- WARD SYNC RELEASE: R1.3.118 pgt-note-popup -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -896,6 +896,31 @@ input,select,textarea{border-radius:14px}
 .pgt-actions .pgt-critical{grid-column:1/-1;min-height:42px}
 .pgt-history-only{display:flex;justify-content:center;margin-top:8px}
 .pgt-history-only .btn{width:70%;min-height:42px}
+
+/* R1.3.118 PGT note: read-only latest note + Add note popup with saved tick */
+.pgt-latest{margin:8px 0 2px;padding:10px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.pgt-latest .pgt-text{margin:0;font-size:16px;font-weight:600;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;color:var(--ink,inherit)}
+.pgt-latest.long:not(.open) .pgt-text{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.pgt-latest .pgt-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;font-size:12px;color:var(--muted)}
+.pgt-more{all:unset;cursor:pointer;color:var(--teal,#2563eb);font-weight:700;font-size:12.5px;padding:4px 2px}
+.pgt-latest.empty{background:transparent;border-style:dashed}
+.pgt-empty{margin:0;color:var(--muted);font-size:14px}
+.pgt-modal-btns{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:10px}
+.pgt-modal-btns .btn{min-height:44px}
+.pgt-err{margin:6px 0 0;padding:8px 10px;border-radius:10px;background:rgba(220,38,38,.09);color:#b91c1c;font-size:13.5px;font-weight:600}
+.pgt-box{position:relative}
+.pgt-done{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:color-mix(in srgb,var(--panel,#fff) 94%,transparent);border-radius:inherit;animation:pgtDoneIn .18s ease-out both,pgtDoneOut .3s ease-in 1.1s forwards}
+.pgt-done p{margin:0;font-weight:800;font-size:18px;color:#15803d}
+.pgt-done .tiny{font-weight:600;font-size:12px;color:var(--muted)}
+.pgt-tick{width:76px;height:76px}
+.pgt-tick-c{fill:none;stroke:#16a34a;stroke-width:3;stroke-dasharray:145;stroke-dashoffset:145;animation:pgtDraw .5s cubic-bezier(.65,0,.45,1) forwards}
+.pgt-tick-p{fill:none;stroke:#16a34a;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:34;stroke-dashoffset:34;animation:pgtDraw .3s cubic-bezier(.65,0,.45,1) .38s forwards}
+html[data-theme="ot"] .pgt-done p{color:#4ade80}
+html[data-theme="ot"] .pgt-err{color:#fca5a5;background:rgba(248,113,113,.14)}
+@keyframes pgtDraw{to{stroke-dashoffset:0}}
+@keyframes pgtDoneIn{from{opacity:0}to{opacity:1}}
+@keyframes pgtDoneOut{to{opacity:0}}
+@media (prefers-reduced-motion:reduce){.pgt-done{animation:none}.pgt-tick-c,.pgt-tick-p{animation:none;stroke-dashoffset:0}}
 .consultant-welcome{text-align:center;padding:10px 8px 4px}
 .consultant-welcome .tiny{letter-spacing:.14em;text-transform:uppercase}
 .consultant-hello{margin-top:6px;font-size:20px;font-weight:800;color:var(--ink)}
@@ -2355,7 +2380,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.117";
+const APP_VERSION="R1.3.118";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -4144,16 +4169,13 @@ function snapView(){
       ${tagHtml(p)}
     </div>
     <div class="card snap-current">
-      ${canWrite()?`<p class="tiny">PGT-NOTE</p>
-      <label class="field" style="margin:8px 0 10px">
-        <textarea id="oneline" rows="3" placeholder="This round" oninput="ui.fields=ui.fields||{};ui.fields.oneline=this.value">${esc(sn.state||"")}</textarea>
-      </label>
-      <div class="btns pgt-actions">
-        <button class="btn sm" onclick="saveLine('${p.id}')">Save</button>
+      <p class="tiny">PGT-NOTE</p>
+      ${pgtLatestHtml(p.id)}
+      ${canWrite()?`<div class="btns pgt-actions">
+        <button class="btn sm" onclick="openPgtNote('${p.id}')">Add note</button>
         <button class="btn sm ghost" onclick="go('record','${p.id}')">History</button>
         <button class="btn sm danger pgt-critical" onclick="criticalStatusForm('${p.id}')">Update critical value</button>
-      </div>
-      ${pgtNotePreview(p.id)}`:`<div class="pgt-history-only"><button class="btn sm ghost" onclick="go('record','${p.id}')">See Clinical History</button></div>`}
+      </div>`:`<div class="pgt-history-only"><button class="btn sm ghost" onclick="go('record','${p.id}')">See Clinical History</button></div>`}
       ${canWrite()?`<p class="tiny" style="margin:14px 0 8px">WATCH</p>
       <div class="chips"><button class="chip ${isDelirium(p.id)?"on":""}" onclick="toggleHighRisk('${p.id}')">Delirium</button>${TAGS.filter(tg=>!['ect','obs','leave','restrained','delirium'].includes(tg.id)).map(tg=>{
         const on=(sn.tags||[]).includes(tg.id);
@@ -8064,6 +8086,7 @@ function livePanels(){
   if(p.kind==="obsAdmit") html+=panelBox("Admit from observation",obsAdmitForm());
   if(p.kind==="obsRefer") html+=panelBox("Refer from observation",obsReferForm());
   if(p.kind==="obsDispose") html+=panelBox("Dispose observation",obsDisposeForm());
+  if(p.kind==="pgtNote") html+=pgtNoteSheet(p);
   return html;
 }
 function giveHandoverForm(defShift){
@@ -9641,6 +9664,124 @@ function pgtNotePreview(id){
   const last=pgtNotes(id)[0];
   if(!last)return "";
   return `<p class="tiny" style="margin:10px 0 0">${esc(last.byName||rname(last.by))} · ${esc(stamp(last.at)||fmt(last.at))}</p>`;
+}
+// R1.3.118: the latest PGT note is shown read-only at the top of the card; new notes are added from a popup.
+// Notes are append-only (ward_append_pgt_note), so a new note replaces the one shown here and the older ones stay in History.
+function pgtLatest(id){
+  const last=pgtNotes(id)[0];
+  if(last) return last;
+  const sn=S.snaps[id]||{};
+  const legacy=String(sn.state||"").trim();
+  return legacy?{text:legacy,at:sn.at,by:sn.by,byName:sn.by?rname(sn.by):""}:null;
+}
+function pgtLatestHtml(id){
+  const n=pgtLatest(id);
+  if(!n) return `<div class="pgt-latest empty"><p class="pgt-empty">No note yet</p></div>`;
+  const txt=String(n.text||"");
+  const long=txt.length>220||txt.split("\n").length>4;
+  const open=!!(ui.pgtMore&&ui.pgtMore[id]);
+  const who=n.byName||(n.by?rname(n.by):"");
+  const when=n.at?(stamp(n.at)||fmt(n.at)):"";
+  return `<div class="pgt-latest${long?" long":""}${open?" open":""}" data-pid="${esc(id)}">
+    <p class="pgt-text">${esc(txt)}</p>
+    <div class="pgt-meta"><span>${esc([who&&who!=="?"?who:"",when].filter(Boolean).join(" · "))}</span>${long?`<button type="button" class="pgt-more" onclick="togglePgtMore(this,'${esc(id)}')">${open?"less":"more"}</button>`:""}</div>
+  </div>`;
+}
+function togglePgtMore(btn,id){
+  ui.pgtMore=ui.pgtMore||{};
+  ui.pgtMore[id]=!ui.pgtMore[id];
+  const box=btn.closest(".pgt-latest");
+  if(box) box.classList.toggle("open",!!ui.pgtMore[id]);
+  btn.textContent=ui.pgtMore[id]?"less":"more";
+}
+function openPgtNote(id){
+  if(!needWrite()) return;
+  if(!patient(id)) return;
+  ui.pgtDraft=ui.pgtDraft||{};
+  ui.fields=ui.fields||{};
+  ui.fields.pgtn=ui.pgtDraft[id]||""; // starts blank; an unsaved draft for this patient survives an accidental close
+  openPanel("pgtNote",{id:id,phase:"edit",err:""});
+  // Focus inside the tap gesture (needed for the mobile keyboard to open), then retry once the sheet has settled.
+  const f=()=>{const el=document.getElementById("pgtn");if(el&&document.activeElement!==el){try{el.focus({preventScroll:true});const n=el.value.length;el.setSelectionRange(n,n)}catch(e){}}};
+  f(); setTimeout(f,60); setTimeout(f,320);
+}
+function pgtNoteInput(el){
+  ui.fields=ui.fields||{};
+  ui.fields.pgtn=el.value;
+  const pn=ui.panel; if(pn&&pn.kind==="pgtNote"){ui.pgtDraft=ui.pgtDraft||{};ui.pgtDraft[pn.id]=el.value;if(pn.err){pn.err="";const e=document.getElementById("pgtErr");if(e)e.remove()}}
+  const b=document.getElementById("pgtSave");
+  if(b) b.disabled=!el.value.trim()||!!(pn&&pn.phase!=="edit");
+}
+const PGT_TICK=`<svg class="pgt-tick" viewBox="0 0 52 52" aria-hidden="true"><circle class="pgt-tick-c" cx="26" cy="26" r="23"/><path class="pgt-tick-p" d="M15 27.5l7.2 7.2L37.5 19"/></svg>`;
+function pgtNoteSheet(pn){
+  const p=patient(pn.id); if(!p) return "";
+  const b=bedObj(pn.id);
+  const t=String(val("pgtn")||"");
+  const saving=pn.phase==="saving", saved=pn.phase==="saved";
+  return `<div class="sheet mid" id="pgtNoteSheet"><button class="mask" onclick="closePgtNote()"></button><div class="box pgt-box${saved?" is-saved":""}">
+    <div class="row"><h2>Add PGT note</h2><button class="btn ghost sm" onclick="closePgtNote()"${saving||saved?" disabled":""}>Close</button></div>
+    <p class="sm" style="margin:6px 0 10px"><b>${esc(p.name)}</b>${b?` · Bed ${esc(b.no)}`:""}</p>
+    <label class="field"><span>Note</span><textarea id="pgtn" rows="4" maxlength="2000" placeholder="This round" autocomplete="off" oninput="pgtNoteInput(this)"${saving||saved?" readonly":""}>${esc(t)}</textarea></label>
+    ${pn.err?`<p class="pgt-err" id="pgtErr" role="alert">${esc(pn.err)}</p>`:""}
+    <div class="pgt-modal-btns">
+      <button class="btn ghost" onclick="closePgtNote()"${saving||saved?" disabled":""}>Cancel</button>
+      <button class="btn" id="pgtSave" onclick="savePgtNote()"${!t.trim()||saving||saved?" disabled":""}>${saving?"Saving…":"Save"}</button>
+    </div>
+    ${saved?`<div class="pgt-done" role="status" aria-live="polite">${PGT_TICK}<p>Saved</p>${pn.queued?`<p class="tiny">Will sync when online</p>`:""}</div>`:""}
+  </div></div>`;
+}
+function closePgtNote(){
+  const pn=ui.panel;
+  if(pn&&pn.kind==="pgtNote"&&pn.phase!=="edit") return; // never close mid-save; the success path closes it
+  closePanel();
+}
+function pgtRollback(id,note,e){
+  const sn=S.snaps[id];
+  if(sn&&Array.isArray(sn.notes)) sn.notes=sn.notes.filter(n=>n.id!==note.id);
+  if(e){S.events=(S.events||[]).filter(x=>x.id!==e.id);pending=pending.filter(op=>!(op.row&&op.row.id===e.id&&op.table!=="pgt_note"))}
+  pending=pending.filter(op=>op.id!==note.id&&!(op.table==="pgt_note"&&op.row&&op.row.id===note.id));
+  persistOutbox(); save();
+}
+async function savePgtNote(){
+  const pn=ui.panel;
+  if(!pn||pn.kind!=="pgtNote"||pn.phase!=="edit") return; // double-submit guard
+  if(!needWrite()) return;
+  const id=pn.id, t=String(val("pgtn")||"").trim();
+  if(!t||!patient(id)) return;
+  pn.phase="saving"; pn.err="";
+  render({fromInput:1});
+  const sn=S.snaps[id]||(S.snaps[id]={risk:"low",state:"",sleep:"",watch:"",plan:"",tags:[],notes:[]});
+  const note={id:uid("n"),at:now(),by:S.userId,byName:(user()&&(user().displayName||user().username))||rname(S.userId),text:t};
+  sn.by=S.userId; sn.at=note.at;
+  sn.notes=(sn.notes||[]).concat([note]).slice(-40);
+  const e=ev(id,"PGT note",true,"pgt",t);
+  qPgtNote(id,note); save();
+  let ok=true, queued=false, msg="";
+  try{
+    await Promise.race([Promise.resolve(flushPending()),new Promise(r=>setTimeout(r,15000))]);
+    const op=pending.find(o=>o.table==="pgt_note"&&o.row&&(o.row.id===note.id||o.row.note_id===note.id));
+    if(op){
+      const err=String(op.lastError||"");
+      const transient=!err||/fetch|network|timeout|offline|load failed|failed to fetch|503|502|504/i.test(err);
+      if(op.status==="failed"||!transient){ok=false;msg=err}
+      else queued=true;
+    }
+  }catch(x){ok=false;msg=(x&&x.message)||String(x)}
+  const cur=ui.panel;
+  if(!ok){
+    pgtRollback(id,note,e);
+    if(cur===pn){pn.phase="edit";pn.err="Couldn't save the note"+(msg?": "+String(clinicianCopy(msg)||msg).replace(/[.\s]+$/,""):"")+". Your text is kept, so you can try again.";}
+    else toast("PGT note not saved","bad");
+    render({force:true});
+    return;
+  }
+  if(ui.pgtDraft) delete ui.pgtDraft[id];
+  if(ui.pgtMore) delete ui.pgtMore[id];
+  if(cur!==pn){if(ui.fields) ui.fields.pgtn="";render({force:true});return}
+  pn.phase="saved"; pn.queued=queued;
+  render({force:true});
+  const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  setTimeout(()=>{if(ui.fields) ui.fields.pgtn="";if(ui.panel===pn){pn.phase="edit";closePanel()}},reduce?1100:1400);
 }
 
 function recKindLabel(k){
