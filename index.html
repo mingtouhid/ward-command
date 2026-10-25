@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.119 mrd-no -->
+<!-- WARD SYNC RELEASE: R1.3.120 discharge-advice-meds -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1884,6 +1884,12 @@ html.kb-open .sheet{top:var(--vvt,0px);bottom:auto;height:var(--vvh,100%);paddin
 html.kb-open .sheet .box,html.kb-open .pick-layer .box{max-height:calc(100% - 4px)}
 html.kb-open .sheet .box{margin-bottom:4px}
 .rec-dm{margin-top:6px}
+/* R1.3.120: compact discharge form */
+.dis-form .dis-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dis-form textarea#dadvice{min-height:0;resize:vertical}
+.dis-form .dm-acc{margin:2px 0 10px}
+.btn.dis-confirm.dis-off{opacity:.5}
+.rec-adv .sm{margin:0;white-space:pre-line}
 .rec-dm-h{margin:0 0 2px;font-size:12.5px;font-weight:700;color:var(--muted)}
 .rec-dm ul{margin:0;padding-left:18px}
 .rec-dm li{font-size:13.5px;line-height:1.35;margin:1px 0}
@@ -2382,7 +2388,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.119";
+const APP_VERSION="R1.3.120";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3150,7 +3156,7 @@ async function doCloudPull(opts){
   const occupancyHold=unresolved.some(o=>["patients","beds","patient_bed_assignments"].includes(o.table));
   if(!occupancyHold){
     S.beds=beds.map(r=>({id:r.id,no:r.bed_number,sectionId:r.section_id,active:r.active!==false,patientId:r.current_patient_id||null}));
-    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",mrdNo:r.mrd_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
+    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",mrdNo:r.mrd_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,dischargeAdvice:r.discharge_advice||"",dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:[],treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
     S.assignments=assigns.map(r=>({id:r.id,patientId:r.patient_id,bedId:r.bed_id,at:r.assigned_at,released:r.released_at,by:r.assigned_by}));
   }
   const nextSnaps={}; snaps.forEach(r=>{nextSnaps[r.patient_id]=rowSnap(r)});
@@ -4400,6 +4406,10 @@ function censusDraft(){
   if(g("dout")|| (ui.fields&&ui.fields.dout!=null)) ui.census.outcome=val("dout")||ui.census.outcome;
   if(g("ddate")) ui.census.ddate=g("ddate").value;
   if(g("ddx")) ui.census.ddx=g("ddx").value;
+  // R1.3.120: discharge MRD No. (only when missing), advice and medications on discharge
+  if(g("dmrd")) ui.census.dmrd=g("dmrd").value;
+  if(g("dadvice")) ui.census.dadvice=g("dadvice").value;
+  if(g("ddate")&&ui.obsClose&&ui.obsClose.pid===ui.disId) dmDraft();
 }
 function openWardSection(secId){
   ui.psec=secId||"";
@@ -4424,9 +4434,24 @@ function openSnapDischarge(pid){
   ui.census=Object.assign(ui.census||{reasons:[],treat:["conservative"],mode:"advice",outcome:"improved"},{
     ddate:localStamp(),
     ddx:p.diagnosis||"",
-    ddxPid:p.id
+    ddxPid:p.id,
+    dadvice:"",
+    dmrd:""
   });
+  disMedsReset(p.id);
   go("census",null,1);
+}
+// R1.3.120: discharge form helpers (MRD No. required when missing; meds on discharge reuse the R1.3.116 dm component).
+function disMedsReset(pid){
+  ui.obsClose={pid,open:false,sel:{},add:[]};
+  if(ui.fields) Object.keys(ui.fields).forEach(k=>{if(/^dm(route|freq)\d+$/.test(k)) delete ui.fields[k]});
+  if(ui.mrdErr&&ui.mrdErr.id==="dmrd") ui.mrdErr=null;
+}
+function disNeedsMrd(p){return !!p&&!normMrd(p.mrdNo)}
+function disConfirmSync(){
+  const b=document.getElementById("disConfirm"); if(!b) return;
+  const off=!!document.getElementById("dmrd")&&!normMrd((ui.census||{}).dmrd);
+  b.classList.toggle("dis-off",off); b.setAttribute("aria-disabled",String(off));
 }
 // R1.3.119 MRD No.: optional, unique across all patients (case/space-insensitive) when present.
 function normMrd(v){return String(v==null?"":v).trim()}
@@ -4440,6 +4465,7 @@ function mrdSelfId(id){
   if(id==="omrd") return mrdRetId((ui.obs||{}).hosp);
   if(id==="oamrd") return (ui.obsAdmit||{}).pid||"";
   if(id==="emrd") return (ui.pedit||{}).pid||"";
+  if(id==="dmrd") return ui.disId||"";
   return "";
 }
 function mrdStore(id,v){
@@ -4448,6 +4474,7 @@ function mrdStore(id,v){
   else if(id==="omrd"){ui.obs=ui.obs||{};ui.obs.mrd=v}
   else if(id==="oamrd"){ui.obsAdmit=ui.obsAdmit||{};ui.obsAdmit.mrd=v}
   else if(id==="emrd"){if(ui.pedit)ui.pedit.mrd=v}
+  else if(id==="dmrd"){ui.census=ui.census||{};ui.census.dmrd=v;disConfirmSync()}
 }
 function mrdErrText(id,v){
   const o=mrdOwner(v,mrdSelfId(id));
@@ -4455,9 +4482,9 @@ function mrdErrText(id,v){
   if(ui.mrdErr&&ui.mrdErr.id===id&&normMrd(ui.mrdErr.v).toLowerCase()===normMrd(v).toLowerCase()) return ui.mrdErr.msg;
   return "";
 }
-function mrdFieldHtml(id,v){
+function mrdFieldHtml(id,v,req){
   const e=mrdErrText(id,v);
-  return `<label class="field"><span>MRD No. <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="${id}" value="${esc(v||"")}" placeholder="MRD number" autocomplete="off" autocapitalize="characters" oninput="onMrdInput('${id}',this.value)"/></label>
+  return `<label class="field"><span>MRD No. ${req?"*":`<em style="font-style:normal;opacity:.6">(optional)</em>`}</span><input id="${id}" value="${esc(v||"")}" placeholder="MRD number" autocomplete="off" autocapitalize="characters" oninput="onMrdInput('${id}',this.value)"/></label>
       <p class="mrd-err" id="${id}Err" role="alert"${e?"":" hidden"}>${esc(e)}</p>`;
 }
 function onMrdInput(id,v){
@@ -7211,6 +7238,7 @@ function dmDraft(){
 }
 function obsCloseDraft(){
   const g=id=>document.getElementById(id);
+  if(g("ddate")&&typeof censusDraft==="function"){censusDraft();return}
   if(ui.obsRefer){if(g("orefdept")) ui.obsRefer.dept=g("orefdept").value; if(g("orefreason")) ui.obsRefer.reason=g("orefreason").value;}
   dmDraft();
 }
@@ -7223,7 +7251,7 @@ function dmCount(d){return Object.keys(d.sel||{}).filter(k=>d.sel[k]).length+(d.
 function dmRowLine(m){return [m.dose,m.route,m.freq?freqLabel(m.freq):""].filter(x=>x&&x!=="—").join(" · ")}
 function dmSectionHtml(pid,kind){
   const d=dmState(pid), ong=dmOngoing(pid), n=dmCount(d);
-  const lbl=kind==="referred"?"Medications on referral":"Medications on disposal";
+  const lbl=dmLabel(kind);
   const allOn=ong.length&&ong.every(o=>d.sel[o.id]);
   const ongHtml=ong.length?`<div class="dm-head"><span>Ongoing</span><button type="button" class="dm-link" id="dmAll" onclick="dmSelectAll('${pid}')">${allOn?"Clear":"Select all"}</button></div>
     <div class="dm-list">${ong.map(o=>`<div class="dm-row ${d.sel[o.id]?"on":""}" data-oid="${esc(o.id)}">
@@ -7301,7 +7329,7 @@ function dmCollect(pid){
   return out;
 }
 function dmLine(m){return [m.name,m.dose,m.route,m.frequency?freqLabel(m.frequency):""].filter(x=>x&&x!=="—").join(" · ")}
-function dmLabel(outcome){return outcome==="referred"?"Medications on referral":"Medications on disposal"}
+function dmLabel(outcome){return outcome==="referred"?"Medications on referral":outcome==="discharge"?"Medications on discharge":"Medications on disposal"}
 function dmRecordHtml(it){
   const list=it.dmeds||[]; if(!list.length) return "";
   return `<div class="rec-dm"><p class="rec-dm-h">${esc(dmLabel(it.dmOutcome))}</p><ul>${list.map(m=>`<li>${esc(dmLine(m))}${m.source==="new"?` <em class="dm-tag">New</em>`:m.modified?` <em class="dm-tag">Changed</em>`:""}</li>`).join("")}</ul></div>`;
@@ -7449,7 +7477,8 @@ function censusView(){
   if(tab==="out"){
     const pid=ui.disId||"";
     const p=pid?patient(pid):null;
-    if(p && d.ddxPid!==p.id){ d.ddx=p.diagnosis||""; d.ddxPid=p.id; }
+    if(p && d.ddxPid!==p.id){ d.ddx=p.diagnosis||""; d.ddxPid=p.id; d.dadvice=""; d.dmrd=""; disMedsReset(p.id); }
+    const needMrd=disNeedsMrd(p), mrdOff=needMrd&&!normMrd(d.dmrd);
     const curDx=d.ddx!=null?d.ddx:(p&&p.diagnosis||"");
     const treat=d.treat||["conservative"];
     const form=!!(p&&ui.disForm);
@@ -7475,18 +7504,23 @@ function censusView(){
         </label>
         ${p?`<p class="tiny">${esc(p.hospitalNo||p.code)}${mrdLabel(p)?" · "+esc(mrdLabel(p)):""} · ${p.age}${p.sex} · ${esc(p.diagnosis||"")}</p>`:`<p class="tiny">Choose a patient to enable discharge.</p>`}
       </div>
-      <button class="btn block ${p?"danger":"idle"}" ${p?"":"disabled"} onclick="if(!ui.disId)return;censusDraft();ui.disForm=true;render()" style="margin-bottom:10px">Discharge</button>
-      ${form?`<div class="card">
+      ${form?"":`<button class="btn block ${p?"danger":"idle"}" id="disContinue" ${p?"":"disabled"} onclick="if(!ui.disId)return;censusDraft();ui.disForm=true;render()" style="margin-bottom:10px">Continue</button>`}
+      ${form?`<div class="card dis-form">
+        ${needMrd?mrdFieldHtml("dmrd",d.dmrd||"",1):""}
         ${dxFieldHtml("Working diagnosis","ddx",curDx,"Diagnosis","census_ddx",p?p.id:"")}
         <label class="field"><span>Mode of treatment</span>
           <div class="multi">${TREATMENT_MODES.filter(x=>x[0]!=="conservative_ect").map(([id,lb])=>`<button class="chip ${treat.includes(id)?"on":""}" onclick="toggleMulti('treat','${id}')">${lb}</button>`).join("")}
           <span class="tiny">${labelOf(TREATMENT_MODES,treatFromChips())}</span>
           </div>
         </label>
-        <label class="field"><span>Mode of discharge</span>${picker("dmode",DISCHARGE_MODES,d.mode||"advice","Mode of discharge")}</label>
-        <label class="field"><span>Outcome</span>${picker("dout",DISCHARGE_OUTCOMES,d.outcome||"improved","Outcome")}</label>
+        <div class="dis-2">
+          <label class="field"><span>Mode of discharge</span>${picker("dmode",DISCHARGE_MODES,d.mode||"advice","Mode of discharge")}</label>
+          <label class="field"><span>Outcome</span>${picker("dout",DISCHARGE_OUTCOMES,d.outcome||"improved","Outcome")}</label>
+        </div>
         <label class="field"><span>Date of discharge</span><input id="ddate" type="datetime-local" value="${esc(d.ddate||localStamp())}"/></label>
-        <button class="btn danger block" onclick="censusDraft();dischargeFromCensus()">Confirm discharge</button>
+        <label class="field"><span>Advice on discharge <em style="font-style:normal;opacity:.6">(optional)</em></span><textarea id="dadvice" rows="3" placeholder="e.g. Continue medicines, follow-up in OPD after 2 weeks" oninput="ui.census=ui.census||{};ui.census.dadvice=this.value">${esc(d.dadvice||"")}</textarea></label>
+        ${dmSectionHtml(p.id,"discharge")}
+        <button class="btn danger block dis-confirm ${mrdOff?"dis-off":""}" id="disConfirm" aria-disabled="${mrdOff}" onclick="censusDraft();dischargeFromCensus()">Confirm discharge</button>
       </div>`:""}
       ${recentAll.length?`<p class="sec">Recent discharges</p>${disSearch}${disCards}`:""}`;
   }
@@ -7682,8 +7716,17 @@ async function admitCommit(id,p,bed,asg,hosp,prevBackup,prevSnapBackup){setBusy(
 function dischargeFromCensus(){
   if(!needWrite())return;
   const id=ui.disId;const p=patient(id);if(!p||p.status==="discharged"){toast("Select a patient first.","bad");return}
-  if(workflowLocked("discharge",id))return;
   const d=ui.census||{};
+  // R1.3.120: MRD No. is mandatory at discharge when not already on file (checked before taking the workflow lock).
+  const needMrd=disNeedsMrd(p), mrd=normMrd(d.dmrd);
+  if(needMrd){
+    if(!mrd){const msg="MRD No. is required to discharge";ui.mrdErr={id:"dmrd",v:"",msg};mrdShowErr("dmrd",msg,true);toast(msg+".","bad");return}
+    if(mrdBlocked("dmrd",mrd,id))return;
+  }
+  if(workflowLocked("discharge",id))return;
+  const advice=String(d.dadvice||"").trim();
+  const dmeds=dmCollect(id);
+  const extra={mrd:needMrd?mrd:null,advice,dmeds,prev:{mrdNo:p.mrdNo||"",advice:p.dischargeAdvice||"",meds:p.dischargeMeds||[]}};
   const oldDx=p.diagnosis||"";
   const nextDx=(d.ddx!=null&&d.ddxPid===p.id?String(d.ddx):oldDx).trim()||oldDx;
   const bed=S.beds.find(b=>b.patientId===id);
@@ -7696,20 +7739,26 @@ function dischargeFromCensus(){
   p.dischargeMode=d.mode||"advice";
   p.dischargeOutcome=d.outcome||"improved";
   p.treatmentMode=treatFromChips();
+  if(needMrd) p.mrdNo=mrd;
+  p.dischargeAdvice=advice;
+  p.dischargeMeds=dmeds;
   if(bed)bed.patientId=null;
   const releasedAt=now();
   S.assignments.forEach(a=>{if(a.patientId===id&&!a.released)a.released=releasedAt});
   if(ect && p.dischargeMode!=="death")ect.status="cancelled";
-  dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx);
+  dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra);
 }
-async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx){setBusy(true);
+async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){setBusy(true);
+  const xx=extra||null;
   try{
     const activeAssignments=(S.assignments||[]).filter(a=>a.patientId===p.id&&a.released);
     const atomic=await callAtomicWorkflow("ward_discharge_patient",{
       p_token:sessionTok,p_patient:p,p_bed_id:bed?bed.id:null,
       p_assignment_ids:activeAssignments.map(a=>a.id),
-      p_ect_plan:ect&&p.dischargeMode!=="death"?ect:null
+      p_ect_plan:ect&&p.dischargeMode!=="death"?ect:null,
+      ...(xx?{p_discharge_advice:xx.advice||null,p_discharge_meds:xx.dmeds||[],p_mrd_no:xx.mrd||null}:{})
     });
+    if(xx&&atomic.used&&atomic.data&&Array.isArray(atomic.data.discharge_meds)) p.dischargeMeds=atomic.data.discharge_meds;
     if(!atomic.used){
       const hold=pending.slice(); pending.length=0;
       qPatient(p);if(bed)qBed(bed);activeAssignments.forEach(qAssign);
@@ -7740,17 +7789,30 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx){setBusy
       S.patientEdits.unshift({id:"pe-"+uid("ed"),pid:p.id,field:"diagnosis",old:oldDx||null,new:p.diagnosis||null,by:S.userId,at:p.dischargedAt||now(),group:"dis-"+p.id});
       ev(p.id,"Patient details edited",true,"note","Diagnosis: "+(oldDx||"—")+" → "+(p.diagnosis||"—"));
     }
+    if(xx&&xx.mrd){
+      S.patientEdits=S.patientEdits||[];
+      S.patientEdits.unshift({id:"pe-"+uid("ed"),pid:p.id,field:"mrd_no",old:null,new:xx.mrd,by:S.userId,at:p.dischargedAt||now(),group:"dis-mrd-"+p.id});
+      ev(p.id,"Patient details edited",true,"note","MRD No.: — → "+xx.mrd);
+    }
     ev(p.id,"Discharged · "+labelOf(DISCHARGE_MODES,p.dischargeMode)+" · "+labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome),true,"note");
-    if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;}
+    if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dmrd;}
+    if(ui.obsClose&&ui.obsClose.pid===p.id) ui.obsClose=null;
     flashBtn(".btn.danger.block","ok");toast("Discharged "+p.name,"ok");ui.disId="";ui.disForm=false;save();ui.ctab="out";render();
   }catch(e){
     if(oldDx!==undefined) p.diagnosis=oldDx;
     p.status="admitted"; p.dischargedAt=null; p.dischargeMode=null; p.dischargeOutcome=null; p.treatmentMode=null;
+    if(xx){p.mrdNo=xx.prev.mrdNo;p.dischargeAdvice=xx.prev.advice;p.dischargeMeds=xx.prev.meds}
     if(bed)bed.patientId=p.id;
     (S.assignments||[]).forEach(a=>{const old=releasedBefore&&releasedBefore.find(x=>x.id===a.id);if(old)a.released=old.released});
     if(ect&&ectBefore){ect.status=ectBefore.status;ect.nextAt=ectBefore.nextAt;ect.sessionsDone=ectBefore.sessionsDone}
     ev(p.id,"Discharge failed · "+p.name+" · "+(e.message||e),false);
-    flashBtn(".btn.danger.block","bad");toast("Discharge failed","bad");save();render();
+    let why="";
+    if(xx&&xx.mrd!==null){
+      why=mrdServerErr("dmrd",e,xx.mrd)||"";
+      if(!why&&/MRD No\. is required/i.test(String(e&&e.message||e))){why="MRD No. is required to discharge";ui.mrdErr={id:"dmrd",v:"",msg:why}}
+    }else if(/MRD No\. is required/i.test(String(e&&e.message||e))){why="MRD No. is required to discharge"}
+    flashBtn(".btn.danger.block","bad");toast(why?"Discharge failed · "+why:"Discharge failed","bad");save();render();
+    if(why&&document.getElementById("dmrd")) setTimeout(()=>mrdShowErr("dmrd",why,true),0);
   }finally{workflowUnlock("discharge",p&&p.id);setBusy(false);}
 }
 
@@ -7809,7 +7871,7 @@ function dischargeFormBody(id){
     <label class="field"><span>Mode of treatment</span>${picker("dtrt",TREATMENT_MODES,treat,"Mode of treatment")}</label>
     <label class="field"><span>Mode of discharge</span>${picker("dmode",DISCHARGE_MODES,val("dmode")||p.dischargeMode||"advice","Mode of discharge")}</label>
     <label class="field"><span>Outcome</span>${picker("dout",DISCHARGE_OUTCOMES,val("dout")||p.dischargeOutcome||"improved","Outcome")}</label>
-    <button class="btn danger block" onclick="openSnapDischarge('${p.id}');closePanel()">Confirm discharge</button>`;
+    <button class="btn danger block" onclick="openSnapDischarge('${p.id}');closePanel()">Continue</button>`;
 }
 function dischargePatient(id){
   if(!needWrite())return;
@@ -9639,7 +9701,7 @@ function patchFrozenSheetPick(id,v){
 function setPick(id,v){
   ui.fields=ui.fields||{};
   ui.fields[id]=v;
-  if(id==="disel"){ui.disId=v;ui.disForm=false;const dp=v?patient(v):null;ui.census=ui.census||{};ui.census.ddx=dp?(dp.diagnosis||""):"";ui.census.ddxPid=v||""}
+  if(id==="disel"){ui.disId=v;ui.disForm=false;const dp=v?patient(v):null;ui.census=ui.census||{};ui.census.ddx=dp?(dp.diagnosis||""):"";ui.census.ddxPid=v||"";ui.census.dadvice="";ui.census.dmrd="";disMedsReset(v||"")}
   if(id==="dmode"||id==="dout"||id==="asex"||id==="abed"||id==="acon"||id==="acon2"||id==="hshift"){
     ui.census=ui.census||{};
     if(id==="dmode") ui.census.mode=v;
@@ -10193,7 +10255,10 @@ function patientRecordItems(pid){
     const outL=labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome);
     const mode=(modeL&&modeL!=="—")?modeL:(p.dischargeMode||"");
     const out=(outL&&outL!=="—")?outL:(p.dischargeOutcome||"");
-    add({kind:"dis",title:"Discharged",at:p.dischargedAt,body:[mode,out].filter(Boolean).join(" · ")});
+    // R1.3.120: advice and medications on discharge
+    const adv=String(p.dischargeAdvice||"").trim();
+    const dmeds=Array.isArray(p.dischargeMeds)?p.dischargeMeds.filter(m=>m&&m.name):[];
+    add({kind:"dis",title:"Discharged",at:p.dischargedAt,body:[mode,out].filter(Boolean).join(" · "),advice:adv||null,dmeds:dmeds.length?dmeds:null,dmOutcome:"discharge"});
   }
   (S.events||[]).filter(e=>e.pid===pid).forEach(e=>{
     if(recSkipEventTitle(e.title)) return;
@@ -10244,7 +10309,7 @@ function recordItemHtml(it,pid){
     <div class="rec-rail"><div class="rec-dot"></div></div>
     <div class="rec-card${legal?" has-legal":""}">${legal}
       <h3>${esc(it.title||"")}</h3>
-      ${it.meds?recMedRowsHtml(it):(it.body?`<p class="sm">${esc(it.body)}</p>`:"")}${it.dmeds?dmRecordHtml(it):""}
+      ${it.meds?recMedRowsHtml(it):(it.body?`<p class="sm">${esc(it.body)}</p>`:"")}${it.advice?`<div class="rec-dm rec-adv"><p class="rec-dm-h">Advice on discharge</p><p class="sm">${esc(it.advice)}</p></div>`:""}${it.dmeds?dmRecordHtml(it):""}
       <p class="tiny">${esc(who)}${who?" · ":""}${esc(it.atLabel||stamp(it.at)||fmt(it.at)||"")}</p>
     </div>
   </div>`;
@@ -10421,7 +10486,7 @@ function exportPatientRecord(pid){
   try{
     const b=bedObj(pid)||lastBedObj(pid);
     const legal=legalTagsOf(pid).map(x=>x[1]);
-    const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {legal:(it.kind==="admit"&&legal.length)?legal:null,title:it.title||"",body:[it.body||"",it.dmeds?dmText(it.dmOutcome,it.dmeds):""].filter(Boolean).join("\n"),meds:it.meds||null,summary:it.summary||"",foot:`${who}${who?" · ":""}${it.atLabel||stamp(it.at)||fmt(it.at)||""}`}});
+    const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {legal:(it.kind==="admit"&&legal.length)?legal:null,title:it.title||"",body:[it.body||"",it.advice?"Advice on discharge:\n"+it.advice:"",it.dmeds?dmText(it.dmOutcome,it.dmeds):""].filter(Boolean).join("\n"),meds:it.meds||null,summary:it.summary||"",foot:`${who}${who?" · ":""}${it.atLabel||stamp(it.at)||fmt(it.at)||""}`}});
     const ageSex=[p.age,p.sex].filter(x=>x!=null&&x!=="").join(" ");
     const meta={
       name:p.name||"",legal,version:APP_VERSION,dept:RECORD_PDF_DEPT,
