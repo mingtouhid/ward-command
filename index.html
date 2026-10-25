@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.115 critical-status-fix -->
+<!-- WARD SYNC RELEASE: R1.3.116 obs-close-meds -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1815,6 +1815,42 @@ button.dx-opt:hover,button.dx-opt:active,button.dx-opt.active{background:var(--p
 .tel-link:hover,.tel-link:active{background:color-mix(in srgb,var(--teal) 18%,transparent);text-decoration:underline}
 .obs-timer{font-variant-numeric:tabular-nums;letter-spacing:.02em}
 /* /R1.3.104 UX BATCH */
+/* R1.3.116 meds on referral / disposal */
+.dm-acc{border:1px solid var(--line);border-radius:14px;margin:4px 0 12px}
+.dm-acc.has-n,.dm-acc.open{border-color:color-mix(in srgb,var(--teal) 45%,var(--line))}
+.dm-acc .bacc-h{min-height:44px}
+.dm-acc .bacc-name{flex:1;font-weight:700;font-size:15px}
+.dm-acc .bacc-n{color:var(--muted);font-size:13px;font-weight:600}
+.dm-in{padding:0 10px 10px}
+.dm-head{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 4px;font-size:12px;font-weight:700;color:var(--muted)}
+.dm-link{all:unset;cursor:pointer;color:var(--teal);font-weight:700;font-size:13px;padding:4px 2px}
+.dm-list{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.dm-row{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:0 6px 0 0;background:var(--panel)}
+.dm-row.on{border-color:var(--teal);background:color-mix(in srgb,var(--teal) 8%,var(--panel))}
+.dm-tick{all:unset;box-sizing:border-box;flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:7px 8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.dm-box{flex:none;width:20px;height:20px;border-radius:6px;border:2px solid var(--line);display:inline-flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s}
+.dm-row.on .dm-box{background:var(--teal);border-color:var(--teal)}
+.dm-row.on .dm-box::after{content:"";width:5px;height:10px;border:solid var(--btn-ink,#fff);border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+.dm-txt{min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.dm-txt b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dm-txt>span{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dm-edit{all:unset;cursor:pointer;flex:none;font-size:12px;font-weight:700;color:var(--teal);padding:6px 4px}
+.dm-tag{font-style:normal;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px;background:color-mix(in srgb,var(--teal) 14%,transparent);color:var(--teal2,var(--teal))}
+.dm-none{margin:2px 2px 8px}
+.dm-new{border:1px dashed var(--line);border-radius:10px;padding:6px 8px 8px;margin-bottom:6px}
+.dm-new-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.dm-new-lbl{font-size:11px;font-weight:700;color:var(--muted)}
+.dm-x{all:unset;cursor:pointer;width:28px;height:24px;text-align:center;font-size:20px;line-height:22px;color:var(--muted);border-radius:8px}
+.dm-new .obs-med-grid input{min-height:40px;padding:8px 10px;font-size:15px}
+.dm-rf{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.dm-rf .pick{min-height:40px;padding:6px 10px;font-size:14px}
+.dm-add{margin-top:2px}
+.dm-new .med-ac-wrap{position:relative}
+.dm-new .med-suggest{position:absolute;left:0;right:0;top:100%;z-index:6;margin:4px 0 0}
+.rec-dm{margin-top:6px}
+.rec-dm-h{margin:0 0 2px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.rec-dm ul{margin:0;padding-left:18px}
+.rec-dm li{font-size:13.5px;line-height:1.35;margin:1px 0}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -2310,7 +2346,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.115";
+const APP_VERSION="R1.3.116";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3094,7 +3130,8 @@ async function doCloudPull(opts){
   S.ect=ect.map(r=>({id:r.id,pid:r.patient_id,indication:r.indication||"",sessionsDone:r.sessions_done||0,nextAt:r.next_session_at,npo:r.npo!==false,status:r.status||"planned",by:r.created_by,at:r.created_at}));
   S.ectSessions=(ectSessions||[]).map(r=>({id:r.id,planId:r.plan_id,pid:r.patient_id,sessionNumber:r.session_number,at:r.session_at,anaesthesia:r.anaesthesia||null,stimulus:r.stimulus||null,seizureSeconds:r.seizure_seconds==null?null:r.seizure_seconds,complications:r.complications||null,response:r.response||null,nextPlan:r.next_plan||null,by:r.recorded_by||null}));
   S.patientEdits=(wardState.patient_edits||[]).map(r=>({id:r.id,pid:r.patient_id,field:r.field,old:r.old_value,new:r.new_value,by:r.edited_by,at:r.edited_at,group:r.edit_group})); // R1.3.90
-  S.obsStays=(wardState.observation_stays||[]).map(r=>({id:r.id,pid:r.patient_id,bedId:r.bed_id,reason:r.reason||"",note:r.note||"",at:r.started_at,by:r.started_by,endedAt:r.ended_at||null,endedBy:r.ended_by||null,outcome:r.outcome||null,referralTo:r.referral_to||""}));
+  const _prevDm=new Map((S.obsStays||[]).map(x=>[x.id,x.dischargeMeds]));
+  S.obsStays=(wardState.observation_stays||[]).map(r=>({dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:(_prevDm.get(r.id)||[]),id:r.id,pid:r.patient_id,bedId:r.bed_id,reason:r.reason||"",note:r.note||"",at:r.started_at,by:r.started_by,endedAt:r.ended_at||null,endedBy:r.ended_by||null,outcome:r.outcome||null,referralTo:r.referral_to||""}));
   if(adviceRows&&route&&route.page==="myorders"&&!ui.myOrdersLoading) setTimeout(()=>loadMyOrders().then(render).catch(()=>{}),0);
   if(adviceRows){S.advice=adviceRows.map(adviceFromRow);
     if(ui._adviceEditId){const ea=S.advice.find(x=>x.id===ui._adviceEditId);
@@ -6330,6 +6367,7 @@ function syncMedInputsFromWrap(wrap){
     if(prefix==="o"){ui.obs=ui.obs||{meds:[]};ui.obs.meds=ui.obs.meds||[];ui.obs.meds[idx]=rowObj;}
     else if(prefix==="oa"){ui.obsAdmit=ui.obsAdmit||{meds:[]};ui.obsAdmit.meds=ui.obsAdmit.meds||[];ui.obsAdmit.meds[idx]=rowObj;}
     else if(prefix==="a"){ui.census=ui.census||{meds:[]};ui.census.meds=ui.census.meds||[];ui.census.meds[idx]=rowObj;}
+    else if(prefix==="dm"&&ui.obsClose&&ui.obsClose.add&&ui.obsClose.add[idx]){Object.assign(ui.obsClose.add[idx],rowObj);try{dmRefreshCount()}catch(e){}}
   }
 }
 function onMedDrugInput(el){
@@ -6598,6 +6636,7 @@ function observeView(){
         <p class="tiny">${esc(p.address||"—")}</p>
         <p class="tiny">${esc(p.diagnosis||"—")}</p>
         ${detail?`<p class="tiny">${esc(detail)}</p>`:""}
+        ${(stay.dischargeMeds||[]).length?`<p class="tiny prev-dm" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((stay.outcome==="referred"?"Meds on referral: ":"Meds on disposal: ")+stay.dischargeMeds.map(m=>[m.name,m.dose].filter(Boolean).join(" ")).join(", "))}</p>`:""}
         <p class="tiny">Start ${fmt(stay.at)} · End ${fmt(stay.endedAt)}</p>
       </div>`;
     }).filter(Boolean).join(""):`<div class="card"><p class="sm">${oq?"No matching previous observations.":"No previous observations."}</p></div>`;
@@ -6903,8 +6942,127 @@ async function convertObservation(pid){
   }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
   finally{workflowUnlock("obs-admit",pid);setBusy(false)}
 }
+/* R1.3.116 — optional "Medications on referral / disposal" for observation close */
+function dmState(pid){
+  if(!ui.obsClose||ui.obsClose.pid!==pid) ui.obsClose={pid,open:false,sel:{},add:[]};
+  return ui.obsClose;
+}
+function dmOngoing(pid){
+  const supd=medSupersededIds();
+  return (S.orders||[]).filter(o=>String(o.pid)===String(pid)&&!supd.has(o.id)&&!o.stop&&o.status!=="stopped"&&!statDone(o))
+    .sort((a,b)=>String(a.drug||"").localeCompare(String(b.drug||"")));
+}
+function dmDraft(){
+  const d=ui.obsClose; if(!d) return;
+  d.add=(d.add||[]).map((m,i)=>{
+    const dr=document.getElementById("dmdrug"+i), ds=document.getElementById("dmdose"+i);
+    return Object.assign({},m,{drug:dr?dr.value:(m.drug||""),dose:ds?ds.value:(m.dose||""),route:val("dmroute"+i)||m.route||"PO",freq:val("dmfreq"+i)||m.freq||"OD"});
+  });
+}
+function obsCloseDraft(){
+  const g=id=>document.getElementById(id);
+  if(ui.obsRefer){if(g("orefdept")) ui.obsRefer.dept=g("orefdept").value; if(g("orefreason")) ui.obsRefer.reason=g("orefreason").value;}
+  dmDraft();
+}
+function dmSyncFields(){
+  const d=ui.obsClose; if(!d) return; ui.fields=ui.fields||{};
+  Object.keys(ui.fields).forEach(k=>{if(/^dm(route|freq)\d+$/.test(k)) delete ui.fields[k]});
+  (d.add||[]).forEach((m,i)=>{ui.fields["dmroute"+i]=m.route||"PO";ui.fields["dmfreq"+i]=m.freq||"OD"});
+}
+function dmCount(d){return Object.keys(d.sel||{}).filter(k=>d.sel[k]).length+(d.add||[]).filter(m=>String(m.drug||"").trim()).length}
+function dmRowLine(m){return [m.dose,m.route,m.freq?freqLabel(m.freq):""].filter(x=>x&&x!=="—").join(" · ")}
+function dmSectionHtml(pid,kind){
+  const d=dmState(pid), ong=dmOngoing(pid), n=dmCount(d);
+  const lbl=kind==="referred"?"Medications on referral":"Medications on disposal";
+  const allOn=ong.length&&ong.every(o=>d.sel[o.id]);
+  const ongHtml=ong.length?`<div class="dm-head"><span>Ongoing</span><button type="button" class="dm-link" id="dmAll" onclick="dmSelectAll('${pid}')">${allOn?"Clear":"Select all"}</button></div>
+    <div class="dm-list">${ong.map(o=>`<div class="dm-row ${d.sel[o.id]?"on":""}" data-oid="${esc(o.id)}">
+      <button type="button" class="dm-tick" role="checkbox" aria-checked="${!!d.sel[o.id]}" onclick="dmTick('${pid}','${esc(o.id)}')"><span class="dm-box" aria-hidden="true"></span>
+        <span class="dm-txt"><b>${esc(o.drug||"")}</b><span>${esc(dmRowLine(o))}${o.status==="held"?` <em class="dm-tag">Held</em>`:""}</span></span></button>
+      <button type="button" class="dm-edit" title="Change dose / frequency" onclick="dmEditOngoing('${pid}','${esc(o.id)}')">Edit</button>
+    </div>`).join("")}</div>`:`<p class="tiny dm-none">No ongoing medication.</p>`;
+  const addHtml=(d.add||[]).map((m,i)=>`<div class="dm-new">
+      <div class="dm-new-top"><span class="dm-new-lbl">${m.fromOrder?"Changed":"New"}</span><button type="button" class="dm-x" aria-label="Remove medication" onclick="dmRemove(${i})">×</button></div>
+      ${medInputsGridHtml({drugId:"dmdrug"+i,doseId:"dmdose"+i,routeId:"dmroute"+i,freqId:"dmfreq"+i,drugVal:m.drug||"",doseVal:m.dose||"",mode:"row",prefix:"dm",idx:i})}
+      <div class="dm-rf">${picker("dmroute"+i,MED_ROUTES,m.route||"PO","Route")}${picker("dmfreq"+i,MED_FREQS,m.freq||"OD","Frequency")}</div>
+    </div>`).join("");
+  return `<div class="bacc dm-acc ${d.open?"open":""}" id="dmAcc">
+    <button type="button" class="bacc-h" aria-expanded="${!!d.open}" onclick="dmToggle(this)"><span class="bacc-name">${lbl}</span><span class="bacc-n" id="dmN">${n?n+" selected":"Optional"}</span>${BED_CHEV}</button>
+    <div class="bacc-body"><div class="bacc-inner"><div class="dm-in">
+      ${ongHtml}
+      ${addHtml?`<div class="dm-head"><span>Added</span></div>${addHtml}`:""}
+      <button type="button" class="btn ghost sm dm-add" onclick="dmAdd()">+ Add medication</button>
+    </div></div></div>
+  </div>`;
+}
+function dmToggle(btn){
+  const acc=btn.closest(".bacc"); if(!acc||!ui.obsClose) return;
+  const open=!acc.classList.contains("open");
+  acc.classList.toggle("open",open); btn.setAttribute("aria-expanded",String(open)); ui.obsClose.open=open;
+}
+function dmRefreshCount(){
+  const d=ui.obsClose, el=document.getElementById("dmN"); if(!d||!el) return;
+  dmDraft(); const n=dmCount(d); el.textContent=n?n+" selected":"Optional";
+}
+function dmTick(pid,oid){
+  const d=dmState(pid); d.sel[oid]=!d.sel[oid];
+  const row=document.querySelector(`.dm-row[data-oid="${CSS.escape(oid)}"]`);
+  if(row){row.classList.toggle("on",!!d.sel[oid]);const t=row.querySelector(".dm-tick");if(t)t.setAttribute("aria-checked",String(!!d.sel[oid]));}
+  const ong=dmOngoing(pid), all=document.getElementById("dmAll");
+  if(all) all.textContent=ong.length&&ong.every(o=>d.sel[o.id])?"Clear":"Select all";
+  dmRefreshCount();
+}
+function dmSelectAll(pid){
+  const d=dmState(pid), ong=dmOngoing(pid), on=!(ong.length&&ong.every(o=>d.sel[o.id]));
+  ong.forEach(o=>{d.sel[o.id]=on});
+  document.querySelectorAll(".dm-row").forEach(r=>{r.classList.toggle("on",on);const t=r.querySelector(".dm-tick");if(t)t.setAttribute("aria-checked",String(on))});
+  const all=document.getElementById("dmAll"); if(all) all.textContent=on?"Clear":"Select all";
+  dmRefreshCount();
+}
+function dmAdd(){
+  obsCloseDraft(); const d=ui.obsClose; if(!d) return;
+  d.open=true; d.add=d.add||[]; d.add.push({drug:"",dose:"",route:"PO",freq:"OD"});
+  dmSyncFields(); render({fromInput:1});
+  setTimeout(()=>{const el=document.getElementById("dmdrug"+(d.add.length-1)); if(el){try{el.scrollIntoView({block:"center",behavior:"smooth"})}catch(e){} el.focus({preventScroll:true});}},60);
+}
+function dmEditOngoing(pid,oid){
+  obsCloseDraft(); const d=dmState(pid); const o=(S.orders||[]).find(x=>x.id===oid); if(!o) return;
+  if((d.add||[]).some(m=>m.fromOrder===oid)){toast("Already added below for editing.");return}
+  d.sel[oid]=false; d.open=true;
+  d.add=d.add||[]; d.add.push({drug:o.drug||"",dose:(o.dose&&o.dose!=="—")?o.dose:"",route:o.route||"PO",freq:o.freq||"OD",fromOrder:oid});
+  dmSyncFields(); render({fromInput:1});
+  setTimeout(()=>{const el=document.getElementById("dmdose"+(d.add.length-1)); if(el){try{el.scrollIntoView({block:"center",behavior:"smooth"})}catch(e){}}},60);
+}
+function dmRemove(i){
+  obsCloseDraft(); const d=ui.obsClose; if(!d) return;
+  d.add.splice(i,1); dmSyncFields(); render({fromInput:1});
+}
+// Final list sent with the close. Empty → [] (caller omits the RPC param entirely).
+function dmCollect(pid){
+  const d=ui.obsClose; if(!d||d.pid!==pid) return [];
+  dmDraft();
+  const out=[], seen=new Set();
+  const push=m=>{const k=[m.name,m.dose,m.route,m.frequency].join("|").toLowerCase(); if(!m.name||seen.has(k)) return; seen.add(k); out.push(m)};
+  dmOngoing(pid).filter(o=>d.sel[o.id]).forEach(o=>push({name:String(o.drug||"").trim(),dose:(o.dose&&o.dose!=="—")?String(o.dose).trim():"",route:o.route||"PO",frequency:o.freq||"OD",source:"ongoing",order_id:o.id}));
+  (d.add||[]).forEach(m=>{const name=String(m.drug||"").trim(); if(!name) return;
+    const r={name,dose:String(m.dose||"").trim(),route:m.route||"PO",frequency:m.freq||"OD",source:m.fromOrder?"ongoing":"new"};
+    if(m.fromOrder){r.order_id=m.fromOrder;r.modified=true}
+    push(r)});
+  return out;
+}
+function dmLine(m){return [m.name,m.dose,m.route,m.frequency?freqLabel(m.frequency):""].filter(x=>x&&x!=="—").join(" · ")}
+function dmLabel(outcome){return outcome==="referred"?"Medications on referral":"Medications on disposal"}
+function dmRecordHtml(it){
+  const list=it.dmeds||[]; if(!list.length) return "";
+  return `<div class="rec-dm"><p class="rec-dm-h">${esc(dmLabel(it.dmOutcome))}</p><ul>${list.map(m=>`<li>${esc(dmLine(m))}${m.source==="new"?` <em class="dm-tag">New</em>`:m.modified?` <em class="dm-tag">Changed</em>`:""}</li>`).join("")}</ul></div>`;
+}
+function dmText(outcome,list){
+  if(!list||!list.length) return "";
+  return dmLabel(outcome)+":\n"+list.map(m=>"• "+dmLine(m)+(m.source==="new"?" (new)":m.modified?" (changed)":"")).join("\n");
+}
 function obsCloseAsk(pid,outcome){
   const p=patient(pid);if(!p||p.status!=="observation")return;
+  ui.obsClose={pid,open:false,sel:{},add:[]}; if(ui.fields) Object.keys(ui.fields).forEach(k=>{if(/^dm(route|freq)\d+$/.test(k)) delete ui.fields[k]});
   if(outcome==="referred"){
     ui.obsRefer={pid,dept:"",reason:""};
     openPanel("obsRefer",{pid});
@@ -6921,6 +7079,7 @@ function obsDisposeForm(){
   return `<p class="tiny">Dispose ${esc(p.name)} and free the bed.</p>
     <label class="field"><span>Mode of discharge</span>${picker("odmode",OBS_DISPOSE_MODES,d.mode||"","Mode of discharge")}</label>
     <label class="field"><span>Outcome</span>${picker("odout",OBS_DISPOSE_OUTCOMES,d.outcome||"","Outcome")}</label>
+    ${dmSectionHtml(pid,"disposed")}
     <button class="btn block" onclick="submitObsDispose('${pid}')">Dispose</button>
     <button class="btn ghost block" style="margin-top:8px" onclick="closePanel()">Cancel</button>`;
 }
@@ -6937,8 +7096,9 @@ function obsReferForm(){
   const p=patient(pid);if(!p)return "";
   const d=ui.obsRefer=ui.obsRefer||{pid};
   return `<p class="tiny">Refer ${esc(p.name)} out of observation and free the bed.</p>
-    <label class="field"><span>Refer to department</span><input id="orefdept" value="${esc(d.dept||"")}" placeholder="e.g. Medicine / Neurology"/></label>
-    <label class="field"><span>Reason</span><textarea id="orefreason" rows="3" placeholder="Why referred">${esc(d.reason||"")}</textarea></label>
+    <label class="field"><span>Refer to department</span><input id="orefdept" value="${esc(d.dept||"")}" placeholder="e.g. Medicine / Neurology" oninput="ui.obsRefer.dept=this.value"/></label>
+    <label class="field"><span>Reason</span><textarea id="orefreason" rows="3" placeholder="Why referred" oninput="ui.obsRefer.reason=this.value">${esc(d.reason||"")}</textarea></label>
+    ${dmSectionHtml(pid,"referred")}
     <button class="btn block" onclick="submitObsRefer('${pid}')">Refer</button>
     <button class="btn ghost block" style="margin-top:8px" onclick="closePanel()">Cancel</button>`;
 }
@@ -6963,6 +7123,7 @@ async function closeObservation(pid,outcome){
     if(!["advice","request","lama"].includes(dMode)){toast("Choose the mode of discharge.","bad");return}
     if(!["improved","unchanged"].includes(dOut)){toast("Choose the outcome.","bad");return}
   }
+  const dmeds=dmCollect(pid); // R1.3.116 optional meds on referral / disposal
   if(workflowLocked("obs-close",pid))return;
   setBusy(true,"Closing observation\u2026");
   try{
@@ -6974,7 +7135,15 @@ async function closeObservation(pid,outcome){
       rpcArgs.p_discharge_mode=dMode;
       rpcArgs.p_discharge_outcome=dOut;
     }
-    const {data,error}=await sb.rpc("ward_close_observation",rpcArgs);
+    if(dmeds.length) rpcArgs.p_discharge_meds=dmeds; // omitted when empty → identical call to R1.3.115
+    let {data,error}=await sb.rpc("ward_close_observation",rpcArgs);
+    let dmServer=!!dmeds.length;
+    if(error&&dmeds.length&&/p_discharge_meds|PGRST202|could not find the function|function .*does not exist/i.test(String(error.message||error.code||error))){
+      // Server not migrated yet: close as before; keep the list on this device only.
+      delete rpcArgs.p_discharge_meds; dmServer=false;
+      ({data,error}=await sb.rpc("ward_close_observation",rpcArgs));
+      if(!error) toast("Closed · medication list saved on this device only (server update pending).","bad");
+    }
     if(error) throw error;
     const bed=S.beds.find(b=>b.patientId===pid); const bedNo=bed?bed.no:""; if(bed) bed.patientId=null;
     p.status="discharged";p.dischargedAt=now();
@@ -6984,7 +7153,7 @@ async function closeObservation(pid,outcome){
       p.dischargeMode=dMode;
       p.dischargeOutcome=dOut;
     }
-    const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.endedBy=S.userId;st.outcome=outcome;if(outcome==="referred"){st.referralTo=dept;st.note=reason;st.referralReason=reason;}}
+    const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.endedBy=S.userId;st.outcome=outcome;st.dischargeMeds=(data&&Array.isArray(data.discharge_meds)&&data.discharge_meds.length)?data.discharge_meds:dmeds;if(outcome==="referred"){st.referralTo=dept;st.note=reason;st.referralReason=reason;}}
     ev(pid,"Observation ended \u00b7 "+outcome+(dept?" \u00b7 "+dept:""),true,"note");
     try{
       const isRef=outcome==="referred", ts=Date.now();
@@ -6995,10 +7164,10 @@ async function closeObservation(pid,outcome){
         targetUrl:"./#/snap/"+encodeURIComponent(pid),
         recipientScope:"active_team",
         dedupeKey:"obs-close:"+pid+":"+ts,
-        metadata:{action:isRef?"referral":"dispose",outcome,bed_no:bedNo||null,department:isRef?(dept||null):null,reason:reason||null,discharge_mode:dMode||null,discharge_outcome:dOut||null}
+        metadata:{action:isRef?"referral":"dispose",outcome,discharge_meds_count:dmeds.length,bed_no:bedNo||null,department:isRef?(dept||null):null,reason:reason||null,discharge_mode:dMode||null,discharge_outcome:dOut||null}
       });
     }catch(ne){ evFail(pid,"Observation notification",ne); }
-    closePanel();ui.obsRefer=null;ui.obsDispose=null;
+    closePanel();ui.obsRefer=null;ui.obsDispose=null;ui.obsClose=null;
     toast(outcome==="referred"?"Referred"+(dept?" to "+dept:""):"Disposed","ok");save();go("observe");
   }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
   finally{workflowUnlock("obs-close",pid);setBusy(false)}
@@ -9180,6 +9349,7 @@ function snapshotMedInputs(){
   try{censusDraft()}catch(e){}
   try{obsDraft()}catch(e){}
   try{if(ui.panel&&ui.panel.kind==="obsAdmit")obsAdmitDraft()}catch(e){}
+  try{if(ui.panel&&(ui.panel.kind==="obsRefer"||ui.panel.kind==="obsDispose"))obsCloseDraft()}catch(e){}
   try{if(route.page==="pedit")peditDraft()}catch(e){}
   if(ui.medPid) ui.sheet=medSheetHtml(ui.medPid);
   if(ui.medEditId) ui.sheet=medEditSheetHtml(ui.medEditId); // R1.3.89
@@ -9594,7 +9764,8 @@ function patientRecordItems(pid){
       const evEnd=((S.events||[]).filter(e=>String(e.pid)===String(pid)&&/observation ended|referred|disposed/i.test(e.title||"")).sort((a,b)=>Math.abs(Date.parse(a.at||0)-endTs)-Math.abs(Date.parse(b.at||0)-endTs))[0])||{};
       const endBy=s.endedBy||evEnd.by||s.by||p.by||null;
       const endByName=(evEnd.actorName&&evEnd.actorName!=="?")?evEnd.actorName:"";
-      add({kind:"obs",title:title,at:s.endedAt,by:endBy,byName:endByName,body:body});
+      const dmeds=(s.outcome==="referred"||s.outcome==="disposed")&&Array.isArray(s.dischargeMeds)?s.dischargeMeds.filter(m=>m&&m.name):[];
+      add({kind:"obs",title:title,at:s.endedAt,by:endBy,byName:endByName,body:body,dmeds:dmeds.length?dmeds:null,dmOutcome:s.outcome});
     }
   });
   let admitCardAdded=false;
@@ -9693,7 +9864,7 @@ function recordItemHtml(it,pid){
     <div class="rec-rail"><div class="rec-dot"></div></div>
     <div class="rec-card${legal?" has-legal":""}">${legal}
       <h3>${esc(it.title||"")}</h3>
-      ${it.meds?recMedRowsHtml(it):(it.body?`<p class="sm">${esc(it.body)}</p>`:"")}
+      ${it.meds?recMedRowsHtml(it):(it.body?`<p class="sm">${esc(it.body)}</p>`:"")}${it.dmeds?dmRecordHtml(it):""}
       <p class="tiny">${esc(who)}${who?" · ":""}${esc(it.atLabel||stamp(it.at)||fmt(it.at)||"")}</p>
     </div>
   </div>`;
@@ -9870,7 +10041,7 @@ function exportPatientRecord(pid){
   try{
     const b=bedObj(pid)||lastBedObj(pid);
     const legal=legalTagsOf(pid).map(x=>x[1]);
-    const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {legal:(it.kind==="admit"&&legal.length)?legal:null,title:it.title||"",body:it.body||"",meds:it.meds||null,summary:it.summary||"",foot:`${who}${who?" · ":""}${it.atLabel||stamp(it.at)||fmt(it.at)||""}`}});
+    const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {legal:(it.kind==="admit"&&legal.length)?legal:null,title:it.title||"",body:[it.body||"",it.dmeds?dmText(it.dmOutcome,it.dmeds):""].filter(Boolean).join("\n"),meds:it.meds||null,summary:it.summary||"",foot:`${who}${who?" · ":""}${it.atLabel||stamp(it.at)||fmt(it.at)||""}`}});
     const ageSex=[p.age,p.sex].filter(x=>x!=null&&x!=="").join(" ");
     const meta={
       name:p.name||"",legal,version:APP_VERSION,dept:RECORD_PDF_DEPT,
