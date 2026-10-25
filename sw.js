@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.123-no-horizontal-overflow";
+const VERSION = "ward-sync-pwa-r1.3.124-mental-status-examination";
 const PRECACHE = [
   "./",
   "./index.html",

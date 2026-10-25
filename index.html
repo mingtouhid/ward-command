@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.123 no-horizontal-overflow -->
+<!-- WARD SYNC RELEASE: R1.3.124 mental-status-examination -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -362,7 +362,7 @@ a{color:var(--teal2);text-decoration:none}
 
 
 .plist-grid{display:grid;grid-template-columns:1fr;gap:var(--gap)}
-.snap-cols{display:grid;gap:12px;grid-template-columns:1fr;grid-template-areas:"id" "pgt" "crit" "med" "adv" "act"}
+.snap-cols{display:grid;gap:12px;grid-template-columns:1fr;grid-template-areas:"id" "pgt" "mse" "crit" "med" "adv" "act"}
 .snap-identity{grid-area:id}
 .snap-current{grid-area:pgt}
 .snap-critical-status{grid-area:crit}
@@ -409,7 +409,7 @@ a{color:var(--teal2);text-decoration:none}
 @container ward (min-width: 620px){
   .plist-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,max(240px,28cqi)),1fr))}
   .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;
-    grid-template-areas:"id pgt" "crit med" "act med" "act adv"}
+    grid-template-areas:"id pgt" "mse med" "crit med" "act med" "act adv"}
   .snap-cols > .card{margin:0;padding:18px 20px;min-height:0;display:flex;flex-direction:column}
   .snap-cols .bedno{font-size:clamp(20px,2.6cqi,28px)}
   .snap-cols h2{font-size:clamp(20px,2.4cqi,26px);font-weight:700}
@@ -424,7 +424,7 @@ a{color:var(--teal2);text-decoration:none}
 @container ward (min-width: 980px){
   .plist-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
   .snap-cols{grid-template-columns:1fr 1fr;gap:18px;align-items:start;
-    grid-template-areas:"id pgt" "crit med" "act med" "act adv"}
+    grid-template-areas:"id pgt" "mse med" "crit med" "act med" "act adv"}
   .snap-cols > .card{padding:22px 24px;min-height:0;border-radius:24px}
 }
 @media (orientation: landscape){
@@ -458,7 +458,7 @@ a{color:var(--teal2);text-decoration:none}
   .sheet .box{max-width:560px}
   .top h1{font-size:16px}
   .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;
-    grid-template-areas:"id pgt" "crit med" "act med" "act adv"}
+    grid-template-areas:"id pgt" "mse med" "crit med" "act med" "act adv"}
   .more-grid{grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:12px}
 }
 .seg{display:flex;gap:6px;margin:0 0 10px}
@@ -753,7 +753,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
   .home-split{display:grid;grid-template-columns:minmax(220px,.9fr) minmax(220px,1.1fr);gap:12px;align-items:stretch}
   .plist-grid{grid-template-columns:1fr 1fr}
   .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;
-    grid-template-areas:"id pgt" "crit med" "act med" "act adv"}
+    grid-template-areas:"id pgt" "mse med" "crit med" "act med" "act adv"}
 }
 
 
@@ -785,6 +785,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
     grid-template-columns:1fr 1fr;
     grid-template-areas:
       "id pgt"
+      "mse med"
       "crit med"
       "act med"
       "act adv";
@@ -1897,6 +1898,19 @@ html.kb-open .sheet{top:var(--vvt,0px);bottom:auto;height:var(--vvh,100%);paddin
 html.kb-open .sheet .box,html.kb-open .pick-layer .box{max-height:calc(100% - 4px)}
 html.kb-open .sheet .box{margin-bottom:4px}
 .rec-dm{margin-top:6px}
+/* R1.3.124d: medications on admission (dm picker, admit mode) */
+.dm-row.stop{border-color:color-mix(in srgb,#dc2626 45%,var(--line));background:color-mix(in srgb,#dc2626 6%,var(--panel))}
+.dm-row.stop .dm-txt b{text-decoration:line-through;text-decoration-thickness:1.5px;opacity:.75}
+.dm-row:not(.stop) .dm-willstop{display:none}
+.dm-tag.dm-willstop{background:color-mix(in srgb,#dc2626 14%,transparent);color:#b91c1c}
+.dm-tag.dm-statng{background:color-mix(in srgb,#d97706 16%,transparent);color:#b45309}
+.dm-note{margin:-2px 2px 8px;opacity:.75;line-height:1.35}
+/* admit header: name on line 1, live summary on its own nowrap line 2, so the header height never changes while typing */
+.dm-admit .bacc-h{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:8px;row-gap:1px}
+.dm-admit .bacc-h .bacc-name{grid-column:1;grid-row:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-admit .bacc-h .bacc-n{grid-column:1;grid-row:2;justify-self:start;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.dm-admit .bacc-h>svg,.dm-admit .bacc-h>:last-child{grid-column:2;grid-row:1/3;align-self:center}
+.dm-txt>span:has(.dm-tag){white-space:normal}
 /* R1.3.120: compact discharge form */
 .dis-form .dis-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .dis-form textarea#dadvice{min-height:0;resize:vertical}
@@ -1920,6 +1934,128 @@ html.kb-open .sheet .box{margin-bottom:4px}
 .rec-dm-h{margin:0 0 2px;font-size:12.5px;font-weight:700;color:var(--muted)}
 .rec-dm ul{margin:0;padding-left:18px}
 .rec-dm li{font-size:13.5px;line-height:1.35;margin:1px 0}
+/* R1.3.124 MSE */
+html.mse-open #app{pointer-events:none}
+html.mse-open .main{overflow:hidden}
+html.mse-open,html.mse-open body{overflow:hidden}
+.mse-layer{position:fixed;inset:0;z-index:75;background:var(--bg);display:flex;flex-direction:column;overscroll-behavior:contain;max-width:100vw;overflow:hidden}
+html.kb-open .mse-layer{top:var(--vvt,0px);height:var(--vvh,100%);bottom:auto}
+html.kb-open .mse-dots{display:none}
+.mse-top{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 8px;border-bottom:1px solid var(--line);background:var(--panel);flex:0 0 auto;min-width:0}
+.mse-x{flex:0 0 36px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:16px;font-weight:700;cursor:pointer}
+.mse-tt{min-width:0;display:flex;flex-direction:column}
+.mse-tt b{font-size:16px;line-height:1.2;color:var(--ink)}
+.mse-tt span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mse-tt i{font-style:normal}
+.mse-dots{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line);flex:0 0 auto}
+.mse-dot{aspect-ratio:1;max-width:30px;width:100%;justify-self:center;border-radius:50%;border:1.5px solid var(--line);background:var(--panel2);color:var(--muted);font-size:11px;font-weight:700;padding:0;cursor:pointer;line-height:1}
+.mse-dot.part{border-color:var(--teal);color:var(--teal);background:color-mix(in srgb,var(--teal) 10%,var(--panel))}
+.mse-dot.done{border-color:var(--teal);background:var(--teal);color:#fff}
+.mse-dot.hi{border-color:var(--danger);background:var(--danger);color:#fff}
+.mse-dot.cur{outline:2.5px solid var(--ink);outline-offset:1.5px}
+.mse-dot.rv{color:var(--ink)}
+.mse-pager{flex:1 1 auto;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.mse-pager::-webkit-scrollbar{display:none}
+.mse-page{flex:0 0 100%;width:100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;overflow-y:auto;overflow-x:hidden;padding:14px 14px 28px;box-sizing:border-box;overscroll-behavior-y:contain}
+.mse-page.risk{background:color-mix(in srgb,var(--danger) 8%,var(--bg))}
+.mse-ph{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+.mse-pt{min-width:0}
+.mse-pn{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mse-ph h3{margin:2px 0 0;font-size:18px;line-height:1.25;color:var(--ink)}
+.mse-ph .btn{flex:0 0 auto;white-space:nowrap}
+.mse-quick{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+.mse-quick .btn{max-width:100%;white-space:normal;text-align:left}
+.mse-sec{margin:16px 0 0;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+.mse-g{margin:12px 0 0;min-width:0}
+.mse-g.row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px;align-items:center;margin-top:8px}
+.mse-glb{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--ink)}
+.mse-g.row .mse-glb{margin:0;font-weight:600;color:var(--muted)}
+.mse-glb em{font-style:normal;font-weight:500;color:var(--muted);font-size:11px;margin-left:4px}
+.mse-chips{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.chip.mse-c{font-size:13px;padding:7px 11px;min-height:34px;line-height:1.2;max-width:100%;white-space:normal;text-align:left;transform:none}
+.chip.mse-c.on{transform:none}
+.chip.mse-c.hi.on{background:var(--danger);border-color:var(--danger);color:#fff}
+.chip.mse-c.hi:not(.on){border-color:color-mix(in srgb,var(--danger) 35%,var(--line))}
+.mse-sub{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--teal);background:var(--panel2);border-radius:0 10px 10px 0}
+.mse-sub-lb{font-size:12px;font-weight:700;color:var(--muted)}
+.mse-risk-banner{margin:8px 0 4px;padding:9px 12px;border-radius:12px;background:var(--danger-bg);color:var(--danger);font-size:13px;line-height:1.35;border:1px solid color-mix(in srgb,var(--danger) 30%,transparent)}
+.mse-note{display:block;margin:16px 0 0}
+.mse-note span{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+.mse-note em{font-style:normal;font-weight:500}
+.mse-note textarea,.mse-note input{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);resize:none}
+.mse-foot{flex:0 0 auto;display:grid;grid-template-columns:1fr 1.4fr;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--panel)}
+.mse-foot.one{grid-template-columns:1fr}
+.mse-foot .btn{width:100%;justify-content:center}
+.mse-foot .btn.save{background:var(--teal);border-color:var(--teal);color:#fff}
+.mse-foot .btn:disabled{opacity:.45}
+.mse-rv{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:10px 12px;margin:0 0 8px;cursor:pointer;color:var(--ink);font:inherit}
+.mse-rv-n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;background:var(--panel2);border:1.5px solid var(--line);color:var(--muted)}
+.mse-rv.done .mse-rv-n{background:var(--teal);border-color:var(--teal);color:#fff}
+.mse-rv.part .mse-rv-n{border-color:var(--teal);color:var(--teal)}
+.mse-rv-b{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:13.5px;line-height:1.4}
+.mse-rv-b b{font-size:13px}
+.mse-rv-b .muted{color:var(--muted);font-style:italic}
+.mse-rv-hint{margin:4px 0 10px;color:var(--muted)}
+.mse-discard{display:block;margin:14px auto 0;background:none;border:0;color:var(--danger);font:inherit;font-size:13px;font-weight:600;text-decoration:underline;cursor:pointer}
+.mse-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:12px 14px 24px}
+.mse-hi{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:11px 13px;margin:0 0 10px;font:inherit;color:var(--ink);cursor:pointer}
+.mse-hi.risk{border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+.mse-hi-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px}
+.mse-hi-by{font-size:12px;color:var(--muted)}
+.mse-hi-s{font-size:13px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.mse-kind{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+.mse-vsum{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:10px 13px;margin:0 0 12px}
+.mse-vsum p{margin:0}.mse-vsum p+p{margin-top:4px;font-size:14px;line-height:1.45}
+.mse-vs{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:10px 13px;margin:0 0 10px}
+.mse-vs.risk{background:color-mix(in srgb,var(--danger) 7%,var(--panel));border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
+.mse-vs h4{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em}
+.mse-vr{display:grid;grid-template-columns:minmax(0,40%) minmax(0,1fr);gap:10px;padding:4px 0;border-top:1px dashed var(--line);font-size:13px;line-height:1.4}
+.mse-vr:first-of-type{border-top:0}
+.mse-vr span{color:var(--muted)}
+.mse-vr b{font-weight:600;overflow-wrap:anywhere}.mse-vr b.hi{color:var(--danger)}
+.mse-risk-pill{display:inline-block;vertical-align:middle;margin-left:8px;padding:2px 9px;border-radius:999px;background:var(--danger);color:#fff;font-size:12px;font-weight:800;letter-spacing:.04em;line-height:1.5;text-transform:uppercase}
+.mse-risk-pill.sm{font-size:10.5px;margin-left:0;padding:1px 8px}
+.snap-mse{grid-area:mse}
+.snap-mse.risk{border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+.snap-mse-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.snap-mse-h .tiny{margin:0;font-size:10.5px}
+.snap-mse-meta{margin:8px 0 2px;font-size:13px;color:var(--muted)}
+.snap-mse-meta b{color:var(--ink)}
+.snap-mse-sum{margin:2px 0 0;font-size:14px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.snap-mse-act{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+.dis-mse-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;min-width:0}
+.dis-mse-row.filled{display:block;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:9px 11px}
+.dis-mse-sum{margin:0;font-size:13.5px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.dis-mse-act{display:flex;align-items:center;gap:12px;margin-top:8px}
+.dis-mse-act .linkbtn,.dis-mse .linkbtn{background:none;border:0;padding:0;color:var(--danger);font:inherit;font-size:13px;font-weight:600;text-decoration:underline;cursor:pointer}
+.rec-item.rec-mse .rec-dot{background:#9333ea;box-shadow:0 0 0 4px rgba(147,51,234,.12)}
+.rec-item.rec-mse.hi .rec-dot{background:var(--danger);box-shadow:0 0 0 4px rgba(185,28,28,.14)}
+.rec-mse-dis{margin:8px 0 0;padding:8px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line)}
+.rec-mse-dis p{margin:0}.rec-mse-dis .rec-mse-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+/* R1.3.124b structured MSE */
+.msx{font-size:13.5px;line-height:1.38;color:var(--ink);overflow-wrap:anywhere;min-width:0}
+.msx-r{display:grid;grid-template-columns:7.4em minmax(0,1fr);column-gap:8px;padding:2.5px 0;border-top:1px dashed color-mix(in srgb,var(--line) 70%,transparent)}
+.msx-r:first-child{border-top:0;padding-top:0}
+.msx-l{font-weight:750;color:var(--ink);font-size:12.5px;line-height:1.5}
+.msx-v{min-width:0;font-weight:400}
+.msx .ab{font-weight:700;color:var(--warn)}
+.msx .hi,.snap-mse-sum .hi,.mse-hi-s .hi,.dis-mse-sum .hi,.mse-vsum .hi{font-weight:800;color:var(--danger)}
+.msx i{font-style:italic;color:var(--ink)}
+.msx-g{display:block}
+.msx-g>.msx-l{display:block}
+.msx-subs{margin:1px 0 0 3px;padding-left:9px;border-left:2px solid var(--line)}
+.msx-g.msx-risk .msx-subs{border-left-color:color-mix(in srgb,var(--danger) 55%,var(--line))}
+.msx-subs{display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:10px;row-gap:2px}
+.msx-s{display:contents}
+.msx-sl{font-weight:700;font-size:11.5px;line-height:1.6;color:var(--muted);overflow-wrap:normal;white-space:nowrap}
+.msx-wnl{color:var(--teal);font-weight:650;font-style:normal}
+.dis-mse-sum span,.dis-mse-sum b,.dis-mse-sum em{display:inline;font-size:inherit;letter-spacing:inherit;text-transform:none}.dis-mse-sum .mse-risk-pill{display:inline-block;font-size:10px}
+.dis-mse-sum em.msx-wnl{color:var(--teal)}
+.snap-mse-sum b:not(.hi),.mse-hi-s b:not(.hi),.dis-mse-sum b:not(.hi){font-weight:700}
+.rec-mse-dis .msx{margin-top:2px}
+.mse-vstruct .msx{font-size:14px}.mse-vstruct .msx-r{padding:4px 0}
+@media (max-width:380px){.msx{font-size:13px}.msx-r{grid-template-columns:6.4em minmax(0,1fr);column-gap:6px}.msx-l{font-size:12px}.msx-subs{column-gap:8px}}
+@media (max-width:300px){.msx-r{grid-template-columns:1fr}.msx-subs{grid-template-columns:1fr}.msx-sl{white-space:normal}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -2415,14 +2551,14 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.123";
+const APP_VERSION="R1.3.124";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return freshSeed()})();
 try{if(!localStorage.getItem(KEY))localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
 freshStartPurgeLegacy();
-function freshSeed(){const x=seed();if(Object.keys(FRESH_CARRY).length){Object.assign(x,FRESH_CARRY);["patients","assignments","snaps","orders","doses","tasks","handovers","hitems","events","ect","ectSessions","criticalStatusUpdates","obsStays","advice","broadcasts"].forEach(f=>x[f]=[]);(x.beds||[]).forEach(b=>b.patientId=null)}return x}
+function freshSeed(){const x=seed();if(Object.keys(FRESH_CARRY).length){Object.assign(x,FRESH_CARRY);["patients","assignments","snaps","orders","doses","tasks","handovers","hitems","events","ect","ectSessions","criticalStatusUpdates","obsStays","advice","broadcasts","mse"].forEach(f=>x[f]=[]);(x.beds||[]).forEach(b=>b.patientId=null)}return x}
 let sb=null, cloudStatus="offline", applyingRemote=false, pushTimer=null, cloudLastError="";
 let pending=[];
 const OUTBOX_LS="ward-command-outbox-e2";
@@ -2662,13 +2798,29 @@ function readMedRows(prefix,list){
     };
   });
 }
+/* R1.3.124c — duplicate medication guard. An order identical to one already running for the patient
+   (same drug, dose, route and frequency, ignoring case/spaces) is never created twice. */
+function medNorm(x){return String(x==null?"":x).toLowerCase().replace(/[\s.]+/g,"").replace(/^—$/,"")}
+function medKey(m){return [medNorm(m.drug),medNorm(m.dose),medNorm(m.route||"PO"),medNorm(freqCompose(freqParts(m.freq||m.frequency||"OD")))].join("|")}
+function medRunning(o){return !!o&&!o.stop&&o.status!=="stopped"&&!statDone(o)}
+function medDupOf(pid,m){
+  const k=medKey(m), supd=medSupersededIds();
+  return (S.orders||[]).find(o=>String(o.pid)===String(pid)&&medRunning(o)&&!supd.has(o.id)&&medKey(o)===k)||null;
+}
+function medDedupeList(list){const seen=new Set();return (list||[]).filter(m=>{const k=medKey(m);if(seen.has(k))return false;seen.add(k);return true})}
+function medLineTxt(o){return [o.drug,o.dose&&o.dose!=="—"?o.dose:"",o.route,freqLabel(o.freq)].filter(Boolean).join(" ")}
 function commitOrders(pid,meds){
-  (meds||[]).filter(m=>(m.drug||"").trim()).forEach(m=>{
+  const skipped=[];
+  medDedupeList((meds||[]).filter(m=>(m.drug||"").trim())).forEach(m=>{
+    const dup=medDupOf(pid,{drug:(m.drug||"").trim(),dose:(m.dose||"").trim()||"—",route:m.route,freq:m.freq});
+    if(dup){skipped.push(medLineTxt(dup));return}
     const ord={id:uid("o"),pid,drug:m.drug.trim(),dose:(m.dose||"").trim()||"—",route:(m.route||"PO").trim()||"PO",freq:(m.freq||"OD").trim()||"OD",time:"08:00",start:now(),stop:null,hold:null,status:"active"};
     S.orders.unshift(ord);
     ev(pid,"Started "+ord.drug+" "+ord.dose+" "+ord.route+" "+freqLabel(ord.freq),true,"med");
     qOrder(ord);qStatSlot(ord);
   });
+  if(skipped.length) setTimeout(()=>toast("Already on the chart, not added again: "+skipped.join("; "),"info"),60);
+  return skipped;
 }
 // R1.3.78 STAT: one dose due at order time; once given the order is complete (no further doses due).
 function isStat(o){return !!o&&/^stat$/i.test(String(o.freq||"").trim())}
@@ -2684,6 +2836,14 @@ function statGiven(o){
   return (S.doses||[]).filter(d=>d.oid===o.id&&d.status==="given").sort((a,b)=>new Date(b.at)-new Date(a.at))[0]||null;
 }
 function statDone(o){return isStat(o)&&!!statGiven(o)}
+// R1.3.124c: a STAT not marked given for over an hour says since when, instead of an endless "due now".
+function statDueTxt(o){
+  const slot=(S.doses||[]).find(d=>d.oid===o.id&&d.status==="pending");
+  const t=Date.parse((o&&o.at)||(slot&&slot.at)||0)||0;
+  if(!t||Date.now()-t<3600e3) return "STAT · due now";
+  const d=new Date(t), hm=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  return "STAT · not given · ordered "+(d.toDateString()===new Date().toDateString()?hm:(stamp(d.toISOString())||fmt(d.toISOString())));
+}
 function qStatSlot(o){
   if(!hasStat(o)||(S.doses||[]).some(d=>d.oid===o.id)) return;
   const d={id:uid("d"),oid:o.id,pid:o.pid,at:o.start||now(),status:"pending",by:null};
@@ -2753,7 +2913,7 @@ const onBed=b=>b.patientId?patient(b.patientId):null;
 const occupied=()=>S.beds.filter(b=>b.active&&b.patientId).sort((a,b)=>a.no.localeCompare(b.no,undefined,{numeric:true}));
 const dueFor=pid=>S.doses.filter(d=>d.pid===pid&&d.status==="pending"&&(()=>{const o=(S.orders||[]).find(o=>o.id===d.oid);return !(isPrn(o)&&!hasStat(o))})());
 const openTasks=pid=>S.tasks.filter(t=>t.pid===pid&&t.status!=="done");
-function ev(pid,title,ok,kind,detail){
+function ev(pid,title,ok,kind,detail,opts){
   const p=pid?patient(pid):null;
   const e={
     id:uid("e"),
@@ -2768,8 +2928,11 @@ function ev(pid,title,ok,kind,detail){
     ok:ok!==false,
     kind:kind||evKind(title)
   };
+  // R1.3.124c: server RPCs that write their own activity_log row (observation start / admit / close) pass
+  // {local:true}: the event shows at once but is not queued, so the DB no longer gets a second copy.
+  if(opts&&opts.local) e.local=true;
   S.events.unshift(e);
-  if(sessionTok) qEvent(e);
+  if(sessionTok&&!e.local) qEvent(e);
   return e
 }
 async function dispatchNotificationId(notificationId){
@@ -3141,6 +3304,42 @@ function adviceFromRow(r){
     at:r.created_at,updatedAt:r.updated_at||r.created_at,edited:!!r.edited,
     acks:(Array.isArray(r.acks)?r.acks:[]).map(a=>({by:a.resident_id,name:a.name||rname(a.resident_id)||"Resident",at:a.at}))};
 }
+/* R1.3.124c — generic list hygiene used by every pull. */
+function uniqById(list){
+  const seen=new Map();
+  (list||[]).forEach(x=>{if(!x)return;const k=x.id==null?null:String(x.id);if(k==null){seen.set(Symbol(),x);return}if(!seen.has(k))seen.set(k,x)});
+  return [...seen.values()];
+}
+function keepUnsynced(table,srv,prev,unresolved){
+  const out=uniqById(srv||[]); const ids=new Set(out.map(x=>String(x.id)));
+  const want=new Set((unresolved||pending.filter(o=>o.status!=="acked")).filter(o=>o.table===table&&o.row&&o.row.id).map(o=>String(o.row.id)));
+  if(!want.size) return out;
+  (prev||[]).forEach(x=>{if(x&&want.has(String(x.id))&&!ids.has(String(x.id))){out.push(x);ids.add(String(x.id))}});
+  return out;
+}
+// Same fact logged twice (client copy + server RPC copy, or a replayed write with a new id): same patient,
+// same title (or one title extends the other with " · …"), within 10 s → keep one, preferring the server row.
+function evTwin(a,b){
+  if(String(a.pid||"")!==String(b.pid||"")) return false;
+  const ta=String(a.title||""), tb=String(b.title||"");
+  if(!(ta===tb||ta.startsWith(tb+" \u00b7 ")||tb.startsWith(ta+" \u00b7 "))) return false;
+  return Math.abs((Date.parse(a.at||0)||0)-(Date.parse(b.at||0)||0))<=10000;
+}
+function evScore(e){return (e.local?0:4)+(/^ev-/.test(String(e.id||""))?2:0)+(e.detail?1:0)}
+function evCollapse(list){
+  const arr=uniqById(list).sort((a,b)=>(Date.parse(a.at||0)||0)-(Date.parse(b.at||0)||0));
+  const kept=[];
+  arr.forEach(e=>{
+    const t=Date.parse(e.at||0)||0;
+    let j=kept.length-1, hit=-1;
+    while(j>=0&&t-(Date.parse(kept[j].at||0)||0)<=10000){if(evTwin(kept[j],e)){hit=j;break}j--}
+    if(hit<0){kept.push(e);return}
+    const k=kept[hit]; const keepE=evScore(e)>evScore(k)?e:k, drop=keepE===e?k:e;
+    if(!keepE.detail&&drop.detail) keepE.detail=drop.detail;
+    kept[hit]=keepE;
+  });
+  return kept.sort((a,b)=>new Date(b.at)-new Date(a.at));
+}
 async function cloudPull(opts){
   if(pullPromise) return pullPromise;
   pullPromise=doCloudPull(opts||{}).finally(()=>{pullPromise=null});
@@ -3186,6 +3385,7 @@ async function doCloudPull(opts){
     S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",mrdNo:r.mrd_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,dischargeAdvice:r.discharge_advice||"",dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:[],dischargeReview:r.discharge_review||"",dischargeEctSessions:(r.discharge_ect_sessions==null?null:Number(r.discharge_ect_sessions)),treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
     S.assignments=assigns.map(r=>({id:r.id,patientId:r.patient_id,bedId:r.bed_id,at:r.assigned_at,released:r.released_at,by:r.assigned_by}));
   }
+  const prevLists={orders:S.orders,doses:S.doses,tasks:S.tasks,ect:S.ect,ectSessions:S.ectSessions,handovers:S.handovers,hitems:S.hitems};
   const nextSnaps={}; snaps.forEach(r=>{nextSnaps[r.patient_id]=rowSnap(r)});
   Object.keys(dirtySnaps).forEach(pid=>{
     if(S.snaps[pid]) nextSnaps[pid]=S.snaps[pid];
@@ -3198,6 +3398,20 @@ async function doCloudPull(opts){
   S.hitems=items.map(r=>({id:r.id,hid:r.handover_id,pid:r.patient_id,pri:r.priority,problem:r.problem,action:r.action_required||"",done:!!r.done,at:r.created_at||now()}));
   S.ect=ect.map(r=>({id:r.id,pid:r.patient_id,indication:r.indication||"",sessionsDone:r.sessions_done||0,nextAt:r.next_session_at,npo:r.npo!==false,status:r.status||"planned",by:r.created_by,at:r.created_at}));
   S.ectSessions=(ectSessions||[]).map(r=>({id:r.id,planId:r.plan_id,pid:r.patient_id,sessionNumber:r.session_number,at:r.session_at,anaesthesia:r.anaesthesia||null,stimulus:r.stimulus||null,seizureSeconds:r.seizure_seconds==null?null:r.seizure_seconds,complications:r.complications||null,response:r.response||null,nextPlan:r.next_plan||null,by:r.recorded_by||null}));
+  // R1.3.124c: one row per id, and rows still waiting in the outbox stay visible until the server has them.
+  S.orders=keepUnsynced("medication_orders",S.orders,prevLists.orders,unresolved);
+  S.doses=keepUnsynced("medication_doses",S.doses,prevLists.doses,unresolved);
+  S.tasks=keepUnsynced("tasks",S.tasks,prevLists.tasks,unresolved);
+  S.ect=keepUnsynced("ect_plans",S.ect,prevLists.ect,unresolved);
+  S.ectSessions=keepUnsynced("ect_sessions",S.ectSessions,prevLists.ectSessions,unresolved);
+  S.handovers=keepUnsynced("handovers",S.handovers,prevLists.handovers,unresolved);
+  S.hitems=keepUnsynced("handover_items",S.hitems,prevLists.hitems,unresolved);
+  if(Array.isArray(wardState.mse_entries)){ // R1.3.124: keep local MSEs whose save is still in the outbox
+    const keep=new Set(unresolved.filter(o=>o.table==="mse_entries"&&o.row).map(o=>o.row.id));
+    const srv=wardState.mse_entries.map(r=>({id:r.id,pid:r.patient_id,kind:r.kind||"routine",data:(r.data&&typeof r.data==="object")?r.data:{},highRisk:!!r.high_risk,summary:r.summary||"",by:r.created_by||null,byName:r.created_by_name||rname(r.created_by)||"",at:r.created_at,admittedAt:r.admitted_at||null}));
+    const ids=new Set(srv.map(x=>x.id));
+    S.mse=uniqById(srv.concat((S.mse||[]).filter(x=>keep.has(x.id)&&!ids.has(x.id))));
+  }
   S.patientEdits=(wardState.patient_edits||[]).map(r=>({id:r.id,pid:r.patient_id,field:r.field,old:r.old_value,new:r.new_value,by:r.edited_by,at:r.edited_at,group:r.edit_group})); // R1.3.90
   const _prevDm=new Map((S.obsStays||[]).map(x=>[x.id,x.dischargeMeds]));
   S.obsStays=(wardState.observation_stays||[]).map(r=>({dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:(_prevDm.get(r.id)||[]),id:r.id,pid:r.patient_id,bedId:r.bed_id,reason:r.reason||"",note:r.note||"",at:r.started_at,by:r.started_by,endedAt:r.ended_at||null,endedBy:r.ended_by||null,outcome:r.outcome||null,referralTo:r.referral_to||""}));
@@ -3212,7 +3426,7 @@ async function doCloudPull(opts){
   const byId={};
   (S.events||[]).forEach(e=>byId[e.id]=e);
   incoming.forEach(e=>byId[e.id]=e);
-  S.events=Object.values(byId).sort((a,b)=>new Date(b.at)-new Date(a.at));
+  S.events=evCollapse(Object.values(byId));
   localStorage.setItem(KEY,JSON.stringify(S));
   if(unresolved.length){
     reconciliationNeeded=true;
@@ -3246,6 +3460,8 @@ async function upsert(table,rows){
       ({error}=await sb.rpc("ward_upsert_ect_plan",{p_token:sessionTok,p_row:row}));
     }else if(table==="ect_sessions"){
       ({error}=await sb.rpc("ward_record_ect_session",{p_token:sessionTok,p_row:row}));
+    }else if(table==="mse_entries"){
+      ({error}=await sb.rpc("ward_save_mse",{p_token:sessionTok,p_row:row})); // R1.3.124
     }else if(table==="activity_log"){
       // activity_log.actor_id is derived server-side from the authenticated
       // ward session.
@@ -3394,7 +3610,7 @@ async function doFlushPending(){
   }
   cloudStatus="syncing";
   Sync.state="RECONCILING";
-  const rank=t=>({patients:0,beds:1,patient_bed_assignments:2,restrain_toggle:3,snapshot_tag:4,pgt_note:5,snapshot_field:6,patient_snapshots:7,patient_consultant:7.5,medication_orders:8,medication_doses:9,ect_plans:10,ect_sessions:11,tasks:12,handovers:13,handover_items:14,ward_sections:15,unit_consultants:16,unit_settings:17,activity_log:20}[t]??18);
+  const rank=t=>({patients:0,beds:1,patient_bed_assignments:2,restrain_toggle:3,snapshot_tag:4,pgt_note:5,snapshot_field:6,patient_snapshots:7,patient_consultant:7.5,medication_orders:8,medication_doses:9,ect_plans:10,ect_sessions:11,mse_entries:11.5,tasks:12,handovers:13,handover_items:14,ward_sections:15,unit_consultants:16,unit_settings:17,activity_log:20}[t]??18);
   work.sort((a,b)=>rank(a.table)-rank(b.table));
   let hard=false;
   for(const op of work){
@@ -4181,7 +4397,7 @@ function snapView(){
     <div class="card snap-identity">
       ${canEditPatient(p)?`<button class="pedit-btn" type="button" aria-label="Edit patient details" title="Edit patient details" onclick="openPatientEdit('${p.id}')">${PEDIT_ICON}</button>`:""}
       <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span>${ectPlan(p.id)?'<span class="badge r-high">ECT</span>':""}${isDelirium(p.id)?` <span class="${rcls("high")}">delirium</span>`:""}</span></div>
-      <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}${legalBadgesHtml(p.id)}</h2>
+      <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}${legalBadgesHtml(p.id)}${mseRiskPill(p.id)}</h2>
       <p class="tiny" style="margin-top:4px">${p.age}${p.sex} · ${esc(p.hospitalNo||p.code)}${mrdLabel(p)?` · <span class="mrd-chip">${esc(mrdLabel(p))}</span>`:""}</p>
       ${(p.address||p.phone)?`<p class="tiny" style="margin-top:4px">${p.address?esc(p.address):""}${p.address&&p.phone?" · ":""}${p.phone?phoneLinkHtml(p.phone):""}</p>`:""}
       <div class="meta">
@@ -4218,6 +4434,7 @@ function snapView(){
         return `<button class="chip ${on?"on":""}" onclick="toggleTag('${p.id}','${tg.id}')">${tg.label}</button>`;
       }).join("")}</div>`:""}
     </div>
+    ${mseCardHtml(p)}
     <div class="card snap-critical-status">
       <div class="row"><div><p class="tiny">CRITICAL STATUS</p></div></div>
       <div style="margin-top:10px">${renderCriticalStatusHistory(p.id)}</div>
@@ -4233,14 +4450,14 @@ function snapView(){
             ? "Stopped · "+(stamp(o.stop)||fmt(o.stop))
             : o.status==="held"
               ? "Paused · "+(stamp(o.hold)||fmt(o.hold)||"")
-              : isStat(o) ? (statGiven(o)?"STAT · given "+(stamp(statGiven(o).givenAt||statGiven(o).at)||fmt(statGiven(o).at)):"STAT · due now")
+              : isStat(o) ? (statGiven(o)?"STAT · given "+(stamp(statGiven(o).givenAt||statGiven(o).at)||fmt(statGiven(o).at)):statDueTxt(o))
               : (()=>{
                 const fp=freqParts(oFreq(o));
                 const ongoing=()=>{const ch=medChain(o);return ch.length?"Ongoing since "+(fmt(ch[ch.length-1].start)||"")+" · changed "+(fmt(o.start)||""):"Ongoing since "+(fmt(o.start)||"")};
                 if(prn&&!fp.reg&&!fp.stat) return prnLabel(o)+" as needed";
                 if(!fp.stat&&!prn) return ongoing();
                 const sg=fp.stat?statGiven(o):null;
-                return [fp.stat?(sg?"STAT · given "+(stamp(sg.givenAt||sg.at)||fmt(sg.at)):"STAT · due now"):"",fp.reg?ongoing():"",prn?prnLabel(o)+" as needed":""].filter(Boolean).join(" · ");
+                return [fp.stat?(sg?"STAT · given "+(stamp(sg.givenAt||sg.at)||fmt(sg.at)):statDueTxt(o)):"",fp.reg?ongoing():"",prn?prnLabel(o)+" as needed":""].filter(Boolean).join(" · ");
               })();
           return `<tr class="${o.stop?"stopped":(o.status==="held"?"held":(statDone(o)?"stat-done":""))}">
           <td><div class="med-primary">${esc(o.drug)}</div><div class="med-meta">${esc(o.dose||"—")}${ds&&ds.last?" · last "+rel(ds.last.at):""}${ds&&ds.today?" · "+ds.today+" today":""}</div>
@@ -6687,7 +6904,7 @@ function kbSync(){
   root.classList.toggle("kb-open",kb>80);
   return kb;
 }
-function fitScroller(el){return (el&&el.closest)?(el.closest(".sheet .box")||el.closest(".main")):null}
+function fitScroller(el){return (el&&el.closest)?(el.closest(".mse-page")||el.closest(".mse-scroll")||el.closest(".sheet .box")||el.closest(".main")):null}
 function visibleBandFor(sc){
   const r=vvBand();
   let top=r.top, bottom=r.bottom;
@@ -7071,6 +7288,10 @@ async function startObservation(){
   const id=prevRet?prevRet.id:uid("p"), asg=uid("as"), stay=uid("os");
   const p={id,code:hosp,hospitalNo:hosp,mrdNo:mrd||(prevRet&&prevRet.mrdNo)||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:dx,dx2:(d.dx2||"").trim(),dx3:(d.dx3||"").trim(),comorb:normComorb(d.comorb),address:(d.addr||"").trim(),phone:(d.phone||"").trim(),admittedAt:now(),status:"observation"};
   const legalWant=(d.legal||[]).slice();
+  // R1.3.124c: one id per order, used for both the RPC and the local chart (was two different uids), and
+  // identical rows typed twice are sent once.
+  const obsOrds=medDedupeList(meds).map(m=>Object.assign({},m,{id:uid("mo")}));
+  if(obsOrds.length<meds.length) toast("Already on the chart, not added again: duplicate row removed","info");
   setBusy(true,"Saving observation\u2026");
   try{
     const {data,error}=await sb.rpc("ward_start_observation",{
@@ -7080,7 +7301,7 @@ async function startObservation(){
       p_assignment:{id:asg},
       p_stay:{id:stay,reason:"",note:""},
       p_snapshot:{clinical_state:"Under observation.",risk_level:"moderate",current_plan:dx},
-      p_orders:meds.map((m,i)=>({id:uid("mo"),drug:m.drug,dose:m.dose,route:m.route,frequency:m.freq}))
+      p_orders:obsOrds.map(m=>({id:m.id,drug:m.drug,dose:m.dose,route:m.route,frequency:m.freq}))
     });
     if(error) throw error;
     if(!data||data.ok===false) throw new Error((data&&data.error)||"Observation was not saved");
@@ -7092,8 +7313,8 @@ async function startObservation(){
     S.obsStays.unshift({id:stay,pid:id,bedId:bed.id,at:now(),by:S.userId,endedAt:null});
     S.snaps[id]={state:"Under observation.",risk:"moderate",plan:dx,tags:[],at:now(),by:S.userId};
     applyLegalTags(id,legalWant,{forceClear:!!prevRet});
-    meds.forEach(m=>S.orders.unshift({id:uid("mo"),pid:id,drug:m.drug,dose:m.dose,route:m.route,freq:m.freq,status:"active",start:now()}));
-    ev(id,"Under observation \u00b7 "+bed.no,true,"note");
+    obsOrds.forEach(m=>{if(!(S.orders||[]).some(x=>x.id===m.id)) S.orders.unshift({id:m.id,pid:id,drug:m.drug,dose:m.dose,route:m.route,freq:m.freq,status:"active",start:now(),at:now(),by:S.userId||null})});
+    ev(id,"Under observation \u00b7 "+bed.no,true,"note","",{local:true});
     try{
       await notifyServerEvent({
         eventType:"observation",category:"clinical",priority:"normal",patientId:id,
@@ -7117,6 +7338,7 @@ function obsAdmitAsk(pid){
   // R1.3.81: stray ui.confirm (fn "obsAdmit", no handler) removed; Admit opens only the form.
   ["oasex","oacon","oacon2"].forEach(k=>{if(ui.fields)delete ui.fields[k]});
   ui.obsAdmit={pid,mode:"same",to:""};
+  ui.obsClose=null; dmState(pid,"admit"); dmSyncFields(); // R1.3.124d: fresh "Medications on admission" picker, all current orders ticked
   openPanel("obsAdmit",{pid});
 }
 function toggleObsReason(id){
@@ -7147,6 +7369,7 @@ function obsAdmitDraft(){
   if(g("oadmitbed")) d.to=g("oadmitbed").value;
   if(g("oabq")) d.bq=g("oabq").value;
   if(d.meds) d.meds=readMedRows("oa",d.meds);
+  if(ui.obsClose&&ui.obsClose.mode==="admit") dmDraft(); // R1.3.124d: medications on admission (dm picker)
 }
 function addObsAdmitMed(){obsAdmitDraft();ui.obsAdmit.meds=ui.obsAdmit.meds||[];ui.obsAdmit.meds.push({drug:"",dose:"",route:"PO",freq:"OD"});render({fromInput:1})}
 function obsBedChoices(pid){
@@ -7187,7 +7410,6 @@ function obsAdmitForm(){
   const d=ui.obsAdmit=Object.assign(pre,ui.obsAdmit||{},{pid});
   if(d.hosp==null) d.hosp=pre.hosp;
   if(!d.to) d.to=(S.beds.find(b=>b.patientId===pid)||{}).id;
-  if(!d.meds||!d.meds.length) d.meds=[{drug:"",dose:"",route:"PO",freq:"OD"}];
   const cur=S.beds.find(b=>b.patientId===pid);
   const nq=(d.bq||"").toLowerCase();
   const shown=obsBedChoices(pid).filter(b=>{
@@ -7223,9 +7445,7 @@ function obsAdmitForm(){
       ${bedFieldHtml("obs",d.to,cur&&cur.id,`<input id="oabq" value="${esc(d.bq||"")}" placeholder="Search bed or ward" oninput="filterObsBeds(this.value)" autocomplete="off"/>
       <div id="obsbedpills" class="bedf-list">${pills}</div>`)}
     </div>
-    <p class="tiny" style="margin:10px 0 6px">MEDICATIONS <em style="font-style:normal;opacity:.6">(optional, added to current orders)</em></p>
-    ${d.meds.map((m,i)=>medRowHtml("oa",i,m)).join("")}
-    <button class="btn ghost sm" type="button" onclick="addObsAdmitMed()">Add medication</button>
+    ${dmSectionHtml(pid,"admit")}
     <button class="btn block" onclick="obsAdmitDraft();convertObservation('${pid}')">Admit to bed</button>
     <button class="btn ghost block" style="margin-top:8px" onclick="closePanel()">Cancel</button>`;
 }
@@ -7247,6 +7467,7 @@ async function convertObservation(pid){
   const mrd=normMrd(d.mrd==null?p.mrdNo:d.mrd);
   if(mrd&&mrdBlocked("oamrd",mrd,pid))return;
   const mrdSend=(mrd||normMrd(p.mrdNo))?{mrd_no:mrd||null}:{};
+  const medPlan=dmAdmitPlan(pid);
   if(workflowLocked("obs-admit",pid))return;
   setBusy(true,"Admitting\u2026");
   try{
@@ -7295,9 +7516,12 @@ async function convertObservation(pid){
       from.patientId=null;
       const dest=S.beds.find(b=>b.id===destId); if(dest) dest.patientId=pid;
     }
-    commitOrders(pid,(d.meds||[]).filter(m=>(m.drug||"").trim()));
+    // R1.3.124d: ticked current orders continue unchanged (same id + start); unticked ones are stopped through the
+    // normal stop path (Stopped event + order upsert); new rows become new orders (duplicate-guarded).
+    medPlan.stop.forEach(o=>medStopCore(o));
+    commitOrders(pid,medPlan.add);
     const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.outcome="admitted"}
-    ev(pid,"Admitted from observation",true,"note");
+    ev(pid,"Admitted from observation",true,"note","",{local:true});
     try{
       await notifyServerEvent({
         eventType:"admission",category:"clinical",priority:"normal",patientId:pid,
@@ -7313,10 +7537,16 @@ async function convertObservation(pid){
   finally{workflowUnlock("obs-admit",pid);setBusy(false)}
 }
 /* R1.3.116 — optional "Medications on referral / disposal" for observation close */
-function dmState(pid){
-  if(!ui.obsClose||ui.obsClose.pid!==pid) ui.obsClose={pid,open:false,sel:{},add:[]};
+function dmState(pid,mode){
+  const cur=ui.obsClose;
+  if(cur&&cur.pid===pid&&(!mode||(cur.mode||"close")===mode)) return cur;
+  // R1.3.124d: mode "admit" (Admit from observation) — every current order is ticked = continues unchanged;
+  // unticking marks it "Will be stopped". Stored as a stop-map so an order added meanwhile defaults to continue.
+  ui.obsClose=mode==="admit"?{pid,mode:"admit",open:true,sel:{},stop:{},add:[]}:{pid,mode:"close",open:false,sel:{},add:[]};
   return ui.obsClose;
 }
+function dmIsAdmit(d){return !!d&&d.mode==="admit"}
+function dmOn(d,o){return dmIsAdmit(d)?!(d.stop||{})[o.id]:!!(d.sel||{})[o.id]}
 function dmOngoing(pid){
   const supd=medSupersededIds();
   return (S.orders||[]).filter(o=>String(o.pid)===String(pid)&&!supd.has(o.id)&&!o.stop&&o.status!=="stopped"&&!statDone(o))
@@ -7332,6 +7562,7 @@ function dmDraft(){
 function obsCloseDraft(){
   const g=id=>document.getElementById(id);
   if(g("ddate")&&typeof censusDraft==="function"){censusDraft();return}
+  if(ui.obsClose&&ui.obsClose.mode==="admit"&&ui.obsAdmit&&typeof obsAdmitDraft==="function"){obsAdmitDraft();return} // R1.3.124d
   if(ui.obsRefer){if(g("orefdept")) ui.obsRefer.dept=g("orefdept").value; if(g("orefreason")) ui.obsRefer.reason=g("orefreason").value;}
   dmDraft();
 }
@@ -7341,27 +7572,32 @@ function dmSyncFields(){
   (d.add||[]).forEach((m,i)=>{ui.fields["dmroute"+i]=m.route||"PO";ui.fields["dmfreq"+i]=m.freq||"OD"});
 }
 function dmCount(d){return Object.keys(d.sel||{}).filter(k=>d.sel[k]).length+(d.add||[]).filter(m=>String(m.drug||"").trim()).length}
+function dmAdmitSummary(pid,d){
+  const ong=dmOngoing(pid), keep=ong.filter(o=>dmOn(d,o)).length, stop=ong.length-keep, nw=(d.add||[]).filter(m=>String(m.drug||"").trim()).length;
+  return [keep?keep+" continue":"",stop?stop+" stop":"",nw?nw+" new":""].filter(Boolean).join(" · ")||"None";
+}
 function dmRowLine(m){return [m.dose,m.route,m.freq?freqLabel(m.freq):""].filter(x=>x&&x!=="—").join(" · ")}
 function dmSectionHtml(pid,kind){
-  const d=dmState(pid), ong=dmOngoing(pid), n=dmCount(d);
+  const d=dmState(pid,kind==="admit"?"admit":"close"), ong=dmOngoing(pid), n=dmCount(d), adm=dmIsAdmit(d);
   const lbl=dmLabel(kind);
-  const allOn=ong.length&&ong.every(o=>d.sel[o.id]);
-  const ongHtml=ong.length?`<div class="dm-head"><span>Ongoing</span><button type="button" class="dm-link" id="dmAll" onclick="dmSelectAll('${pid}')">${allOn?"Clear":"Select all"}</button></div>
-    <div class="dm-list">${ong.map(o=>`<div class="dm-row ${d.sel[o.id]?"on":""}" data-oid="${esc(o.id)}">
-      <button type="button" class="dm-tick" role="checkbox" aria-checked="${!!d.sel[o.id]}" onclick="dmTick('${pid}','${esc(o.id)}')"><span class="dm-box" aria-hidden="true"></span>
-        <span class="dm-txt"><b>${esc(o.drug||"")}</b><span>${esc(dmRowLine(o))}${o.status==="held"?` <em class="dm-tag">Held</em>`:""}</span></span></button>
-      <button type="button" class="dm-edit" title="Change dose / frequency" onclick="dmEditOngoing('${pid}','${esc(o.id)}')">Edit</button>
-    </div>`).join("")}</div>`:`<p class="tiny dm-none">No ongoing medication.</p>`;
+  const allOn=ong.length&&ong.every(o=>dmOn(d,o));
+  const allLbl=on=>adm?(on?"Stop all":"Continue all"):(on?"Clear":"Select all");
+  const ongHtml=ong.length?`<div class="dm-head"><span>${adm?"On the chart · ticked continues":"Ongoing"}</span><button type="button" class="dm-link" id="dmAll" onclick="dmSelectAll('${pid}')">${allLbl(allOn)}</button></div>
+    <div class="dm-list">${ong.map(o=>{const on=dmOn(d,o);return `<div class="dm-row ${on?"on":""} ${adm&&!on?"stop":""}" data-oid="${esc(o.id)}">
+      <button type="button" class="dm-tick" role="checkbox" aria-checked="${on}" onclick="dmTick('${pid}','${esc(o.id)}')"><span class="dm-box" aria-hidden="true"></span>
+        <span class="dm-txt"><b>${esc(o.drug||"")}</b><span>${esc(dmRowLine(o))||"—"}${o.status==="held"?` <em class="dm-tag">Held</em>`:""}${adm&&hasStat(o)&&!statGiven(o)?` <em class="dm-tag dm-statng">STAT not given</em>`:""}${adm?` <em class="dm-tag dm-willstop">Will be stopped</em>`:""}</span></span></button>
+      ${adm?"":`<button type="button" class="dm-edit" title="Change dose / frequency" onclick="dmEditOngoing('${pid}','${esc(o.id)}')">Edit</button>`}
+    </div>`}).join("")}</div>${adm?`<p class="tiny dm-note">Ticked orders continue unchanged. Unticked ones are stopped at admission. To change a dose, use Edit on the chart after admission.</p>`:""}`:`<p class="tiny dm-none">No ongoing medication.</p>`;
   const addHtml=(d.add||[]).map((m,i)=>`<div class="dm-new">
       <div class="dm-new-top"><span class="dm-new-lbl">${m.fromOrder?"Changed":"New"}</span><button type="button" class="dm-x" aria-label="Remove medication" onclick="dmRemove(${i})">×</button></div>
       ${medInputsGridHtml({drugId:"dmdrug"+i,doseId:"dmdose"+i,routeId:"dmroute"+i,freqId:"dmfreq"+i,drugVal:m.drug||"",doseVal:m.dose||"",mode:"row",prefix:"dm",idx:i})}
       <div class="dm-rf">${picker("dmroute"+i,MED_ROUTES,m.route||"PO","Route")}${picker("dmfreq"+i,MED_FREQS,m.freq||"OD","Frequency")}</div>
     </div>`).join("");
-  return `<div class="bacc dm-acc ${d.open?"open":""}" id="dmAcc">
-    <button type="button" class="bacc-h" aria-expanded="${!!d.open}" onclick="dmToggle(this)"><span class="bacc-name">${lbl}</span><span class="bacc-n" id="dmN">${n?n+" selected":"Optional"}</span>${BED_CHEV}</button>
+  return `<div class="bacc dm-acc${adm?" dm-admit":""} ${d.open?"open":""}" id="dmAcc">
+    <button type="button" class="bacc-h" aria-expanded="${!!d.open}" onclick="dmToggle(this)"><span class="bacc-name">${lbl}</span><span class="bacc-n" id="dmN">${adm?dmAdmitSummary(pid,d):(n?n+" selected":"Optional")}</span>${BED_CHEV}</button>
     <div class="bacc-body"><div class="bacc-inner"><div class="dm-in">
       ${ongHtml}
-      ${addHtml?`<div class="dm-head"><span>Added</span></div>${addHtml}`:""}
+      ${addHtml?`<div class="dm-head"><span>${adm?"New on admission":"Added"}</span></div>${addHtml}`:""}
       <button type="button" class="btn ghost sm dm-add" onclick="dmAdd()">+ Add medication</button>
     </div></div></div>
   </div>`;
@@ -7373,22 +7609,31 @@ function dmToggle(btn){
 }
 function dmRefreshCount(){
   const d=ui.obsClose, el=document.getElementById("dmN"); if(!d||!el) return;
-  dmDraft(); const n=dmCount(d); el.textContent=n?n+" selected":"Optional";
+  dmDraft(); const n=dmCount(d); el.textContent=dmIsAdmit(d)?dmAdmitSummary(d.pid,d):(n?n+" selected":"Optional");
 }
+function dmSetOn(d,oid,on){if(dmIsAdmit(d)){d.stop=d.stop||{};if(on)delete d.stop[oid];else d.stop[oid]=true}else d.sel[oid]=!!on}
+function dmPaintRow(d,row,on){row.classList.toggle("on",on);row.classList.toggle("stop",dmIsAdmit(d)&&!on);const t=row.querySelector(".dm-tick");if(t)t.setAttribute("aria-checked",String(on))}
 function dmTick(pid,oid){
-  const d=dmState(pid); d.sel[oid]=!d.sel[oid];
+  const d=dmState(pid), o0={id:oid}, on=!dmOn(d,o0); dmSetOn(d,oid,on);
   const row=document.querySelector(`.dm-row[data-oid="${CSS.escape(oid)}"]`);
-  if(row){row.classList.toggle("on",!!d.sel[oid]);const t=row.querySelector(".dm-tick");if(t)t.setAttribute("aria-checked",String(!!d.sel[oid]));}
-  const ong=dmOngoing(pid), all=document.getElementById("dmAll");
-  if(all) all.textContent=ong.length&&ong.every(o=>d.sel[o.id])?"Clear":"Select all";
+  if(row) dmPaintRow(d,row,on);
+  const ong=dmOngoing(pid), all=document.getElementById("dmAll"), allOn=ong.length&&ong.every(o=>dmOn(d,o));
+  if(all) all.textContent=dmIsAdmit(d)?(allOn?"Stop all":"Continue all"):(allOn?"Clear":"Select all");
   dmRefreshCount();
 }
 function dmSelectAll(pid){
-  const d=dmState(pid), ong=dmOngoing(pid), on=!(ong.length&&ong.every(o=>d.sel[o.id]));
-  ong.forEach(o=>{d.sel[o.id]=on});
-  document.querySelectorAll(".dm-row").forEach(r=>{r.classList.toggle("on",on);const t=r.querySelector(".dm-tick");if(t)t.setAttribute("aria-checked",String(on))});
-  const all=document.getElementById("dmAll"); if(all) all.textContent=on?"Clear":"Select all";
+  const d=dmState(pid), ong=dmOngoing(pid), on=!(ong.length&&ong.every(o=>dmOn(d,o)));
+  ong.forEach(o=>dmSetOn(d,o.id,on));
+  document.querySelectorAll(".dm-row").forEach(r=>dmPaintRow(d,r,on));
+  const all=document.getElementById("dmAll"); if(all) all.textContent=dmIsAdmit(d)?(on?"Stop all":"Continue all"):(on?"Clear":"Select all");
   dmRefreshCount();
+}
+// R1.3.124d: what "Admit to bed" does with medications — stop = unticked current orders, add = new rows.
+function dmAdmitPlan(pid){
+  const d=ui.obsClose; if(!dmIsAdmit(d)||d.pid!==pid) return {stop:[],add:[]};
+  dmDraft();
+  return {stop:dmOngoing(pid).filter(o=>!dmOn(d,o)),
+    add:(d.add||[]).map(m=>({drug:String(m.drug||"").trim(),dose:String(m.dose||"").trim(),route:m.route||"PO",freq:m.freq||"OD"})).filter(m=>m.drug)};
 }
 function dmAdd(){
   obsCloseDraft(); const d=ui.obsClose; if(!d) return;
@@ -7422,7 +7667,7 @@ function dmCollect(pid){
   return out;
 }
 function dmLine(m){return [m.name,m.dose,m.route,m.frequency?freqLabel(m.frequency):""].filter(x=>x&&x!=="—").join(" · ")}
-function dmLabel(outcome){return outcome==="referred"?"Medications on referral":outcome==="discharge"?"Medications on discharge":"Medications on disposal"}
+function dmLabel(outcome){return outcome==="admit"?"Medications on admission":outcome==="referred"?"Medications on referral":outcome==="discharge"?"Medications on discharge":"Medications on disposal"}
 function dmRecordHtml(it){
   const list=it.dmeds||[]; if(!list.length) return "";
   return `<div class="rec-dm"><p class="rec-dm-h">${esc(dmLabel(it.dmOutcome))}</p><ul>${list.map(m=>`<li>${esc(dmLine(m))}${m.source==="new"?` <em class="dm-tag">New</em>`:m.modified?` <em class="dm-tag">Changed</em>`:""}</li>`).join("")}</ul></div>`;
@@ -7525,7 +7770,7 @@ async function closeObservation(pid,outcome){
       p.dischargeOutcome=dOut;
     }
     const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.endedBy=S.userId;st.outcome=outcome;st.dischargeMeds=(data&&Array.isArray(data.discharge_meds)&&data.discharge_meds.length)?data.discharge_meds:dmeds;if(outcome==="referred"){st.referralTo=dept;st.note=reason;st.referralReason=reason;}}
-    ev(pid,"Observation ended \u00b7 "+outcome+(dept?" \u00b7 "+dept:""),true,"note");
+    ev(pid,"Observation ended \u00b7 "+outcome+(dept?" \u00b7 "+dept:""),true,"note","",{local:true});
     try{
       const isRef=outcome==="referred", ts=Date.now();
       await notifyServerEvent({
@@ -7614,6 +7859,7 @@ function censusView(){
         <label class="field"><span>Date of discharge</span><input id="ddate" type="datetime-local" value="${esc(d.ddate||localStamp())}"/></label>
         <label class="field"><span>Advice on discharge <em style="font-style:normal;opacity:.6">(optional)</em></span><textarea id="dadvice" rows="3" placeholder="e.g. Continue medicines, follow-up in OPD after 2 weeks" oninput="ui.census=ui.census||{};ui.census.dadvice=this.value">${esc(d.dadvice||"")}</textarea></label>
         ${dmSectionHtml(p.id,"discharge")}
+        <div class="field dis-mse"><span>MSE at discharge <em style="font-style:normal;opacity:.6">(optional)</em></span>${mseDisRowHtml(p.id)}</div>
         <label class="field dis-review"><span>Review in OPD after <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="dreview" type="text" maxlength="200" autocomplete="off" placeholder="e.g. 2 weeks / 1 month / on 10 Nov" value="${esc(d.dreview||"")}" oninput="ui.census=ui.census||{};ui.census.dreview=this.value"/></label>
         <button class="btn danger block dis-confirm ${mrdOff?"dis-off":""}" id="disConfirm" aria-disabled="${mrdOff}" onclick="censusDraft();dischargeFromCensus()">Confirm discharge</button>
       </div>`:""}
@@ -7894,6 +8140,7 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
       ev(p.id,"Patient details edited",true,"note","MRD No.: — → "+xx.mrd);
     }
     ev(p.id,"Discharged · "+labelOf(DISCHARGE_MODES,p.dischargeMode)+" · "+labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome),true,"note");
+    try{const me=mseCommitDischarge(p.id,p.dischargedAt);if(me){ev(p.id,"MSE at discharge recorded"+(me.highRisk?" · high risk":""),true,"mse",msePreviewText(me.data||{}).slice(0,160));setTimeout(()=>{try{flushPending()}catch(x){}},0)}}catch(me){console.warn("MSE at discharge",me)} // R1.3.124
     if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dreview;delete ui.census.dmrd;delete ui.census.dect;}
     if(ui.obsClose&&ui.obsClose.pid===p.id) ui.obsClose=null;
     flashBtn(".btn.danger.block","ok");toast("Discharged "+p.name,"ok");ui.disId="";ui.disForm=false;save();ui.ctab="out";render();
@@ -10036,7 +10283,7 @@ async function savePgtNote(){
 function recKindLabel(k){
   return ({admit:"ADMISSION",obs:"OBSERVATION",med:"MEDICATION",ect:"ECT",pgt:"PGT NOTE",crit:"CRITICAL",xfer:"TRANSFER",dis:"DISCHARGE",restrain:"RESTRAINT",handover:"HANDOVER",task:"TASK",note:"EVENT"}[k]||"EVENT");
 }
-function recCss(k){return ({admit:"admit",obs:"obs",med:"med",ect:"ect",pgt:"pgt",crit:"crit",xfer:"xfer",dis:"dis",restrain:"restrain"}[k]||"note")}
+function recCss(k){return ({mse:"mse",admit:"admit",obs:"obs",med:"med",ect:"ect",pgt:"pgt",crit:"crit",xfer:"xfer",dis:"dis",restrain:"restrain"}[k]||"note")}
 function recActor(it){const n=it.byName||rname(it.by)||"";return n==="?"?"":n}
 
 function medEventActor(pid,drug,at,verbs){
@@ -10175,7 +10422,7 @@ function medChangeCards(pid,MH,shown){
       const chg=g.evs.filter(e=>e.chain===c&&e.type==="change");
       const pr=MH.events.filter(e=>e.chain===c&&(e.type==="pause"||e.type==="resume")&&e.ts<=T).slice(-1)[0];
       const paused=!stopped&&pr&&pr.type==="pause";
-      const isNew=!stopped&&c.start<=ref&&c.start>ref-24*3600e3;
+      const isNew=!stopped&&c.start<=T&&c.start>ref-24*3600e3; // R1.3.124d: <=T so an order started a moment after the last stop in the same save still gets its dot
       const startedThis=g.evs.some(e=>e.chain===c&&e.type==="start");
       if(startedThis) nS++; if(chg.length) nC++; if(stopThis) nX++; if(paused&&g.evs.some(e=>e.chain===c&&e.type==="pause")) nP++;
       let change="";
@@ -10193,6 +10440,520 @@ function medChangeCards(pid,MH,shown){
   });
   return cards;
 }
+/* ===== R1.3.124 Mental Status Examination (MSE) =====
+   The sheet is its own layer on <body>, outside #app, so app renders and realtime
+   morphs never touch it. Every tap is written to a local draft per patient. */
+const MSE_X=1; // exclusive option flag
+const MSE_PAGES=[
+ {k:"gen",t:"General appearance & behaviour",g:[
+  {k:"consc",lb:"Consciousness",s:1,n:"conscious",o:[["conscious","Conscious"],["altered","Altered sensorium"]]},
+  {k:"alert",lb:"Alertness",s:1,n:"alert",o:[["alert","Alert"],["drowsy","Drowsy"],["sedated","Sedated"]]},
+  {k:"coop",lb:"Cooperation",s:1,n:"coop",o:[["coop","Cooperative"],["partial","Partially cooperative"],["uncoop","Uncooperative"],["aggressive","Aggressive"]]},
+  {k:"rapport",lb:"Rapport",s:1,n:"est",o:[["est","Established"],["diff","Established with difficulty"],["not","Not established"]]},
+  {k:"eye",lb:"Eye contact",s:1,n:"maint",o:[["maint","Established and maintained"],["notmaint","Established, not maintained"],["not","Not established"]]}]},
+ {k:"psy",t:"Psychomotor activity & hygiene",g:[
+  {k:"pm",lb:"Psychomotor activity",s:1,n:"normal",o:[["normal","Normal",MSE_X],["inc","Increased"],["dec","Decreased"]],
+   sub:{inc:{k:"pm_inc",o:[["agitated","Agitated"],["restless","Restless"]]},dec:{k:"pm_dec",o:[["slowing","Marked slowing"],["immobility","Immobility"]]}}},
+  {k:"hyg",lb:"Personal hygiene & grooming",s:1,n:"maint",o:[["maint","Maintained"],["aid","Maintained with aid"],["not","Not maintained"]]}]},
+ {k:"mood",t:"Mood",words:1,g:[
+  {k:"mood",lb:"Subjective mood (patient's report)",o:[["normal","Feels normal"],["ok","Feels OK"],["bad","Feels bad"],["sad","Feels sad"],["guilty","Feels guilty"],["good","Feels good"],["verygood","Feels very good"],["excited","Feels excited"],["incomp","Incomprehensible answer"],["irrel","Irrelevant answer"],["noans","Doesn't answer"]]}]},
+ {k:"affect",t:"Affect",g:[
+  {k:"affect",lb:"Affect",n:"euthymic",o:[["euthymic","Euthymic"],["dysphoric","Dysphoric"],["euphoric","Euphoric"],["elevated","Elevated"],["apathetic","Apathetic"],["tearful","Tearful"],["perplexed","Perplexed"],["anxious","Anxious"],["angry","Angry"],["fearful","Fearful"],["irritable","Irritable"],["guarded","Guarded"]]},
+  {k:"aff_appr",lb:"Appropriateness",s:1,n:"appr",o:[["appr","Appropriate"],["inappr","Inappropriate"]]},
+  {k:"aff_cong",lb:"Congruence",s:1,n:"cong",o:[["cong","Congruent"],["incong","Incongruent"]]},
+  {k:"aff_range",lb:"Range",s:1,n:"full",o:[["full","Full"],["sad","Restricted towards sad pole"],["happy","Restricted towards happy pole"]]},
+  {k:"aff_stab",lb:"Stability",s:1,n:"stable",o:[["stable","Stable"],["labile","Labile"]]},
+  {k:"aff_depth",lb:"Depth",s:1,opt:1,o:[["constricted","Constricted"],["blunt","Blunt"],["flat","Flat"]]},
+  {k:"aff_int",lb:"Intensity",s:1,n:"normal",o:[["normal","Normal"],["shallow","Shallow"]]}]},
+ {k:"speech",t:"Speech",g:[
+  {k:"sp_rate",lb:"Rate",s:1,n:"normal",o:[["normal","Normal"],["inc","Increased"],["dec","Decreased"],["pressure","Pressure of speech"]]},
+  {k:"sp_rhythm",lb:"Rhythm",s:1,n:"regular",o:[["regular","Regular"],["irregular","Irregular"]]},
+  {k:"sp_tone",lb:"Tone",s:1,n:"normal",o:[["normal","Normal"],["high","High pitch"],["low","Low pitch"]]},
+  {k:"sp_vol",lb:"Volume",s:1,n:"normal",o:[["normal","Normal"],["inc","Increased"],["dec","Decreased"]]},
+  {k:"sp_rt",lb:"Reaction time",s:1,n:"normal",o:[["normal","Normal"],["inc","Increased"],["dec","Decreased"]]},
+  {k:"sp_rel",lb:"Relevance",s:1,n:"relevant",o:[["relevant","Relevant"],["irrelevant","Irrelevant"],["occasional","Occasional irrelevance"]]},
+  {k:"sp_coh",lb:"Coherence",s:1,n:"coherent",o:[["coherent","Coherent"],["incoherent","Incoherent"]]}]},
+ {k:"thought",t:"Thought: stream, form & possession",g:[
+  {k:"th_stream",lb:"Stream",n:"normal",o:[["normal","Normal",MSE_X],["accel","Accelerated"],["slowed","Slowed"],["foi","Flight of ideas"],["circ","Circumstantiality"],["block","Thought blocking"],["persev","Perseveration"],["tang","Tangentiality"]]},
+  {k:"th_form",lb:"Form",n:"linear",o:[["linear","Linear and goal directed",MSE_X],["derail","Derailment"],["loa","Loosening of associations"],["salad","Word salad"],["clang","Clang associations"],["neolog","Neologism"]]},
+  {k:"th_poss",lb:"Possession",n:"intact",o:[["intact","Intact",MSE_X],["withdrawal","Thought withdrawal"],["insertion","Thought insertion"],["broadcast","Thought broadcasting"],["read","Mind being read"]]}]},
+ {k:"content",t:"Thought content",g:[
+  {k:"delusions",lb:"Delusional ideas",n:"none",o:[["none","None elicited",MSE_X],["reference","Reference"],["guilt","Guilt / sin"],["somatic","Somatic"],["jealous","Jealous"],["misid","Misidentification"],["poverty","Poverty / ruin"],["bizarre","Bizarre"],["moodcong","Mood-congruent"],["persecutory","Persecutory"],["grandiose","Grandiose"],["nihilistic","Nihilistic"],["erotomanic","Erotomanic"],["religious","Religious"],["control","Control / passivity"],["infestation","Infestation"],["mission","Love / special mission"],["system","Systematised"]]},
+  {k:"other",lb:"Other prominent content",n:"none",o:[["none","No prominent preoccupation",MSE_X],["obsessions","Obsessions"],["ruminations","Ruminations"],["health","Health anxiety"],["worthless","Worthlessness"],["helpless","Helplessness"],["ior","Ideas of reference (not delusional)"],["bodily","Preoccupation with bodily symptoms"],["grief","Grief"],["perfection","Perfectionism"],["superstition","Superstitious ideas"],["overvalued","Overvalued ideas"],["phobias","Phobias"],["worries","Worries"],["guilt","Guilt"],["hopeless","Hopelessness"],["sin","Ideas of sin"],["suspicious","Suspiciousness"],["trauma","Trauma-related content"],["jealousy","Jealousy"],["magical","Magical thinking"]]},
+  {k:"ocd",lb:"Obsessions / compulsions",n:"absent",o:[["absent","Absent",MSE_X],["checking","Checking"],["aggressive","Intrusive aggressive thoughts"],["scrupulosity","Religious / moral scrupulosity"],["reassurance","Reassurance seeking"],["repetitive","Repetitive acts"],["resabsent","Resistance absent"],["contamination","Contamination"],["symmetry","Symmetry / order"],["sexual","Intrusive sexual thoughts"],["hoarding","Hoarding"],["mental","Mental rituals"],["respresent","Resistance present"],["own","Recognised as own thoughts"]]}]},
+ {k:"risk",t:"Risk",g:[
+  {k:"suicide",lb:"Suicide / self-harm",n:"notelicited",hi:["specific","plan","intent","prep","attempt","selfharm"],o:[["notelicited","Not elicited",MSE_X],["denied","Denied",MSE_X],["passive","Passive death wish"],["ideation","Suicidal ideation"],["nonspecific","Non-specific thoughts"],["specific","Specific method considered"],["plan","Plan present"],["intent","Intent present"],["prep","Preparatory acts"],["attempt","Recent attempt"],["nssi","Nonsuicidal self-injury thoughts"],["selfharm","Recent self-harm"],["unable","Unable to assess"]]},
+  {k:"homicide",lb:"Homicide / violence",n:"notelicited",hi:["target","plan","intent","means","violent"],o:[["notelicited","Not elicited",MSE_X],["denied","Denied",MSE_X],["anger","Anger without intent"],["ideation","Violent ideation"],["target","Specific target"],["plan","Plan present"],["intent","Intent present"],["means","Access to means reported"],["violent","Recent violent act"],["unable","Unable to assess"]]}]},
+ {k:"perc",t:"Perception",g:[
+  {k:"halluc",lb:"Hallucinations",n:"none",o:[["none","None",MSE_X],["auditory","Auditory"],["visual","Visual"],["tactile","Tactile"],["olfactory","Olfactory"],["gustatory","Gustatory"],["echo","Thought echo"]]},
+  {k:"illus",lb:"Illusions",n:"none",o:[["none","None",MSE_X],["auditory","Auditory"],["visual","Visual"]]},
+  {k:"dissoc",lb:"Dissociative experiences",n:"none",opt:1,o:[["none","None",MSE_X],["depers","Depersonalization"],["dereal","Derealization"],["identity","Identity confusion"]]}]},
+ {k:"cog",t:"Cognition",g:[
+  {k:"or_time",sec:"Orientation",lb:"Time",s:1,row:1,n:"intact",o:[["intact","Intact"],["partial","Partially impaired"],["impaired","Impaired"]]},
+  {k:"or_place",lb:"Place",s:1,row:1,n:"intact",o:[["intact","Intact"],["partial","Partially impaired"],["impaired","Impaired"]]},
+  {k:"or_person",lb:"Person",s:1,row:1,n:"intact",o:[["intact","Intact"],["partial","Partially impaired"],["impaired","Impaired"]]},
+  {k:"mem_imm",sec:"Memory",lb:"Immediate",s:1,row:1,n:"intact",o:[["intact","Intact"],["partial","Partially impaired"],["impaired","Impaired"]]},
+  {k:"mem_rec",lb:"Recent",s:1,row:1,n:"intact",o:[["intact","Intact"],["partial","Partially impaired"],["impaired","Impaired"]]},
+  {k:"mem_rem",lb:"Remote",s:1,row:1,n:"intact",o:[["intact","Intact"],["partial","Partially impaired"],["impaired","Impaired"]]},
+  {k:"abstract",sec:"Abstract thinking",lb:"",s:1,n:"present",o:[["present","Present"],["concrete","Concrete thinking"],["under","Under-abstraction"]]},
+  {k:"jd_test",sec:"Judgement",lb:"Test",s:1,row:1,n:"intact",o:[["intact","Intact"],["impaired","Impaired"]]},
+  {k:"jd_social",lb:"Social",s:1,row:1,n:"intact",o:[["intact","Intact"],["impaired","Impaired"]]},
+  {k:"jd_personal",lb:"Personal",s:1,row:1,n:"intact",o:[["intact","Intact"],["impaired","Impaired"]]}]},
+ {k:"insight",t:"Insight",g:[
+  {k:"insight",lb:"Insight",s:1,o:[["g1","Grade I"],["g2","Grade II"],["g3","Grade III"],["g4","Grade IV"]]}]}
+];
+const MSE_G={};MSE_PAGES.forEach((pg,i)=>pg.g.forEach(g=>{g.page=i;MSE_G[g.k]=g;if(g.sub)Object.keys(g.sub).forEach(pk=>{const sg=g.sub[pk];sg.parent=g.k;sg.when=pk;sg.page=i;MSE_G[sg.k]=sg})}));
+const MSE_REVIEW=MSE_PAGES.length;
+function mseEmpty(){return {v:1,sel:{},notes:{},words:""}}
+function mseClone(d){d=d&&typeof d==="object"?d:{};return {v:1,sel:JSON.parse(JSON.stringify(d.sel||{})),notes:Object.assign({},d.notes||{}),words:String(d.words||"")}}
+function mseVals(d,gk){const v=d&&d.sel&&d.sel[gk];return Array.isArray(v)?v:[]}
+function mseLabel(gk,ok){const g=MSE_G[gk];const o=g&&g.o.find(x=>x[0]===ok);return o?o[1]:ok}
+function mseLabels(d,gk){return mseVals(d,gk).map(k=>mseLabel(gk,k))}
+function mseToggle(d,gk,ok){
+  const g=MSE_G[gk];if(!g)return;const o=g.o.find(x=>x[0]===ok);if(!o)return;
+  let v=mseVals(d,gk).slice();const on=v.includes(ok);
+  if(on) v=v.filter(x=>x!==ok);
+  else if(g.s) v=[ok];
+  else if(o[2]===MSE_X) v=[ok];
+  else v=v.filter(x=>{const xo=g.o.find(y=>y[0]===x);return !(xo&&xo[2]===MSE_X)}).concat(ok);
+  if(v.length) d.sel[gk]=v; else delete d.sel[gk];
+  if(g.sub) Object.keys(g.sub).forEach(pk=>{if(!(d.sel[gk]||[]).includes(pk)) delete d.sel[g.sub[pk].k]});
+}
+function mseNormalPage(d,i){MSE_PAGES[i].g.forEach(g=>{if(g.n){d.sel[g.k]=[g.n];if(g.sub)Object.values(g.sub).forEach(sg=>delete d.sel[sg.k])}})}
+function msePageHasNormal(i){return MSE_PAGES[i].g.some(g=>g.n)}
+function msePageState(d,i){
+  const pg=MSE_PAGES[i];const req=pg.g.filter(g=>!g.opt);
+  const filled=pg.g.filter(g=>mseVals(d,g.k).length).length;
+  const reqFilled=req.filter(g=>mseVals(d,g.k).length).length;
+  const extra=(d.notes&&String(d.notes[pg.k]||"").trim())||(pg.words&&String(d.words||"").trim());
+  if(reqFilled===req.length&&req.length) return "done";
+  return (filled||extra)?"part":"empty";
+}
+function mseRiskHits(d){const out=[];["suicide","homicide"].forEach(gk=>{const g=MSE_G[gk];mseVals(d,gk).forEach(k=>{if(g.hi.includes(k))out.push((gk==="suicide"?"Suicide: ":"Violence: ")+mseLabel(gk,k))})});return out}
+function mseHighRisk(d){return mseRiskHits(d).length>0}
+function mseAny(d){return !!(d&&((d.sel&&Object.keys(d.sel).some(k=>mseVals(d,k).length))||String(d.words||"").trim()||Object.values((d&&d.notes)||{}).some(x=>String(x||"").trim())))}
+const mseLc=s=>{s=String(s||"");return /^[A-Z][a-z]/.test(s)?s[0].toLowerCase()+s.slice(1):s};
+const mseCap=s=>{s=String(s||"");return s?s[0].toUpperCase()+s.slice(1):s};
+const mseList=a=>a.map(mseLc).join(", ");
+const mseSent=s=>{s=String(s||"").trim();if(!s)return "";s=mseCap(s);return /[.!?…"”]$/.test(s)?s:s+"."};
+function mseTriple(d,keys,names,allOk,lead){
+  const vals=keys.map(k=>mseVals(d,k)[0]);if(!vals.some(Boolean))return "";
+  if(vals.every(v=>v==="intact")) return allOk;
+  return lead+": "+keys.map((k,i)=>vals[i]?names[i]+" "+mseLc(mseLabel(k,vals[i])):"").filter(Boolean).join(", ");
+}
+function msePageSummary(d,i){
+  const pg=MSE_PAGES[i];const L=gk=>mseLabels(d,gk);const one=gk=>L(gk)[0]||"";const out=[];
+  if(pg.k==="gen"){
+    const a=[one("consc"),one("alert"),one("coop")].filter(Boolean);if(a.length)out.push(mseSent(mseList(a)));
+    const b=[];if(one("rapport"))b.push("rapport "+mseLc(one("rapport")));if(one("eye"))b.push("eye contact "+mseLc(one("eye")));
+    if(b.length)out.push(mseSent(b.join("; ")));
+  }else if(pg.k==="psy"){
+    const pm=mseVals(d,"pm")[0];
+    if(pm){const sub=pm==="inc"?L("pm_inc"):pm==="dec"?L("pm_dec"):[];out.push(mseSent("Psychomotor activity "+mseLc(mseLabel("pm",pm))+(sub.length?" ("+mseList(sub)+")":"")))}
+    if(one("hyg"))out.push(mseSent("Personal hygiene and grooming "+mseLc(one("hyg"))));
+  }else if(pg.k==="mood"){
+    const m=L("mood"),w=String(d.words||"").trim();
+    if(m.length||w)out.push(mseSent("Mood"+(m.length?": "+mseList(m):"")+(w?(m.length?" — ":" (own words): ")+"“"+w+"”":"")));
+  }else if(pg.k==="affect"){
+    const a=L("affect");const q=[];
+    if(one("aff_appr"))q.push(mseLc(one("aff_appr")));if(one("aff_cong"))q.push(mseLc(one("aff_cong")));
+    const r=mseVals(d,"aff_range")[0];if(r)q.push(r==="full"?"full range":"range "+mseLc(one("aff_range")));
+    if(one("aff_stab"))q.push(mseLc(one("aff_stab")));if(one("aff_depth"))q.push(mseLc(one("aff_depth")));
+    const it=mseVals(d,"aff_int")[0];if(it)q.push(it==="normal"?"normal intensity":"shallow intensity");
+    if(a.length||q.length)out.push(mseSent("Affect"+(a.length?" "+mseList(a):"")+(q.length?(a.length?"; ":": ")+q.join(", "):"")));
+  }else if(pg.k==="speech"){
+    const ks=["sp_rate","sp_rhythm","sp_tone","sp_vol","sp_rt"],nm=["rate","rhythm","tone","volume","reaction time"];
+    const v=ks.map(k=>mseVals(d,k)[0]);let s="";
+    if(v.every(x=>x)&&v.every((x,i)=>x===MSE_G[ks[i]].n)) s="speech normal in rate, rhythm, tone, volume and reaction time";
+    else{const p=ks.map((k,i)=>v[i]?(k==="sp_rate"&&v[i]==="pressure"?"pressure of speech":nm[i]+" "+mseLc(mseLabel(k,v[i]))):"").filter(Boolean);if(p.length)s="speech: "+p.join(", ")}
+    const rc=[one("sp_rel"),one("sp_coh")].filter(Boolean).map(mseLc);
+    if(s||rc.length)out.push(mseSent((s||"speech")+(rc.length?"; "+rc.join(" and "):"")));
+  }else if(pg.k==="thought"){
+    const p=[];if(L("th_stream").length)p.push("stream "+mseList(L("th_stream")));if(L("th_form").length)p.push("form "+mseList(L("th_form")));if(L("th_poss").length)p.push("possession "+mseList(L("th_poss")));
+    if(p.length)out.push(mseSent("Thought "+p.join("; ")));
+  }else if(pg.k==="content"){
+    const dl=mseVals(d,"delusions");if(dl.length)out.push(mseSent(dl[0]==="none"&&dl.length===1?"No delusions elicited":"Delusions: "+mseList(L("delusions"))));
+    const ot=mseVals(d,"other");if(ot.length)out.push(mseSent(ot[0]==="none"&&ot.length===1?"No prominent preoccupation":"Prominent content: "+mseList(L("other"))));
+    const oc=mseVals(d,"ocd");if(oc.length)out.push(mseSent(oc[0]==="absent"&&oc.length===1?"No obsessions or compulsions":"Obsessions/compulsions: "+mseList(L("ocd"))));
+  }else if(pg.k==="risk"){
+    const r=(gk,lead)=>{const v=mseVals(d,gk);if(!v.length)return;if(v.length===1&&(v[0]==="notelicited"||v[0]==="denied"))out.push(mseSent(lead+" "+mseLc(mseLabel(gk,v[0]))));else out.push(mseSent(lead+": "+mseList(L(gk))))};
+    r("suicide","Suicidal/self-harm ideas");r("homicide","Homicidal/violent ideas");
+  }else if(pg.k==="perc"){
+    const h=mseVals(d,"halluc"),il=mseVals(d,"illus");
+    if(h.join()==="none"&&il.join()==="none")out.push("No hallucinations or illusions.");
+    else{if(h.length)out.push(mseSent(h.join()==="none"?"No hallucinations":"Hallucinations: "+mseList(L("halluc"))));if(il.length)out.push(mseSent(il.join()==="none"?"No illusions":"Illusions: "+mseList(L("illus"))))}
+    const ds=mseVals(d,"dissoc");if(ds.length)out.push(mseSent(ds.join()==="none"?"No dissociative experiences":"Dissociative: "+mseList(L("dissoc"))));
+  }else if(pg.k==="cog"){
+    const o=mseTriple(d,["or_time","or_place","or_person"],["time","place","person"],"oriented to time, place and person","orientation");if(o)out.push(mseSent(o));
+    const m=mseTriple(d,["mem_imm","mem_rec","mem_rem"],["immediate","recent","remote"],"memory intact (immediate, recent, remote)","memory");if(m)out.push(mseSent(m));
+    const ab=mseVals(d,"abstract")[0];if(ab)out.push(mseSent(ab==="present"?"abstract thinking present":one("abstract")));
+    const j=mseTriple(d,["jd_test","jd_social","jd_personal"],["test","social","personal"],"judgement intact (test, social, personal)","judgement");if(j)out.push(mseSent(j));
+  }else if(pg.k==="insight"){
+    if(one("insight"))out.push(mseSent("Insight "+one("insight")));
+  }
+  const note=String((d.notes||{})[pg.k]||"").trim();if(note)out.push(mseSent("Note: "+note));
+  return out.join(" ");
+}
+/* ---- R1.3.124b structured MSE: one block per section, bold labels, abnormal values highlighted ---- */
+const MSE_OKX={mood:["normal","ok","good"],suicide:["notelicited","denied"],homicide:["notelicited","denied"]};
+function mseIsAb(gk,k){
+  const g=MSE_G[gk];if(!g)return false;
+  if(MSE_OKX[gk])return !MSE_OKX[gk].includes(k);
+  if(gk==="insight")return false; // insight grade is reported, not judged (shown in every preview)
+  if(g.parent)return true;        // psychomotor sub-findings
+  if(g.n)return k!==g.n;
+  return true;                     // groups without a normal value (e.g. affect depth) are findings
+}
+function mseIsHi(gk,k){const g=MSE_G[gk];return !!(g&&g.hi&&g.hi.includes(k))}
+function mseSeg(gk,k,t){return {t:t!=null?t:mseLabel(gk,k),ab:mseIsAb(gk,k),hi:mseIsHi(gk,k)}}
+function mseSegJoin(parts,sep){const out=[];parts.filter(p=>p&&p.length).forEach((p,i)=>{if(i)out.push(sep);out.push(...p)});return out}
+function mseSegList(d,gk,lc){return mseSegJoin(mseVals(d,gk).map((k,i)=>{const s=mseSeg(gk,k);if(lc||i)s.t=mseLc(s.t);return [s]}),", ")}
+const MSE_NOTE_LB={gen:"Appearance",psy:"Psychomotor",mood:"Mood",affect:"Affect",speech:"Speech",thought:"Thought",content:"Content",risk:"Risk",perc:"Perception",cog:"Cognition",insight:"Insight"};
+function mseTriSeg(d,keys,names,allOk){
+  const v=keys.map(k=>mseVals(d,k)[0]);if(!v.some(Boolean))return null;
+  if(v.every(x=>x==="intact"))return [{t:allOk}];
+  return mseSegJoin(keys.map((k,i)=>v[i]?[mseSeg(k,v[i],names[i]+" "+mseLc(mseLabel(k,v[i])))]:null),", ");
+}
+function mseStruct(d){
+  d=d||{};const R=[];const row=(lb,v,sub)=>{if((v&&v.length)||(sub&&sub.length)){const all=(v||[]).concat(...(sub||[]).map(s=>s.v));R.push({lb,v:v||[],sub:sub||null,hi:all.some(s=>s&&s.hi),ab:all.some(s=>s&&s.ab)})}};
+  const subRow=(lb,v)=>v&&v.length?{lb,v}:null;
+  // appearance & behaviour
+  row("Appearance & behaviour",mseSegJoin(["consc","alert","coop"].map((gk,i)=>mseSegList(d,gk,i>0)),", "));
+  row("Rapport",mseSegList(d,"rapport"));
+  row("Eye contact",mseSegList(d,"eye"));
+  const pm=mseVals(d,"pm")[0];
+  if(pm){const v=[mseSeg("pm",pm)];const sk=pm==="inc"?"pm_inc":pm==="dec"?"pm_dec":"";const sv=sk?mseSegList(d,sk,true):[];if(sv.length)v.push({t:" ("},...sv,{t:")"});row("Psychomotor",v)}
+  row("Hygiene",mseSegList(d,"hyg"));
+  // mood, affect, speech
+  const w=String(d.words||"").trim();
+  row("Mood",mseSegJoin([mseSegList(d,"mood"),w?[{t:"“"+w+"”",q:1}]:null]," — "));
+  const q=[];
+  ["aff_appr","aff_cong","aff_range","aff_stab","aff_depth","aff_int"].forEach(gk=>{const k=mseVals(d,gk)[0];if(!k)return;
+    let t=mseLc(mseLabel(gk,k));if(gk==="aff_range")t=k==="full"?"full range":"range "+t;if(gk==="aff_int")t=k==="normal"?"normal intensity":t+" intensity";
+    q.push([mseSeg(gk,k,t)])});
+  row("Affect",mseSegJoin([mseSegList(d,"affect"),mseSegJoin(q,", ")],"; "));
+  const sk=["sp_rate","sp_rhythm","sp_tone","sp_vol","sp_rt"],sn=["rate","rhythm","tone","volume","reaction time"];
+  const sv=sk.map(k=>mseVals(d,k)[0]);let sp=[];
+  if(sv.every(Boolean)&&sv.every((x,i)=>x===MSE_G[sk[i]].n))sp=[{t:"Normal rate, rhythm, tone, volume and reaction time"}];
+  else sp=mseSegJoin(sk.map((k,i)=>sv[i]?[mseSeg(k,sv[i],k==="sp_rate"&&sv[i]==="pressure"?"pressure of speech":sn[i]+" "+mseLc(mseLabel(k,sv[i])))]:null),", ");
+  if(sp.length&&sp[0].t)sp[0]=Object.assign({},sp[0],{t:mseCap(sp[0].t)});
+  const rc=mseSegJoin(["sp_rel","sp_coh"].map(k=>mseSegList(d,k,true)),", ");
+  row("Speech",mseSegJoin([sp,rc],"; "));
+  // thought
+  row("Thought",null,[subRow("Stream",mseSegList(d,"th_stream")),subRow("Form",mseSegList(d,"th_form")),subRow("Possession",mseSegList(d,"th_poss")),
+    subRow("Delusions",mseSegList(d,"delusions")),subRow("Other content",mseSegList(d,"other")),subRow("Obsessions",mseSegList(d,"ocd"))].filter(Boolean));
+  row("Risk",null,[subRow("Suicide",mseSegList(d,"suicide")),subRow("Homicide",mseSegList(d,"homicide"))].filter(Boolean));
+  // perception
+  const pk=["halluc","illus","dissoc"].filter(k=>mseVals(d,k).length);
+  if(pk.length){
+    if(pk.every(k=>mseVals(d,k).join()==="none"))row("Perception",[{t:"No "+pk.map(k=>({halluc:"hallucinations",illus:"illusions",dissoc:"dissociative experiences"})[k]).join(pk.length>2?", ":" or ").replace(/, (?=[^,]*$)/," or ")}]);
+    else row("Perception",null,[subRow("Hallucinations",mseSegList(d,"halluc")),subRow("Illusions",mseSegList(d,"illus")),subRow("Dissociative",mseSegList(d,"dissoc"))].filter(Boolean));
+  }
+  // cognition
+  const tc=a=>a&&a.length?(a[0].t?[Object.assign({},a[0],{t:mseCap(a[0].t)})].concat(a.slice(1)):a):a;
+  row("Orientation",tc(mseTriSeg(d,["or_time","or_place","or_person"],["time","place","person"],"Oriented to time, place and person")));
+  row("Memory",tc(mseTriSeg(d,["mem_imm","mem_rec","mem_rem"],["immediate","recent","remote"],"Intact (immediate, recent, remote)")));
+  row("Abstract thinking",mseSegList(d,"abstract"));
+  row("Judgement",tc(mseTriSeg(d,["jd_test","jd_social","jd_personal"],["test","social","personal"],"Intact (test, social, personal)")));
+  row("Insight",mseSegList(d,"insight"));
+  const notes=MSE_PAGES.map(pg=>{const t=String((d.notes||{})[pg.k]||"").trim();return t?{lb:MSE_NOTE_LB[pg.k]||pg.t,v:[{t}]}:null}).filter(Boolean);
+  if(notes.length===1)row("Note",[{t:notes[0].lb+": "},{t:notes[0].v[0].t}]);else if(notes.length)row("Notes",null,notes);
+  return R;
+}
+function mseSegHtml(v){return v.map(s=>typeof s==="string"?esc(s):s.hi?`<b class="hi">${esc(s.t)}</b>`:s.ab?`<b class="ab">${esc(s.t)}</b>`:s.q?`<i>${esc(s.t)}</i>`:esc(s.t)).join("")}
+function mseStructHtml(d,cls){
+  const R=mseStruct(d);if(!R.length)return `<p class="muted sm">No findings recorded.</p>`;
+  return `<div class="msx${cls?" "+cls:""}">${R.map(r=>r.sub
+    ?`<div class="msx-r msx-g${r.hi?" msx-risk":""}"><b class="msx-l">${esc(r.lb)}</b><div class="msx-subs">${r.sub.map(s=>`<div class="msx-s"><b class="msx-sl">${esc(s.lb)}</b><span class="msx-v">${mseSegHtml(s.v)}</span></div>`).join("")}</div></div>`
+    :`<div class="msx-r${r.hi?" msx-risk":""}"><b class="msx-l">${esc(r.lb)}</b><span class="msx-v">${mseSegHtml(r.v)}</span></div>`).join("")}</div>`;
+}
+const mseSegTxt=v=>v.map(s=>typeof s==="string"?s:s.t).join("");
+// plain text with one line per section (stored in mse_entries.summary)
+function mseSummary(d){return mseStruct(d).map(r=>r.sub?r.lb+":\n"+r.sub.map(s=>"  "+s.lb+": "+mseSegTxt(s.v)).join("\n"):r.lb+": "+mseSegTxt(r.v)).join("\n")}
+// abnormal-first preview phrases (risk first, then exam order; related findings merged)
+function mseAbnormal(d){
+  const out=[];const ab=gk=>mseVals(d,gk).filter(k=>mseIsAb(gk,k));const lc=(gk,k)=>mseLc(mseLabel(gk,k));const amp=a=>a.join(" & ");
+  const push=(t,hi)=>{if(t)out.push({t,hi:!!hi})};
+  ["suicide","homicide"].forEach(gk=>{const ks=ab(gk);if(!ks.length)return;const L=ks.map(k=>lc(gk,k));
+    push(gk==="suicide"?(/^suicid/.test(L[0])?"":"suicide: ")+amp(L):"violence: "+amp(L),ks.some(k=>mseIsHi(gk,k)))});
+  const gen=["consc","alert","coop"].flatMap(gk=>ab(gk).map(k=>lc(gk,k)));if(gen.length)push(gen.join(", "));
+  [["rapport","rapport "],["eye","eye contact "],["hyg","hygiene "]].forEach(([gk,pre])=>{const ks=ab(gk);if(ks.length)push(pre+lc(gk,ks[0]))});
+  const pm=ab("pm")[0];if(pm){const sk=pm==="inc"?"pm_inc":pm==="dec"?"pm_dec":"";const sl=sk?mseVals(d,sk).map(k=>lc(sk,k)):[];push("psychomotor activity "+lc("pm",pm)+(sl.length?" ("+sl.join(", ")+")":""))}
+  const md=ab("mood");if(md.length)push("mood: "+amp(md.map((k,i)=>{const t=lc("mood",k);return i?t.replace(/^feels /,""):t})));
+  const af=ab("affect").map(k=>lc("affect",k));const aq=["aff_appr","aff_cong","aff_range","aff_stab","aff_depth","aff_int"].flatMap(gk=>ab(gk).map(k=>gk==="aff_range"?"range "+lc(gk,k):gk==="aff_int"?"shallow":lc(gk,k)));
+  if(af.length||aq.length)push((af.length?amp(af)+" affect":"affect")+(aq.length?" ("+aq.join("; ")+")":""));
+  const sp=[];if(ab("sp_rate")[0]==="pressure")push("pressure of speech");
+  [["sp_rate","rate"],["sp_rhythm","rhythm"],["sp_tone","tone"],["sp_vol","volume"],["sp_rt","reaction time"]].forEach(([gk,n])=>{const k=ab(gk)[0];if(k&&!(gk==="sp_rate"&&k==="pressure"))sp.push(n+" "+lc(gk,k))});
+  const rl=ab("sp_rel")[0];if(rl)sp.push(lc("sp_rel",rl));const ch=ab("sp_coh")[0];if(ch)sp.push(lc("sp_coh",ch));
+  if(sp.length)push("speech: "+sp.join("; "));
+  const st=ab("th_stream").map(k=>lc("th_stream",k)).map(x=>/^(slowed|accelerated)$/.test(x)?x+" thought":x);if(st.length)push(amp(st));
+  const fm=ab("th_form").map(k=>lc("th_form",k));if(fm.length)push(amp(fm));
+  const ps=ab("th_poss").map(k=>lc("th_poss",k));if(ps.length)push(amp(ps));
+  const dl=ab("delusions").map(k=>lc("delusions",k));if(dl.length)push("delusions: "+amp(dl));
+  const ot=ab("other").map(k=>lc("other",k));if(ot.length)push(amp(ot));
+  const oc=ab("ocd").map(k=>lc("ocd",k));if(oc.length)push("obsessions/compulsions: "+amp(oc));
+  const hk=ab("halluc");if(hk.length){const a=hk.filter(k=>k!=="echo").map(k=>lc("halluc",k));if(a.length)push(amp(a)+" hallucinations");if(hk.includes("echo"))push("thought echo")}
+  const il=ab("illus").map(k=>lc("illus",k));if(il.length)push(amp(il)+" illusions");
+  const ds=ab("dissoc").map(k=>lc("dissoc",k));if(ds.length)push(amp(ds));
+  [["orientation",["or_time","or_place","or_person"],["time","place","person"]],["memory",["mem_imm","mem_rec","mem_rem"],["immediate","recent","remote"]],["judgement",["jd_test","jd_social","jd_personal"],["test","social","personal"]]].forEach(([lb,ks,nm])=>{
+    const a=ks.map((gk,i)=>{const k=ab(gk)[0];return k?nm[i]+" "+lc(gk,k):""}).filter(Boolean);if(a.length)push(lb+": "+amp(a))});
+  const abs=ab("abstract")[0];if(abs)push(lc("abstract",abs));
+  return out;
+}
+function mseInsightTxt(d){const k=mseVals(d,"insight")[0];return k?"Insight "+mseLabel("insight",k):""}
+function msePreviewText(d){if(!mseAny(d))return "";const a=mseAbnormal(d),ins=mseInsightTxt(d);return (a.length?"Abnormal: "+a.map(x=>x.t).join(", "):"All within normal limits")+(ins?" · "+ins:"")}
+function msePreviewHtml(d){if(!mseAny(d))return "";const a=mseAbnormal(d),ins=mseInsightTxt(d);return (a.length?`<b>Abnormal:</b> ${a.map(x=>x.hi?`<b class="hi">${esc(x.t)}</b>`:esc(x.t)).join(", ")}`:`<em class="msx-wnl">All within normal limits</em>`)+(ins?` · <b>${esc(ins)}</b>`:"")}
+
+/* ---- data / storage ---- */
+function mseDraftKey(pid,kind){return "ward-mse-draft:v1:"+pid+":"+(kind||"routine")}
+function mseDisKey(pid){return "ward-mse-dis:v1:"+pid}
+function mseLsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}}
+function mseLsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function mseEntries(pid){return (S.mse||[]).filter(m=>m&&m.pid===pid).sort((a,b)=>String(b.at||"").localeCompare(String(a.at||"")))}
+function mseCurrentAdmission(p,m){const a=p&&p.admittedAt?Date.parse(p.admittedAt):NaN;if(!a||Number.isNaN(a))return true;const t=Date.parse(m.at||"");return Number.isNaN(t)||t>=a-6*3600e3}
+function mseLatest(pid){const p=patient(pid);return mseEntries(pid).find(m=>m.kind!=="discharge"&&mseCurrentAdmission(p,m))||null}
+function mseRiskActive(pid){const p=patient(pid);const m=mseEntries(pid).find(x=>mseCurrentAdmission(p,x));return !!(m&&m.highRisk)} // newest MSE of this admission, a discharge MSE included
+function mseRiskPill(pid){return mseRiskActive(pid)?`<span class="mse-risk-pill" title="Latest MSE has high-risk features">Risk</span>`:""}
+function mseDisFilled(pid){const x=mseLsGet(mseDisKey(pid));return x&&x.data&&mseAny(x.data)?x:null}
+function mseByName(){const u=user();return (u&&(u.name||u.displayName||u.display_name||u.username))||""}
+
+/* ---- sheet state ---- */
+let MSEU=null; // {mode:"edit"|"history"|"view", pid, kind, data, page, entryId, from}
+function mseOpen(pid,kind,opts){
+  kind=kind||"routine";opts=opts||{};
+  const p=patient(pid);if(!p)return;
+  if(!canWrite()){toast("Consultants can view only.","bad");return}
+  if(kind==="routine"&&p.status==="discharged"){toast("This patient is not on the ward.","bad");return}
+  if(kind==="discharge"&&typeof censusDraft==="function"){try{censusDraft()}catch(e){}}
+  let dr=mseLsGet(mseDraftKey(pid,kind)),data,page=0,restored=false;
+  if(dr&&dr.data){data=mseClone(dr.data);page=Math.max(0,Math.min(MSE_REVIEW,dr.page|0));restored=mseAny(data)}
+  else if(kind==="discharge"&&mseDisFilled(pid)){data=mseClone(mseDisFilled(pid).data);page=MSE_REVIEW}
+  else data=mseEmpty();
+  MSEU={mode:"edit",pid,kind,data,page,started:(dr&&dr.started)||now()};
+  mseMount();
+  if(restored)toast("Draft restored","info");
+}
+function mseSaveDraft(){if(!MSEU||MSEU.mode!=="edit")return;mseLsSet(mseDraftKey(MSEU.pid,MSEU.kind),{data:MSEU.data,page:MSEU.page,started:MSEU.started,at:now()});const t=document.getElementById("mseDraftAt");if(t)t.textContent="Draft saved "+new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}
+function mseHistory(pid){const p=patient(pid);if(!p)return;MSEU={mode:"history",pid};mseMount()}
+function mseView(id,from){const m=(S.mse||[]).find(x=>x.id===id);if(!m)return;MSEU={mode:"view",pid:m.pid,entryId:id,from:from||(MSEU&&MSEU.mode)||""};mseMount()}
+function mseLayerEl(){return document.getElementById("mseLayer")}
+let __msePushed=0,__mseSkipPop=0;
+function mseMount(){
+  let el=mseLayerEl();
+  if(!el){el=document.createElement("div");el.id="mseLayer";el.className="mse-layer";el.setAttribute("role","dialog");el.setAttribute("aria-modal","true");document.body.appendChild(el);mseWire(el)}
+  document.documentElement.classList.add("mse-open");
+  if(!__msePushed){try{history.pushState(Object.assign({},history.state||{},{mse:1}),"");__msePushed=1}catch(e){}}
+  el.innerHTML=MSEU.mode==="edit"?mseEditHtml():MSEU.mode==="history"?mseHistoryHtml():mseViewHtml();
+  el.scrollTop=0;
+  if(MSEU.mode==="edit"){const pg=el.querySelector(".mse-pager");requestAnimationFrame(()=>{mseGo(MSEU.page,true);mseSyncChrome()})}
+}
+function mseClose(fromPop){
+  if(MSEU&&MSEU.mode==="edit")mseSaveDraft();
+  const el=mseLayerEl();if(el)el.remove();
+  const wasDis=MSEU&&MSEU.kind==="discharge";
+  MSEU=null;document.documentElement.classList.remove("mse-open");
+  if(__msePushed){const n=__msePushed;__msePushed=0;if(!fromPop){__mseSkipPop=1;try{history.go(-n)}catch(e){__mseSkipPop=0}}}
+  try{render(wasDis?{}:{bg:1})}catch(e){}
+}
+window.addEventListener("popstate",e=>{
+  if(__mseSkipPop){__mseSkipPop=0;e.stopImmediatePropagation();return}
+  if(MSEU){
+    if(MSEU.mode==="view"&&MSEU.from==="history"&&__msePushed>1){e.stopImmediatePropagation();__msePushed--;MSEU={mode:"history",pid:MSEU.pid};mseMount();return}
+    e.stopImmediatePropagation();__msePushed=0;mseClose(true);
+  }
+},true);
+
+/* ---- edit sheet html ---- */
+function mseChip(g,o,d){
+  const on=mseVals(d,g.k).includes(o[0]);const hi=g.hi&&g.hi.includes(o[0]);
+  return `<button type="button" class="chip mse-c${on?" on":""}${hi?" hi":""}${o[2]===MSE_X?" ex":""}" data-g="${g.k}" data-o="${o[0]}" aria-pressed="${on}">${esc(o[1])}</button>`;
+}
+function mseGroupHtml(g,d){
+  let sub="";
+  if(g.sub)Object.keys(g.sub).forEach(pk=>{if(mseVals(d,g.k).includes(pk)){const sg=g.sub[pk];sub+=`<div class="mse-sub"><span class="mse-sub-lb">${esc(mseLabel(g.k,pk))}:</span>${sg.o.map(o=>mseChip(sg,o,d)).join("")}</div>`}});
+  return `${g.sec?`<p class="mse-sec">${esc(g.sec)}</p>`:""}<div class="mse-g${g.row?" row":""}" data-gk="${g.k}">${g.lb&&!(g.sec&&!g.row)?`<p class="mse-glb">${esc(g.lb)}${g.opt?' <em>optional</em>':""}${!g.s&&!g.row?' <em>any</em>':""}</p>`:""}<div class="mse-chips">${g.o.map(o=>mseChip(g,o,d)).join("")}</div>${sub}</div>`;
+}
+function mseGroupsHtml(i,d){
+  const pg=MSE_PAGES[i];let h=pg.g.map(g=>mseGroupHtml(g,d)).join("");
+  if(pg.k==="risk"){const hits=mseRiskHits(d);h=(hits.length?`<div class="mse-risk-banner" role="alert"><b>High risk</b> · ${esc(hits.join(" · "))}</div>`:"")+h}
+  return h;
+}
+function mseLast(pid){return mseEntries(pid)[0]||null}
+function msePageHtml(i,d){
+  const pg=MSE_PAGES[i];const last=i===0?mseLast(MSEU.pid):null;
+  return `<section class="mse-page${pg.k==="risk"&&mseHighRisk(d)?" risk":""}" data-i="${i}" aria-label="${esc(pg.t)}">
+   <div class="mse-ph"><div class="mse-pt"><span class="mse-pn">${i+1} / ${MSE_PAGES.length}</span><h3>${esc(pg.t)}</h3></div>
+    ${msePageHasNormal(i)?`<button type="button" class="btn sm ghost mse-normal" data-normal="${i}">All normal</button>`:""}</div>
+   ${i===0?`<div class="mse-quick">${last?`<button type="button" class="btn sm ghost mse-copy" data-copy="1">Copy from last MSE · ${esc(stamp(last.at))}</button>`:""}<button type="button" class="btn sm ghost mse-allnormal" data-allnormal="1">Normal throughout</button></div>`:""}
+   <div class="mse-groups" data-groups="${i}">${mseGroupsHtml(i,d)}</div>
+   ${pg.words?`<label class="mse-note"><span>Patient's own words <em>optional</em></span><input type="text" class="mse-words" maxlength="200" placeholder="e.g. “I feel empty inside”" value="${esc(d.words||"")}" autocomplete="off"></label>`:""}
+   <label class="mse-note"><span>Note <em>optional</em></span><textarea class="mse-nt" data-note="${pg.k}" rows="2" maxlength="300" placeholder="Short note for this section">${esc((d.notes||{})[pg.k]||"")}</textarea></label>
+  </section>`;
+}
+function mseReviewInner(d){
+  const hits=mseRiskHits(d);
+  const rows=MSE_PAGES.map((pg,i)=>{const s=msePageSummary(d,i);const st=msePageState(d,i);
+    return `<button type="button" class="mse-rv ${st}" data-go="${i}"><span class="mse-rv-n">${i+1}</span><span class="mse-rv-b"><b>${esc(pg.t)}</b><span class="${s?"":"muted"}">${s?esc(s):"Not recorded — left out of the summary"}</span></span></button>`}).join("");
+  return `${hits.length?`<div class="mse-risk-banner" role="alert"><b>High risk</b> · ${esc(hits.join(" · "))}</div>`:""}
+   <p class="tiny mse-rv-hint">Tap a section to change it.</p>${rows}
+   <button type="button" class="mse-discard" data-discard="1">Discard this draft</button>`;
+}
+function mseEditHtml(){
+  const p=patient(MSEU.pid)||{};const d=MSEU.data;const bed=(S.beds||[]).find(b=>b.patientId===p.id);
+  const dots=MSE_PAGES.map((pg,i)=>`<button type="button" class="mse-dot" data-dot="${i}" aria-label="${esc(pg.t)}">${i+1}</button>`).join("")+`<button type="button" class="mse-dot rv" data-dot="${MSE_REVIEW}" aria-label="Review">✓</button>`;
+  return `<div class="mse-top">
+    <button type="button" class="mse-x" data-close="1" aria-label="Close">✕</button>
+    <div class="mse-tt"><b>${MSEU.kind==="discharge"?"MSE at discharge":"Mental status examination"}</b><span>${esc(p.name||"")}${bed?" · Bed "+esc(bed.number||bed.id):""} · <i id="mseDraftAt">Draft autosaves</i></span></div>
+   </div>
+   <div class="mse-dots" role="tablist">${dots}</div>
+   <div class="mse-pager" tabindex="-1">${MSE_PAGES.map((_,i)=>msePageHtml(i,d)).join("")}
+    <section class="mse-page mse-review" data-i="${MSE_REVIEW}" aria-label="Review"><div class="mse-ph"><div class="mse-pt"><span class="mse-pn">Review</span><h3>Summary</h3></div></div><div class="mse-review-body">${mseReviewInner(d)}</div></section>
+   </div>
+   <div class="mse-foot"><button type="button" class="btn ghost" data-back="1">Back</button><button type="button" class="btn" data-next="1">Next</button></div>`;
+}
+function mseRefreshPage(i){
+  const el=mseLayerEl();if(!el||!MSEU)return;const d=MSEU.data;
+  const g=el.querySelector(`[data-groups="${i}"]`);if(g)g.innerHTML=mseGroupsHtml(i,d);
+  const pg=el.querySelector(`.mse-page[data-i="${i}"]`);if(pg&&MSE_PAGES[i].k==="risk")pg.classList.toggle("risk",mseHighRisk(d));
+  const rv=el.querySelector(".mse-review-body");if(rv)rv.innerHTML=mseReviewInner(d);
+  mseSyncChrome();
+}
+function mseSyncChrome(){
+  const el=mseLayerEl();if(!el||!MSEU||MSEU.mode!=="edit")return;const d=MSEU.data;
+  el.querySelectorAll(".mse-dot").forEach(b=>{const i=+b.dataset.dot;b.classList.toggle("cur",i===MSEU.page);
+    if(i<MSE_REVIEW){const st=msePageState(d,i);b.classList.toggle("done",st==="done");b.classList.toggle("part",st==="part");b.classList.toggle("hi",MSE_PAGES[i].k==="risk"&&mseHighRisk(d))}
+    b.setAttribute("aria-current",i===MSEU.page?"step":"false")});
+  const cur=el.querySelector(".mse-dot.cur");if(cur&&cur.scrollIntoView&&el.querySelector(".mse-dots").scrollWidth>el.querySelector(".mse-dots").clientWidth+2)cur.scrollIntoView({block:"nearest",inline:"nearest"});
+  const bk=el.querySelector("[data-back]"),nx=el.querySelector("[data-next]");
+  if(bk)bk.disabled=MSEU.page===0;
+  if(nx){const last=MSEU.page===MSE_REVIEW;nx.textContent=last?(MSEU.kind==="discharge"?"Add to discharge":"Save MSE"):MSEU.page===MSE_REVIEW-1?"Review":"Next";nx.classList.toggle("save",last)}
+}
+function mseGo(i,instant){
+  const el=mseLayerEl();if(!el||!MSEU)return;i=Math.max(0,Math.min(MSE_REVIEW,i|0));
+  const pg=el.querySelector(".mse-pager");if(!pg)return;
+  const ae=document.activeElement;if(ae&&pg.contains(ae)&&ae.blur)ae.blur();
+  const far=Math.abs(i-MSEU.page)>1;MSEU.page=i;__mseTarget=i;__mseTargetT=Date.now();
+  pg.scrollTo({left:i*pg.clientWidth,behavior:(instant||far)?"instant":"smooth"});mseSyncChrome();mseSaveDraft();
+}
+window.addEventListener("resize",()=>{const el=mseLayerEl();if(el&&MSEU&&MSEU.mode==="edit"){const pg=el.querySelector(".mse-pager");if(pg){__mseTarget=MSEU.page;__mseTargetT=Date.now();pg.scrollTo({left:MSEU.page*pg.clientWidth,behavior:"instant"})}}});
+let __mseScrollT=0,__mseTarget=null,__mseTargetT=0;
+function mseOnScroll(pg){
+  if(!MSEU||MSEU.mode!=="edit")return;const w=pg.clientWidth||1;const i=Math.round(pg.scrollLeft/w);
+  // a programmatic jump (Next/Back/dot) owns the page index until it lands, so taps mid-animation act on the target page
+  if(__mseTarget!=null){if(Math.abs(pg.scrollLeft-__mseTarget*w)<2||Date.now()-__mseTargetT>900)__mseTarget=null;else return}
+  if(i!==MSEU.page){MSEU.page=i;mseSyncChrome()}
+  clearTimeout(__mseScrollT);__mseScrollT=setTimeout(()=>mseSaveDraft(),250);
+}
+function mseCommit(){
+  if(!MSEU)return;const d=MSEU.data;
+  if(!mseAny(d)){toast("Nothing recorded yet — tap findings first.","bad");mseGo(0);return}
+  const p=patient(MSEU.pid);if(!p){toast("Patient not found.","bad");return}
+  const summary=mseSummary(d),high=mseHighRisk(d);
+  if(MSEU.kind==="discharge"){
+    mseLsSet(mseDisKey(p.id),{data:mseClone(d),summary,highRisk:high,at:now()});
+    mseLsSet(mseDraftKey(p.id,"discharge"),null);
+    MSEU.mode="done";mseClose();toast("MSE added to the discharge form","ok");return;
+  }
+  if(!needWrite())return;
+  const e={id:"mse_"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),pid:p.id,kind:"routine",data:mseClone(d),highRisk:high,summary,by:S.userId,byName:mseByName(),at:now(),admittedAt:p.admittedAt||null};
+  mseQueue(e);
+  ev(p.id,"MSE recorded"+(high?" · high risk":""),!high,"mse",msePreviewText(d).slice(0,160));
+  save();
+  mseLsSet(mseDraftKey(p.id,"routine"),null);
+  MSEU.mode="done";mseClose();toast(high?"MSE saved · high risk flagged":"MSE saved",high?"info":"ok");
+  try{flushPending()}catch(x){}
+}
+function mseQueue(e){
+  S.mse=S.mse||[];S.mse=S.mse.filter(x=>x.id!==e.id);S.mse.unshift(e);
+  queue("mse_entries",{id:e.id,patient_id:e.pid,kind:e.kind,data:e.data,high_risk:!!e.highRisk,summary:e.summary,created_at:e.at});
+}
+/* called by dischargeCommit after ward_discharge_patient succeeds */
+function mseCommitDischarge(pid,at){
+  const x=mseDisFilled(pid);if(!x)return null;
+  const e={id:"mse_"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),pid,kind:"discharge",data:mseClone(x.data),highRisk:mseHighRisk(x.data),summary:mseSummary(x.data),by:S.userId,byName:mseByName(),at:at||now(),admittedAt:(patient(pid)||{}).admittedAt||null};
+  mseQueue(e);mseLsSet(mseDisKey(pid),null);mseLsSet(mseDraftKey(pid,"discharge"),null);
+  return e;
+}
+function mseDisRemove(pid){mseLsSet(mseDisKey(pid),null);mseLsSet(mseDraftKey(pid,"discharge"),null);const r=document.getElementById("disMseRow");if(r)r.outerHTML=mseDisRowHtml(pid);else render()}
+function mseDisRowHtml(pid){
+  const f=mseDisFilled(pid);const dr=mseLsGet(mseDraftKey(pid,"discharge"));const last=mseLast(pid);
+  if(f) return `<div class="dis-mse-row filled" id="disMseRow"><p class="dis-mse-sum">${f.highRisk?'<span class="mse-risk-pill sm">Risk</span> ':""}${msePreviewHtml(f.data||{})}</p><div class="dis-mse-act"><button type="button" class="btn sm ghost" onclick="mseOpen('${pid}','discharge')">Edit</button><button type="button" class="linkbtn" onclick="mseDisRemove('${pid}')">Remove</button></div></div>`;
+  return `<div class="dis-mse-row" id="disMseRow"><button type="button" class="btn sm ghost" onclick="mseOpen('${pid}','discharge')">${dr&&dr.data&&mseAny(dr.data)?"Resume MSE draft":"Fill MSE"}</button><span class="tiny muted">${last?"Last MSE "+esc(stamp(last.at))+" — copy it inside":"Optional · saved with the discharge"}</span></div>`;
+}
+
+/* ---- events (delegated) ---- */
+function mseWire(el){
+  el.addEventListener("click",e=>{
+    if(!MSEU)return;const t=e.target.closest("button");if(!t||!el.contains(t))return;
+    if(t.dataset.close){mseClose();return}
+    if(MSEU.mode==="edit"){
+      const d=MSEU.data;
+      if(t.classList.contains("mse-c")){const g=MSE_G[t.dataset.g];mseToggle(d,t.dataset.g,t.dataset.o);mseRefreshPage(g.page);mseSaveDraft();try{Feedback.tap&&Feedback.tap()}catch(x){}return}
+      if(t.dataset.normal!=null){const i=+t.dataset.normal;mseNormalPage(d,i);mseRefreshPage(i);mseSaveDraft();return}
+      if(t.dataset.allnormal){MSE_PAGES.forEach((_,i)=>{mseNormalPage(d,i)});MSE_PAGES.forEach((_,i)=>mseRefreshPage(i));mseSaveDraft();toast("Normal findings filled — change anything abnormal","info");return}
+      if(t.dataset.copy){
+        if(mseAny(d)&&!t.dataset.arm){t.dataset.arm="1";t.dataset.lbl=t.textContent;t.textContent="Tap again to replace current entries";setTimeout(()=>{if(t.isConnected&&t.dataset.arm){delete t.dataset.arm;t.textContent=t.dataset.lbl}},3500);return}
+        const last=mseLast(MSEU.pid);if(!last)return;MSEU.data=mseClone(last.data);
+        const pager=el.querySelector(".mse-pager");const sl=pager.scrollLeft;
+        el.innerHTML=mseEditHtml();const np=el.querySelector(".mse-pager");np.scrollLeft=sl;mseSyncChrome();mseSaveDraft();toast("Copied from last MSE — review each page","info");return}
+      if(t.dataset.dot!=null){mseGo(+t.dataset.dot);return}
+      if(t.dataset.go!=null){mseGo(+t.dataset.go);return}
+      if(t.dataset.back){mseGo(MSEU.page-1);return}
+      if(t.dataset.next){if(MSEU.page===MSE_REVIEW)mseCommit();else mseGo(MSEU.page+1);return}
+      if(t.dataset.discard){
+        if(!t.dataset.arm){t.dataset.arm="1";t.textContent="Tap again to discard all entries";setTimeout(()=>{if(t.isConnected){delete t.dataset.arm;t.textContent="Discard this draft"}},3500);return}
+        mseLsSet(mseDraftKey(MSEU.pid,MSEU.kind),null);MSEU.mode="done";mseClose();toast("Draft discarded","info");return}
+    }else{
+      if(t.dataset.view){mseView(t.dataset.view,"history");try{history.pushState(Object.assign({},history.state||{},{mse:2}),"");__msePushed++}catch(x){}return}
+      if(t.dataset.hist){if(MSEU.from==="history"&&__msePushed>1){history.back();return}MSEU={mode:"history",pid:MSEU.pid};mseMount();return}
+      if(t.dataset.newmse){const pid=MSEU.pid;MSEU.mode="done";mseClose();setTimeout(()=>mseOpen(pid,"routine"),0);return}
+    }
+  });
+  el.addEventListener("input",e=>{
+    if(!MSEU||MSEU.mode!=="edit")return;const t=e.target;
+    if(t.classList.contains("mse-nt")){const k=t.dataset.note;const v=t.value;if(v.trim())MSEU.data.notes[k]=v;else delete MSEU.data.notes[k]}
+    else if(t.classList.contains("mse-words"))MSEU.data.words=t.value;
+    else return;
+    clearTimeout(__mseScrollT);__mseScrollT=setTimeout(()=>{mseSaveDraft();const i=MSE_PAGES.findIndex(p=>p.k===(t.dataset.note||"mood"));const rv=el.querySelector(".mse-review-body");if(rv)rv.innerHTML=mseReviewInner(MSEU.data);mseSyncChrome()},300);
+  });
+  el.addEventListener("focusin",e=>{const t=e.target;if(t&&t.matches&&t.matches("textarea,input")){try{kbSchedule&&kbSchedule()}catch(x){}setTimeout(()=>{try{ensureFieldVisible(t)}catch(x){t.scrollIntoView({block:"center"})}},60)}});
+  el.addEventListener("scroll",e=>{if(e.target.classList&&e.target.classList.contains("mse-pager"))mseOnScroll(e.target)},true);
+
+}
+
+/* ---- history / read-only view ---- */
+function mseHistoryHtml(){
+  const p=patient(MSEU.pid)||{};const list=mseEntries(MSEU.pid);
+  return `<div class="mse-top"><button type="button" class="mse-x" data-close="1" aria-label="Close">✕</button><div class="mse-tt"><b>MSE history</b><span>${esc(p.name||"")} · ${list.length} recorded</span></div></div>
+   <div class="mse-scroll">${list.length?list.map(m=>`<button type="button" class="mse-hi${m.highRisk?" risk":""}" data-view="${esc(m.id)}">
+     <span class="mse-hi-h"><b>${esc(stamp(m.at))}</b>${m.kind==="discharge"?'<span class="mse-kind">At discharge</span>':""}${m.highRisk?'<span class="mse-risk-pill sm">Risk</span>':""}</span>
+     <span class="mse-hi-by">${esc(m.byName||rname(m.by)||"")}${mseCurrentAdmission(p,m)?"":" · earlier admission"}</span>
+     <span class="mse-hi-s">${msePreviewHtml(m.data||{})||esc(m.summary||"")}</span></button>`).join(""):`<p class="muted" style="padding:16px">No MSE recorded yet.</p>`}</div>
+   ${canWrite()&&p.status!=="discharged"?`<div class="mse-foot one"><button type="button" class="btn" data-newmse="1">New MSE</button></div>`:""}`;
+}
+function mseViewHtml(){
+  const m=(S.mse||[]).find(x=>x.id===MSEU.entryId);const p=patient(MSEU.pid)||{};if(!m)return "";
+  const d=m.data||{};const hits=mseRiskHits(d);
+  return `<div class="mse-top"><button type="button" class="mse-x" data-close="1" aria-label="Close">✕</button><div class="mse-tt"><b>${m.kind==="discharge"?"MSE at discharge":"MSE"} · ${esc(stamp(m.at))}</b><span>${esc(p.name||"")} · ${esc(m.byName||rname(m.by)||"")}</span></div></div>
+   <div class="mse-scroll">${hits.length?`<div class="mse-risk-banner"><b>High risk</b> · ${esc(hits.join(" · "))}</div>`:""}
+    <div class="mse-vsum"><p class="tiny">AT A GLANCE</p><p>${msePreviewHtml(d)||esc(m.summary||"")}</p></div>
+    <div class="mse-vs mse-vstruct">${mseAny(d)?mseStructHtml(d):`<p class="sm">${esc(m.summary||"")}</p>`}</div></div>
+   <div class="mse-foot one"><button type="button" class="btn ghost" data-hist="1">All MSEs</button></div>`;
+}
+
+/* ---- Snapshot card ---- */
+function mseCardHtml(p){
+  const onWard=p.status!=="discharged";
+  // after discharge the card shows the latest MSE of that admission, including the one taken at discharge
+  const m=onWard?mseLatest(p.id):(mseEntries(p.id).find(x=>mseCurrentAdmission(p,x))||null);
+  const n=mseEntries(p.id).length;const dr=mseLsGet(mseDraftKey(p.id,"routine"));const hasDr=dr&&dr.data&&mseAny(dr.data);
+  return `<div class="card snap-mse${m&&m.highRisk?" risk":""}">
+   <div class="snap-mse-h"><p class="tiny">MENTAL STATUS EXAMINATION</p>${m&&m.highRisk?'<span class="mse-risk-pill sm">High risk</span>':""}</div>
+   ${m?`<p class="snap-mse-meta"><b>${esc(stamp(m.at))}</b>${m.kind==="discharge"?" · at discharge":""} · ${esc(m.byName||rname(m.by)||"")}</p><p class="snap-mse-sum">${msePreviewHtml(m.data||{})||esc(m.summary||"")}</p>`:`<p class="snap-mse-meta muted">No MSE recorded this admission.</p>`}
+   <div class="btns snap-mse-act">${canWrite()&&onWard?`<button class="btn sm" onclick="mseOpen('${p.id}','routine')">${hasDr?"Resume draft":"New MSE"}</button>`:""}${m?`<button class="btn sm ghost" onclick="mseView('${esc(m.id)}')">View</button>`:""}${n?`<button class="btn sm ghost" onclick="mseHistory('${p.id}')">History (${n})</button>`:""}</div>
+  </div>`;
+}
+/* ===== end MSE ===== */
 function patientRecordItems(pid){
   const p=patient(pid); if(!p) return [];
   const items=[];
@@ -10346,6 +11107,11 @@ function patientRecordItems(pid){
   pgtNotes(pid).forEach(n=>{
     add({kind:"pgt",title:"PGT note",at:n.at,by:n.by,byName:n.byName,body:n.text||""});
   });
+  // R1.3.124: one card per MSE; the discharge MSE is folded into the Discharged card.
+  const mseDis=mseEntries(pid).find(m=>m.kind==="discharge"&&(!p.dischargedAt||Math.abs(Date.parse(m.at||0)-Date.parse(p.dischargedAt||0))<36*3600e3))||null;
+  mseEntries(pid).filter(m=>m.kind!=="discharge").forEach(m=>{
+    add({kind:"mse",title:"Mental status examination",at:m.at,by:m.by,byName:m.byName,body:mseAny(m.data)?"":(m.summary||""),msx:mseAny(m.data)?m.data:null,pill:m.highRisk?"High risk":"",mseId:m.id});
+  });
   (S.criticalStatusUpdates||[]).filter(x=>String(x.pid)===String(pid)).forEach(c=>{
     add({kind:"crit",title:"Critical status",at:c.at||c.created_at||c.updated_at,by:c.by||c.created_by||c.actor,byName:((c.byName&&c.byName!=="Clinician"&&c.byName!==c.by)?c.byName:"")||c.created_by_name||c.actorName||"",body:String(c.message||c.text||c.value||c.note||c.body||"").trim()});
   });
@@ -10359,14 +11125,17 @@ function patientRecordItems(pid){
     const rev=String(p.dischargeReview||"").trim();
     const trt=p.treatmentMode?treatLabelWithEct(p.treatmentMode,p.dischargeEctSessions):"";
     const dmeds=Array.isArray(p.dischargeMeds)?p.dischargeMeds.filter(m=>m&&m.name):[];
-    add({kind:"dis",title:"Discharged",at:p.dischargedAt,body:[[mode,out].filter(Boolean).join(" · "),trt&&trt!=="—"?"Treatment: "+trt:""].filter(Boolean).join("\n"),advice:adv||null,review:rev||null,dmeds:dmeds.length?dmeds:null,dmOutcome:"discharge"});
+    add({kind:"dis",title:"Discharged",at:p.dischargedAt,body:[[mode,out].filter(Boolean).join(" · "),trt&&trt!=="—"?"Treatment: "+trt:""].filter(Boolean).join("\n"),advice:adv||null,review:rev||null,dmeds:dmeds.length?dmeds:null,dmOutcome:"discharge",mse:mseDis?(mseDis.summary||mseSummary(mseDis.data||{})):null,mseData:mseDis&&mseAny(mseDis.data)?mseDis.data:null,mseRisk:!!(mseDis&&mseDis.highRisk),mseId:mseDis?mseDis.id:null});
   }
-  (S.events||[]).filter(e=>e.pid===pid).forEach(e=>{
+  const disCard=!!(p.dischargedAt && !obsOnlyDischarge(p));
+  evCollapse((S.events||[]).filter(e=>e.pid===pid)).forEach(e=>{
     if(recSkipEventTitle(e.title)) return;
+    if(/^mse (recorded|at discharge recorded)/i.test(e.title||"")) return; // R1.3.124: MSE has its own card
     const title=e.title||"Event";
     const low=title.toLowerCase();
     if(/^(started |stopped |paused |resumed |pgt note|ect planned|ect session|admitted from observation|under observation|kept under observation|observation ended|admission\b|admitted to\b)/.test(low)) return;
     if(/^changed [^:]+:/.test(low) && (e.kind==="med"||/→/.test(low))) return; // R1.3.109: folded into shift med card
+    if(disCard && /^discharged\b/.test(low)) return; // R1.3.124c: already shown as the Discharged card
     let kind=e.kind||evKind(title);
     if(/transfer/.test(low)) kind="xfer";
     else if(/discharg/.test(low)) kind="dis";
@@ -10406,11 +11175,11 @@ function recMedRowsHtml(it){
 function recordItemHtml(it,pid){
   const who=recActor(it);
   const legal=(it.kind==="admit"&&typeof pid==="string")?legalBadgesHtml(pid,"rec-legal"):"";
-  return `<div class="rec-item rec-${recCss(it.kind)}">
+  return `<div class="rec-item rec-${recCss(it.kind)}${it.pill?" hi":""}">
     <div class="rec-rail"><div class="rec-dot"></div></div>
     <div class="rec-card${legal?" has-legal":""}">${legal}
-      <h3>${esc(it.title||"")}</h3>
-      ${it.meds?recMedRowsHtml(it):(it.body?`<p class="sm">${esc(it.body)}</p>`:"")}${it.advice?`<div class="rec-dm rec-adv"><p class="rec-dm-h">Advice on discharge</p><p class="sm">${esc(it.advice)}</p></div>`:""}${it.dmeds?dmRecordHtml(it):""}${it.review?`<p class="sm rec-rev"><b>Review in OPD after</b> ${esc(it.review)}</p>`:""}
+      <h3>${esc(it.title||"")}${it.pill?` <span class="rec-pill stop">${esc(it.pill)}</span>`:""}</h3>
+      ${it.meds?recMedRowsHtml(it):(it.body?`<p class="sm">${esc(it.body)}</p>`:"")}${it.msx?mseStructHtml(it.msx,"rec-msx"):""}${it.advice?`<div class="rec-dm rec-adv"><p class="rec-dm-h">Advice on discharge</p><p class="sm">${esc(it.advice)}</p></div>`:""}${it.dmeds?dmRecordHtml(it):""}${it.mse?`<div class="rec-mse-dis"><p class="rec-mse-h">MSE at discharge${it.mseRisk?' <span class="rec-pill stop">High risk</span>':""}</p>${it.mseData?mseStructHtml(it.mseData):`<p class="sm">${esc(it.mse)}</p>`}</div>`:""}${it.review?`<p class="sm rec-rev"><b>Review in OPD after</b> ${esc(it.review)}</p>`:""}${it.mseId?`<button type="button" class="btn sm ghost rec-mse-open" onclick="mseView('${esc(it.mseId)}')">${it.kind==="dis"?"Full discharge MSE":"Full MSE"}</button>`:""}
       <p class="tiny">${esc(who)}${who?" · ":""}${esc(it.atLabel||stamp(it.at)||fmt(it.at)||"")}</p>
     </div>
   </div>`;
@@ -10498,7 +11267,8 @@ function buildRecordPdf(meta,items){
     const rows=[];
     const legalStr=(it.legal&&it.legal.length)?it.legal.join("  "):"";
     const legalW=legalStr?pdfTextW(legalStr,true,13):0;
-    pdfWrap(pdfWinAnsi(it.title||""),true,11.5,CW-2*PAD-6-(legalW?legalW+10:0)).forEach(l=>rows.push({t:l,b:true,s:11.5,lh:15,c:[15,23,42]}));
+    const tPill=it.pill?{l:pdfWinAnsi(it.pill),bg:[254,226,226],fg:[185,28,28]}:null,tPw=tPill?pdfTextW(tPill.l,true,8)+12:0; // R1.3.124
+    pdfWrap(pdfWinAnsi(it.title||""),true,11.5,CW-2*PAD-6-(legalW?legalW+10:0)-(tPw?tPw+6:0)).forEach((l,k)=>rows.push({t:l,b:true,s:11.5,lh:15,c:[15,23,42],pill:k===0?tPill:null,pw:tPw}));
     if(it.meds){
       // R1.3.109: per-shift med card: green dot = new (<24 h), red pill = Stopped, amber = Changed/Paused, grey = stopped earlier.
       if(it.summary){rows.push({gap:3});rows.push({t:pdfWinAnsi(it.summary),b:false,s:9.5,lh:13,c:[100,116,139]})}
@@ -10512,6 +11282,27 @@ function buildRecordPdf(meta,items){
         rows.push({gap:2.5});
       });
     }else if(it.body){rows.push({gap:3});pdfWrap(pdfWinAnsi(it.body),false,10,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:false,s:10,lh:13.5,c:[30,41,59]}))}
+    if(it.msx&&it.msx.length){
+      // R1.3.124b: structured MSE — bold labels, abnormal values bold, high-risk values red bold
+      const IN=[30,41,59],AB=[15,23,42],HI=[185,28,28],LB=[15,23,42],SL=[71,85,105],FS=9.5,LH=12.8,IW=CW-2*PAD-6;
+      const segRuns=v=>v.map(g=>typeof g==="string"?{t:pdfWinAnsi(g),b:false,c:IN}:({t:pdfWinAnsi(g.t),b:!!(g.ab||g.hi),c:g.hi?HI:g.ab?AB:IN}));
+      const wrapRuns=(runs,maxW)=>{const lines=[[]];let w=0;
+        runs.forEach(u=>{u.t.split(/(?<= )/).forEach(tok=>{if(!tok)return;const tw=pdfTextW(tok,u.b,FS),tw0=pdfTextW(tok.replace(/ +$/,""),u.b,FS);
+          let ln=lines[lines.length-1];
+          if(w+tw0>maxW&&ln.length){lines.push([]);ln=lines[lines.length-1];w=0;tok=tok.replace(/^ +/,"");if(!tok)return}
+          const last=ln[ln.length-1];if(last&&last.b===u.b&&last.c===u.c)last.t+=tok;else ln.push({t:tok,b:u.b,c:u.c});w+=pdfTextW(tok,u.b,FS)})});
+        return lines};
+      rows.push({gap:4});
+      if(it.msxHead){rows.push({t:pdfWinAnsi(it.msxHead),b:true,s:9,lh:13,c:it.msxRisk?HI:[100,116,139]});rows.push({gap:1})}
+      const LW=Math.min(130,Math.max(...it.msx.filter(r=>!r.sub).map(r=>pdfTextW(pdfWinAnsi(r.lb),true,FS)),80)+10),SX=12,SW=LW-SX;
+      it.msx.forEach((r,ri)=>{
+        if(ri)rows.push({gap:2.2});
+        if(r.sub){rows.push({t:pdfWinAnsi(r.lb),b:true,s:FS,lh:LH,c:r.hi?HI:LB});
+          r.sub.forEach(sb=>wrapRuns(segRuns(sb.v),IW-SX-SW).forEach((ln,k)=>rows.push({runs:ln,s:FS,lh:LH,x:SX+SW,lab:k===0?{t:pdfWinAnsi(sb.lb),x:SX,c:SL,s:8.5}:null,rule:k===0?SX-6:null})));
+        }else wrapRuns(segRuns(r.v),IW-LW).forEach((ln,k)=>rows.push({runs:ln,s:FS,lh:LH,x:LW,lab:k===0?{t:pdfWinAnsi(r.lb),x:0,c:LB}:null}));
+      });
+    }
+    if(it.tail){rows.push({gap:4});pdfWrap(pdfWinAnsi(it.tail),false,10,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:false,s:10,lh:13.5,c:[30,41,59]}))}
     if(it.foot){rows.push({gap:4});pdfWrap(pdfWinAnsi(it.foot),false,8.5,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:false,s:8.5,lh:11.5,c:[100,116,139]}))}
     const rowH=r=>r.gap!=null?r.gap:r.lh;
     const total=rows.reduce((a,r)=>a+rowH(r),0)+2*PAD;
@@ -10534,6 +11325,7 @@ function buildRecordPdf(meta,items){
         if(r.pill){const w=r.pw,h=11.5,px=M+CW-PAD-w,py=by-2.6,q=h/2,k=q*0.5523;
           ops.push(`${rgb(...r.pill.bg)} rg ${pdfNum(px+q)} ${pdfNum(py)} m ${pdfNum(px+w-q)} ${pdfNum(py)} l ${pdfNum(px+w-q+k)} ${pdfNum(py)} ${pdfNum(px+w)} ${pdfNum(py+q-k)} ${pdfNum(px+w)} ${pdfNum(py+q)} c ${pdfNum(px+w)} ${pdfNum(py+q+k)} ${pdfNum(px+w-q+k)} ${pdfNum(py+h)} ${pdfNum(px+w-q)} ${pdfNum(py+h)} c ${pdfNum(px+q)} ${pdfNum(py+h)} l ${pdfNum(px+q-k)} ${pdfNum(py+h)} ${pdfNum(px)} ${pdfNum(py+q+k)} ${pdfNum(px)} ${pdfNum(py+q)} c ${pdfNum(px)} ${pdfNum(py+q-k)} ${pdfNum(px+q-k)} ${pdfNum(py)} ${pdfNum(px+q)} ${pdfNum(py)} c f`);
           text(px+6,py+3.2,r.pill.l,true,8,r.pill.fg)}
+        if(r.runs){if(r.lab)text(bx+r.lab.x,by,r.lab.t,true,r.lab.s||r.s,r.lab.c);let xx=bx+r.x;r.runs.forEach(u=>{text(xx,by,u.t,u.b,r.s,u.c);xx+=pdfTextW(u.t,u.b,r.s)});return}
         text(bx+(r.x||0),by,r.t,r.b,r.s,r.c);
       });
       y=top-h-8;
@@ -10587,7 +11379,7 @@ function exportPatientRecord(pid){
   try{
     const b=bedObj(pid)||lastBedObj(pid);
     const legal=legalTagsOf(pid).map(x=>x[1]);
-    const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {legal:(it.kind==="admit"&&legal.length)?legal:null,title:it.title||"",body:[it.body||"",it.advice?"Advice on discharge:\n"+it.advice:"",it.dmeds?dmText(it.dmOutcome,it.dmeds):"",it.review?"Review in OPD after "+it.review:""].filter(Boolean).join("\n"),meds:it.meds||null,summary:it.summary||"",foot:`${who}${who?" · ":""}${it.atLabel||stamp(it.at)||fmt(it.at)||""}`}});
+    const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {legal:(it.kind==="admit"&&legal.length)?legal:null,title:it.title||"",body:[it.body||"",it.advice?"Advice on discharge:\n"+it.advice:"",it.dmeds?dmText(it.dmOutcome,it.dmeds):"",it.mse&&!it.mseData?"MSE at discharge"+(it.mseRisk?" (HIGH RISK)":"")+":\n"+it.mse:"",it.review&&!it.mseData?"Review in OPD after "+it.review:""].filter(Boolean).join("\n"),msx:it.msx?mseStruct(it.msx):it.mseData?mseStruct(it.mseData):null,msxHead:it.mseData?"MSE at discharge"+(it.mseRisk?"  HIGH RISK":""):"",msxRisk:!!it.mseRisk,tail:it.mseData&&it.review?"Review in OPD after "+it.review:"",pill:it.pill||"",meds:it.meds||null,summary:it.summary||"",foot:`${who}${who?" · ":""}${it.atLabel||stamp(it.at)||fmt(it.at)||""}`}});
     const ageSex=[p.age,p.sex].filter(x=>x!=null&&x!=="").join(" ");
     const meta={
       name:p.name||"",legal,version:APP_VERSION,dept:RECORD_PDF_DEPT,
@@ -11819,12 +12611,14 @@ function addMed(pid){
   const route=val("mroute")||"PO";
   const freq=val("mfreq")||"OD";
   const run=()=>{
+    const dup=medDupOf(pid,{drug,dose,route,freq});
+    if(dup){toast("Already on the chart, not added again: "+medLineTxt(dup),"bad");ui.medPid=null;ui.sheet=null;render();return}
     const ord={id:uid("o"),pid,drug,dose,route,freq,time:"08:00",start:now(),stop:null,hold:null,status:"active",by:S.userId||null};S.orders.unshift(ord);
     ev(pid,"Started "+drug+" "+dose+" "+route+" "+freqLabel(freq),true,"med");qOrder(ord);qStatSlot(ord);ui.medPid=null;if(ui.fields){delete ui.fields.md;delete ui.fields.mds}ui.sheet=null;save();
     setBusy(true,"Saving medication…");
     Promise.resolve(flushPending()).finally(()=>setBusy(false));
   };
-  if(!runWhenReady("addMed",pid+"|"+drug,run,false)) return;
+  if(!runWhenReady("addMed",pid+"|"+drug,run,true)) return;
   run();
 }
 function stopMed(id){
@@ -11842,7 +12636,8 @@ function resumeMed(id){
   ui.confirm={fn:"resumeMed",id,title:"Resume medication",ok:"Resume",danger:false,body:"Resume "+(o.drug||"this drug")+"?"};
   render();
 }
-function stopMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o)return;o.stop=now();o.status="stopped";o.hold=null;ev(o.pid,"Stopped "+o.drug,true,"med");qOrder(o);save();dismissOverlay()}
+function medStopCore(o){if(!o||o.stop)return;o.stop=now();o.status="stopped";o.hold=null;ev(o.pid,"Stopped "+o.drug,true,"med");qOrder(o)}
+function stopMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o)return;medStopCore(o);save();dismissOverlay()}
 function holdMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="held";o.hold=now();ev(o.pid,"Paused "+o.drug,true,"med");qOrder(o);save();dismissOverlay()}
 function resumeMedNow(id){const o=S.orders.find(x=>x.id===id);if(!o||o.stop)return;o.status="active";o.hold=null;ev(o.pid,"Resumed "+o.drug,true,"med");qOrder(o);save();dismissOverlay()}
 
@@ -12054,6 +12849,22 @@ document.addEventListener("pointerdown",e=>{
   const b=e.target.closest("button");
   if(!b)return;
   if(Feedback.prefs().sound)Feedback.unlockAudio();
+},true);
+// R1.3.124c — double-tap save lock for every write button: a second tap on the same action within 1.5 s
+// is swallowed before its onclick runs (capture phase), so one tap = one write everywhere.
+const TAP_LOCK_RX=/^(save|submit|start|convert|commit|add(?!ObsAdmitMed|CensusMed)|admit|give|mark|send|discharge|record|run|issue|post|create|invite|sign|remove|reopen|withdraw|flag|stop|hold|resume|done|clear|cancel|ack|take|end|obsAdmitDraft|mseSave|mseCommit|mseFinish|dischargeCommit|confirmYes|doConfirm|copyMse)/i;
+const TAP_LOCK_SKIP=/^(open|go|ui|dismiss|close|toggle|pick|filter|set(Tab|Field)|mse(Open|View|History|Page|Nav|Go|Back|Next|Prev))/i;
+let _tapLock={k:"",t:0};
+document.addEventListener("click",e=>{
+  const b=e.target.closest&&e.target.closest("button");
+  if(!b||b.disabled)return;
+  const oc=String(b.getAttribute("onclick")||"").trim();
+  const fn=(oc.match(/([A-Za-z_$][\w$]*)\s*\(/)||[])[1]||"";
+  const fns=oc.split(";").map(x=>(x.match(/([A-Za-z_$][\w$]*)\s*\(/)||[])[1]||"").filter(Boolean);
+  if(!fns.some(f=>TAP_LOCK_RX.test(f)&&!TAP_LOCK_SKIP.test(f))) return;
+  const k=oc, t=Date.now();
+  if(_tapLock.k===k&&t-_tapLock.t<1500){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();return}
+  _tapLock={k,t};
 },true);
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");
