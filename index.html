@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.116 obs-close-meds -->
+<!-- WARD SYNC RELEASE: R1.3.117 modal-keep-kb-fit -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1847,6 +1847,15 @@ button.dx-opt:hover,button.dx-opt:active,button.dx-opt.active{background:var(--p
 .dm-add{margin-top:2px}
 .dm-new .med-ac-wrap{position:relative}
 .dm-new .med-suggest{position:absolute;left:0;right:0;top:100%;z-index:6;margin:4px 0 0}
+/* R1.3.117: floating, keyboard-aware suggestion lists and modals fitted to the visible area above the keyboard */
+.dx-suggest.dx-float{position:absolute;left:0;right:0;margin:0;z-index:8;overscroll-behavior:contain}
+.dx-suggest.dx-up{box-shadow:0 -10px 26px rgba(15,23,42,.16)}
+.bacc.open>.bacc-body>.bacc-inner:has(.dx-suggest.dx-float),.bedf.open>.bedf-body>.bedf-inner:has(.dx-suggest.dx-float){overflow:visible}
+html.kb-open .main::after{content:"";display:block;height:var(--kbh,0px)}
+html[data-theme="ot"] .dx-suggest.dx-up{box-shadow:0 -10px 28px rgba(0,0,0,.45)}
+html.kb-open .sheet{top:var(--vvt,0px);bottom:auto;height:var(--vvh,100%);padding-bottom:6px}
+html.kb-open .sheet .box,html.kb-open .pick-layer .box{max-height:calc(100% - 4px)}
+html.kb-open .sheet .box{margin-bottom:4px}
 .rec-dm{margin-top:6px}
 .rec-dm-h{margin:0 0 2px;font-size:12.5px;font-weight:700;color:var(--muted)}
 .rec-dm ul{margin:0;padding-left:18px}
@@ -2346,7 +2355,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.116";
+const APP_VERSION="R1.3.117";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3428,8 +3437,8 @@ function onRealtimeEvent(table,payload){
   pullTimer=setTimeout(()=>{
     cloudPull().then(r=>{
       if(r&&r.ok&&liveReady){cloudStatus="live";Sync.state="CONNECTED"}
-      render();
-    }).catch(e=>{cloudLastError=e.message||String(e);cloudStatus="error";Sync.state="ERROR";render()});
+      render({bg:1});
+    }).catch(e=>{cloudLastError=e.message||String(e);cloudStatus="error";Sync.state="ERROR";render({bg:1})});
   },500);
 }
 function cloudListen(){
@@ -3451,14 +3460,14 @@ function cloudListen(){
         if(c.failed){cloudStatus="error";Sync.state="ERROR"}
         else if(c.pending||c.retrying){cloudStatus="syncing";Sync.state="CONNECTED"}
         else {cloudStatus="live";Sync.state="CONNECTED"}
-        render();
-      }).catch(()=>render());
+        render({bg:1});
+      }).catch(()=>render({bg:1}));
     } else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
       liveReady=false; Sync.listening=false;
       cloudStatus="offline"; Sync.state="RECONNECTING";
       Sync.note("realtime "+status);
       scheduleReconnect();
-      render();
+      render({bg:1});
     }
   });
 }
@@ -6457,6 +6466,147 @@ document.addEventListener("pointerdown",function(e){
   if(e.target&&e.target.closest&&e.target.closest(".dx-wrap")) return;
   document.querySelectorAll(".dx-suggest").forEach(b=>{b.innerHTML="";});
 });
+/* R1.3.117: keyboard-aware modals and suggestion dropdowns.
+   Chrome on Android (108+) only shrinks the visual viewport when the keyboard opens, so fixed sheets sized in dvh
+   and in-flow dropdowns ended up behind the keyboard. Track window.visualViewport, fit open sheets to the visible
+   band, float every suggestion list (no layout shift when it closes) and flip it above the input when there is
+   no room below. */
+function vvBand(){
+  const v=window.visualViewport;
+  if(!v) return {top:0,bottom:window.innerHeight,h:window.innerHeight};
+  return {top:v.offsetTop,bottom:v.offsetTop+v.height,h:v.height};
+}
+function kbSync(){
+  const r=vvBand(), root=document.documentElement;
+  const kb=Math.max(0,Math.round(window.innerHeight-r.bottom));
+  root.style.setProperty("--vvh",Math.round(r.h)+"px");
+  root.style.setProperty("--vvt",Math.round(r.top)+"px");
+  root.style.setProperty("--kbh",kb+"px");
+  root.classList.toggle("kb-open",kb>80);
+  return kb;
+}
+function fitScroller(el){return (el&&el.closest)?(el.closest(".sheet .box")||el.closest(".main")):null}
+function visibleBandFor(sc){
+  const r=vvBand();
+  let top=r.top, bottom=r.bottom;
+  if(sc){
+    const b=sc.getBoundingClientRect();
+    top=Math.max(top,b.top+(sc.clientTop||0));
+    bottom=Math.min(bottom,b.top+(sc.clientTop||0)+sc.clientHeight);
+    if(!sc.closest(".sheet")&&!document.documentElement.classList.contains("kb-open")){
+      const nav=document.querySelector(".nav");
+      if(nav){const nr=nav.getBoundingClientRect();if(nr.height&&nr.top<bottom)bottom=nr.top}
+    }
+  }
+  return {top,bottom};
+}
+function suggestInput(box){
+  const wrap=box.closest(".dx-wrap");
+  if(!wrap) return null;
+  const a=document.activeElement;
+  if(a&&wrap.contains(a)&&a.tagName==="INPUT") return a;
+  return wrap.querySelector("input:not([type=hidden])");
+}
+function fitSuggest(box){
+  if(!box||!box.isConnected) return;
+  const wrap=box.closest(".dx-wrap");
+  if(!wrap||!box.children.length){
+    const was=box.classList.contains("dx-float");
+    box.classList.remove("dx-float","dx-up");
+    box.style.top=box.style.bottom=box.style.maxHeight="";
+    if(was) dxHoldScroll(box.__sc);
+    return;
+  }
+  const input=suggestInput(box);
+  if(!input) return;
+  box.classList.add("dx-float"); box.classList.remove("dx-up");
+  box.style.bottom=""; box.style.maxHeight="";
+  const place=()=>{const wr=wrap.getBoundingClientRect(),ir=input.getBoundingClientRect();box.style.top=Math.round(ir.bottom-wr.top+4)+"px";return ir};
+  let ir=place();
+  const want=Math.min(box.scrollHeight||244,244);
+  const sc=fitScroller(input);
+  let band=visibleBandFor(sc);
+  // First try to make room by scrolling the field up inside its own scroll container (keeps the field visible).
+  const need=ir.bottom+4+want+8-band.bottom;
+  if(need>0&&sc){
+    const canMove=ir.top-(band.top+8);
+    const d=Math.min(need,Math.max(0,canMove));
+    if(d>0){const before=sc.scrollTop;sc.scrollTop=before+d;if(sc.scrollTop!==before){ir=place();band=visibleBandFor(sc)}}
+  }
+  if(sc){box.__sc=sc;dxTrackScroll(sc)}
+  const below=band.bottom-ir.bottom-12, above=ir.top-band.top-12;
+  if(below>=Math.min(want,132)||below>=above){
+    box.style.maxHeight=Math.max(64,Math.min(244,Math.floor(below)))+"px";
+  }else{
+    box.classList.add("dx-up");
+    const wr=wrap.getBoundingClientRect();
+    box.style.top="auto";
+    box.style.bottom=Math.round(wr.bottom-ir.top+4)+"px";
+    box.style.maxHeight=Math.max(64,Math.min(244,Math.floor(above)))+"px";
+  }
+}
+// A floating list adds scrollable overflow to its scroller. When it closes, the browser would clamp scrollTop and
+// slide the form (and the button under the finger) down. Hold the position with a temporary bottom spacer instead,
+// and release the spacer only once the user scrolls far enough up that releasing it cannot move anything.
+function dxTrackScroll(sc){
+  sc.__dxTop=sc.scrollTop;
+  if(sc.__dxTracked) return; sc.__dxTracked=1;
+  sc.addEventListener("scroll",()=>{
+    if(sc.querySelector(".dx-suggest.dx-float")){sc.__dxTop=sc.scrollTop;return}
+    const pad=sc.__dxPad||0;
+    if(pad&&sc.scrollTop<=sc.scrollHeight-sc.clientHeight-pad){sc.style.paddingBottom=sc.__dxPadOrig||"";sc.__dxPad=0}
+  },{passive:true});
+}
+function dxHoldScroll(sc){
+  if(!sc||!sc.isConnected||sc.__dxTop==null) return;
+  const want=sc.__dxTop;
+  if(sc.scrollTop>=want-1) return;
+  const deficit=Math.ceil(want-(sc.scrollHeight-sc.clientHeight));
+  if(deficit>0){
+    if(!sc.__dxPad) sc.__dxPadOrig=sc.style.paddingBottom||"";
+    const base=parseFloat(getComputedStyle(sc).paddingBottom)||0;
+    sc.__dxPad=(sc.__dxPad||0)+deficit;
+    sc.style.paddingBottom=(base+deficit)+"px";
+  }
+  sc.scrollTop=want;
+}
+function ensureFieldVisible(el){
+  const sc=fitScroller(el);
+  if(!sc) return;
+  const band=visibleBandFor(sc), r=el.getBoundingClientRect();
+  if(r.bottom>band.bottom-12) sc.scrollTop+=Math.ceil(r.bottom-(band.bottom-12));
+  else if(r.top<band.top+8) sc.scrollTop-=Math.ceil((band.top+8)-r.top);
+}
+let kbRaf=0;
+function kbRefit(){
+  kbRaf=0;
+  kbSync();
+  const a=document.activeElement;
+  if(a&&isTypeField(a)&&a.type!=="hidden"){
+    ensureFieldVisible(a);
+    const wrap=a.closest&&a.closest(".dx-wrap");
+    const box=wrap&&wrap.querySelector(".dx-suggest");
+    if(box&&box.children.length) fitSuggest(box);
+  }
+}
+function kbSchedule(){if(!kbRaf)kbRaf=requestAnimationFrame(kbRefit)}
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize",kbSchedule);
+  window.visualViewport.addEventListener("scroll",kbSchedule);
+}
+window.addEventListener("resize",kbSchedule);
+document.addEventListener("focusin",e=>{
+  if(!isTypeField(e.target)) return;
+  // The keyboard animates in after focus; re-check once it has settled.
+  setTimeout(kbSchedule,60); setTimeout(kbSchedule,360);
+});
+try{
+  new MutationObserver(muts=>{
+    const seen=new Set();
+    for(const m of muts){const t=m.target;if(t&&t.classList&&t.classList.contains("dx-suggest")&&!seen.has(t)){seen.add(t);fitSuggest(t)}}
+  }).observe(document.documentElement,{childList:true,subtree:true});
+}catch(e){}
+kbSync();
 
 function bedSortKey(b){
   const no=String((b&&b.no)||"");
@@ -8974,7 +9124,7 @@ async function loadNotificationInbox(){
     ui.notifyInboxError=/failed to fetch/i.test(m)?"Could not reach the server. Check the connection and tap Refresh.":m;
   }finally{
     ui.notifyInboxLoading=false;
-    if(ui._inboxSame&&!ui.notifyInboxError){ui._inboxSame=false}else{ui._inboxSame=false;render()}
+    if(ui._inboxSame&&!ui.notifyInboxError){ui._inboxSame=false}else{ui._inboxSame=false;render({bg:1})}
   }
 }
 async function markNotificationRead(id){
@@ -11320,6 +11470,95 @@ function restoreTyping(keep){
   try{if(keep.start!=null)el.setSelectionRange(keep.start,keep.end)}catch(e){}
 }
 let lastRenderHtml="", lastRenderRoute="", renderCount=0, renderSkips=0;
+/* R1.3.117: in-place DOM patching. A full innerHTML rebuild on every render reset the open modal's scroll to the top,
+   dropped focus and wiped typed-but-undrafted values whenever a chip tap or a live refresh re-rendered. */
+function sheetSig(n){
+  const h=n.querySelector&&n.querySelector(".box h2, .box h3, .box .row b");
+  return (n.id||"")+"|"+(h?h.textContent.trim().slice(0,48):"");
+}
+function morphSame(a,b){
+  if(a.nodeType!==b.nodeType) return false;
+  if(a.nodeType!==1) return true;
+  if(a.tagName!==b.tagName||(a.id||"")!==(b.id||"")) return false;
+  if(a.tagName==="INPUT"&&(a.getAttribute("type")||"")!==(b.getAttribute("type")||"")) return false;
+  const as=a.classList.contains("sheet"), bs=b.classList.contains("sheet");
+  if(as||bs){ if(!(as&&bs)||a.classList.contains("sheet-leave")) return false; return sheetSig(a)===sheetSig(b); }
+  return true;
+}
+function selDefault(sel){const o=sel.querySelector("option[selected]")||sel.querySelector("option");return o?o.value:""}
+function morphAttrs(from,to){
+  const fa=from.attributes;
+  for(let i=fa.length-1;i>=0;i--){const n=fa[i].name;if(!to.hasAttribute(n))from.removeAttribute(n)}
+  const ta=to.attributes;
+  for(let i=0;i<ta.length;i++){const a=ta[i];if(from.getAttribute(a.name)!==a.value)from.setAttribute(a.name,a.value)}
+}
+function morphNode(from,to,ctx){
+  if(!morphSame(from,to)){from.replaceWith(to);return to}
+  if(from.nodeType===3||from.nodeType===8){if(from.nodeValue!==to.nodeValue)from.nodeValue=to.nodeValue;return from}
+  if(from.nodeType!==1) return from;
+  const tag=from.tagName, focused=(from===document.activeElement);
+  if(tag==="INPUT"){
+    const typ=(from.type||"").toLowerCase();
+    const oldDef=from.getAttribute("value")||"", oldChk=from.hasAttribute("checked");
+    morphAttrs(from,to);
+    if(typ==="checkbox"||typ==="radio"){
+      const nc=to.hasAttribute("checked");
+      if(!((focused||ctx.bg)&&nc===oldChk)&&from.checked!==nc) from.checked=nc;
+    }else if(typ!=="hidden"&&typ!=="file"){
+      const nd=to.getAttribute("value")||"";
+      const keep=(focused||ctx.bg)&&nd===oldDef;
+      if(!keep&&from.value!==nd) from.value=nd;
+    }
+    return from;
+  }
+  if(tag==="TEXTAREA"){
+    const oldDef=from.defaultValue, nd=to.defaultValue;
+    morphAttrs(from,to);
+    const keep=(focused||ctx.bg)&&nd===oldDef;
+    const cur=from.value;
+    if(from.defaultValue!==nd) from.defaultValue=nd;
+    if(keep){ if(from.value!==cur) from.value=cur; }
+    else if(from.value!==nd) from.value=nd;
+    return from;
+  }
+  if(tag==="SELECT"){
+    const oldDef=selDefault(from), cur=from.value;
+    morphAttrs(from,to); morphChildren(from,to,ctx);
+    const nd=selDefault(to);
+    const keep=(focused||ctx.bg)&&nd===oldDef;
+    from.value=keep?cur:nd;
+    return from;
+  }
+  if(ctx.bg&&from.classList.contains("sheet")&&from.__src!=null){
+    const src=to.outerHTML;
+    if(from.__src===src) return from; // unchanged modal: leave its DOM (scroll, focus, typed text, open dropdown) alone
+    morphAttrs(from,to); morphChildren(from,to,ctx); from.__src=src; return from;
+  }
+  morphAttrs(from,to); morphChildren(from,to,ctx);
+  return from;
+}
+function morphChildren(from,to,ctx){
+  const kids=Array.from(to.childNodes);
+  let cur=from.firstChild;
+  for(const n of kids){
+    if(!cur){from.appendChild(n);continue}
+    const next=cur.nextSibling;
+    morphNode(cur,n,ctx);
+    cur=next;
+  }
+  while(cur){const nx=cur.nextSibling;cur.remove();cur=nx}
+}
+function stampSheetSrc(el){
+  Array.from(el.children).forEach(n=>{if(n.classList&&n.classList.contains("sheet")&&n.__src==null)n.__src=n.outerHTML.replace(/ sheet-enter/,"")});
+}
+function patchApp(el,html,o){
+  o=o||{};
+  if(o.full){el.innerHTML=html;stampSheetSrc(el);return}
+  const tpl=document.createElement("template");
+  tpl.innerHTML=html;
+  morphChildren(el,tpl.content,{bg:!!o.bg});
+  stampSheetSrc(el);
+}
 function render(opts){
   opts=opts||{};
   if(ui._sheetLeaving && !opts.forceLeave) return;
@@ -11350,8 +11589,10 @@ function render(opts){
   const _rk=routeKey(route.page,route.id);
   if(!opts.nav && !opts.force && !navAnim && _html===lastRenderHtml && el.firstChild){ui._sheetEnter=false;renderHeld=false;renderSkips++;return}
   el.classList.toggle("rerender", !opts.nav && !navAnim && _rk===lastRenderRoute);
+  const _sameRoute=(_rk===lastRenderRoute);
   lastRenderHtml=_html; lastRenderRoute=_rk; renderCount++;
-  el.innerHTML=_html;
+  // R1.3.117: patch the DOM in place instead of rebuilding it, so open modals keep their scroll, focus and typed values.
+  patchApp(el,_html,{full:!!(opts.nav||navAnim||!_sameRoute||!el.firstChild),bg:!!opts.bg});
   ui._sheetEnter=false;
   document.querySelectorAll(".ptag-row").forEach((r,i)=>{if(chipXs[i])r.scrollLeft=chipXs[i]});
   try{ if(ui.giveOpen) refreshGivePost(); }catch(e){}
@@ -11404,7 +11645,7 @@ document.addEventListener("focusout",(e)=>{
   focusFlush=setTimeout(()=>{
     focusFlush=null;
     if(typingTarget()) return;
-    if(renderHeld) render({force:true});
+    if(renderHeld) render({force:true,bg:true});
   },480);
 });
 
@@ -11431,7 +11672,7 @@ document.addEventListener("visibilitychange",()=>{
   if(cloudOn()){
     Sync.note("resume");
     if(!liveReady) scheduleReconnect();
-    else cloudPull().then(()=>render()).catch(()=>scheduleReconnect());
+    else cloudPull().then(()=>render({bg:1})).catch(()=>scheduleReconnect());
     if(pending.length) flushPending().catch(()=>{});
   }
 });

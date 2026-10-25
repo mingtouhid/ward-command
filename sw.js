@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.116-obs-close-meds";
+const VERSION = "ward-sync-pwa-r1.3.117-modal-keep-kb-fit";
 const PRECACHE = [
   "./",
   "./index.html",
