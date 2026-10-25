@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.114 icd11-catalog -->
+<!-- WARD SYNC RELEASE: R1.3.115 critical-status-fix -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -2310,7 +2310,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.114";
+const APP_VERSION="R1.3.115";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -9635,7 +9635,7 @@ function patientRecordItems(pid){
     add({kind:"pgt",title:"PGT note",at:n.at,by:n.by,byName:n.byName,body:n.text||""});
   });
   (S.criticalStatusUpdates||[]).filter(x=>String(x.pid)===String(pid)).forEach(c=>{
-    add({kind:"crit",title:"Critical status",at:c.at||c.created_at||c.updated_at,by:c.by||c.actor,byName:c.byName||c.actorName,body:c.text||c.value||c.note||c.body||""});
+    add({kind:"crit",title:"Critical status",at:c.at||c.created_at||c.updated_at,by:c.by||c.created_by||c.actor,byName:((c.byName&&c.byName!=="Clinician"&&c.byName!==c.by)?c.byName:"")||c.created_by_name||c.actorName||"",body:String(c.message||c.text||c.value||c.note||c.body||"").trim()});
   });
   if(p.dischargedAt && !obsOnlyDischarge(p)){
     const modeL=labelOf(DISCHARGE_MODES,p.dischargeMode);
@@ -10184,6 +10184,7 @@ async function createCriticalStatusRecord(pid,msg){
   return {...row,id:updateId,patient_id:row.patient_id||pid,message:row.message||msg,created_by:row.created_by||S.userId,created_at:row.created_at||now()};
 }
 function askCriticalStatusUpdate(pid){
+  if(ui._critSending){toast("Critical update is already being saved…");return}
   const note=((document.getElementById("criticalStatusNote")&&document.getElementById("criticalStatusNote").value)||"").trim();
   if(!note){toast("Write the critical update first.","bad");return}
   ui._criticalNote=note;
@@ -10194,29 +10195,43 @@ function askCriticalStatusUpdate(pid){
 async function sendCriticalStatusUpdate(pid){
   if(!needWrite())return;
   const p=patient(pid); if(!p)return;
+  if(ui._critSending){toast("Critical update is already being saved…");return;}
   const msg=String(ui._criticalNote||val("criticalStatusNote")||"").trim();
-  ui._criticalNote="";
   if(!msg){toast("Enter the critical status update.","bad");return;}
   const b=bedObj(pid);
-  const btn=document.querySelector("#criticalStatusSheet .btn-danger");
-  if(btn){btn.disabled=true;btn.textContent="Sending…";}
+  // R1.3.115: lock the sheet while the record saves; the flag survives realtime re-renders.
+  ui._critSending=pid; render({force:1});
+  let criticalRecord;
   try{
-    const criticalRecord=await createCriticalStatusRecord(pid,msg);
-    const result=await notifyServerEvent({
-      eventType:"critical_status_update", category:"clinical", priority:"high", patientId:pid,
-      title:"Critical status update",
-      body:p.name+" · Bed "+(b?b.no:"—")+"\n"+msg,
-      targetUrl:"./#/snap/"+encodeURIComponent(pid), recipientScope:"active_team",
-      dedupeKey:"critical_status_update:"+pid+":"+Date.now()+":"+Math.random().toString(36).slice(2,7),
-      metadata:{bed_id:b?b.id:null,bed_number:b?b.no:null,message:msg,critical_status_update_id:criticalRecord.id||criticalRecord.update_id||null}
-    });
-    ev(pid,"Critical status update sent · "+((result.dispatch&&result.dispatch.sent)||0)+" device(s)",true);
-    toast("Critical update sent to the ward team.","ok"); save();dismissOverlay();
+    criticalRecord=await createCriticalStatusRecord(pid,msg);
   }catch(e){
-    evFail(pid,"Critical status notification",e);
-    toast("Critical update failed: "+(e.message||"error"),"bad");
-    if(btn){btn.disabled=false;btn.textContent="Send critical update";}
+    ui._critSending=null;
+    evFail(pid,"Critical status update",e);
+    toast("Critical update failed: "+(clinicianCopy(e&&e.message||e)||"error"),"bad");
+    render({force:1});
+    const ta=document.getElementById("criticalStatusNote"); if(ta&&!ta.value) ta.value=msg;
+    return;
   }
+  ui._critSending=null; ui._criticalNote="";
+  // Saved: close the modal, toast and refresh the Snapshot now, like the other action modals.
+  save();
+  toast("Critical status saved · notifying ward team","ok");
+  if(ui._sheetLeaving) setTimeout(()=>dismissOverlay({all:true}),420); else dismissOverlay({all:true});
+  // Push dispatch can take 10–20 s, so it runs in the background and its result is logged.
+  notifyServerEvent({
+    eventType:"critical_status_update", category:"clinical", priority:"high", patientId:pid,
+    title:"Critical status update",
+    body:(p.name+" · Bed "+(b?b.no:"—")+"\n"+msg).slice(0,1000),
+    targetUrl:"./#/snap/"+encodeURIComponent(pid), recipientScope:"active_team",
+    dedupeKey:"critical_status_update:"+pid+":"+Date.now()+":"+Math.random().toString(36).slice(2,7),
+    metadata:{bed_id:b?b.id:null,bed_number:b?b.no:null,message:msg,critical_status_update_id:criticalRecord.id||criticalRecord.update_id||null}
+  }).then(result=>{
+    ev(pid,"Critical status update sent · "+((result&&result.dispatch&&result.dispatch.sent)||0)+" device(s)",true);
+    save();
+  }).catch(e=>{
+    evFail(pid,"Critical status notification",e);
+    toast("Critical status saved, but the team notification failed.","bad");
+  });
 }
 
 /* R1.3.62 consultant advice */
@@ -10481,7 +10496,7 @@ function criticalStatusForm(pid){
     <p class="sm" style="margin:8px 0"><b>${esc(p.name)}</b> · Bed ${esc(b?b.no:"—")}</p>
     <p class="tiny" style="margin-bottom:8px">Notifies the whole team.</p>
     <label class="field"><span>Critical update</span><textarea id="criticalStatusNote" rows="5" maxlength="500" placeholder="e.g. Acute agitation with attempted absconding; close observation required."></textarea></label>
-    <button class="btn danger block btn-danger" onclick="askCriticalStatusUpdate('${pid}')">Send critical update</button>
+    <button class="btn danger block btn-danger" onclick="askCriticalStatusUpdate('${pid}')"${ui._critSending===pid?" disabled":""}>${ui._critSending===pid?"Saving…":"Send critical update"}</button>
   </div></div>`; render();
 }
 function quickState(id,c){const sn=S.snaps[id];sn.state=(sn.state?sn.state+" ":"")+c;sn.at=now();ev(id,"Status · "+c);qSnapField(id,"state",sn.state);save();render()}
