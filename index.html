@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.122 discharge-ect-sessions -->
+<!-- WARD SYNC RELEASE: R1.3.123 no-horizontal-overflow -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1880,6 +1880,19 @@ button.dx-opt:hover,button.dx-opt:active,button.dx-opt.active{background:var(--p
 .bacc.open>.bacc-body>.bacc-inner:has(.dx-suggest.dx-float),.bedf.open>.bedf-body>.bedf-inner:has(.dx-suggest.dx-float){overflow:visible}
 html.kb-open .main::after{content:"";display:block;height:var(--kbh,0px)}
 html[data-theme="ot"] .dx-suggest.dx-up{box-shadow:0 -10px 28px rgba(0,0,0,.45)}
+/* R1.3.123: nothing in a form may be wider than the screen. Accordion bodies are single-column grids; when a floating list
+   switches their inner to overflow:visible the grid item's automatic min-width became min-content (long no-wrap med names,
+   intrinsic input widths), widening the whole section past the viewport. Pin the track and every child to the container. */
+.bedf-body,.bacc-body{grid-template-columns:minmax(0,1fr)}
+.bedf-inner,.bacc-inner,.dm-in,.dm-list,.dm-row,.dm-new,.dm-rf>*,.dx-wrap,.obs-med-grid>*{min-width:0}
+.dx-wrap{max-width:100%}
+.obs-med-grid{grid-template-columns:minmax(0,1fr) minmax(0,38%)}
+.obs-med-grid input,.dm-rf .pick{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.dx-suggest{max-width:calc(100vw - 16px);box-sizing:border-box}
+.dx-suggest.dx-float{max-width:none}
+button.dx-opt{min-width:0}
+.dx-opt-name,.dx-opt>span{min-width:0;overflow-wrap:anywhere;word-break:normal;white-space:normal}
+.med-opt-doses{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
 html.kb-open .sheet{top:var(--vvt,0px);bottom:auto;height:var(--vvh,100%);padding-bottom:6px}
 html.kb-open .sheet .box,html.kb-open .pick-layer .box{max-height:calc(100% - 4px)}
 html.kb-open .sheet .box{margin-bottom:4px}
@@ -2402,7 +2415,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.122";
+const APP_VERSION="R1.3.123";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -6696,6 +6709,13 @@ function suggestInput(box){
   if(a&&wrap.contains(a)&&a.tagName==="INPUT") return a;
   return wrap.querySelector("input:not([type=hidden])");
 }
+// R1.3.123: keep a floating list inside the visible viewport horizontally (8px margins), whatever its wrap's width.
+function dxClampX(box,wr){
+  const vv=window.visualViewport, vw=Math.min(innerWidth, vv&&vv.width?vv.width:innerWidth), ox=vv&&vv.offsetLeft?vv.offsetLeft:0, M=8;
+  let L=Math.max(wr.left, ox+M), R=Math.min(wr.right, ox+vw-M);
+  if(R-L<Math.min(240, vw-2*M)){ const w=Math.min(240, vw-2*M); L=Math.max(ox+M, Math.min(L, ox+vw-M-w)); R=L+w; }
+  box.style.left=Math.round(L-wr.left)+"px"; box.style.right=Math.round(wr.right-R)+"px";
+}
 function fitSuggest(box){
   if(!box||!box.isConnected) return;
   const wrap=box.closest(".dx-wrap");
@@ -6703,6 +6723,7 @@ function fitSuggest(box){
     const was=box.classList.contains("dx-float");
     box.classList.remove("dx-float","dx-up");
     box.style.top=box.style.bottom=box.style.maxHeight="";
+    box.style.left=box.style.right="";
     if(was) dxHoldScroll(box.__sc);
     return;
   }
@@ -6710,7 +6731,7 @@ function fitSuggest(box){
   if(!input) return;
   box.classList.add("dx-float"); box.classList.remove("dx-up");
   box.style.bottom=""; box.style.maxHeight="";
-  const place=()=>{const wr=wrap.getBoundingClientRect(),ir=input.getBoundingClientRect();box.style.top=Math.round(ir.bottom-wr.top+4)+"px";return ir};
+  const place=()=>{const wr=wrap.getBoundingClientRect(),ir=input.getBoundingClientRect();box.style.top=Math.round(ir.bottom-wr.top+4)+"px";dxClampX(box,wr);return ir};
   let ir=place();
   const want=Math.min(box.scrollHeight||244,244);
   const sc=fitScroller(input);
