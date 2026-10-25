@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- WARD SYNC RELEASE: R1.3.121 discharge-review -->
+<!-- WARD SYNC RELEASE: R1.3.122 discharge-ect-sessions -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
@@ -1889,6 +1889,19 @@ html.kb-open .sheet .box{margin-bottom:4px}
 .dis-form textarea#dadvice{min-height:0;resize:vertical}
 .dis-form .dm-acc{margin:2px 0 10px}
 .btn.dis-confirm.dis-off{opacity:.5}
+.dect-wrap{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .22s ease,opacity .18s ease,margin .22s ease;margin-top:0}
+.dect-wrap.open{grid-template-rows:1fr;opacity:1;margin-top:8px}
+.dect-in{overflow:hidden;min-height:0}
+.dect-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dect-lb{font-weight:600;font-size:14px}
+.dect-step{display:flex;align-items:center;gap:6px}
+.dect-b{width:40px;height:40px;border-radius:10px;border:1px solid var(--line,#d6dbe6);background:var(--card,#fff);font-size:22px;font-weight:600;line-height:1;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;touch-action:manipulation}
+.dect-b:disabled{opacity:.35;cursor:default}
+.dis-form input.dect-n{width:52px;height:40px;min-height:0;padding:0;text-align:center;font-size:18px;font-weight:700;border-radius:10px}
+.dect-hint{margin:4px 0 0;text-align:right;opacity:.75}
+.dect-hint .linkbtn{background:none;border:0;padding:0 2px;color:var(--accent,#1d4ed8);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline}
+.dect-adj{color:#b45309;font-weight:600}
+@media (prefers-reduced-motion:reduce){.dect-wrap{transition:none}}
 .rec-adv .sm{margin:0;white-space:pre-line}
 .rec-rev{margin:6px 0 0}
 .rec-dm-h{margin:0 0 2px;font-size:12.5px;font-weight:700;color:var(--muted)}
@@ -2389,7 +2402,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.121";
+const APP_VERSION="R1.3.122";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3157,7 +3170,7 @@ async function doCloudPull(opts){
   const occupancyHold=unresolved.some(o=>["patients","beds","patient_bed_assignments"].includes(o.table));
   if(!occupancyHold){
     S.beds=beds.map(r=>({id:r.id,no:r.bed_number,sectionId:r.section_id,active:r.active!==false,patientId:r.current_patient_id||null}));
-    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",mrdNo:r.mrd_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,dischargeAdvice:r.discharge_advice||"",dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:[],dischargeReview:r.discharge_review||"",treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
+    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",mrdNo:r.mrd_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,dischargeAdvice:r.discharge_advice||"",dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:[],dischargeReview:r.discharge_review||"",dischargeEctSessions:(r.discharge_ect_sessions==null?null:Number(r.discharge_ect_sessions)),treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
     S.assignments=assigns.map(r=>({id:r.id,patientId:r.patient_id,bedId:r.bed_id,at:r.assigned_at,released:r.released_at,by:r.assigned_by}));
   }
   const nextSnaps={}; snaps.forEach(r=>{nextSnaps[r.patient_id]=rowSnap(r)});
@@ -4439,12 +4452,68 @@ function openSnapDischarge(pid){
     ddxPid:p.id,
     dadvice:"",
     dreview:"",
-    dmrd:""
+    dmrd:"",
+    dect:null,
+    treat:disDefaultTreat(p)
   });
   disMedsReset(p.id);
   go("census",null,1);
 }
 // R1.3.120: discharge form helpers (MRD No. required when missing; meds on discharge reuse the R1.3.116 dm component).
+// R1.3.122: ECT sessions given this admission (from ECT records) + discharge stepper.
+function disEctFromRecords(p){
+  if(!p) return 0;
+  const since=p.admittedAt?new Date(p.admittedAt).getTime():0;
+  const okAt=t=>{const x=t?new Date(t).getTime():NaN;return !since||!isFinite(x)||x>=since-60000};
+  const logged=(S.ectSessions||[]).filter(x=>x&&x.pid===p.id&&okAt(x.at)).length;
+  const plans=(S.ect||[]).filter(e=>e&&e.pid===p.id&&okAt(e.at)).reduce((n,e)=>n+(parseInt(e.sessionsDone,10)||0),0);
+  return Math.max(0,Math.min(99,Math.max(logged,plans)));
+}
+function disDefaultTreat(p){return (p&&(disEctFromRecords(p)>0||ectPlan(p.id)))?["conservative","ect"]:["conservative"]}
+function disEctVal(p){const d=ui.census||{};return (d.dect!=null&&d.dect!=="")?Math.max(0,Math.min(99,parseInt(d.dect,10)||0)):disEctFromRecords(p)}
+function disEctHint(p){
+  const rec=disEctFromRecords(p), v=disEctVal(p);
+  return `From ECT records: ${rec}${v!==rec?` · <b class="dect-adj">adjusted</b> · <button type="button" class="linkbtn" onmousedown="event.preventDefault()" onclick="disEctSet(null)">Reset</button>`:""}`;
+}
+function disEctRowHtml(p,on){
+  const v=disEctVal(p);
+  return `<div class="dect-wrap ${on?"open":""}" id="dectWrap" aria-hidden="${!on}"><div class="dect-in"><div class="dect-row">
+    <b class="dect-lb">ECT sessions</b>
+    <div class="dect-step">
+      <button type="button" class="dect-b" id="dectMinus" aria-label="Decrease ECT sessions" ${v<=0?"disabled":""} ${on?"":'tabindex="-1"'} onclick="disEctStep(-1)">−</button>
+      <input id="dect" class="dect-n" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" aria-label="ECT sessions given" value="${v}" ${on?"":'tabindex="-1"'} oninput="disEctType(this)" onblur="disEctBlur(this)"/>
+      <button type="button" class="dect-b" id="dectPlus" aria-label="Increase ECT sessions" ${v>=99?"disabled":""} ${on?"":'tabindex="-1"'} onclick="disEctStep(1)">+</button>
+    </div>
+  </div><p class="tiny dect-hint" id="dectHint">${disEctHint(p)}</p></div></div>`;
+}
+function disEctPatch(skipInput){
+  const p=patient(ui.disId);if(!p)return;const v=disEctVal(p);const g=id=>document.getElementById(id);
+  if(!skipInput&&g("dect"))g("dect").value=String(v);
+  if(g("dectMinus"))g("dectMinus").disabled=v<=0;
+  if(g("dectPlus"))g("dectPlus").disabled=v>=99;
+  const h=g("dectHint"),hh=disEctHint(p);if(h&&h.__h!==hh){h.innerHTML=hh;h.__h=hh}
+}
+function disEctSet(v){ui.census=ui.census||{};const p=patient(ui.disId);ui.census.dect=(v==null)?null:Math.max(0,Math.min(99,v|0));if(p&&ui.census.dect===disEctFromRecords(p))ui.census.dect=null;disEctPatch()}
+function disEctStep(dir){const p=patient(ui.disId);if(!p)return;disEctSet(disEctVal(p)+dir)}
+function disEctType(el){
+  const raw=String(el.value||"").replace(/\D/g,"").slice(0,2);if(raw!==el.value)el.value=raw;
+  ui.census=ui.census||{};const p=patient(ui.disId);
+  if(raw===""){ui.census.dect="";}else{ui.census.dect=Math.min(99,parseInt(raw,10));if(p&&ui.census.dect===disEctFromRecords(p))ui.census.dect=null}
+  disEctPatch(true);
+}
+function disEctBlur(el){if(ui.census&&ui.census.dect==="")ui.census.dect=null;disEctPatch()}
+function disTreatToggle(id){
+  ui.census=ui.census||{};const cur=new Set(ui.census.treat||["conservative"]);
+  if(cur.has(id))cur.delete(id);else cur.add(id);
+  ui.census.treat=[...cur];
+  const box=document.getElementById("disTreat");
+  if(!box){render({fromInput:1});return}
+  box.querySelectorAll("[data-treat]").forEach(b=>b.classList.toggle("on",cur.has(b.dataset.treat)));
+  const lb=document.getElementById("disTreatLb");if(lb)lb.textContent=labelOf(TREATMENT_MODES,treatFromChips());
+  const on=cur.has("ect"), w=document.getElementById("dectWrap");
+  if(w){w.classList.toggle("open",on);w.setAttribute("aria-hidden",String(!on));w.querySelectorAll("button,input").forEach(x=>{if(on)x.removeAttribute("tabindex");else x.setAttribute("tabindex","-1")});if(on)disEctPatch()}
+}
+function treatLabelWithEct(mode,n){const l=labelOf(TREATMENT_MODES,mode);return (/ect/.test(String(mode||""))&&n!=null)?`${l} (${n} session${n===1?"":"s"})`:l}
 function disMedsReset(pid){
   ui.obsClose={pid,open:false,sel:{},add:[]};
   if(ui.fields) Object.keys(ui.fields).forEach(k=>{if(/^dm(route|freq)\d+$/.test(k)) delete ui.fields[k]});
@@ -7480,7 +7549,7 @@ function censusView(){
   if(tab==="out"){
     const pid=ui.disId||"";
     const p=pid?patient(pid):null;
-    if(p && d.ddxPid!==p.id){ d.ddx=p.diagnosis||""; d.ddxPid=p.id; d.dadvice=""; d.dreview=""; d.dmrd=""; disMedsReset(p.id); }
+    if(p && d.ddxPid!==p.id){ d.ddx=p.diagnosis||""; d.ddxPid=p.id; d.dadvice=""; d.dreview=""; d.dmrd=""; d.dect=null; d.treat=disDefaultTreat(p); disMedsReset(p.id); }
     const needMrd=disNeedsMrd(p), mrdOff=needMrd&&!normMrd(d.dmrd);
     const curDx=d.ddx!=null?d.ddx:(p&&p.diagnosis||"");
     const treat=d.treat||["conservative"];
@@ -7511,11 +7580,12 @@ function censusView(){
       ${form?`<div class="card dis-form">
         ${needMrd?mrdFieldHtml("dmrd",d.dmrd||"",1):""}
         ${dxFieldHtml("Working diagnosis","ddx",curDx,"Diagnosis","census_ddx",p?p.id:"")}
-        <label class="field"><span>Mode of treatment</span>
-          <div class="multi">${TREATMENT_MODES.filter(x=>x[0]!=="conservative_ect").map(([id,lb])=>`<button class="chip ${treat.includes(id)?"on":""}" onclick="toggleMulti('treat','${id}')">${lb}</button>`).join("")}
-          <span class="tiny">${labelOf(TREATMENT_MODES,treatFromChips())}</span>
+        <div class="field"><span>Mode of treatment</span>
+          <div class="multi" id="disTreat">${TREATMENT_MODES.filter(x=>x[0]!=="conservative_ect").map(([id,lb])=>`<button type="button" class="chip ${treat.includes(id)?"on":""}" data-treat="${id}" onclick="disTreatToggle('${id}')">${lb}</button>`).join("")}
+          <span class="tiny" id="disTreatLb">${labelOf(TREATMENT_MODES,treatFromChips())}</span>
           </div>
-        </label>
+          ${disEctRowHtml(p,treat.includes("ect"))}
+        </div>
         <div class="dis-2">
           <label class="field"><span>Mode of discharge</span>${picker("dmode",DISCHARGE_MODES,d.mode||"advice","Mode of discharge")}</label>
           <label class="field"><span>Outcome</span>${picker("dout",DISCHARGE_OUTCOMES,d.outcome||"improved","Outcome")}</label>
@@ -7730,8 +7800,9 @@ function dischargeFromCensus(){
   if(workflowLocked("discharge",id))return;
   const advice=String(d.dadvice||"").trim();
   const review=String(d.dreview||"").trim().slice(0,200);
+  const ectN=(d.treat||[]).includes("ect")?disEctVal(p):null;
   const dmeds=dmCollect(id);
-  const extra={mrd:needMrd?mrd:null,advice,review,dmeds,prev:{mrdNo:p.mrdNo||"",advice:p.dischargeAdvice||"",review:p.dischargeReview||"",meds:p.dischargeMeds||[]}};
+  const extra={mrd:needMrd?mrd:null,advice,review,dmeds,ectN,prev:{mrdNo:p.mrdNo||"",advice:p.dischargeAdvice||"",review:p.dischargeReview||"",ectN:p.dischargeEctSessions==null?null:p.dischargeEctSessions,meds:p.dischargeMeds||[]}};
   const oldDx=p.diagnosis||"";
   const nextDx=(d.ddx!=null&&d.ddxPid===p.id?String(d.ddx):oldDx).trim()||oldDx;
   const bed=S.beds.find(b=>b.patientId===id);
@@ -7747,6 +7818,7 @@ function dischargeFromCensus(){
   if(needMrd) p.mrdNo=mrd;
   p.dischargeAdvice=advice;
   p.dischargeReview=review;
+  p.dischargeEctSessions=ectN;
   p.dischargeMeds=dmeds;
   if(bed)bed.patientId=null;
   const releasedAt=now();
@@ -7762,7 +7834,7 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
       p_token:sessionTok,p_patient:p,p_bed_id:bed?bed.id:null,
       p_assignment_ids:activeAssignments.map(a=>a.id),
       p_ect_plan:ect&&p.dischargeMode!=="death"?ect:null,
-      ...(xx?{p_discharge_advice:xx.advice||null,p_discharge_meds:xx.dmeds||[],p_mrd_no:xx.mrd||null,...(xx.review?{p_discharge_review:xx.review}:{})}:{})
+      ...(xx?{p_discharge_advice:xx.advice||null,p_discharge_meds:xx.dmeds||[],p_mrd_no:xx.mrd||null,...(xx.review?{p_discharge_review:xx.review}:{}),...(xx.ectN!=null?{p_discharge_ect_sessions:xx.ectN}:{})}:{})
     });
     if(xx&&atomic.used&&atomic.data&&Array.isArray(atomic.data.discharge_meds)) p.dischargeMeds=atomic.data.discharge_meds;
     if(!atomic.used){
@@ -7801,13 +7873,13 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
       ev(p.id,"Patient details edited",true,"note","MRD No.: — → "+xx.mrd);
     }
     ev(p.id,"Discharged · "+labelOf(DISCHARGE_MODES,p.dischargeMode)+" · "+labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome),true,"note");
-    if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dreview;delete ui.census.dmrd;}
+    if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dreview;delete ui.census.dmrd;delete ui.census.dect;}
     if(ui.obsClose&&ui.obsClose.pid===p.id) ui.obsClose=null;
     flashBtn(".btn.danger.block","ok");toast("Discharged "+p.name,"ok");ui.disId="";ui.disForm=false;save();ui.ctab="out";render();
   }catch(e){
     if(oldDx!==undefined) p.diagnosis=oldDx;
     p.status="admitted"; p.dischargedAt=null; p.dischargeMode=null; p.dischargeOutcome=null; p.treatmentMode=null;
-    if(xx){p.mrdNo=xx.prev.mrdNo;p.dischargeAdvice=xx.prev.advice;p.dischargeReview=xx.prev.review;p.dischargeMeds=xx.prev.meds}
+    if(xx){p.mrdNo=xx.prev.mrdNo;p.dischargeAdvice=xx.prev.advice;p.dischargeReview=xx.prev.review;p.dischargeEctSessions=xx.prev.ectN;p.dischargeMeds=xx.prev.meds}
     if(bed)bed.patientId=p.id;
     (S.assignments||[]).forEach(a=>{const old=releasedBefore&&releasedBefore.find(x=>x.id===a.id);if(old)a.released=old.released});
     if(ect&&ectBefore){ect.status=ectBefore.status;ect.nextAt=ectBefore.nextAt;ect.sessionsDone=ectBefore.sessionsDone}
@@ -9707,7 +9779,7 @@ function patchFrozenSheetPick(id,v){
 function setPick(id,v){
   ui.fields=ui.fields||{};
   ui.fields[id]=v;
-  if(id==="disel"){ui.disId=v;ui.disForm=false;const dp=v?patient(v):null;ui.census=ui.census||{};ui.census.ddx=dp?(dp.diagnosis||""):"";ui.census.ddxPid=v||"";ui.census.dadvice="";ui.census.dreview="";ui.census.dmrd="";disMedsReset(v||"")}
+  if(id==="disel"){ui.disId=v;ui.disForm=false;const dp=v?patient(v):null;ui.census=ui.census||{};ui.census.ddx=dp?(dp.diagnosis||""):"";ui.census.ddxPid=v||"";ui.census.dadvice="";ui.census.dreview="";ui.census.dmrd="";ui.census.dect=null;ui.census.treat=disDefaultTreat(dp);disMedsReset(v||"")}
   if(id==="dmode"||id==="dout"||id==="asex"||id==="abed"||id==="acon"||id==="acon2"||id==="hshift"){
     ui.census=ui.census||{};
     if(id==="dmode") ui.census.mode=v;
@@ -10264,8 +10336,9 @@ function patientRecordItems(pid){
     // R1.3.120: advice and medications on discharge
     const adv=String(p.dischargeAdvice||"").trim();
     const rev=String(p.dischargeReview||"").trim();
+    const trt=p.treatmentMode?treatLabelWithEct(p.treatmentMode,p.dischargeEctSessions):"";
     const dmeds=Array.isArray(p.dischargeMeds)?p.dischargeMeds.filter(m=>m&&m.name):[];
-    add({kind:"dis",title:"Discharged",at:p.dischargedAt,body:[mode,out].filter(Boolean).join(" · "),advice:adv||null,review:rev||null,dmeds:dmeds.length?dmeds:null,dmOutcome:"discharge"});
+    add({kind:"dis",title:"Discharged",at:p.dischargedAt,body:[[mode,out].filter(Boolean).join(" · "),trt&&trt!=="—"?"Treatment: "+trt:""].filter(Boolean).join("\n"),advice:adv||null,review:rev||null,dmeds:dmeds.length?dmeds:null,dmOutcome:"discharge"});
   }
   (S.events||[]).filter(e=>e.pid===pid).forEach(e=>{
     if(recSkipEventTitle(e.title)) return;
