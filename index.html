@@ -921,6 +921,23 @@ html[data-theme="ot"] .pgt-err{color:#fca5a5;background:rgba(248,113,113,.14)}
 @keyframes pgtDraw{to{stroke-dashoffset:0}}
 @keyframes pgtDoneIn{from{opacity:0}to{opacity:1}}
 @keyframes pgtDoneOut{to{opacity:0}}
+/* R1.3.127 undo-admission popup: compact, always centred (also on phones), not dismissable by the mask */
+.sheet.adm-undo{z-index:75;align-items:center !important;padding:16px !important;padding-top:max(16px, env(safe-area-inset-top, 0px)) !important}
+.sheet.adm-undo .mask{bottom:0;cursor:default}
+.sheet.adm-undo .box{max-width:340px !important;margin:0 !important;text-align:center;border-radius:24px !important;padding:20px 16px 16px !important;transform-origin:50% 50%;box-shadow:0 18px 48px rgba(15,23,42,.28), var(--shadow)}
+.adm-undo-ring{position:relative;width:78px;height:78px;margin:0 auto 10px}
+.adm-undo-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.adm-undo-ring .tr{fill:none;stroke:var(--line);stroke-width:5}
+.adm-undo-ring .pr{fill:none;stroke:var(--teal);stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset .25s linear,stroke .3s}
+.adm-undo-ring.low .pr{stroke:#f59e0b}
+.adm-undo-t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.adm-undo-msg{margin:0 0 6px;font-size:16px;line-height:1.35;color:var(--ink)}
+.adm-undo-sub{margin:0 0 14px;color:var(--muted);line-height:1.35}
+.adm-undo-btns{grid-template-columns:1fr 1fr !important;gap:8px !important}
+.adm-undo-btns .btn{min-height:46px;padding:10px 8px;white-space:normal;line-height:1.2}
+html.adm-undo-open .top,html.adm-undo-open .main,html.adm-undo-open .nav,html.adm-undo-open .fab{pointer-events:none !important}
+@media (prefers-reduced-motion:reduce){.adm-undo-ring .pr{transition:none}}
+.pgt-done.adm-undo-done{background:var(--panel,#fff);animation:pgtDoneIn .18s ease-out both}
 @media (prefers-reduced-motion:reduce){.pgt-done{animation:none}.pgt-tick-c,.pgt-tick-p{animation:none;stroke-dashoffset:0}}
 .consultant-welcome{text-align:center;padding:10px 8px 4px}
 .consultant-welcome .tiny{letter-spacing:.14em;text-transform:uppercase}
@@ -2593,7 +2610,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.126";
+const APP_VERSION="R1.3.127";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -7541,6 +7558,7 @@ async function convertObservation(pid){
   const mrdSend=(mrd||normMrd(p.mrdNo))?{mrd_no:mrd||null}:{};
   const medPlan=dmAdmitPlan(pid);
   if(workflowLocked("obs-admit",pid))return;
+  admUndoBak=admUndoBackup(pid);   // R1.3.127
   setBusy(true,"Admitting\u2026");
   try{
     const reasons=(d.reasons||[]).join(",");
@@ -7594,7 +7612,9 @@ async function convertObservation(pid){
     commitOrders(pid,medPlan.add);
     const st=(S.obsStays||[]).find(s=>s.pid===pid&&!s.endedAt); if(st){st.endedAt=now();st.outcome="admitted"}
     ev(pid,"Admitted from observation",true,"note","",{local:true});
-    try{
+    // R1.3.127: the server holds the admission push until Confirm / the 2-minute window ends (undo popup).
+    const undoReady=!!(data&&data.admission_id&&data.undo_until);
+    if(!undoReady) try{
       await notifyServerEvent({
         eventType:"admission",category:"clinical",priority:"normal",patientId:pid,
         title:"Admitted from observation",
@@ -7604,10 +7624,212 @@ async function convertObservation(pid){
         dedupeKey:"admission:"+pid
       });
     }catch(ne){ evFail(pid,"Admission notification",ne); }
-    closePanel();toast("Admitted "+p.name,"ok");save();render();
-  }catch(e){const mrdMsg=mrdServerErr("oamrd",e,mrd);toast(mrdMsg?mrdMsg+".":(clinicianCopy(e.message||e)||String(e.message||e)),"bad")}
+    closePanel();if(!undoReady)toast("Admitted "+p.name,"ok");save();render();
+    if(undoReady) admUndoStart(pid,data,{kind:"from_observation",bedNo:(destBed&&destBed.no)||bedOf(pid),stopped:medPlan.stop.map(o=>o.id)});
+    else admUndoBak=null;
+  }catch(e){admUndoBak=null;const mrdMsg=mrdServerErr("oamrd",e,mrd);toast(mrdMsg?mrdMsg+".":(clinicianCopy(e.message||e)||String(e.message||e)),"bad")}
   finally{workflowUnlock("obs-admit",pid);setBusy(false)}
 }
+/* ===== R1.3.127 Undo admission =====
+   After a successful admission (new, readmission or Admit from observation) a compact centred popup gives the
+   admitting resident 2 minutes to undo it. The server holds the admission push (notification_events.held_until)
+   until Confirm / expiry; ward_undo_admission reverses the admission atomically. The popup is its own layer on
+   <body> (like the MSE sheet), so app renders and realtime morphs never touch it; the countdown patches the DOM. */
+const ADM_UNDO_KEY="ward-adm-undo-v1", ADM_CONFIRM_RETRY_KEY="ward-adm-confirm-retry-v1";
+let admUndo=null, admUndoTick=null, admUndoBak=null;
+function admUndoSave(){try{admUndo?localStorage.setItem(ADM_UNDO_KEY,JSON.stringify(Object.assign({},admUndo,{phase:"idle"}))):localStorage.removeItem(ADM_UNDO_KEY)}catch(e){}}
+function admUndoBackup(pid){
+  // In-memory copy of everything the admission flow may touch, so a successful undo snaps back instantly.
+  const cp=x=>x==null?x:JSON.parse(JSON.stringify(x));
+  return {pid,patient:cp(patient(pid)||null),snap:cp(S.snaps[pid]||null),
+    beds:S.beds.filter(b=>b.patientId===pid).map(b=>b.id),
+    assignments:cp((S.assignments||[]).filter(a=>a.patientId===pid)),
+    stays:cp((S.obsStays||[]).filter(s=>s.pid===pid)),
+    orders:cp((S.orders||[]).filter(o=>o.pid===pid)),
+    eventIds:new Set((S.events||[]).filter(e=>e.pid===pid).map(e=>e.id)),
+    orderIds:new Set((S.orders||[]).filter(o=>o.pid===pid).map(o=>o.id)),
+    t0:Date.now()};
+}
+function admUndoStart(pid,data,o){
+  o=o||{};
+  if(!data||!data.admission_id||!data.undo_until){admUndoBak=null;return false}
+  const p=patient(pid); const bak=o.bak||admUndoBak; admUndoBak=null;
+  const srvNow=Date.parse(data.server_now||""), skew=isNaN(srvNow)?0:srvNow-Date.now();
+  const until=Date.parse(data.undo_until)-skew;
+  if(!(until>Date.now()+3000)) return false;
+  const evIds=(S.events||[]).filter(e=>e.pid===pid&&!(bak&&bak.eventIds.has(e.id))).map(e=>e.id);
+  const ordIds=(S.orders||[]).filter(x=>x.pid===pid&&!(bak&&bak.orderIds.has(x.id))).map(x=>x.id);
+  admUndo={pid,admissionId:data.admission_id,kind:data.undo_kind||o.kind||"fresh",by:S.userId,
+    name:(p&&p.name)||"patient",bedNo:o.bedNo||data.bed_number||bedOf(pid)||"",
+    t0:(bak&&bak.t0)||Date.now(),until,total:Math.max(1,Math.round((until-((bak&&bak.t0)||Date.now()))/1000)),
+    owned:{events:evIds,orders:ordIds,stopped:(o.stopped||[]).slice()},phase:"idle"};
+  admUndo._bak=bak||null;
+  admUndoSave(); admUndoMount(); return true;
+}
+function admUndoLayer(){return document.getElementById("admUndoLayer")}
+function admUndoFmt(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function admUndoMount(){
+  const u=admUndo; if(!u) return;
+  let el=admUndoLayer();
+  if(!el){
+    el=document.createElement("div"); el.id="admUndoLayer";
+    el.className="sheet adm-undo"+(prefersReduceMotion()?"":" sheet-enter");
+    el.setAttribute("role","alertdialog"); el.setAttribute("aria-modal","true"); el.setAttribute("aria-labelledby","admUndoMsg");
+    document.body.appendChild(el);
+    el.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-adm]");if(!b)return;e.preventDefault();
+      if(b.dataset.adm==="undo") admUndoDo(); else if(b.dataset.adm==="confirm") admUndoConfirm(false)});
+  }
+  const sub=u.kind==="from_observation"?"Undo puts them back on observation.":u.kind==="readmit"?"Undo restores their discharged record.":"Undo removes this admission and frees the bed.";
+  el.innerHTML=`<div class="mask" aria-hidden="true"></div><div class="box">
+    <div class="adm-undo-ring" aria-hidden="true"><svg viewBox="0 0 64 64"><circle class="tr" cx="32" cy="32" r="28"/><circle class="pr" cx="32" cy="32" r="28" stroke-dasharray="175.93" stroke-dashoffset="0"/></svg><span class="adm-undo-t">${admUndoFmt((u.until-Date.now())/1000)}</span></div>
+    <p class="adm-undo-msg" id="admUndoMsg">You just admitted <b>${esc(u.name)}</b>${u.bedNo?` to bed <b>${esc(u.bedNo)}</b>`:""}</p>
+    <p class="tiny adm-undo-sub">${sub} The team is notified when you confirm or when the timer ends.</p>
+    <div class="btns adm-undo-btns">
+      <button type="button" class="btn danger" data-adm="undo">Undo admission</button>
+      <button type="button" class="btn" data-adm="confirm">Confirm admission</button>
+    </div>
+  </div>`;
+  try{document.documentElement.classList.add("adm-undo-open")}catch(e){}
+  clearInterval(admUndoTick); admUndoTick=setInterval(admUndoPaint,250); admUndoPaint();
+  setTimeout(()=>{try{el.classList.remove("sheet-enter");const b=el.querySelector('[data-adm="confirm"]');b&&b.focus({preventScroll:true})}catch(e){}},300);
+}
+function admUndoPaint(){
+  const u=admUndo, el=admUndoLayer(); if(!u||!el) return;
+  if(u.phase==="done") return;
+  const left=(u.until-Date.now())/1000;
+  const t=el.querySelector(".adm-undo-t"), pr=el.querySelector(".adm-undo-ring .pr"), ring=el.querySelector(".adm-undo-ring");
+  if(t) t.textContent=admUndoFmt(left);
+  if(pr) pr.setAttribute("stroke-dashoffset",String((175.93*(1-Math.max(0,Math.min(1,left/120)))).toFixed(2)));
+  if(ring) ring.classList.toggle("low",left<=15);
+  if(left<=0 && u.phase==="idle") admUndoConfirm(true);
+}
+function admUndoBusy(label,which){
+  const el=admUndoLayer(); if(!el) return;
+  el.querySelectorAll("[data-adm]").forEach(b=>{b.disabled=true;if(b.dataset.adm===which){b.dataset.lbl=b.textContent;b.textContent=label}});
+}
+function admUndoIdle(){
+  const el=admUndoLayer(); if(!el) return;
+  el.querySelectorAll("[data-adm]").forEach(b=>{b.disabled=false;if(b.dataset.lbl){b.textContent=b.dataset.lbl;delete b.dataset.lbl}});
+}
+function admUndoClose(){
+  clearInterval(admUndoTick); admUndoTick=null;
+  const el=admUndoLayer();
+  const fin=()=>{try{el&&el.remove()}catch(e){} try{document.documentElement.classList.remove("adm-undo-open")}catch(e){}};
+  if(el&&!prefersReduceMotion()){el.classList.add("sheet-leave");setTimeout(fin,240)}else fin();
+  admUndo=null; admUndoSave();
+}
+function admUndoOwnsOp(op,u){
+  const r=op&&op.row||{}, pid=u.pid;
+  if(Date.parse(op.createdAt||0)<u.t0-2000) return false;
+  if(op.table==="activity_log") return r.patient_id===pid||u.owned.events.includes(r.id);
+  if(op.table==="medication_orders") return u.owned.orders.includes(r.id)||u.owned.stopped.includes(r.id)||r.patient_id===pid;
+  if(op.table==="medication_doses") return u.owned.orders.includes(r.order_id)||r.patient_id===pid;
+  if(op.table==="patients"||op.table==="patient_snapshots") return (r.id||r.patient_id)===pid;
+  return (r.patient_id||r.pid)===pid;
+}
+async function admUndoDo(){
+  const u=admUndo; if(!u||u.phase!=="idle") return;          // double-tap guard
+  if(Date.now()>u.until+25000){admUndoConfirm(true);return}
+  if(!sb||!sessionTok||navigator.onLine===false){toast("Undo needs a network connection.","bad");return}
+  u.phase="undoing"; admUndoBusy("Undoing\u2026","undo");
+  try{
+    // 1) let an in-flight outbox flush land, 2) drop this admission's queued writes so they can't re-create it.
+    try{ if(flushPromise) await flushPromise; }catch(e){}
+    const before=pending.length;
+    pending=pending.filter(op=>!(op.status!=="acked"&&admUndoOwnsOp(op,u)));
+    if(pending.length!==before){persistOutbox();Sync.note("undo admission: dropped "+(before-pending.length)+" queued write(s)")}
+    const {data,error}=await sb.rpc("ward_undo_admission",{p_token:sessionTok,p_patient_id:u.pid,p_admission_id:u.admissionId,p_owned:u.owned});
+    if(error) throw new Error(error.message||String(error));
+    admUndoLocalRollback(u);
+    u.phase="done"; admUndoSave();
+    const el=admUndoLayer(), box=el&&el.querySelector(".box");
+    if(box) box.insertAdjacentHTML("beforeend",`<div class="pgt-done adm-undo-done" role="status" aria-live="polite">${PGT_TICK}<p>Admission undone</p><p class="tiny">${u.kind==="from_observation"?"Back on observation":u.kind==="readmit"?"Discharged record restored":"Bed "+esc(u.bedNo||"")+" is free again"}</p></div>`);
+    clearInterval(admUndoTick); admUndoTick=null;
+    localStorage.removeItem(ADM_UNDO_KEY);
+    save();
+    if(u.kind==="from_observation") render({force:1}); else go("home");
+    setTimeout(()=>{admUndo=u;admUndoClose()},1400);
+    cloudPull().then(()=>render({bg:1})).catch(()=>{});
+  }catch(e){
+    const msg=String(e&&e.message||e);
+    if(sessionDead(msg)) expireSession();
+    u.phase="idle"; admUndoIdle();
+    toast(clinicianCopy(msg)||msg,"bad");
+    if(/already confirmed|window has passed|already expired/i.test(msg)) admUndoClose();
+  }
+}
+function admUndoLocalRollback(u){
+  const pid=u.pid, b=u._bak;
+  const ownedO=new Set(u.owned.orders||[]), ownedE=new Set(u.owned.events||[]);
+  S.events=(S.events||[]).filter(e=>!(ownedE.has(e.id)||(e.pid===pid&&Date.parse(e.at||0)>=u.t0-2000)));
+  S.doses=(S.doses||[]).filter(d=>!ownedO.has(d.oid));
+  S.orders=(S.orders||[]).filter(o=>!ownedO.has(o.id));
+  if(!b) return;   // reloaded mid-timer: cloudPull restores the rest from the server
+  S.patients=S.patients.filter(x=>x.id!==pid); if(b.patient) S.patients.unshift(b.patient);
+  if(b.snap) S.snaps[pid]=b.snap; else delete S.snaps[pid];
+  S.beds.forEach(x=>{if(x.patientId===pid)x.patientId=null}); b.beds.forEach(id=>{const x=S.beds.find(y=>y.id===id);if(x&&!x.patientId)x.patientId=pid});
+  S.assignments=(S.assignments||[]).filter(a=>a.patientId!==pid).concat(b.assignments);
+  S.obsStays=(S.obsStays||[]).filter(s=>s.pid!==pid).concat(b.stays);
+  const pre=new Map(b.orders.map(o=>[o.id,o]));
+  S.orders=(S.orders||[]).map(o=>pre.has(o.id)&&(u.owned.stopped||[]).includes(o.id)?pre.get(o.id):o);
+}
+async function admUndoConfirm(expired){
+  const u=admUndo; if(!u||u.phase!=="idle") return;          // double-tap / timer race guard
+  u.phase="confirming"; admUndoBusy(expired?"Confirming\u2026":"Confirming\u2026","confirm");
+  const id=u.admissionId, pid=u.pid;
+  admUndoClose();
+  if(!expired) toast("Admission confirmed","ok");
+  await admConfirmSend(id,pid);
+}
+async function admConfirmSend(id,pid){
+  let data=null;
+  try{
+    if(!sb||!sessionTok) throw new Error("offline");
+    const r=await sb.rpc("ward_confirm_admission",{p_token:sessionTok,p_admission_id:id});
+    if(r.error) throw new Error(r.error.message||String(r.error));
+    data=r.data;
+    admConfirmRetry(id,null);
+  }catch(e){
+    const msg=String(e&&e.message||e);
+    if(/not found|Only the resident/i.test(msg)){admConfirmRetry(id,null);return}
+    admConfirmRetry(id,pid);   // retried on next open / when back online; the server also releases it on its own
+    return;
+  }
+  const ids=(data&&Array.isArray(data.notification_ids))?data.notification_ids:[];
+  let sent=0;
+  for(const nid of ids){
+    try{const r=await dispatchNotificationId(nid);sent+=(r.dispatch&&r.dispatch.sent)||0}
+    catch(ne){try{pushElog("Admission notification: "+(ne&&ne.message||ne),"bad")}catch(_){}}
+  }
+  if(ids.length&&pid&&patient(pid)) {ev(pid,"Admission notification dispatched \u00b7 "+sent+" device(s)",true);save();}
+}
+function admConfirmRetry(id,pid){
+  try{
+    const m=JSON.parse(localStorage.getItem(ADM_CONFIRM_RETRY_KEY)||"{}");
+    if(pid) m[id]={pid,by:S.userId,at:Date.now()}; else delete m[id];
+    Object.keys(m).forEach(k=>{if(Date.now()-(m[k].at||0)>864e5) delete m[k]});
+    localStorage.setItem(ADM_CONFIRM_RETRY_KEY,JSON.stringify(m));
+  }catch(e){}
+}
+let admResumeBusy=false;
+async function admUndoResume(){
+  if(admResumeBusy||!S||!S.userId) return;
+  admResumeBusy=true;
+  try{
+    if(!admUndo){
+      let x=null; try{x=JSON.parse(localStorage.getItem(ADM_UNDO_KEY)||"null")}catch(e){}
+      if(x&&x.admissionId&&x.by===S.userId){
+        if(Date.now()<x.until-1000){ admUndo=Object.assign(x,{phase:"idle",_bak:null}); admUndoMount(); }
+        else { localStorage.removeItem(ADM_UNDO_KEY); await admConfirmSend(x.admissionId,x.pid); }
+      }else if(x&&x.by!==S.userId){ localStorage.removeItem(ADM_UNDO_KEY); }
+    }else if(!admUndoLayer()){ admUndoMount(); }
+    let m={}; try{m=JSON.parse(localStorage.getItem(ADM_CONFIRM_RETRY_KEY)||"{}")}catch(e){}
+    for(const k of Object.keys(m)){ if(m[k].by===S.userId && sb && sessionTok && navigator.onLine!==false) await admConfirmSend(k,m[k].pid); }
+  }finally{admResumeBusy=false}
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){admUndoPaint();setTimeout(admUndoResume,300)}});
+window.addEventListener("online",()=>setTimeout(admUndoResume,800));
+window.addEventListener("load",()=>setTimeout(admUndoResume,1200));
 /* R1.3.116 — optional "Medications on referral / disposal" for observation close */
 function dmState(pid,mode){
   const cur=ui.obsClose;
@@ -7997,6 +8219,7 @@ function admitFromCensus(){
   const prevBackup=prevRet?JSON.parse(JSON.stringify(prevRet)):null;
   const prevSnapBackup=prevRet&&S.snaps[prevRet.id]?JSON.parse(JSON.stringify(S.snaps[prevRet.id])):null;
   const id=prevRet?prevRet.id:uid("p");
+  admUndoBak=admUndoBackup(id);   // R1.3.127
   const reasons=(d.reasons||[]).join(",");
   const p={id,code:(prevRet&&prevRet.code)||hosp||("PSY-"+id.slice(-6).toUpperCase()),hospitalNo:hosp||"",mrdNo:mrd||(prevRet&&prevRet.mrdNo)||"",name,age:+(d.age||0),sex:d.sex||"O",diagnosis:(d.dx||"").trim()||"Diagnosis pending",dx2:(d.dx2||"").trim(),dx3:(d.dx3||"").trim(),comorb:normComorb(d.comorb),reason:reasons,referredBy:(d.ref||"").trim(),consultant:(d.con||"").trim(),consultant2:(d.con2||"").trim(),admittedAt:d.adate?new Date(d.adate).toISOString():now(),dischargedAt:null,dischargeMode:null,dischargeOutcome:null,treatmentMode:null,status:"admitted",address:(d.addr||"").trim(),phone:(d.phone||"").trim()};
   S.patients=S.patients.filter(x=>x.id!==id);
@@ -8062,7 +8285,9 @@ async function admitCommit(id,p,bed,asg,hosp,prevBackup,prevSnapBackup){setBusy(
     qPatientConsultantFromText(id,p.consultant||p.consultant_name,p.consultant2||p.consultant_name_2);
     commitOrders(id,((ui.census||{}).meds||[]).filter(m=>(m.drug||"").trim()));
     if(ui.census) ui.census.meds=[{drug:"",dose:"",route:"PO",freq:"OD"}];
-    try{
+    // R1.3.127: with the undo window the server holds the push; it is dispatched on Confirm / expiry.
+    const undoReady=!!(atomic.used&&atomic.data&&atomic.data.admission_id&&atomic.data.undo_until);
+    if(!undoReady) try{
       let result;
       if(atomic.used && atomic.data && atomic.data.notification_id){
         result=await dispatchNotificationId(atomic.data.notification_id);
@@ -8080,9 +8305,11 @@ async function admitCommit(id,p,bed,asg,hosp,prevBackup,prevSnapBackup){setBusy(
       evFail(id,"Admission notification",ne);
       console.warn("Admission notification failed",ne);
     }
-    flashBtn(".card .btn.block","ok");toast("Synced to "+bed.no,"ok");
+    flashBtn(".card .btn.block","ok");if(!undoReady)toast("Synced to "+bed.no,"ok");
     ui.census={reasons:[],treat:["conservative"],adate:localStamp()};if(ui.medPid){ui.medPid=null;if(ui.fields){delete ui.fields.md;delete ui.fields.mds}}ui.sheet=null;save();go("snap",id);
+    if(undoReady) admUndoStart(id,atomic.data,{kind:prevBackup?"readmit":"fresh",bedNo:bed.no}); else admUndoBak=null;
   }catch(e){
+    admUndoBak=null;
     S.patients=S.patients.filter(x=>x.id!==id);
     if(prevBackup) S.patients.unshift(prevBackup);
     if(prevSnapBackup) S.snaps[id]=prevSnapBackup; else delete S.snaps[id];
@@ -8280,6 +8507,7 @@ function admitPatient(){
   const prevBackup=prevRet?JSON.parse(JSON.stringify(prevRet)):null;
   const prevSnapBackup=prevRet&&S.snaps[prevRet.id]?JSON.parse(JSON.stringify(S.snaps[prevRet.id])):null;
   const id=prevRet?prevRet.id:uid("p");
+  admUndoBak=admUndoBackup(id);   // R1.3.127
   const c1=((ui.census&&ui.census.con)||val("acon")||"").trim();
   const c2=((ui.census&&ui.census.con2)||val("acon2")||"").trim();
   const code=(prevRet&&prevRet.code)||hosp||("PSY-"+id.slice(-6).toUpperCase());
