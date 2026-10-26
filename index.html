@@ -168,7 +168,12 @@ html[data-theme="dark"]{
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif;height:100%;max-height:100svh;overflow:hidden;-webkit-tap-highlight-color:transparent}
 button,a,.nav,.card,.fold-head,.more-row,.pick,.pill,.chip,.seg{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 button{cursor:pointer;touch-action:manipulation}
-input,select,textarea{color:inherit;touch-action:manipulation;-webkit-user-select:text;user-select:text}
+input,select,textarea{color:inherit;touch-action:manipulation}
+/* R1.3.130: no long-press text selection / copy / dictionary popup anywhere in the app (incl. dynamically rendered modals,
+   cards, inbox, timeline, chips). Only real editable fields keep selection so typing, cursor placement and paste still work. */
+html,body,*,*::before,*::after{-webkit-user-select:none !important;user-select:none !important;-webkit-touch-callout:none !important}
+input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),
+textarea,[contenteditable]:not([contenteditable=false]),[contenteditable]:not([contenteditable=false]) *{-webkit-user-select:text !important;user-select:text !important;-webkit-touch-callout:default !important}
 html{-webkit-text-size-adjust:100%;touch-action:manipulation;overscroll-behavior:none;text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 .app{max-width:430px;margin:0 auto;height:100svh;max-height:100svh;background:var(--bg);position:relative;display:flex;flex-direction:column;overflow:hidden;}
 .main{container-type:inline-size;container-name:ward;
@@ -1432,7 +1437,6 @@ html.sheet-open .fab{
 html.sheet-open .sheet,
 html.sheet-open .sheet *{
   pointer-events:auto !important;
-  user-select:auto;
 }
 html.sheet-open .main{overflow:hidden !important}
 html.sheet-open .nav{z-index:40}
@@ -2114,10 +2118,7 @@ html.kb-open .mse-dots{display:none}
 /* R1.3.128 blood investigations */
 .lab-layer{z-index:76}
 .lab-hdr{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:10px 12px;margin:0 0 10px}
-.lab-seg{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px}
-.lab-sg{border:0;background:var(--panel2);color:var(--ink);font:inherit;font-size:14px;font-weight:650;padding:9px 6px;cursor:pointer}
-.lab-sg+.lab-sg{border-left:1px solid var(--line)}
-.lab-sg.on{background:var(--teal);color:#fff}
+.lab-req{font-size:11px;font-weight:700;color:var(--red,#b42318);margin-left:4px;letter-spacing:.02em}
 .lab-hf{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .lab-fld{display:flex;flex-direction:column;gap:3px;min-width:0}
 .lab-fld:first-child{grid-column:1/-1}
@@ -2710,7 +2711,15 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.128";
+const APP_VERSION="R1.3.130";
+/* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
+   that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
+const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
+function noSelEditable(t){const el=t&&(t.nodeType===1?t:t.parentElement);return !!(el&&el.closest&&el.closest(NOSEL_EDIT))}
+document.addEventListener("selectstart",e=>{if(!noSelEditable(e.target))e.preventDefault()},true);
+document.addEventListener("contextmenu",e=>{if(!noSelEditable(e.target))e.preventDefault()},true);
+document.addEventListener("selectionchange",()=>{try{const sel=document.getSelection();if(!sel||sel.isCollapsed||!sel.rangeCount)return;
+  const a=document.activeElement;if(a&&noSelEditable(a))return;if(noSelEditable(sel.anchorNode))return;sel.removeAllRanges()}catch(e){}});
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -11525,7 +11534,7 @@ function labEval(code,raw,sex,row){
   return {ok:true,num,text:qual?s:null,canon,flag,tier,state,msg,crit};
 }
 /* ---- local model ---- */
-function labReports(pid,all){return (S.labs||[]).filter(r=>r&&r.pid===pid&&(all||!r.deleted)).sort((a,b)=>String(b.reportedAt||"").localeCompare(String(a.reportedAt||""))||String(b.at||"").localeCompare(String(a.at||"")))}
+function labReports(pid,all){return (S.labs||[]).filter(r=>r&&r.pid===pid&&(all||!r.deleted)).sort((a,b)=>labRepDay(b.reportedAt).localeCompare(labRepDay(a.reportedAt))||String(b.at||"").localeCompare(String(a.at||""))||String(b.id).localeCompare(String(a.id)))}
 function labPendingId(id){return pending.some(o=>o.table==="lab_reports"&&o.row&&o.row.id===id&&o.status!=="acked")}
 function labFromRow(r){
   return {id:r.id,pid:r.patient_id,lab:r.lab||"AMCH",dept:r.department||"other",sampleNo:r.sample_no||"",collectedAt:r.collected_at||null,reportedAt:r.reported_at,
@@ -11542,12 +11551,14 @@ function labResDisp(rp){const v=labResultFromRow(rp);const u=rp.unitPrinted||(la
 function labName(rp){return rp.name||(labDef(rp.code)||{}).n||rp.code}
 function labPanelsLabel(r){return (r.panels&&r.panels.length?r.panels:["Report"]).join(" + ")}
 function labDeptLabel(d){return d==="pathology"?"Pathology":d==="biochemistry"?"Biochemistry":"Lab"}
+// R1.3.130: department is no longer asked for; show it only on older reports that still carry one
+function labDeptTag(d){return d==="pathology"||d==="biochemistry"?labDeptLabel(d):""}
 function labCritList(r){return (r.results||[]).filter(x=>labIsCrit(x.flag))}
 function labValLine(x){const d=labResDisp(x);return `${LAB_SHORT[x.code]||labName(x)} ${d.v}${d.u&&/\d/.test(String(d.v))?" "+d.u:""}`}
 function labCritText(r){
   const c=labCritList(r);const p=patient(r.pid)||{};
   return ("Critical lab value"+(c.length>1?"s":"")+": "+c.map(x=>labValLine(x)+" ("+({CRIT_H:"critical high",CRIT_L:"critical low",URGENT:"urgent"})[x.flag]+")").join("; ")+
-    ` · ${labDeptLabel(r.dept)} report ${stamp(r.reportedAt)}${r.sampleNo?" · sample "+r.sampleNo:""}. Value confirmed against the paper report.`).slice(0,480);
+    ` · ${labDeptTag(r.dept)?labDeptTag(r.dept)+" report":"Report"} ${labRepText(r.reportedAt)}${r.sampleNo?" · sample "+r.sampleNo:""}. Value confirmed against the paper report.`).slice(0,480);
 }
 /* ---- sync: server -> local ---- */
 function labMergeState(rows,unresolved){
@@ -11584,13 +11595,25 @@ async function labLoadHistory(pid,force){
 }
 function labMarkLocalOnly(id){const r=(S.labs||[]).find(x=>x.id===id);if(r){r.localOnly=true;try{save()}catch(e){}}}
 /* ---- layer state ---- */
-let LABU=null; // {mode:"edit"|"list", pid, editId, f:{dept,deptSet,rep,col,sample,rows,critOk,postAlert,dupOk}}
+let LABU=null; // {mode:"edit"|"list", pid, editId, f:{rep,rows,critOk,postAlert,dupOk}} (R1.3.130: dept/col/sample dropped from the form; old drafts still load)
 let __labPushed=0,__labSkipPop=0,__labDraftT=0,__labSaving=false;
 function labDraftKey(pid,editId){return "ws_labdraft_"+(editId?"e_"+editId:"n_"+pid)}
+function labNormDraft(f){ // R1.3.130: drafts saved by R1.3.128 carry dept/deptSet/col/sample; drop them, keep everything else
+  const o=Object.assign({},f||{});delete o.dept;delete o.deptSet;delete o.col;delete o.sample;
+  o.rep=typeof o.rep==="string"?o.rep.slice(0,10):"";if(o.rep&&!/^\d{4}-\d{2}-\d{2}$/.test(o.rep))o.rep="";o.rows=(Array.isArray(o.rows)?o.rows:[]).filter(r=>r&&typeof r==="object"&&r.k);
+  o.critOk=!!o.critOk;o.postAlert=!!o.postAlert;o.dupOk=!!o.dupOk;return o;
+}
 function labLsGet(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}
 function labLsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function labLocalInput(iso){if(!iso)return "";const d=new Date(iso);if(Number.isNaN(d.getTime()))return "";const z=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`}
 function labFromInput(v){if(!v)return null;const d=new Date(v);return Number.isNaN(d.getTime())?null:d.toISOString()}
+/* R1.3.130: the report is dated only (no time). Stored in reported_at as 00:00 IST of that date (the live RPC rejects times
+   more than 10 min ahead, so noon would fail for morning entries). Dates are always read back in IST, so the day never shifts. */
+function labRepDay(iso){const t=certIst(iso);if(!t)return "";const z=n=>String(n).padStart(2,"0");return `${t.y}-${z(t.m+1)}-${z(t.d)}`}
+function labTodayDay(){return labRepDay(new Date())}
+function labDayIso(day){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(day||"")))return null;const d=new Date(day+"T00:00:00+05:30");return Number.isNaN(d.getTime())?null:d.toISOString()}
+function labDayText(day){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(day||""));return m?m[3]+" "+CERT_MON[+m[2]-1]+" "+m[1]:""}
+function labRepText(iso){return labDayText(labRepDay(iso))}
 let __labRowSeq=0;
 function labNewRow(code,panel,extra){return Object.assign({k:"r"+(++__labRowSeq)+Math.random().toString(36).slice(2,5),code,panel:panel||labPanelOf(code),raw:"",chk:false},extra||{})}
 function labOpen(pid,editId){
@@ -11598,12 +11621,12 @@ function labOpen(pid,editId){
   if(!canWrite()){toast("Consultants can view only.","bad");return}
   let f=null,restored=false;
   const dr=labLsGet(labDraftKey(pid,editId));
-  if(dr&&dr.f&&Array.isArray(dr.f.rows)){f=dr.f;restored=dr.f.rows.some(r=>String(r.raw||"").trim())}
+  if(dr&&dr.f&&Array.isArray(dr.f.rows)){f=labNormDraft(dr.f);restored=f.rows.some(r=>String(r.raw||"").trim())}
   else if(editId){
     const r=(S.labs||[]).find(x=>x.id===editId&&x.pid===pid&&!x.deleted);if(!r){toast("Report not found","bad");return}
-    f={dept:r.dept,deptSet:true,rep:labLocalInput(r.reportedAt),col:labLocalInput(r.collectedAt),sample:r.sampleNo||"",critOk:false,postAlert:false,dupOk:true,
+    f={rep:labRepDay(r.reportedAt),critOk:false,postAlert:false,dupOk:true,
       rows:r.results.map(x=>labNewRow(LAB_T[x.code]?x.code:x.code,labPanelOf(x.code),Object.assign({raw:labResultFromRow(x),chk:x.state==="red"},LAB_T[x.code]?{}:{custom:true,name:x.name,unit:x.unitPrinted||x.unit||"",lo:x.lo==null?"":String(x.lo),hi:x.hi==null?"":String(x.hi),panel:"Other"})))};
-  }else f={dept:"",deptSet:false,rep:"",col:"",sample:"",rows:[],critOk:false,postAlert:false,dupOk:false};
+  }else f={rep:"",rows:[],critOk:false,postAlert:false,dupOk:false};
   LABU={mode:"edit",pid,editId:editId||null,f};
   labMount();
   if(restored)toast("Draft restored","info");
@@ -11632,7 +11655,7 @@ window.addEventListener("popstate",e=>{
 },true);
 function labSaveDraft(){
   if(!LABU||LABU.mode!=="edit")return;const f=LABU.f;
-  const any=f.rows.some(r=>String(r.raw||"").trim())||f.sample||f.rep;
+  const any=f.rows.some(r=>String(r.raw||"").trim())||f.rep;
   labLsSet(labDraftKey(LABU.pid,LABU.editId),any?{f,at:now()}:null);
   const t=document.getElementById("labDraftAt");if(t&&any)t.textContent="Draft saved "+new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
 }
@@ -11693,11 +11716,8 @@ function labEditHtml(){
    </div>
    <div class="mse-scroll lab-scroll">
     <div class="lab-hdr">
-      <div class="lab-seg" role="group" aria-label="Lab">${["pathology","biochemistry"].map(d=>`<button type="button" class="lab-sg${f.dept===d?" on":""}" data-dept="${d}" aria-pressed="${f.dept===d}">${labDeptLabel(d)}</button>`).join("")}</div>
       <div class="lab-hf">
-        <label class="lab-fld"><span>Report date &amp; time <em>as printed</em></span><input type="datetime-local" data-h="rep" value="${esc(f.rep||"")}" max="${labLocalInput(new Date(Date.now()+5*60000).toISOString())}"></label>
-        <label class="lab-fld"><span>Collected <em>optional</em></span><input type="datetime-local" data-h="col" value="${esc(f.col||"")}"></label>
-        <label class="lab-fld"><span>Sample no. <em>optional</em></span><input type="text" data-h="sample" maxlength="40" value="${esc(f.sample||"")}" autocomplete="off" autocapitalize="characters" enterkeyhint="next"></label>
+        <label class="lab-fld"><span>Report date <em>as printed</em> <b class="lab-req">required</b></span><input type="date" data-h="rep" required aria-required="true" value="${esc(f.rep||"")}" max="${labTodayDay()}"></label>
       </div>
       <p class="tiny muted lab-pt">Patient: <b>${esc(p.name||"")}</b> — from this card. Check the name and number on the paper match.</p>
     </div>
@@ -11728,20 +11748,18 @@ function labTogglePanel(k){
     f.rows=f.rows.filter(r=>r.panel!==k);
   }else{
     pd.c.forEach(c=>{if(!f.rows.some(r=>r.code===c&&!r.custom))f.rows.push(labNewRow(c,k))});
-    if(!f.deptSet){f.dept=pd.dept;}
   }
-  labRefreshGroups();labSyncDept();labSaveDraft();
+  labRefreshGroups();labSaveDraft();
   if(!has.length){const el=labLayerEl();const first=el&&el.querySelector(`[data-grp="${CSS.escape(k)}"] .lab-v`);if(first){first.scrollIntoView({block:"nearest"});}}
 }
-function labSyncDept(){const el=labLayerEl();if(!el)return;el.querySelectorAll("[data-dept]").forEach(b=>{const on=b.dataset.dept===LABU.f.dept;b.classList.toggle("on",on);b.setAttribute("aria-pressed",on)})}
 /* ---- commit ---- */
 function labShowErr(msg,k){toast(msg,"bad");if(k){const el=labLayerEl();const i=el&&el.querySelector(`[data-row="${k}"] .lab-v`);if(i){i.scrollIntoView({block:"center"});try{i.focus({preventScroll:true})}catch(e){}}}}
 function labBuild(){
   const f=LABU.f;const p=patient(LABU.pid);const sex=p?p.sex:"";
-  const rep=labFromInput(f.rep),col=labFromInput(f.col);
-  if(!rep){labShowErr("Enter the report date and time from the paper.");const i=labLayerEl().querySelector('[data-h="rep"]');if(i)i.scrollIntoView({block:"center"});return null}
-  if(Date.parse(rep)>Date.now()+10*60000){labShowErr("Report time is in the future.");return null}
-  if(col&&Date.parse(col)>Date.parse(rep)+10*60000){labShowErr("Collection time is after the report time.");return null}
+  const repDay=String(f.rep||"").slice(0,10);const rep=labDayIso(repDay);
+  if(!rep){labShowErr("Enter the report date from the paper.");const i=labLayerEl().querySelector('[data-h="rep"]');if(i)i.scrollIntoView({block:"center"});return null}
+  if(repDay>labTodayDay()){labShowErr("Report date is in the future.");return null}
+  if(repDay<"2000-01-01"){labShowErr("Report date is invalid.");return null}
   const results=[],codes=new Set();let crit=0;
   for(const r of f.rows){
     const raw=String(r.raw||"").trim();if(!raw)continue;
@@ -11764,25 +11782,31 @@ function labBuild(){
   if(!results.length){labShowErr("Type at least one value.");return null}
   if(crit&&!f.critOk){labShowErr("Confirm the critical value against the paper (tick in the red box).");const b=labLayerEl().querySelector(".lab-crit");if(b)b.scrollIntoView({block:"center"});return null}
   const panels=[];results.forEach(x=>{if(!panels.includes(x.panel))panels.push(x.panel)});
-  return {pid:LABU.pid,dept:f.dept||(panels.length===1&&LAB_PANELS.find(x=>x.k===panels[0])?LAB_PANELS.find(x=>x.k===panels[0]).dept:"other"),rep,col,sample:String(f.sample||"").trim(),results,panels,hasCritical:crit>0};
+  return {pid:LABU.pid,rep,repDay,results,panels,hasCritical:crit>0};
 }
 function labToRow(rep,opId){
-  return {id:rep.id,op_id:opId,action:"save",patient_id:rep.pid,lab:"AMCH",department:rep.dept,sample_no:rep.sampleNo||null,collected_at:rep.collectedAt||null,reported_at:rep.reportedAt,
-    panels:rep.panels,confirmed:true,created_at:rep.at,
+  const row={id:rep.id,op_id:opId,action:"save",patient_id:rep.pid,lab:"AMCH",reported_at:rep.reportedAt,
+    panels:rep.panels,confirmed:true,created_at:rep.at};
+  // R1.3.130: the form no longer asks for department / sample no / collected time. A new report sends none of them
+  // (server defaults: department 'other', the rest null); editing an older report passes its stored values back unchanged.
+  if(rep.dept==="pathology"||rep.dept==="biochemistry")row.department=rep.dept;
+  if(rep.sampleNo)row.sample_no=rep.sampleNo;
+  if(rep.collectedAt)row.collected_at=rep.collectedAt;
+  return Object.assign(row,{
     results:rep.results.map((x,i)=>({test_code:x.code,test_name_printed:x.name,value_num:x.num,value_text:x.text,unit:x.unit||null,value_printed:x.printed||null,unit_printed:x.unitPrinted||null,
       ref_low:x.lo,ref_high:x.hi,ref_text:x.refText||null,ref_tiers:x.tiers?x.tiers.map(z=>({lt:z.lt==null?null:z.lt,label:z.l,flag:z.f||null})):null,value_low:x.lowV,value_high:x.highV,
-      flag:x.flag,tier_label:x.tier,field_state:x.state,confirmed:true,edited:!!x.edited,sort_order:i+1}))};
+      flag:x.flag,tier_label:x.tier,field_state:x.state,confirmed:true,edited:!!x.edited,sort_order:i+1}))});
 }
-function labDupOf(b){
-  const day=String(b.rep).slice(0,10),min=String(b.rep).slice(0,16);
-  return labReports(b.pid).find(r=>r.id!==LABU.editId&&((b.sample&&r.sampleNo&&r.sampleNo.toLowerCase()===b.sample.toLowerCase()&&String(r.reportedAt).slice(0,10)===day)||(String(r.reportedAt).slice(0,16)===min&&r.panels.some(x=>b.panels.includes(x)))))||null;
+function labDupOf(b){ // R1.3.130: same report date (IST) + overlapping panels; a warning with "Save anyway", never a hard block
+  const day=b.repDay||labRepDay(b.rep);
+  return labReports(b.pid).find(r=>r.id!==LABU.editId&&(labRepDay(r.reportedAt)===day&&r.panels.some(x=>b.panels.includes(x))))||null;
 }
 function labDiffText(o,n){
   const parts=[];const om=new Map(o.results.map(x=>[x.code,x])),nm=new Map(n.results.map(x=>[x.code,x]));
   n.results.forEach(x=>{const a=om.get(x.code);const d=labResDisp(x);if(!a)parts.push("+ "+labName(x)+" "+d.v+(d.u?" "+d.u:""));else{const ad=labResDisp(a);if(ad.v!==d.v)parts.push(labName(x)+" "+ad.v+" → "+d.v+(d.u?" "+d.u:""))}});
   o.results.forEach(x=>{if(!nm.has(x.code))parts.push("removed "+labName(x))});
   if((o.sampleNo||"")!==(n.sampleNo||""))parts.push("sample no "+(o.sampleNo||"—")+" → "+(n.sampleNo||"—"));
-  if(String(o.reportedAt).slice(0,16)!==String(n.reportedAt).slice(0,16))parts.push("report time "+stamp(o.reportedAt)+" → "+stamp(n.reportedAt));
+  if(labRepDay(o.reportedAt)!==labRepDay(n.reportedAt))parts.push("report date "+labRepText(o.reportedAt)+" → "+labRepText(n.reportedAt));
   if(o.dept!==n.dept)parts.push("lab "+labDeptLabel(o.dept)+" → "+labDeptLabel(n.dept));
   return parts.join("; ");
 }
@@ -11791,12 +11815,12 @@ function labCommit(force){
   if(!needWrite())return;
   const b=labBuild();if(!b)return;
   const old=LABU.editId?(S.labs||[]).find(x=>x.id===LABU.editId):null;
-  if(!old&&!LABU.f.dupOk&&!force){const d=labDupOf(b);if(d){const el=labLayerEl().querySelector("#labDup");if(el){el.innerHTML=`<div class="lab-dupbox" role="alert"><p><b>Already added?</b> ${esc(labPanelsLabel(d))} · reported ${esc(stamp(d.reportedAt))}${d.sampleNo?" · sample "+esc(d.sampleNo):""} · ${esc(d.byName||rname(d.by)||"")}</p><div class="btns"><button type="button" class="btn sm ghost" data-duplist="1">Open reports</button><button type="button" class="btn sm" data-dupok="1">Save anyway</button></div></div>`;el.scrollIntoView({block:"center"})}return}}
+  if(!old&&!LABU.f.dupOk&&!force){const d=labDupOf(b);if(d){const el=labLayerEl().querySelector("#labDup");if(el){el.innerHTML=`<div class="lab-dupbox" role="alert"><p><b>Already added?</b> ${esc(labPanelsLabel(d))} · reported ${esc(labRepText(d.reportedAt))}${d.sampleNo?" · sample "+esc(d.sampleNo):""} · ${esc(d.byName||rname(d.by)||"")}</p><div class="btns"><button type="button" class="btn sm ghost" data-duplist="1">Open reports</button><button type="button" class="btn sm" data-dupok="1">Save anyway</button></div></div>`;el.scrollIntoView({block:"center"})}return}}
   __labSaving=true;
   try{
     const opId=uid("lop").replace(/_/g,"-")+Date.now().toString(36);
     const u=user();const byName=(u&&(u.displayName||u.username))||rname(S.userId)||"";
-    const rep={id:old?old.id:("lab-"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)),pid:b.pid,lab:"AMCH",dept:b.dept,sampleNo:b.sample,collectedAt:b.col,reportedAt:b.rep,
+    const rep={id:old?old.id:("lab-"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)),pid:b.pid,lab:"AMCH",dept:old?(old.dept||"other"):"other",sampleNo:old?(old.sampleNo||""):"",collectedAt:old?(old.collectedAt||null):null,reportedAt:(old&&labRepDay(old.reportedAt)===b.repDay)?old.reportedAt:b.rep,
       panels:b.panels,hasCritical:b.hasCritical,by:old?old.by:S.userId,byName:old?old.byName:byName,at:old?old.at:now(),updatedAt:now(),updatedByName:byName,editCount:old?(old.editCount||0)+1:0,
       results:b.results,alertPending:false};
     if(old){const diff=labDiffText(old,rep);if(!diff){toast("No changes to save","info");__labSaving=false;labLsSet(labDraftKey(LABU.pid,LABU.editId),null);LABU.mode="done";labClose();return}
@@ -11842,7 +11866,7 @@ function labTableHtml(r,compact){
   return `<table class="lab-tb"><tbody>${r.results.map(x=>{const d=labResDisp(x);const cr=labIsCrit(x.flag);
     return `<tr class="${x.flag?(cr?"crit":"ab"):""}"><td class="lab-tn">${esc(labName(x))}</td><td class="lab-tv"><b>${esc(d.v)}</b>${d.u?` <span>${esc(d.u)}</span>`:""}</td>${compact?"":`<td class="lab-tr">${esc(x.tier||x.refText||"")}</td>`}<td class="lab-tf">${x.flag?`<span class="lab-fp ${cr?"crit":""}">${esc(labFlagLabel(x.flag))}</span>`:""}</td></tr>`}).join("")}</tbody></table>`;
 }
-function labMetaLine(r){return [`Reported ${stamp(r.reportedAt)}`,labDeptLabel(r.dept),r.sampleNo?"Sample "+r.sampleNo:"",r.byName||rname(r.by)||""].filter(Boolean).join(" · ")}
+function labMetaLine(r){return [`Reported ${labRepText(r.reportedAt)}`,labDeptTag(r.dept),r.sampleNo?"Sample "+r.sampleNo:"",r.byName||rname(r.by)||""].filter(Boolean).join(" · ")}
 function labChipsHtml(r){
   return `${r.hasCritical?'<span class="mse-risk-pill sm">Critical</span>':""}${labPendingId(r.id)?'<span class="lab-chip pend">Pending sync</span>':""}${r.localOnly&&!labPendingId(r.id)?'<span class="lab-chip pend">On this phone only</span>':""}${r.editCount?`<span class="lab-chip">Edited${r.editCount>1?" ×"+r.editCount:""}</span>`:""}${r.alertPending?'<span class="lab-chip warn">Critical not yet shared — offline</span>':""}`;
 }
@@ -11864,7 +11888,6 @@ function labWire(el){
     if(t.dataset.close){labClose();return}
     if(LABU.mode==="edit"){
       const f=LABU.f;
-      if(t.dataset.dept){f.dept=t.dataset.dept;f.deptSet=true;labSyncDept();labSaveDraft();return}
       if(t.dataset.panel){labTogglePanel(t.dataset.panel);return}
       if(t.dataset.other){const r=labNewRow("other","Other",{custom:true,name:"",unit:"",lo:"",hi:""});f.rows.push(r);labRefreshGroups();labSaveDraft();const i=el.querySelector(`[data-row="${r.k}"] .lab-ci`);if(i){i.scrollIntoView({block:"center"});try{i.focus()}catch(x){}}return}
       if(t.dataset.rm){f.rows=f.rows.filter(r=>r.k!==t.dataset.rm);labRefreshGroups();labSaveDraft();return}
@@ -11887,7 +11910,7 @@ function labWire(el){
   });
   el.addEventListener("input",e=>{
     if(!LABU||LABU.mode!=="edit")return;const t=e.target;const f=LABU.f;
-    if(t.dataset.h){f[t.dataset.h]=t.value}
+    if(t.dataset.h==="rep"){f.rep=t.value}
     else if(t.classList.contains("lab-v")){const r=f.rows.find(x=>x.k===t.dataset.k);if(!r)return;r.raw=t.value;if(r.chk&&labRowEval(r).state!=="red")r.chk=false;labRefreshRow(r.k);LABU.f.dupOk=LABU.f.dupOk&&!!LABU.editId}
     else if(t.classList.contains("lab-ci")){const r=f.rows.find(x=>x.k===t.dataset.k);if(!r)return;r[t.dataset.f]=t.value;labRefreshRow(r.k)}
     else return;
@@ -11898,7 +11921,7 @@ function labWire(el){
     if(t.dataset.chk){const r=f.rows.find(x=>x.k===t.dataset.chk);if(r)r.chk=t.checked;labSaveDraft();return}
     if(t.dataset.critok){f.critOk=t.checked;labSaveDraft();return}
     if(t.dataset.postalert){f.postAlert=t.checked;labSaveDraft();return}
-    if(t.dataset.h){f[t.dataset.h]=t.value;labSaveDraft()}
+    if(t.dataset.h==="rep"){f.rep=t.value;labSaveDraft()}
   });
   el.addEventListener("keydown",e=>{
     if(e.key!=="Enter"||!LABU||LABU.mode!=="edit")return;const t=e.target;if(!t.matches||!t.matches("input:not([type=checkbox])"))return;
@@ -11933,7 +11956,7 @@ function labsCardHtml(p){
       if(s[1]&&cur.num!=null&&s[1].x.num!=null){arrow=cur.num>s[1].x.num?"↑":cur.num<s[1].x.num?"↓":"→"}
       const cr=labIsCrit(cur.flag);
       return `<div class="lab-li${cur.flag?(cr?" crit":" ab"):""}"><span class="lab-ln">${esc(LAB_SHORT[code]||labName(cur))}</span><span class="lab-lv"><b>${esc(d.v)}</b> <small>${esc(d.u)}</small>${cur.flag?` <span class="lab-fp${cr?" crit":""}">${esc(labFlagLabel(cur.flag))}</span>`:""}</span><span class="lab-lt">${labSpark(nums)}${prev?`<small>${arrow} prev ${esc(prev)}</small>`:""}<small class="lab-ld">${esc(stamp(s[0].r.reportedAt).replace(/ \d{4},?/,"").replace(/,/,""))}</small></span></div>`}).join("")}</div>${rows.length>10?`<p class="tiny muted">+${rows.length-10} more in All reports</p>`:""}`
-    :(latest?`<p class="snap-mse-meta">${esc(labPanelsLabel(latest))} · ${esc(stamp(latest.reportedAt))}</p>`:`<p class="snap-mse-meta muted">No investigations recorded.</p>`);
+    :(latest?`<p class="snap-mse-meta">${esc(labPanelsLabel(latest))} · ${esc(labRepText(latest.reportedAt))}</p>`:`<p class="snap-mse-meta muted">No investigations recorded.</p>`);
   return `<div class="card snap-labs${crit.length?" crit":""}">
    <div class="snap-mse-h"><p class="tiny">LATEST INVESTIGATIONS</p><span class="lab-hchips">${crit.length?'<span class="mse-risk-pill sm">Critical</span>':""}${anyPend?'<span class="lab-chip pend">Pending sync</span>':""}</span></div>
    ${alertP?`<p class="tiny lab-off">Critical not yet shared — offline</p>`:""}
@@ -11942,11 +11965,18 @@ function labsCardHtml(p){
   </div>`;
 }
 /* ---- clinical record timeline ---- */
+function labTlAt(r){
+  const day=labRepDay(r.reportedAt);if(!day)return r.reportedAt;
+  if(r.at&&labRepDay(r.at)===day)return r.at;               // entered on the report date: keep the real entry order that day
+  const t=Date.parse(r.reportedAt);if(labRepDay(new Date(t))===day&&labIstMins(t)!==0)return r.reportedAt; // older report with a real printed time
+  return new Date(Date.parse(labDayIso(day))+12*36e5).toISOString(); // dated report entered later: mid-day of that date
+}
+function labIstMins(t){const x=certIst(new Date(t));return x?x.hh*60+x.mm:-1}
 function labRecordItems(pid){
   return labReports(pid).map(r=>{
     const ab=r.results.filter(x=>x.flag);
-    return {kind:"lab",labReport:r.id,title:"Investigations · "+labPanelsLabel(r),at:r.reportedAt,by:r.by,byName:r.byName,pill:r.hasCritical?"Critical":"",
-      body:(ab.length?"Abnormal: "+ab.map(x=>labValLine(x)+" ("+labFlagLabel(x.flag)+")").join("; "):"All values within the printed ranges")+" · "+labDeptLabel(r.dept)+(r.sampleNo?" · sample "+r.sampleNo:""),
+    return {kind:"lab",labReport:r.id,title:"Investigations · "+labPanelsLabel(r),at:labTlAt(r),atLabel:labRepText(r.reportedAt),by:r.by,byName:r.byName,pill:r.hasCritical?"Critical":"",
+      body:(ab.length?"Abnormal: "+ab.map(x=>labValLine(x)+" ("+labFlagLabel(x.flag)+")").join("; "):"All values within the printed ranges")+(labDeptTag(r.dept)?" · "+labDeptTag(r.dept):"")+(r.sampleNo?" · sample "+r.sampleNo:""),
       labHtml:`<details class="lab-rec-d"><summary>All ${r.results.length} result${r.results.length===1?"":"s"}</summary>${labTableHtml(r)}</details>`,report:r};
   });
 }
@@ -12410,9 +12440,9 @@ function exportPatientRecord(pid){
     const labRs=labReports(pid).slice().reverse(); // R1.3.128: Investigations section, oldest first
     if(labRs.length){
       items.push({section:"Investigations"});
-      labRs.forEach(r=>items.push({title:labPanelsLabel(r)+" · "+labDeptLabel(r.dept),pill:r.hasCritical?"Critical":"",
+      labRs.forEach(r=>items.push({title:labPanelsLabel(r)+(labDeptTag(r.dept)?" · "+labDeptTag(r.dept):""),pill:r.hasCritical?"Critical":"",
         labRows:r.results.map(x=>{const d=labResDisp(x);return {n:labName(x),v:d.v,u:d.u,ref:x.tier||x.refText||"",f:x.flag?(labIsCrit(x.flag)?({CRIT_H:"CRITICAL H",CRIT_L:"CRITICAL L",URGENT:"URGENT"})[x.flag]:x.flag==="A"?"Abnormal":x.flag):"",crit:labIsCrit(x.flag),ab:!!x.flag}}),
-        foot:[`Reported ${stamp(r.reportedAt)}`,r.collectedAt?`collected ${stamp(r.collectedAt)}`:"",r.sampleNo?`sample ${r.sampleNo}`:"",`entered by ${r.byName||rname(r.by)||"?"}`,r.editCount?`edited ×${r.editCount}`:""].filter(Boolean).join(" · ")}));
+        foot:[`Reported ${labRepText(r.reportedAt)}`,r.collectedAt?`collected ${stamp(r.collectedAt)}`:"",r.sampleNo?`sample ${r.sampleNo}`:"",`entered by ${r.byName||rname(r.by)||"?"}`,r.editCount?`edited ×${r.editCount}`:""].filter(Boolean).join(" · ")}));
     }
     const ageSex=[p.age,p.sex].filter(x=>x!=null&&x!=="").join(" ");
     const meta={

@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.128-lab-reports";
+const VERSION = "ward-sync-pwa-r1.3.130-form-trim-noselect-dateonly";
 const PRECACHE = [
   "./",
   "./index.html",
