@@ -1243,6 +1243,43 @@ html[data-theme="night"] .notify-title{color:#fff}
 
 
 .record-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 12px}
+/* R1.3.126 discharge certificate */
+.record-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.dis-req .dis-req-chips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+.dis-req .dis-req-chips .chip{min-height:34px;padding:6px 11px;font-size:13px}
+.dis-req input{min-height:42px}
+.dis-req-star{font-style:normal;color:var(--danger,#b91c1c);font-weight:700}
+.dis-req-sub{font-style:normal;opacity:.6;font-weight:500}
+.dis-req-hint{margin:6px 0 0;line-height:1.35;opacity:.85}
+.dis-req-need{color:var(--danger,#b91c1c)}
+.dis-req.dis-req-err .dis-req-chips{outline:2px solid var(--danger,#b91c1c);outline-offset:3px;border-radius:12px}
+.dis-done{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-left:4px solid var(--ok,#16a34a)}
+.dis-done p{margin:2px 0 0}
+.dis-done-act{display:flex;gap:6px;flex-wrap:wrap}
+.cert-page .page-title{margin-bottom:4px}
+.cert-sub{margin:0 0 12px;opacity:.8}
+.cert-card{display:flex;flex-direction:column;gap:2px}
+.cert-f textarea{min-height:56px;resize:vertical;line-height:1.4}
+.cert-ro{display:flex;justify-content:space-between;gap:8px;padding:6px 2px 10px;font-size:14px}
+.cert-ro span{opacity:.7}
+.cert-h{font-weight:650;font-size:13px;margin:0 0 6px}
+.cert-tchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.cert-tchip{background:var(--accent,#1d4ed8);color:#fff;border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:600}
+.cert-kd-h{font-size:12.5px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+.cert-kd-h .linkbtn{margin-left:auto;background:none;border:0;padding:4px 2px;color:var(--accent,#1d4ed8);font:inherit;font-weight:650;cursor:pointer}
+.cert-kd-h .linkbtn:disabled{opacity:.35;cursor:default}
+.cert-drugs{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+.cert-drug{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line,#e2e8f0);border-radius:12px;padding:9px 10px;cursor:pointer}
+.cert-drug.on{border-color:var(--accent,#1d4ed8);background:color-mix(in srgb,var(--accent,#1d4ed8) 7%,transparent)}
+.cert-drug input{width:20px;height:20px;margin-top:2px;flex:0 0 auto}
+.cert-drug span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cert-drug small{font-size:12px;opacity:.75;overflow-wrap:anywhere}
+.cert-cls{font-style:normal;font-size:11px;font-weight:650;opacity:.8}
+.cert-prints{margin-top:6px;line-height:1.4}
+.cert-also p{margin:0 0 4px;line-height:1.4}
+.cert-actions{position:sticky;bottom:-18px;z-index:3;padding:10px 0 18px;background:linear-gradient(to bottom,transparent,var(--bg) 14px)}
+.cert-actions .btn{width:100%}
+
 .record-list{position:relative;padding:0 0 24px}
 .rec-item{display:grid;grid-template-columns:16px 1fr;gap:10px;margin:0 0 10px}
 .rec-rail{position:relative}
@@ -2556,7 +2593,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.125";
+const APP_VERSION="R1.3.126";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -2885,7 +2922,7 @@ function qEct(e){
   queue("ect_plans",{id:e.id,patient_id:e.pid,indication:e.indication||"",sessions_done:e.sessionsDone||0,next_session_at:e.nextAt||null,npo:e.npo!==false,status:["planned","completed","cancelled"].includes(e.status)?e.status:"planned",created_by:e.by||S.userId||null,created_at:e.at||now(),updated_at:now()});
 }
 function qEctSession(x){if(!x||!x.id||!x.planId||!x.pid)return;queue("ect_sessions",{id:x.id,plan_id:x.planId,patient_id:x.pid,session_number:x.sessionNumber,session_at:x.at||now(),next_session_at:x.nextAt||null,anaesthesia:x.anaesthesia||null,stimulus:x.stimulus||null,seizure_seconds:x.seizureSeconds==null?null:x.seizureSeconds,complications:x.complications||null,response:x.response||null,next_plan:x.nextPlan||null,recorded_by:x.by||S.userId||null})}
-function qPatient(p){if(!p)return;queue("patients",{id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,...(normMrd(p.mrdNo)?{mrd_no:normMrd(p.mrdNo)}:{}),name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",secondary_dx:(p.dx2||"").trim()||null,tertiary_dx:(p.dx3||"").trim()||null,comorbidities:normComorb(p.comorb)||null,reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,consultant_name_2:p.consultant2||null,admitted_at:p.admittedAt||now(),discharged_at:p.dischargedAt||null,discharge_mode:p.dischargeMode||null,discharge_outcome:p.dischargeOutcome||null,treatment_mode:p.treatmentMode||null,active_status:p.status||"admitted",address:p.address||null,phone:p.phone||null,updated_by:S.userId||null,created_at:p.admittedAt||now(),updated_at:now()})}
+function qPatient(p){if(!p)return;queue("patients",{id:p.id,patient_code:p.code,hospital_no:p.hospitalNo||null,...(normMrd(p.mrdNo)?{mrd_no:normMrd(p.mrdNo)}:{}),name:p.name,age:p.age||0,sex:p.sex||"O",diagnosis:p.diagnosis||"",secondary_dx:(p.dx2||"").trim()||null,tertiary_dx:(p.dx3||"").trim()||null,comorbidities:normComorb(p.comorb)||null,reason_for_admission:p.reason||null,referred_by:p.referredBy||null,consultant_name:p.consultant||null,consultant_name_2:p.consultant2||null,admitted_at:p.admittedAt||now(),discharged_at:p.dischargedAt||null,discharge_mode:p.dischargeMode||null,discharge_outcome:p.dischargeOutcome||null,treatment_mode:p.treatmentMode||null,active_status:p.status||"admitted",address:p.address||null,phone:p.phone||null,updated_by:S.userId||null,created_at:p.admittedAt||now(),updated_at:now(),...((p.status==="discharged"&&disReqMode(p.dischargeMode))?{discharge_requested_by:(p.dischargeRequestedBy&&p.dischargeRequestedBy.length)?p.dischargeRequestedBy:null,discharge_requester_name:p.dischargeRequesterName||null}:{})})}
 function qBed(b){if(!b)return;queue("beds",{id:b.id,bed_number:b.no,section_id:b.sectionId,active:b.active!==false,current_patient_id:b.patientId||null,created_at:now(),updated_at:now()})}
 function qAssign(a){if(!a)return;queue("patient_bed_assignments",{id:a.id,patient_id:a.patientId,bed_id:a.bedId,assigned_at:a.at||now(),released_at:a.released||null,assigned_by:a.by||S.userId||null})}
 
@@ -3083,7 +3120,7 @@ let navDir="fwd";
 let navAnim=false;
 let navScroll={};
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
-const PAGE_TAB={home:"home",patients:"patients",snap:"patients",record:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more"};
+const PAGE_TAB={home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more"};
 function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more")?tab:"home"}
 function syncRoute(){
   if(nav.stack.length){
@@ -3400,7 +3437,7 @@ async function doCloudPull(opts){
   const occupancyHold=unresolved.some(o=>["patients","beds","patient_bed_assignments"].includes(o.table));
   if(!occupancyHold){
     S.beds=beds.map(r=>({id:r.id,no:r.bed_number,sectionId:r.section_id,active:r.active!==false,patientId:r.current_patient_id||null}));
-    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",mrdNo:r.mrd_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,dischargeAdvice:r.discharge_advice||"",dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:[],dischargeReview:r.discharge_review||"",dischargeEctSessions:(r.discharge_ect_sessions==null?null:Number(r.discharge_ect_sessions)),treatmentMode:r.treatment_mode||null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
+    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",mrdNo:r.mrd_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,dischargeAdvice:r.discharge_advice||"",dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:[],dischargeReview:r.discharge_review||"",dischargeEctSessions:(r.discharge_ect_sessions==null?null:Number(r.discharge_ect_sessions)),treatmentMode:r.treatment_mode||null,dischargeRequestedBy:Array.isArray(r.discharge_requested_by)?r.discharge_requested_by:[],dischargeRequesterName:r.discharge_requester_name||"",admitConsultants:Array.isArray(r.admit_consultants)?r.admit_consultants:null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
     S.assignments=assigns.map(r=>({id:r.id,patientId:r.patient_id,bedId:r.bed_id,at:r.assigned_at,released:r.released_at,by:r.assigned_by}));
   }
   const prevLists={orders:S.orders,doses:S.doses,tasks:S.tasks,ect:S.ect,ectSessions:S.ectSessions,handovers:S.handovers,hitems:S.hitems};
@@ -3430,6 +3467,13 @@ async function doCloudPull(opts){
     const ids=new Set(srv.map(x=>x.id));
     S.mse=uniqById(srv.concat((S.mse||[]).filter(x=>keep.has(x.id)&&!ids.has(x.id))));
   }
+  if(Array.isArray(wardState.discharge_certificates)){ // R1.3.126: keep local certificate rows whose save/print is still in the outbox
+    const busy=unresolved.filter(o=>o.table==="discharge_certificates"&&o.row);
+    const srv=wardState.discharge_certificates.map(certFromRow);
+    const localKeep=(S.dischargeCertificates||[]).filter(c=>busy.some(o=>o.row.patient_id===c.pid&&certSame(o.row.discharged_at,c.dischargedAt)));
+    const drop=new Set(localKeep.map(c=>c.pid+"|"+Date.parse(c.dischargedAt)));
+    S.dischargeCertificates=localKeep.concat(srv.filter(c=>!drop.has(c.pid+"|"+Date.parse(c.dischargedAt))));
+  }
   S.patientEdits=(wardState.patient_edits||[]).map(r=>({id:r.id,pid:r.patient_id,field:r.field,old:r.old_value,new:r.new_value,by:r.edited_by,at:r.edited_at,group:r.edit_group})); // R1.3.90
   const _prevDm=new Map((S.obsStays||[]).map(x=>[x.id,x.dischargeMeds]));
   S.obsStays=(wardState.observation_stays||[]).map(r=>({dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:(_prevDm.get(r.id)||[]),id:r.id,pid:r.patient_id,bedId:r.bed_id,reason:r.reason||"",note:r.note||"",at:r.started_at,by:r.started_by,endedAt:r.ended_at||null,endedBy:r.ended_by||null,outcome:r.outcome||null,referralTo:r.referral_to||""}));
@@ -3445,7 +3489,7 @@ async function doCloudPull(opts){
   // R1.3.125: the server returned every activity_log row it still has from its oldest row onward. A local entry inside
   // that window which the server no longer has was deleted there, so drop it, unless it is still waiting to upload
   // (outbox) or is a fresh local copy of a server-written row (RPC echo, kept 10 min until the server copy arrives).
-  (Array.isArray(wardState.events)?reconcileLocal(S.events,incoming,unresolved,"activity_log",e=>e.local||/^(pt-edit|med-edit)-/.test(String(e.id))):(S.events||[])).forEach(e=>byId[e.id]=e);
+  (Array.isArray(wardState.events)?reconcileLocal(S.events,incoming,unresolved,"activity_log",e=>e.local||/^(pt-edit|med-edit|dcert)-/.test(String(e.id))):(S.events||[])).forEach(e=>byId[e.id]=e);
   incoming.forEach(e=>byId[e.id]=e);
   S.events=evCollapse(Object.values(byId));
   localStorage.setItem(KEY,JSON.stringify(S));
@@ -3483,6 +3527,9 @@ async function upsert(table,rows){
       ({error}=await sb.rpc("ward_record_ect_session",{p_token:sessionTok,p_row:row}));
     }else if(table==="mse_entries"){
       ({error}=await sb.rpc("ward_save_mse",{p_token:sessionTok,p_row:row})); // R1.3.124
+    }else if(table==="discharge_certificates"){
+      ({error}=await sb.rpc("ward_save_discharge_certificate",{p_token:sessionTok,p_row:row})); // R1.3.126
+      if(error&&/could not find the function|does not exist|42883/i.test(String(error.message||error))){console.warn("Discharge certificate RPC missing; kept on this device only");error=null}
     }else if(table==="activity_log"){
       // activity_log.actor_id is derived server-side from the authenticated
       // ward session.
@@ -3633,7 +3680,7 @@ async function doFlushPending(){
   }
   cloudStatus="syncing";
   Sync.state="RECONCILING";
-  const rank=t=>({patients:0,beds:1,patient_bed_assignments:2,restrain_toggle:3,snapshot_tag:4,pgt_note:5,snapshot_field:6,patient_snapshots:7,patient_consultant:7.5,medication_orders:8,medication_doses:9,ect_plans:10,ect_sessions:11,mse_entries:11.5,tasks:12,handovers:13,handover_items:14,ward_sections:15,unit_consultants:16,unit_settings:17,activity_log:20}[t]??18);
+  const rank=t=>({patients:0,beds:1,patient_bed_assignments:2,restrain_toggle:3,snapshot_tag:4,pgt_note:5,snapshot_field:6,patient_snapshots:7,patient_consultant:7.5,medication_orders:8,medication_doses:9,ect_plans:10,ect_sessions:11,mse_entries:11.5,discharge_certificates:11.6,tasks:12,handovers:13,handover_items:14,ward_sections:15,unit_consultants:16,unit_settings:17,activity_log:20}[t]??18);
   work.sort((a,b)=>rank(a.table)-rank(b.table));
   let hard=false;
   for(const op of work){
@@ -4004,7 +4051,7 @@ function stampSheetEnter(html){
 }
 function shell(inner){
   const u=user();
-  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders"].includes(route.page))?"on":"";
+  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders"].includes(route.page))?"on":"";
   return `<header class="top"><div><p class="kicker">${greet()}${canWrite()?` <span class="who-inline">${esc(u.displayName)}</span>`:""}</p><h1>${esc(S.unit.name)}</h1></div>
     <div class="who-tools">${statusChip()}<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button></div></header>
     <main class="main">${inner}</main>
@@ -4707,8 +4754,10 @@ function openSnapDischarge(pid){
     dreview:"",
     dmrd:"",
     dect:null,
+    dreq:[],dreqName:"",
     treat:disDefaultTreat(p)
   });
+  ui.disDone=null;
   disMedsReset(p.id);
   go("census",null,1);
 }
@@ -4775,7 +4824,7 @@ function disMedsReset(pid){
 function disNeedsMrd(p){return !!p&&!normMrd(p.mrdNo)}
 function disConfirmSync(){
   const b=document.getElementById("disConfirm"); if(!b) return;
-  const off=!!document.getElementById("dmrd")&&!normMrd((ui.census||{}).dmrd);
+  const off=(!!document.getElementById("dmrd")&&!normMrd((ui.census||{}).dmrd))||(!!document.getElementById("disReq")&&disReqMissing()); // R1.3.126: DAMA needs a requester
   b.classList.toggle("dis-off",off); b.setAttribute("aria-disabled",String(off));
 }
 // R1.3.119 MRD No.: optional, unique across all patients (case/space-insensitive) when present.
@@ -7839,7 +7888,7 @@ function censusView(){
     const pid=ui.disId||"";
     const p=pid?patient(pid):null;
     if(p && d.ddxPid!==p.id){ d.ddx=p.diagnosis||""; d.ddxPid=p.id; d.dadvice=""; d.dreview=""; d.dmrd=""; d.dect=null; d.treat=disDefaultTreat(p); disMedsReset(p.id); }
-    const needMrd=disNeedsMrd(p), mrdOff=needMrd&&!normMrd(d.dmrd);
+    const needMrd=disNeedsMrd(p), mrdOff=(needMrd&&!normMrd(d.dmrd))||((d.mode||"advice")==="dama"&&!disReqNorm(d.dreq,"dama").length);
     const curDx=d.ddx!=null?d.ddx:(p&&p.diagnosis||"");
     const treat=d.treat||["conservative"];
     const form=!!(p&&ui.disForm);
@@ -7859,6 +7908,7 @@ function censusView(){
     }
     return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
       <h2 class="page-title">Discharge</h2>${seg}
+      ${disDoneHtml()}
       <div class="card">
         <label class="field"><span>Patient</span>
           ${picker("disel",[["","Select admitted patient"]].concat(occ.map(b=>{const x=onBed(b);return x&&x.status==="admitted"?[x.id, b.no+" · "+x.name]:null}).filter(Boolean)),pid,"Patient")}
@@ -7879,6 +7929,7 @@ function censusView(){
           <label class="field"><span>Mode of discharge</span>${picker("dmode",DISCHARGE_MODES,d.mode||"advice","Mode of discharge")}</label>
           <label class="field"><span>Outcome</span>${picker("dout",DISCHARGE_OUTCOMES,d.outcome||"improved","Outcome")}</label>
         </div>
+        ${disReqRowHtml(d)}
         <label class="field"><span>Date of discharge</span><input id="ddate" type="datetime-local" value="${esc(d.ddate||localStamp())}"/></label>
         <label class="field"><span>Advice on discharge <em style="font-style:normal;opacity:.6">(optional)</em></span><textarea id="dadvice" rows="3" placeholder="e.g. Continue medicines, follow-up in OPD after 2 weeks" oninput="ui.census=ui.census||{};ui.census.dadvice=this.value">${esc(d.dadvice||"")}</textarea></label>
         ${dmSectionHtml(p.id,"discharge")}
@@ -8087,12 +8138,16 @@ function dischargeFromCensus(){
     if(!mrd){const msg="MRD No. is required to discharge";ui.mrdErr={id:"dmrd",v:"",msg};mrdShowErr("dmrd",msg,true);toast(msg+".","bad");return}
     if(mrdBlocked("dmrd",mrd,id))return;
   }
+  const dmode=d.mode||"advice"; // R1.3.126: who requested the discharge (On request / DAMA)
+  const reqBy=disReqMode(dmode)?disReqNorm(d.dreq,dmode):[];
+  const reqName=disReqMode(dmode)?String(d.dreqName||"").trim().slice(0,80):"";
+  if(dmode==="dama"&&!reqBy.length){toast("Select who requested DAMA.","bad");const el=document.getElementById("disReq");if(el){el.classList.add("dis-req-err");try{el.scrollIntoView({block:"center",behavior:"smooth"})}catch(e){}}return}
   if(workflowLocked("discharge",id))return;
   const advice=String(d.dadvice||"").trim();
   const review=String(d.dreview||"").trim().slice(0,200);
   const ectN=(d.treat||[]).includes("ect")?disEctVal(p):null;
   const dmeds=dmCollect(id);
-  const extra={mrd:needMrd?mrd:null,advice,review,dmeds,ectN,prev:{mrdNo:p.mrdNo||"",advice:p.dischargeAdvice||"",review:p.dischargeReview||"",ectN:p.dischargeEctSessions==null?null:p.dischargeEctSessions,meds:p.dischargeMeds||[]}};
+  const extra={mrd:needMrd?mrd:null,advice,review,dmeds,ectN,prev:{mrdNo:p.mrdNo||"",advice:p.dischargeAdvice||"",review:p.dischargeReview||"",ectN:p.dischargeEctSessions==null?null:p.dischargeEctSessions,meds:p.dischargeMeds||[],reqBy:p.dischargeRequestedBy||[],reqName:p.dischargeRequesterName||""},reqBy,reqName};
   const oldDx=p.diagnosis||"";
   const nextDx=(d.ddx!=null&&d.ddxPid===p.id?String(d.ddx):oldDx).trim()||oldDx;
   const bed=S.beds.find(b=>b.patientId===id);
@@ -8110,6 +8165,8 @@ function dischargeFromCensus(){
   p.dischargeReview=review;
   p.dischargeEctSessions=ectN;
   p.dischargeMeds=dmeds;
+  p.dischargeRequestedBy=reqBy;
+  p.dischargeRequesterName=reqName;
   if(bed)bed.patientId=null;
   const releasedAt=now();
   S.assignments.forEach(a=>{if(a.patientId===id&&!a.released)a.released=releasedAt});
@@ -8120,12 +8177,16 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
   const xx=extra||null;
   try{
     const activeAssignments=(S.assignments||[]).filter(a=>a.patientId===p.id&&a.released);
-    const atomic=await callAtomicWorkflow("ward_discharge_patient",{
+    const disArgs={
       p_token:sessionTok,p_patient:p,p_bed_id:bed?bed.id:null,
       p_assignment_ids:activeAssignments.map(a=>a.id),
       p_ect_plan:ect&&p.dischargeMode!=="death"?ect:null,
       ...(xx?{p_discharge_advice:xx.advice||null,p_discharge_meds:xx.dmeds||[],p_mrd_no:xx.mrd||null,...(xx.review?{p_discharge_review:xx.review}:{}),...(xx.ectN!=null?{p_discharge_ect_sessions:xx.ectN}:{})}:{})
-    });
+    };
+    // R1.3.126: requester only when set, so a server without the R1.3.126 migration still matches the call.
+    const reqArgs=xx&&xx.reqBy&&xx.reqBy.length?{p_discharge_requested_by:xx.reqBy,...(xx.reqName?{p_discharge_requester_name:xx.reqName}:{})}:(xx&&xx.reqName?{p_discharge_requester_name:xx.reqName}:{});
+    let atomic=await callAtomicWorkflow("ward_discharge_patient",{...disArgs,...reqArgs});
+    if(!atomic.used&&Object.keys(reqArgs).length&&sb&&sessionTok){console.warn("Discharge requester not supported by server; retrying without it");atomic=await callAtomicWorkflow("ward_discharge_patient",disArgs)}
     if(xx&&atomic.used&&atomic.data&&Array.isArray(atomic.data.discharge_meds)) p.dischargeMeds=atomic.data.discharge_meds;
     if(!atomic.used){
       const hold=pending.slice(); pending.length=0;
@@ -8164,13 +8225,14 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
     }
     ev(p.id,"Discharged · "+labelOf(DISCHARGE_MODES,p.dischargeMode)+" · "+labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome),true,"note");
     try{const me=mseCommitDischarge(p.id,p.dischargedAt);if(me){ev(p.id,"MSE at discharge recorded"+(me.highRisk?" · high risk":""),true,"mse",msePreviewText(me.data||{}).slice(0,160));setTimeout(()=>{try{flushPending()}catch(x){}},0)}}catch(me){console.warn("MSE at discharge",me)} // R1.3.124
-    if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dreview;delete ui.census.dmrd;delete ui.census.dect;}
+    if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dreview;delete ui.census.dmrd;delete ui.census.dect;delete ui.census.dreq;delete ui.census.dreqName;}
     if(ui.obsClose&&ui.obsClose.pid===p.id) ui.obsClose=null;
+    ui.disDone=certEligible(p)?{pid:p.id,at:p.dischargedAt}:null; // R1.3.126: offer the certificate right away
     flashBtn(".btn.danger.block","ok");toast("Discharged "+p.name,"ok");ui.disId="";ui.disForm=false;save();ui.ctab="out";render();
   }catch(e){
     if(oldDx!==undefined) p.diagnosis=oldDx;
     p.status="admitted"; p.dischargedAt=null; p.dischargeMode=null; p.dischargeOutcome=null; p.treatmentMode=null;
-    if(xx){p.mrdNo=xx.prev.mrdNo;p.dischargeAdvice=xx.prev.advice;p.dischargeReview=xx.prev.review;p.dischargeEctSessions=xx.prev.ectN;p.dischargeMeds=xx.prev.meds}
+    if(xx){p.mrdNo=xx.prev.mrdNo;p.dischargeAdvice=xx.prev.advice;p.dischargeReview=xx.prev.review;p.dischargeEctSessions=xx.prev.ectN;p.dischargeMeds=xx.prev.meds;p.dischargeRequestedBy=xx.prev.reqBy;p.dischargeRequesterName=xx.prev.reqName}
     if(bed)bed.patientId=p.id;
     (S.assignments||[]).forEach(a=>{const old=releasedBefore&&releasedBefore.find(x=>x.id===a.id);if(old)a.released=old.released});
     if(ect&&ectBefore){ect.status=ectBefore.status;ect.nextAt=ectBefore.nextAt;ect.sessionsDone=ectBefore.sessionsDone}
@@ -10070,10 +10132,10 @@ function patchFrozenSheetPick(id,v){
 function setPick(id,v){
   ui.fields=ui.fields||{};
   ui.fields[id]=v;
-  if(id==="disel"){ui.disId=v;ui.disForm=false;const dp=v?patient(v):null;ui.census=ui.census||{};ui.census.ddx=dp?(dp.diagnosis||""):"";ui.census.ddxPid=v||"";ui.census.dadvice="";ui.census.dreview="";ui.census.dmrd="";ui.census.dect=null;ui.census.treat=disDefaultTreat(dp);disMedsReset(v||"")}
+  if(id==="disel"){ui.disId=v;ui.disForm=false;const dp=v?patient(v):null;ui.census=ui.census||{};ui.census.ddx=dp?(dp.diagnosis||""):"";ui.census.ddxPid=v||"";ui.census.dadvice="";ui.census.dreview="";ui.census.dmrd="";ui.census.dect=null;ui.census.dreq=[];ui.census.dreqName="";ui.disDone=null;ui.census.treat=disDefaultTreat(dp);disMedsReset(v||"")}
   if(id==="dmode"||id==="dout"||id==="asex"||id==="abed"||id==="acon"||id==="acon2"||id==="hshift"){
     ui.census=ui.census||{};
-    if(id==="dmode") ui.census.mode=v;
+    if(id==="dmode"){ui.census.mode=v;if(!disReqMode(v)){ui.census.dreq=[];ui.census.dreqName=""}else ui.census.dreq=disReqNorm(ui.census.dreq,v)} // R1.3.126
     if(id==="dout") ui.census.outcome=v;
     if(id==="asex") ui.census.sex=v;
     if(id==="acon") ui.census.con=v;
@@ -11166,7 +11228,8 @@ function patientRecordItems(pid){
     if(/^changed [^:]+:/.test(low) && (e.kind==="med"||/→/.test(low))) return; // R1.3.109: folded into shift med card
     if(disCard && /^discharged\b/.test(low)) return; // R1.3.124c: already shown as the Discharged card
     let kind=e.kind||evKind(title);
-    if(/transfer/.test(low)) kind="xfer";
+    if(/^discharge certificate/.test(low)) kind="note"; // R1.3.126
+    else if(/transfer/.test(low)) kind="xfer";
     else if(/discharg/.test(low)) kind="dis";
     else if(/restrain/.test(low)) kind="restrain";
     else if(kind==="status") kind="crit";
@@ -11223,7 +11286,7 @@ function recordView(){
         <h2 class="page-title">Clinical record</h2>
         <p class="tiny" style="margin-top:2px">${esc(p.name)} · ${esc(b?b.no:"—")}${p.hospitalNo?` · ${esc(p.hospitalNo)}`:""}${mrdLabel(p)?` · ${esc(mrdLabel(p))}`:""}</p>
       </div>
-      <div class="record-actions"><button class="btn sm ghost" onclick="exportPatientRecord('${p.id}')">Export PDF</button></div>
+      <div class="record-actions">${certBtnHtml(p,"sm")}<button class="btn sm ghost" onclick="exportPatientRecord('${p.id}')">Export PDF</button></div>
     </div>
     ${items.length?`<div class="record-list">${items.map(it=>recordItemHtml(it,p.id)).join("")}</div>`:`<div class="card"><p class="sm">No clinical events recorded yet.</p></div>`}`;
 }
@@ -11435,6 +11498,614 @@ function exportPatientRecord(pid){
     toast("Could not create the PDF. Please try again.","bad");
   }
 }
+
+/* ===== R1.3.126: discharge certificate (requested-by, preview, two-page A4 PDF) ===== */
+const DIS_REQ=[["self","Patient himself/herself"],["father","Father"],["mother","Mother"],["spouse","Spouse"],["sibling","Sibling"],["other","Other relative/attendant"]];
+const DIS_REQ_WORD={father:"father",mother:"mother",spouse:"spouse",sibling:"sibling",other:"relative/attendant"};
+function disReqMode(m){return m==="request"||m==="dama"}
+function disReqNorm(list,mode){const s=new Set((Array.isArray(list)?list:[]).map(x=>String(x||"").toLowerCase().trim()));return DIS_REQ.map(x=>x[0]).filter(k=>s.has(k)&&(k!=="self"||mode!=="dama"))}
+function certAndJoin(a){return a.length<=1?(a[0]||""):a.slice(0,-1).join(", ")+" and "+a[a.length-1]}
+function certReqWho(list,name){
+  const rel=list.filter(k=>k!=="self").map(k=>DIS_REQ_WORD[k]);const me=list.includes("self");
+  let s=me?(rel.length?"the patient and the patient's "+certAndJoin(rel):"the patient"):(rel.length?"the patient's "+certAndJoin(rel):"");
+  const n=String(name||"").trim();if(s&&n)s+=" ("+n+")";return s;
+}
+// Lead phrase of the Remarks line ("" = nothing saved).
+function certReqLead(mode,list,name){
+  const L=disReqNorm(list,mode);
+  if(mode==="dama"){const w=certReqWho(L,name);return w?"Discharged against medical advice (DAMA) at the request of "+w:""}
+  if(mode==="request"){
+    if(!L.length) return "Discharged on request";
+    if(L.length===1&&L[0]==="self"){const n=String(name||"").trim();return "Discharged on the patient's own request"+(n?" ("+n+")":"")}
+    return "Discharged on request of "+certReqWho(L,name);
+  }
+  return "";
+}
+function disReqMissing(){const d=ui.census||{};return d.mode==="dama"&&!disReqNorm(d.dreq,"dama").length}
+function disReqHint(){
+  const d=ui.census||{};const mode=d.mode||"advice";
+  if(mode==="dama"&&disReqMissing()) return `<b class="dis-req-need">Select who requested DAMA</b>`;
+  const lead=certReqLead(mode,d.dreq,d.dreqName);
+  return `Prints on certificate: “${esc(lead)} · …”`;
+}
+function disReqRowHtml(d){
+  const mode=(d&&d.mode)||"advice";if(!disReqMode(mode)) return "";
+  const sel=new Set(disReqNorm(d.dreq,mode));const dama=mode==="dama";
+  const chips=DIS_REQ.filter(x=>x[0]!=="self"||!dama).map(([k,lb])=>`<button type="button" class="chip ${sel.has(k)?"on":""}" data-req="${k}" aria-pressed="${sel.has(k)}" onmousedown="event.preventDefault()" onclick="disReqToggle('${k}')">${lb}</button>`).join("");
+  return `<div class="field dis-req" id="disReq"><span>Requested by ${dama?`<em class="dis-req-star">*</em> <em class="dis-req-sub">(at least one)</em>`:`<em class="dis-req-sub">(optional)</em>`}</span>
+    <div class="multi dis-req-chips" id="disReqChips" role="group" aria-label="Requested by">${chips}</div>
+    <input id="dreqname" type="text" maxlength="80" autocomplete="off" autocapitalize="words" enterkeyhint="done" placeholder="Name of requester (optional)" value="${esc(d.dreqName||"")}" oninput="disReqName(this.value)" onfocus="disReqFocus(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}"/>
+    <p class="tiny dis-req-hint" id="disReqHint" aria-live="polite">${disReqHint()}</p></div>`;
+}
+function disReqPaint(){
+  const d=ui.census||{};const sel=new Set(disReqNorm(d.dreq,d.mode));
+  document.querySelectorAll("#disReqChips [data-req]").forEach(b=>{const on=sel.has(b.dataset.req);b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on))});
+  const h=document.getElementById("disReqHint");if(h)h.innerHTML=disReqHint();
+  const r=document.getElementById("disReq");if(r&&!disReqMissing())r.classList.remove("dis-req-err");
+  disConfirmSync();
+}
+function disReqToggle(k){ui.census=ui.census||{};const cur=new Set(ui.census.dreq||[]);if(cur.has(k))cur.delete(k);else cur.add(k);ui.census.dreq=disReqNorm([...cur],ui.census.mode);disReqPaint()}
+function disReqName(v){ui.census=ui.census||{};ui.census.dreqName=String(v||"").slice(0,80);const h=document.getElementById("disReqHint");if(h)h.innerHTML=disReqHint()}
+function disReqFocus(el){try{setTimeout(()=>{if(document.activeElement===el&&el.scrollIntoView)el.scrollIntoView({block:"center",behavior:"smooth"})},280)}catch(e){}}
+
+/* ---- certificate data ---- */
+const CERT_MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function certIst(v){const d=v instanceof Date?v:new Date(v);if(!v||isNaN(d))return null;const t=new Date(d.getTime()+330*60000);return {d:t.getUTCDate(),m:t.getUTCMonth(),y:t.getUTCFullYear(),hh:t.getUTCHours(),mm:t.getUTCMinutes()}}
+function certDate(v){const t=certIst(v);return t?String(t.d).padStart(2,"0")+" "+CERT_MON[t.m]+" "+t.y:""}
+function certTime(v){const t=certIst(v);return t?String(t.hh).padStart(2,"0")+":"+String(t.mm).padStart(2,"0"):""}
+function certDT(v){const d=certDate(v);return d?d+", "+certTime(v):""}
+function certEligible(p){return !!(p&&p.status==="discharged"&&p.dischargedAt&&!obsOnlyDischarge(p)&&!["lama","transfer"].includes(p.dischargeMode||""))}
+function certSame(a,b){const x=Date.parse(a||0),y=Date.parse(b||0);return isFinite(x)&&isFinite(y)&&Math.abs(x-y)<=1000}
+function certRow(p){return p?(S.dischargeCertificates||[]).find(c=>c&&c.pid===p.id&&certSame(c.dischargedAt,p.dischargedAt))||null:null}
+function certRowEnsure(p){
+  let r=certRow(p);if(r)return r;
+  S.dischargeCertificates=S.dischargeCertificates||[];
+  r={id:"dc-"+p.id+"-"+Date.parse(p.dischargedAt),pid:p.id,dischargedAt:p.dischargedAt,mode:p.dischargeMode||null,edits:{},keyDrugs:[],version:0,printedHash:null,printCount:0,printedBy:null,printedByName:"",printedAt:null,firstPrintedAt:null};
+  S.dischargeCertificates.unshift(r);return r;
+}
+function certFromRow(r){return {id:r.id,pid:r.patient_id,dischargedAt:r.discharged_at,mode:r.discharge_mode||null,edits:(r.edits&&typeof r.edits==="object"&&!Array.isArray(r.edits))?r.edits:{},keyDrugs:Array.isArray(r.key_drugs)?r.key_drugs:[],version:Number(r.version)||0,printedHash:r.printed_hash||null,printCount:Number(r.print_count)||0,printedBy:r.printed_by||null,printedByName:r.printed_by_name||"",printedAt:r.printed_at||null,firstPrintedAt:r.first_printed_at||null,updatedAt:r.updated_at||null}}
+function certMseFor(p){
+  const all=mseEntries(p.id);const dis=Date.parse(p.dischargedAt||0);
+  const m=all.find(x=>x.kind==="discharge"&&Math.abs(Date.parse(x.at||0)-dis)<36*3600e3&&mseAny(x.data||{}));
+  if(m) return {e:m,last:false};
+  if(p.dischargeMode==="dama"||p.dischargeMode==="abscond"){
+    const adm=Date.parse(p.admittedAt||0);
+    const l=all.find(x=>mseAny(x.data||{})&&(!isFinite(adm)||Date.parse(x.at||0)>=adm-6*3600e3)&&Date.parse(x.at||0)<=dis+36*3600e3);
+    if(l) return {e:l,last:true};
+  }
+  return null;
+}
+function certMseLine(d){
+  if(!d||!mseAny(d)) return "";
+  const a=mseAbnormal(d),ins=mseInsightTxt(d);
+  const s=a.length?"MSE: "+a.map(x=>x.t).join(", "):"MSE within normal limits";
+  return s+(ins?"; "+mseLc(ins):"")+" (see MSE overleaf).";
+}
+function certAdmittedAuto(p){
+  let L=Array.isArray(p.admitConsultants)&&p.admitConsultants.length
+    ?p.admitConsultants.map(c=>({n:String(c&&c.name||"").trim(),d:String(c&&c.designation||"").trim()}))
+    :[p.consultant,p.consultant2].map(t=>String(t||"").trim()).filter(Boolean).map(t=>{const i=t.indexOf(",");return i>0?{n:t.slice(0,i).trim(),d:t.slice(i+1).trim()}:{n:t,d:""}});
+  L=L.filter(x=>x.n);
+  L.forEach(x=>{if(!x.d){try{const f=facultyList().find(f=>normConsName(f.name)===normConsName(x.n));if(f&&f.designation)x.d=f.designation}catch(e){}}});
+  return L.map(x=>x.n+(x.d?", "+x.d:"")).join("; ");
+}
+function certDiseaseAuto(p){
+  const dx=[p.diagnosis,p.dx2,p.dx3].map(x=>String(x||"").trim()).filter(Boolean);
+  let c="";try{c=String(normComorb(p.comorb)||"").trim()}catch(e){c=String(p.comorb||"").trim()}
+  return dx.join("; ")+(c?(dx.length?"; ":"")+"Comorbidity: "+c:"");
+}
+function certEctN(p){
+  if(!/ect/.test(String(p.treatmentMode||""))) return null;
+  if(p.dischargeEctSessions!=null) return Number(p.dischargeEctSessions)||0;
+  const n=disEctFromRecords(p);return n>0?n:null;
+}
+function certTreatMode(p){const l=p.treatmentMode?labelOf(TREATMENT_MODES,p.treatmentMode):"";return l&&l!=="—"?l:"Conservative"}
+// ---- key drugs ----
+const CERT_CLS_LB={ap:"Antipsychotic",ms:"Mood stabiliser",ad:"Antidepressant",bzd:"Benzodiazepine",dd:"De-addiction",ac:"Anticholinergic",other:"Other"};
+const CERT_CLS_ORD=["ap","ms","ad","bzd","dd","ac","other"];
+const CERT_SEC_FIRST=["Inj. Lorazepam","Tab. Olanzapine","Tab. Lorazepam","Tab. Sodium Valproate","Cap. Fluoxetine","Tab. Trihexyphenidyl","Tab. Silymarin"];
+let _certSec=null;
+function certSections(){
+  if(_certSec) return _certSec;
+  const idx=CERT_SEC_FIRST.map(n=>MED_CATALOG.findIndex(r=>r&&r[0]===n));
+  const ok=idx.every((v,i)=>v>=0&&(i===0||v>idx[i-1]));
+  _certSec={ok,idx};return _certSec;
+}
+function certBase(s){return normMedKey(String(s||"").replace(/^\s*(tab|cap|inj|syp|syr|susp|oral\s+sol|sol|liq|drops?)\.?\s+/i,"").replace(/\b(cr|sr|er|xr|od|md|dt|la|depot)\b/gi," "))}
+function certCatSection(name){
+  const S_=certSections();if(!S_.ok) return -1;
+  const k=normMedKey(name),b=certBase(name);
+  let i=MED_CATALOG.findIndex(r=>normMedKey(r[0])===k);
+  if(i<0) i=MED_CATALOG.findIndex(r=>certBase(r[0])===b);
+  if(i<0) return -1;
+  let sec=0;S_.idx.forEach((v,j)=>{if(i>=v)sec=j});return sec;
+}
+const CERT_DEADDICT=/\b(naltrexone|acamprosate|disulfiram|baclofen|buprenorphine|clonidine|nicotine)\b/i;
+function certDrugClass(name){
+  const sec=certCatSection(name);
+  if(sec<0) return "other";
+  if(sec===0){
+    const b=certBase(name);const S_=certSections();
+    const j=MED_CATALOG.findIndex((r,i)=>i>=S_.idx[1]&&certBase(r[0])===b);
+    if(j>=0) return certDrugClass(MED_CATALOG[j][0]);
+    if(/lorazepam|diazepam|midazolam|clonazepam/i.test(name)) return "bzd";
+    if(/promethazine|trihexyphenidyl|benztropine|biperiden/i.test(name)) return "ac";
+    if(/haloperidol|fluphenazine|flupentixol|zuclopenthixol|olanzapine|aripiprazole|risperidone|paliperidone|chlorpromazine|ziprasidone/i.test(name)) return "ap";
+    return "supp";
+  }
+  if(sec===1) return "ap";
+  if(sec===2) return "bzd";
+  if(sec===3) return "ms";
+  if(sec===4) return "ad";
+  if(sec===5) return /trihexyphenidyl|promethazine/i.test(name)?"ac":"other";
+  return CERT_DEADDICT.test(name)?"dd":"supp";
+}
+const CERT_FREQ_N={OD:1,HS:1,BD:2,TDS:3,QID:4};
+function certDoseNum(dose){const m=String(dose||"").match(/(\d+(?:\.\d+)?)\s*(mg|mcg|µg|g|ml|iu|units?)\b/i);return m?{n:parseFloat(m[1]),u:m[2].toLowerCase().replace("µg","mcg")}:null}
+function certNum(n){return String(Math.round(n*100)/100)}
+function certDayKey(v){const t=certIst(v);return t?t.y+"-"+t.m+"-"+t.d:""}
+function certKeyDrugsAuto(p){
+  const adm=Date.parse(p.admittedAt||0),dis=Date.parse(p.dischargedAt||0);
+  const orders=(S.orders||[]).filter(o=>o&&o.pid===p.id&&o.drug&&(!isFinite(adm)||Date.parse(o.at||o.start||0)>=adm-12*3600e3||!o.at&&!o.start));
+  const dmNames=new Set((p.dischargeMeds||[]).map(m=>certBase(m&&m.name)));
+  const G=new Map();
+  orders.forEach(o=>{
+    const fp=freqParts(oFreq(o));if(!fp.reg) return; // SOS / PRN / one-off STAT only
+    const cls=certDrugClass(o.drug);if(cls==="supp") return;
+    const key=certBase(o.drug);if(!key) return;
+    let g=G.get(key);if(!g){g={key,name:String(o.drug).trim(),cls,orders:[]};G.set(key,g)}
+    g.orders.push(o);
+  });
+  const out=[];
+  G.forEach(g=>{
+    const ids=new Set(g.orders.map(o=>o.id));
+    const days=new Set((S.doses||[]).filter(d=>d&&ids.has(d.oid)&&d.status==="given").map(d=>certDayKey(d.givenAt||d.at)).filter(Boolean));
+    let first=Infinity,last=-Infinity,active=false;
+    g.orders.forEach(o=>{
+      const st=Date.parse(o.start||o.at||0);if(isFinite(st))first=Math.min(first,st);
+      const sp=o.stop?(/^\d{4}-\d{2}-\d{2}$/.test(String(o.stop))?Date.parse(o.stop+"T23:59:59+05:30"):Date.parse(o.stop)):NaN;
+      const end=isFinite(sp)?Math.min(sp,dis||sp):(dis||Date.now());last=Math.max(last,end);
+      if(isFinite(sp)?sp>=dis-10*60000:o.status!=="stopped") active=true;
+    });
+    if(dmNames.has(g.key)) active=true;
+    const span=(isFinite(first)&&isFinite(last))?(last-first)/864e5:0;
+    const eligible=days.size>=2||(!days.size&&span>=2)||active;
+    // highest daily dose
+    let best=null,unit="",period="day",bestO=g.orders[g.orders.length-1];
+    g.orders.forEach(o=>{
+      const dn=certDoseNum(o.dose);if(!dn) return;
+      const fp=freqParts(oFreq(o));
+      let per=1,mult=0;
+      [fp.reg].concat(fp.other||[]).forEach(f=>{const u=String(f).toUpperCase();if(CERT_FREQ_N[u])mult+=CERT_FREQ_N[u];else if(u==="WEEKLY"){per="week";mult+=1}else if(u==="MONTHLY"){per="month";mult+=1}else mult+=1});
+      const tot=dn.n*(mult||1);
+      if(best==null||tot>best){best=tot;unit=dn.u;period=per===1?"day":per;bestO=o}
+    });
+    const doseTxt=best!=null?`up to ${certNum(best)} ${unit}${period==="day"?"/day":period==="week"?" weekly":" monthly"}`:"";
+    const label=g.name+(doseTxt?` (${doseTxt})`:"");
+    const lastO=g.orders.slice().sort((a,b)=>String(b.at||b.start||"").localeCompare(String(a.at||a.start||"")))[0]||bestO;
+    const detail=[doseTxt,lastO&&lastO.route,lastO?freqLabel(oFreq(lastO)):"",active?"active at discharge":(isFinite(first)?certDate(first).slice(0,6)+"–"+certDate(last).slice(0,6)+", stopped":"stopped")].filter(Boolean).join(" · ");
+    out.push({key:g.key,name:g.name,label,cls:g.cls,clsLabel:CERT_CLS_LB[g.cls]||"Other",detail,eligible,on:eligible&&["ap","ms","ad","bzd","dd"].includes(g.cls)});
+  });
+  out.sort((a,b)=>(CERT_CLS_ORD.indexOf(a.cls)-CERT_CLS_ORD.indexOf(b.cls))||a.name.localeCompare(b.name));
+  return out;
+}
+function certKeyDrugs(p,row){
+  const ov=new Map(((row&&row.keyDrugs)||[]).filter(x=>x&&x.key).map(x=>[x.key,x]));
+  return certKeyDrugsAuto(p).map(d=>{const o=ov.get(d.key);return Object.assign({},d,{on:o&&typeof o.on==="boolean"?o.on:d.on,auto:d.on})});
+}
+const CERT_FREQ_WORD={OD:"once daily",BD:"twice daily",TDS:"thrice daily",QID:"four times daily",HS:"at night",SOS:"when required",PRN:"when required",STAT:"once, immediately",WEEKLY:"weekly",MONTHLY:"monthly"};
+function certFreqText(f){
+  const raw=String(f||"").trim();if(!raw) return "";
+  const parts=raw.split("+").map(t=>t.trim()).filter(Boolean);
+  const words=parts.map(t=>CERT_FREQ_WORD[t.toUpperCase()]).filter(Boolean);
+  const lb=freqLabel(raw);
+  return words.length&&!/^(weekly|monthly)$/i.test(raw)?`${lb} (${words.join(" + ")})`:lb;
+}
+function certReviewAbout(rev,disAt){
+  const m=String(rev||"").trim().match(/^(\d{1,3})\s*(day|week|wk|month|mo)s?$/i);if(!m) return "";
+  const n=parseInt(m[1],10),u=m[2].toLowerCase();const d=new Date(Date.parse(disAt||Date.now()));
+  if(u.startsWith("d"))d.setTime(d.getTime()+n*864e5);else if(u.startsWith("w"))d.setTime(d.getTime()+n*7*864e5);else{d.setUTCMonth(d.getUTCMonth()+n)}
+  return certDate(d);
+}
+/* ---- certificate model (auto values + saved edits) ---- */
+const CERT_EDIT_KEYS=["dept","admitted","disease","remarks","advice","review"];
+function certAdviceLines(p){
+  return String(p.dischargeAdvice||"").split(/\n+/).map(t=>t.replace(/^\s*(?:[-•*·]|\d+[.)])\s*/,"").trim()).filter(Boolean);
+}
+function certRemarksAuto(p,mse){
+  const mode=p.dischargeMode||"advice";
+  const out=p.dischargeOutcome?labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome):"";
+  const ml=mse&&mse.e?certMseLine(mse.e.data):"";
+  const cond=(lead)=>`Condition at ${lead}: ${out&&out!=="—"?out:"—"}.`;
+  if(mode==="death") return `Patient expired on ${certDate(p.dischargedAt)} at ${certTime(p.dischargedAt)} · Cause of death as per MCCD / death summary.`;
+  if(mode==="abscond"){
+    const la=mse&&mse.e?certDate(mse.e.at):"";
+    return `Patient absconded from the ward on ${certDT(p.dischargedAt)} · Authorities informed as per protocol. Condition at last assessment${la?" ("+la+")":""}: ${out&&out!=="—"?out:"—"}.`;
+  }
+  let lead;
+  if(mode==="request") lead=certReqLead("request",p.dischargeRequestedBy,p.dischargeRequesterName);
+  else if(mode==="dama"){
+    lead=certReqLead("dama",p.dischargeRequestedBy,p.dischargeRequesterName)||"Discharged against medical advice (DAMA) at the request of the patient's [ ] Father [ ] Mother [ ] Spouse [ ] Sibling [ ] Other relative/attendant ______";
+  }else lead="Discharged on advice";
+  return `${lead} · ${cond("discharge")}${ml?" "+ml:""}${mode==="dama"?" Risks explained; DAMA undertaking signed.":""}`;
+}
+function certReviewAuto(p){const m=p.dischargeMode;if(m==="abscond"||m==="death")return "";const r=String(p.dischargeReview||"").trim();return r||(m==="dama"?"1 week":"")}
+function certAuto(p,mse){
+  return {dept:"Psychiatry",admitted:certAdmittedAuto(p),disease:certDiseaseAuto(p),remarks:certRemarksAuto(p,mse),advice:certAdviceLines(p).join("\n"),review:certReviewAuto(p)};
+}
+function certModel(p){
+  const row=certRow(p);const mse=certMseFor(p);
+  const auto=certAuto(p,mse);const ed=(row&&row.edits)||{};
+  const f={};CERT_EDIT_KEYS.forEach(k=>{f[k]=typeof ed[k]==="string"?ed[k]:auto[k]});
+  const mode=p.dischargeMode||"advice";
+  const drugs=certKeyDrugs(p,row);
+  const ectN=certEctN(p);
+  const treat=[{t:certTreatMode(p)}];
+  if(ectN) treat.push({t:" · "},{t:"Modified ECT: "+ectN+" session"+(ectN===1?"":"s"),f:"B"});
+  drugs.filter(d=>d.on).forEach(d=>treat.push({t:" · "+d.label}));
+  const meds=(mode==="abscond"||mode==="death")?[]:(p.dischargeMeds||[]).filter(m=>m&&m.name);
+  const adv=String(f.advice||"").split(/\n+/).map(t=>t.trim()).filter(Boolean);
+  if(mode==="dama"&&!ed.advice&&!adv.some(t=>/treatment is incomplete/i.test(t))) adv.push("Treatment is incomplete (discharged against medical advice). Continue medicines regularly and return to OPD / Emergency early if symptoms recur.");
+  return {p,row,mse,auto,f,mode,drugs,treat,treatText:treat.map(x=>x.t).join(""),ectN,meds,adv,edited:CERT_EDIT_KEYS.filter(k=>typeof ed[k]==="string"&&ed[k]!==auto[k]).length+((row&&row.keyDrugs)||[]).filter(x=>x&&typeof x.on==="boolean").length};
+}
+function certHash(m){
+  const s=JSON.stringify([m.f,m.treatText,m.meds.map(dmLine),m.adv,m.mode,m.p.name,m.p.age,m.p.sex,m.p.hospitalNo,m.p.mrdNo,m.p.admittedAt,m.p.dischargedAt,m.mse&&m.mse.e?[m.mse.e.id,m.mse.e.at]:null]);
+  let h=5381;for(let i=0;i<s.length;i++){h=((h<<5)+h+s.charCodeAt(i))|0}
+  return "h"+(h>>>0).toString(36)+"-"+s.length.toString(36);
+}
+/* ---- save / reset ---- */
+let _certSaveT=null;
+function certQueueSave(p,row){
+  queue("discharge_certificates",{id:"dcs-"+row.id,cert_id:row.id,patient_id:p.id,discharged_at:p.dischargedAt,action:"save",edits:row.edits||{},key_drugs:row.keyDrugs||[]});
+  save();try{flushPending()}catch(e){}
+}
+function certEdit(k,v){
+  const p=patient(route.id);if(!p||!certEligible(p)||!CERT_EDIT_KEYS.includes(k)) return;
+  const row=certRowEnsure(p);const auto=certAuto(p,certMseFor(p));
+  row.edits=Object.assign({},row.edits||{});
+  const val=String(v==null?"":v).slice(0,4000);
+  if(val===auto[k]) delete row.edits[k]; else row.edits[k]=val;
+  row.updatedAt=now();
+  clearTimeout(_certSaveT);_certSaveT=setTimeout(()=>{certQueueSave(p,row);certPaintMeta()},800);
+  certPaintMeta(true);
+}
+function certTick(key,on){
+  const p=patient(route.id);if(!p||!certEligible(p)) return;
+  const row=certRowEnsure(p);const d=certKeyDrugsAuto(p).find(x=>x.key===key);if(!d) return;
+  const L=(row.keyDrugs||[]).filter(x=>x&&x.key!==key);
+  if(!!on!==!!d.on) L.push({key,name:d.name,label:d.label,on:!!on});
+  row.keyDrugs=L;row.updatedAt=now();
+  clearTimeout(_certSaveT);certQueueSave(p,row);render();
+}
+function certReset(){
+  const p=patient(route.id);if(!p) return;const row=certRow(p);if(!row) return;
+  row.edits={};row.keyDrugs=[];row.updatedAt=now();clearTimeout(_certSaveT);certQueueSave(p,row);toast("Certificate reset to the record","ok");render();
+}
+function certPaintMeta(pending){
+  const el=document.getElementById("certMeta");if(!el) return;const p=patient(route.id);if(!p) return;
+  const m=certModel(p);el.innerHTML=certMetaHtml(m,pending);
+  const rb=document.getElementById("certReset");if(rb) rb.disabled=!m.edited;
+}
+function certMetaHtml(m,pending){
+  const r=m.row;const v=r&&r.version?`Last printed v${r.version}${r.printedAt?" · "+certDT(r.printedAt)+" IST":""}${r.printedByName?" · "+esc(r.printedByName):""}`:"Not printed yet";
+  return `${v}${m.edited?` · ${m.edited} edit${m.edited===1?"":"s"} ${pending?"(saving…)":"saved"}`:""}`;
+}
+/* ---- preview page ---- */
+function openDischargeCert(pid){const p=patient(pid);if(!p||!certEligible(p)){toast("No certificate for this discharge","info");return}go("dcert",pid,1)}
+function certBtnHtml(p,cls){return certEligible(p)?`<button class="btn ${cls||"sm ghost"}" type="button" data-cert="${p.id}" onclick="openDischargeCert('${p.id}')">Discharge certificate</button>`:""}
+function dcertView(){
+  const p=patient(route.id);if(!p) return `<div class="card">Not found.</div>`;
+  if(!certEligible(p)) return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="card"><p class="sm">A discharge certificate is not issued for ${p.status==="discharged"?esc(labelOf(DISCHARGE_MODES,p.dischargeMode)||"this discharge"):"a patient who is not discharged"}.</p></div>`;
+  const m=certModel(p);const f=m.f;
+  const ta=(k,lb,rows,hint)=>`<label class="field cert-f"><span>${lb}</span><textarea id="cert_${k}" rows="${rows}" oninput="certEdit('${k}',this.value)">${esc(f[k]||"")}</textarea>${hint?`<p class="tiny muted">${hint}</p>`:""}</label>`;
+  const drugs=m.drugs.length?m.drugs.map(d=>`<label class="cert-drug ${d.on?"on":""}"><input type="checkbox" ${d.on?"checked":""} onchange="certTick('${esc(d.key)}',this.checked)"/><span><b>${esc(d.name)}</b><small>${esc(d.detail)}</small><em class="cert-cls">${esc(d.clsLabel)}${d.eligible?"":" · not key by rule"}</em></span></label>`).join(""):`<p class="tiny muted">No regular psychiatric orders found for this admission.</p>`;
+  const mseLine=m.mse?`${m.mse.last?"Last recorded MSE":"MSE at discharge"}, ${certDT(m.mse.e.at)} IST`:(m.mode==="death"?"MSE not applicable":"MSE not recorded (blank lines print)");
+  const meds=m.meds.length?`medications on discharge (${m.meds.length})`:(m.mode==="abscond"||m.mode==="death"?"no medicines table ("+esc(labelOf(DISCHARGE_MODES,m.mode))+")":"no discharge medications recorded");
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
+  <div class="cert-page">
+    <h2 class="page-title">Discharge certificate</h2>
+    <p class="tiny cert-sub">${esc(p.name)}${p.hospitalNo?" · "+esc(p.hospitalNo):""}${p.age?" · "+esc(p.age)+(p.sex?esc(String(p.sex)[0].toUpperCase()):""):""} · Discharged ${esc(certDate(p.dischargedAt))} · ${esc(labelOf(DISCHARGE_MODES,m.mode))}${p.dischargeOutcome?" · "+esc(labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome)):""}</p>
+    <div class="card cert-card">
+      <label class="field cert-f"><span>Department of</span><input id="cert_dept" type="text" maxlength="80" value="${esc(f.dept)}" oninput="certEdit('dept',this.value)"/></label>
+      <div class="cert-ro"><span>M.R.D. No.</span><b>${esc(normMrd(p.mrdNo)||"—")}</b></div>
+      ${ta("admitted","Admitted under",2)}
+      ${ta("disease","Disease",2)}
+    </div>
+    <div class="card cert-card">
+      <p class="cert-h">Treatment</p>
+      <div class="cert-tchips"><span class="cert-tchip">${esc(certTreatMode(p))}</span>${m.ectN?`<span class="cert-tchip">ECT · ${m.ectN} session${m.ectN===1?"":"s"}</span>`:""}</div>
+      <div class="cert-kd-h"><b>Key drugs</b> · auto-selected, untick to leave off <button type="button" class="linkbtn" id="certReset" onclick="certReset()" ${m.edited?"":"disabled"}>Reset</button></div>
+      <div class="cert-drugs">${drugs}</div>
+      <p class="tiny muted">Not listed (rule): SOS / STAT orders, supportive medicines (vitamins, PPIs, laxatives, IV fluids).</p>
+      <p class="tiny cert-prints"><b>Prints as:</b> ${esc(m.treatText)}</p>
+    </div>
+    <div class="card cert-card">
+      ${ta("remarks","Remarks",5,"Auto from mode, outcome, requester (discharge form) and discharge MSE. Edits are saved for re-prints.")}
+      ${m.mode==="abscond"||m.mode==="death"?"":ta("advice","Advice (one line each)",3)}
+      ${m.mode==="abscond"||m.mode==="death"?"":`<label class="field cert-f"><span>Review in Psychiatry OPD after</span><input id="cert_review" type="text" maxlength="120" value="${esc(f.review||"")}" placeholder="e.g. 2 weeks" oninput="certEdit('review',this.value)"/></label>`}
+    </div>
+    <div class="card cert-card cert-also"><p class="tiny"><b>Also printed (from the record):</b> ${meds} · Page 2: ${esc(mseLine)}</p>
+      <p class="tiny muted" id="certMeta">${certMetaHtml(m)}</p></div>
+    <div class="cert-actions"><button class="btn primary" type="button" id="certPrint" onclick="printDischargeCert('${p.id}')">${isMobileShare()?"Print / Share PDF":"Print / Save PDF"}</button></div>
+  </div>`;
+}
+function isMobileShare(){try{return !!(((window.matchMedia&&matchMedia("(pointer:coarse)").matches)||/Android|iPhone|iPad|iPod/i.test(navigator.userAgent||""))&&navigator.share&&navigator.canShare)}catch(e){return false}}
+/* ---- print ---- */
+let _certBusy=false;
+async function printDischargeCert(pid){
+  const p=patient(pid);if(!p||!certEligible(p)||_certBusy) return;
+  _certBusy=true;const btn=document.getElementById("certPrint");if(btn){btn.disabled=true;btn.textContent="Preparing PDF…"}
+  try{
+    clearTimeout(_certSaveT);
+    const row=certRowEnsure(p);const m=certModel(p);const hash=certHash(m);
+    const reprint=row.version>0&&row.printedHash===hash;
+    const version=reprint?row.version:(row.version||0)+1;
+    const at=now();const opId=uid("dcp");
+    const u=(typeof user==="function"&&user())||null;const byName=(u&&u.name)||"";
+    const pdf=buildCertPdf(m,{version,reprint,at});
+    const name=certPdfFileName(p);
+    Object.assign(row,{version,printedHash:hash,printCount:(row.printCount||0)+1,printedAt:at,printedBy:S.userId||null,printedByName:byName,firstPrintedAt:row.firstPrintedAt||at,mode:p.dischargeMode||null,updatedAt:at});
+    queue("discharge_certificates",{id:"dcp-"+opId,cert_id:row.id,patient_id:p.id,discharged_at:p.dischargedAt,action:"print",edits:row.edits||{},key_drugs:row.keyDrugs||[],content_hash:hash,op_id:opId,printed_at:at});
+    const e=ev(p.id,"Discharge certificate "+(reprint?"re-printed":"printed")+" · v"+version,true,"note",reprint?"Re-print · version "+version:"Version "+version,{local:true});
+    if(e) e.id="dcert-"+opId;
+    save();setTimeout(()=>{try{flushPending()}catch(x){}},0);
+    const blob=new Blob([pdf],{type:"application/pdf"});
+    window.__lastCertPdf={name,bytes:pdf.length,pages:pdf.pageCount,version,reprint,blob};
+    let shared=false;
+    if(isMobileShare()){
+      try{const file=new File([blob],name,{type:"application/pdf"});if(navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Discharge certificate"});shared=true}}catch(x){if(x&&x.name==="AbortError")shared=true}
+    }
+    if(!shared) downloadBlob(blob,name);
+    toast(reprint?"Re-print · version "+version:"Certificate v"+version+" ready","ok");
+  }catch(err){console.error(err);toast("Could not create the certificate PDF. Please try again.","bad")}
+  finally{_certBusy=false;render()}
+}
+function certPdfFileName(p){
+  const c=s=>String(s||"").normalize("NFKD").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"-").slice(0,60);
+  return "Discharge-certificate_"+(c(p.name)||"patient")+"_"+(c(p.hospitalNo)||"no-hospital-no")+".pdf";
+}
+/* ---- certificate PDF (A4, Times body, embedded JPEG logo) ---- */
+const CERT_FONTS={H:["F1",()=>PDF_HELV_W[0]],HB:["F2",()=>PDF_HELV_W[1]],T:["F3",()=>PDF_TIMES_W[0]],TB:["F4",()=>PDF_TIMES_W[1]],TI:["F5",()=>PDF_TIMES_W[2]]};
+function certW(s,f,size){const w=CERT_FONTS[f][1]();let t=0;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);t+=(c>=32&&c<=255)?(w[c-32]||500):0}return t*size/1000}
+function certRuns(text,f,boldRe){ // plain text -> runs; "[ ]" -> empty tick box; boldRe matches print bold
+  const out=[];
+  String(text||"").split(/(\[ \])/).forEach(part=>{
+    if(part==="[ ]"){out.push({box:true});return}
+    if(!part) return;
+    if(boldRe){let last=0;part.replace(boldRe,(mm,...a)=>{const i=a[a.length-2];if(i>last)out.push({t:part.slice(last,i),f});out.push({t:mm,f:f==="T"?"TB":f==="H"?"HB":f});last=i+mm.length;return mm});if(last<part.length)out.push({t:part.slice(last),f})}
+    else out.push({t:part,f});
+  });
+  return out;
+}
+function buildCertPdf(m,o){
+  const p=m.p;const PW=595.28,PH=841.89,M=39.69,R=PW-M,CW=R-M;
+  const pages=[];let ops=null,y=0,pageKind="";
+  const Y=t=>pdfNum(PH-t);
+  const col=c=>c?`${pdfNum(c[0]/255)} ${pdfNum(c[1]/255)} ${pdfNum(c[2]/255)}`:"0 0 0";
+  const txt=(x,yy,s,f,size,c)=>{if(!s)return;ops.push(`BT /${CERT_FONTS[f][0]} ${size} Tf ${col(c)} rg 1 0 0 1 ${pdfNum(x)} ${Y(yy)} Tm (${pdfEsc(s)}) Tj ET`)};
+  const line=(x1,y1,x2,y2,w,c,dash)=>ops.push(`q ${pdfNum(w||0.6)} w ${col(c)} RG ${dash?"["+dash+"] 0 d ":""}${pdfNum(x1)} ${Y(y1)} m ${pdfNum(x2)} ${Y(y2)} l S Q`);
+  const rect=(x,yy,w,h,lw,c,fill)=>ops.push(`q ${pdfNum(lw||0.6)} w ${col(c)} RG ${fill?col(fill)+" rg ":""}${pdfNum(x)} ${Y(yy+h)} ${pdfNum(w)} ${pdfNum(h)} re ${fill?"B":"S"} Q`);
+  const enc=s=>pdfWinAnsi(s);
+  // ---- rich text wrap/draw ----
+  const toks=(runs,size)=>{const out=[];runs.forEach(r=>{
+    if(r.box){out.push({box:1,on:!!r.on,w:size*0.95});return}
+    enc(r.t).split(/(\n| +)/).forEach(w=>{if(!w)return;if(w==="\n"){out.push({br:1});return}const f=r.f||"T";out.push({t:w,f,u:r.u,hi:r.hi,sp:/^ +$/.test(w),w:certW(w,f,size)})})});return out};
+  const wrap=(runs,size,w0,w1)=>{
+    const T=toks(runs,size);const L=[[]];let cw=0,lim=w0;
+    const nl=()=>{const a=L[L.length-1];while(a.length&&a[a.length-1].sp)a.pop();L.push([]);cw=0;lim=w1};
+    T.forEach(t=>{
+      if(t.br){nl();return}
+      const cur=L[L.length-1];
+      if(t.sp&&!cur.length) return;
+      if(cw+t.w>lim&&cur.length&&!t.sp){nl()}
+      if(t.sp&&cw+t.w>lim){nl();return}
+      if(!t.sp&&!t.box&&t.w>lim){ // hard-break a very long word
+        let s=t.t;while(s){let k=s.length;while(k>1&&cw+certW(s.slice(0,k),t.f,size)>lim)k--;const piece=s.slice(0,k);L[L.length-1].push(Object.assign({},t,{t:piece,w:certW(piece,t.f,size)}));s=s.slice(k);if(s)nl();else cw+=certW(piece,t.f,size)}
+        return;
+      }
+      L[L.length-1].push(t);cw+=t.w;
+    });
+    const a=L[L.length-1];while(a.length&&a[a.length-1].sp)a.pop();
+    return L.map(l=>({toks:l,w:l.reduce((s,t)=>s+t.w,0)}));
+  };
+  const drawLine=(l,x,yy,size,c)=>{
+    let cx=x;const pos=[];
+    l.toks.forEach(t=>{
+      if(t.box){const b=size*0.72;rect(cx+size*0.08,yy-b+0.6,b,b,0.7);if(t.on){line(cx+size*0.2,yy-b*0.45,cx+size*0.38,yy-b*0.12+0.2,0.9);line(cx+size*0.38,yy-b*0.12+0.2,cx+size*0.72,yy-b*0.95+0.6,0.9)}pos.push({t,x:cx});cx+=t.w;return}
+      if(!t.sp) txt(cx,yy,t.t,t.f,size,c);
+      pos.push({t,x:cx});cx+=t.w;
+    });
+    // underline / box spans: join consecutive marked words across the spaces between them
+    ["u","hi"].forEach(k=>{
+      let st=null,en=null;
+      const flush=()=>{if(st==null)return;if(k==="u")line(st,yy+1.6,en,yy+1.6,0.6,c);else rect(st-1.6,yy-size*0.78,en-st+3.2,size*1.08,0.7);st=null};
+      pos.forEach((q,i)=>{
+        const on=q.t[k]&&!q.t.sp, bridge=q.t.sp&&st!=null&&pos[i+1]&&pos[i+1].t[k]&&!pos[i+1].t.sp&&(i>0&&pos[i-1].t[k]);
+        if(on){if(st==null)st=q.x;en=q.x+q.t.w}else if(!bridge)flush();
+      });flush();
+    });
+  };
+  // ---- pages ----
+  const LIMIT1=688,LIMIT2=700;
+  const newPage=kind=>{ops=[];pages.push({ops,kind});pageKind=kind;y=kind==="cert"?(pages.filter(x=>x.kind==="cert").length>1?60:0):60;return ops};
+  const ensure=h=>{const lim=pageKind==="cert"?LIMIT1:LIMIT2;if(y+h>lim){const k=pageKind;if(k==="cert"){txt(R-certW("continued overleaf",'TI',9),lim+6,"continued overleaf","TI",9,[90,90,90])}newPage(k);if(k==="cert")y=60;else msHead(true)}};
+  const para=(runs,x,w,size,lh,c)=>{const L=wrap(runs,size,w,w);L.forEach(l=>{ensure(lh);drawLine(l,x,y+size,size,c);y+=lh});return L};
+  // field: "Label : value" with dotted underline under the value
+  const field=(x,right,label,runs,size)=>{
+    size=size||10.5;const lh=size*1.48;const lw=certW(enc(label),"T",size)+5;
+    const L=wrap(runs,size,right-x-lw,right-M);
+    const top=y;
+    txt(x,y+size,enc(label),"T",size);
+    L.forEach((l,i)=>{const lx=i?M:x+lw;drawLine(l,lx,y+size,size);
+      const ux=i?M:x+lw-1,ue=i?M+l.w+2:Math.max(right,x+lw+l.w+1);
+      line(ux,y+size+3.2,ue,y+size+3.2,0.5,[110,110,110],"0.8 1.6");
+      y+=lh});
+    return {top,bottom:y,n:L.length};
+  };
+  // ---- page 1: certificate ----
+  newPage("cert");
+  // logo top-left (24 mm square, 9 mm from top, 14 mm from left)
+  const LG=68.03,LT=25.51;
+  ops.push(`q ${pdfNum(LG)} 0 0 ${pdfNum(LG)} ${pdfNum(M)} ${pdfNum(PH-LT-LG)} cm /Im1 Do Q`);
+  const ctr=(s,f,size,yy,u)=>{s=enc(s);const w=certW(s,f,size);const x=(PW-w)/2;txt(x,yy,s,f,size);if(u)line(x,yy+2.2,x+w,yy+2.2,1)};
+  ctr("DISCHARGE CERTIFICATE","HB",15,50,true);
+  ctr("Assam Medical College & Hospital, Dibrugarh","HB",11.5,74);
+  ctr("Assam","HB",9.5,89);
+  y=118;
+  const V=(t,f)=>[{t:String(t==null||t===""?" ":t),f:f||"TB"}];
+  const midX=360;
+  // Department / MRD
+  let a=y;field(M,midX-30,"Department of",V(m.f.dept));const ya=y;y=a;
+  field(midX+12,R,"M.R.D. No.",V(normMrd(p.mrdNo)||" "));
+  field(midX+12,R,"Hospital No.",V(p.hospitalNo||" "));y=Math.max(y,ya)+4;
+  // Admitted under
+  const adm=[];String(m.f.admitted||"").split(/;\s*/).filter(Boolean).forEach((c,i)=>{if(i)adm.push({t:"; ",f:"T"});const k=c.indexOf(",");if(k>0){adm.push({t:c.slice(0,k),f:"TB"},{t:c.slice(k),f:"T"})}else adm.push({t:c,f:"TB"})});
+  field(M,R,"Admitted under :",adm.length?adm:V(" "));y+=4;
+  // Name / Age / Sex
+  a=y;field(M,372,"Name of the patient",V(p.name));const yb=y;y=a;
+  field(390,488,"Age",V(p.age!=null&&p.age!==""?(/\d$/.test(String(p.age))?p.age+" yrs":p.age):" "));y=a;
+  field(506,R,"Sex",V(p.sex?String(p.sex).trim().charAt(0).toUpperCase():" "));y=Math.max(y,yb)+4;
+  a=y;field(M,300,"Date of admission",V(certDate(p.admittedAt)));const yc=y;y=a;
+  field(318,R,"Date of discharge",V(certDate(p.dischargedAt)));y=Math.max(y,yc)+4;
+  // Disease: diagnoses bold, bracketed codes regular
+  const dis=[];String(m.f.disease||"").split(/(\([^)]*\))/).forEach(s=>{if(s)dis.push({t:s,f:/^\(/.test(s)?"T":"TB"})});
+  field(M,R,"Disease :",dis.length?dis:V(" "));y+=4;
+  field(M,R,"Treatment :",m.treat.map(r=>({t:r.t,f:r.f==="B"?"TB":"T"})));y+=4;
+  const out=p.dischargeOutcome?labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome):"";
+  const esr=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  const bre=new RegExp("on advice|on the patient's own request|on request|against medical advice \\(DAMA\\)|absconded|expired"+(out&&out!=="—"?"|(?<=: )"+esr(out)+"(?=\\.)":""),"g");
+  field(M,R,"Remarks :",certRuns(m.f.remarks,"T",bre));y+=12;
+  // Instructions
+  ensure(30);txt(M,y+12.5,"Instruction to the patient :","TB",12.5);y+=24;
+  const items=[];
+  if(m.mode==="abscond") items.push({runs:[{t:"Not applicable — patient absconded before discharge.",f:"T"}]});
+  else if(m.mode==="death") items.push({runs:[{t:"Not applicable.",f:"T"}]});
+  else{
+    items.push(m.meds.length?{runs:[{t:"Medications on discharge",f:"TB"},{t:" (take as advised; do not stop on your own):",f:"T"}],table:m.meds}:{runs:[{t:"Medications on discharge",f:"TB"},{t:": none prescribed.",f:"T"}]});
+    m.adv.forEach(t=>items.push({runs:certRuns(/[.!?)]$/.test(t)?t:t+".","T")}));
+    const rev=String(m.f.review||"").trim();
+    if(rev){
+      const mm=rev.replace(/^(?:after|in)\s+/i,"").match(/^(\d{1,3}\s*(?:days?|weeks?|wks?|months?|mos?))\b\.?\s*(.*)$/i);
+      if(mm){const about=certReviewAbout(mm[1].replace(/\s+/g," "),p.dischargedAt);items.push({runs:[{t:"Review in Psychiatry OPD after "+mm[1],f:"TB"},{t:(about?" (on or about "+about+")":"")+" with this certificate."+(mm[2]?" "+mm[2]:""),f:"T"}]})}
+      else if(/^on\b/i.test(rev)) items.push({runs:[{t:"Review in Psychiatry OPD "+rev.replace(/\.$/,""),f:"TB"},{t:" with this certificate.",f:"T"}]});
+      else items.push({runs:[{t:"Review in Psychiatry OPD: ",f:"TB"},{t:rev.replace(/\.?$/,".")+" Bring this certificate.",f:"T"}]});
+    }
+  }
+  const IX=M+20,IW=R-IX,S1=10.5,LH1=15.5;
+  items.forEach((it,i)=>{
+    const L=wrap(it.runs,S1,IW,IW);ensure(LH1*Math.min(L.length,2));
+    txt(IX-15,y+S1,(i+1)+".","T",S1);
+    L.forEach(l=>{ensure(LH1);drawLine(l,IX,y+S1,S1);y+=LH1});
+    if(it.table){
+      y+=3;const cols=[["#",20],["Medicine",205],["Dose",78],["Route",62],["Frequency",IW-20-205-78-62]];
+      const head=()=>{ensure(18);rect(IX,y,IW,17,0.6,[60,60,60],[238,238,238]);let cx=IX;cols.forEach(([h,w],k)=>{txt(cx+5,y+12,h,"HB",8.5);if(k)line(cx,y,cx,y+17,0.6,[60,60,60]);cx+=w});y+=17};
+      head();
+      it.table.forEach((md,k)=>{
+        const nameRuns=[{t:md.name,f:"T"}];if(md.source==="new")nameRuns.push({t:" (new)",f:"TI"});else if(md.modified)nameRuns.push({t:" (changed)",f:"TI"});
+        const cells=[[{t:String(k+1),f:"T"}],nameRuns,[{t:md.dose&&md.dose!=="—"?md.dose:"—",f:"T"}],[{t:md.route||"—",f:"T"}],[{t:certFreqText(md.frequency||"OD"),f:"T"}]];
+        const wr=cells.map((c,j)=>wrap(c,9.5,cols[j][1]-10,cols[j][1]-10));
+        const h=Math.max(...wr.map(w=>w.length))*12+7;
+        if(y+h>LIMIT1){ensure(h+18);head()}
+        let cx=IX;wr.forEach((w,j)=>{w.forEach((l,q)=>drawLine(l,cx+5,y+12.5+q*12,9.5));cx+=cols[j][1]});
+        rect(IX,y,IW,h,0.6,[60,60,60]);cx=IX;cols.forEach(([,w],j)=>{if(j)line(cx,y,cx,y+h,0.6,[60,60,60]);cx+=w});
+        y+=h;
+      });
+      y+=6;
+    }
+    y+=5;
+  });
+  // signatures + date on the last certificate page (fixed position)
+  const certPages=pages.length;
+  {const sy=718;line(M,sy,M+212,sy,0.7);line(R-212,sy,R,sy,0.7);
+   txt(M,sy+14,"Countersigned by VP/VS/Registrar","T",10.5);const cp="Case note prepared by";txt(R-certW(cp,"T",10.5),sy+14,cp,"T",10.5);
+   txt(M,sy+42,"Date : ","T",10.5);txt(M+certW("Date : ","T",10.5),sy+42,enc(certDate(p.dischargedAt)),"TB",10.5);
+   txt(R-certW("P.T.O.","TB",10.5),sy+42,"P.T.O.","TB",10.5);}
+  // ---- page 2: MSE ----
+  const me=m.mse&&m.mse.e;const hdr=me&&m.mse.last?"Last recorded Mental Status Examination":"Mental Status Examination at Discharge";
+  function msHead(cont){
+    const ps=[{t:p.name||"",f:"TB"},{t:" · "+[p.age,p.sex?String(p.sex).charAt(0).toUpperCase():""].filter(Boolean).join(" ")+(p.hospitalNo?" · Hosp. No. "+p.hospitalNo:""),f:"T"}];
+    const pl=wrap(ps,9.5,330,330)[0];drawLine(pl,R-pl.w,44,9.5);
+    txt(M,60,enc(hdr+(cont?" (contd.)":"")),"HB",13);
+    if(me){const ex=enc("Examined "+certDT(me.at)+" IST");txt(R-certW(ex,"T",9.5),60,ex,"T",9.5)}
+    line(M,67,R,67,1.1);y=84;
+  }
+  newPage("mse");msHead(false);
+  const segRuns=(v,lcFirst)=>v.map((s,i)=>{if(typeof s==="string")return {t:s,f:"T"};let t=s.t;if(i===0&&lcFirst)t=mseLc(t);return {t,f:s.hi||s.ab?"TB":s.q?"TI":"T",u:!!(s.ab||s.hi)&&!s.hi,hi:!!s.hi}});
+  const end=r=>{const l=r[r.length-1];if(l&&!/[.!?”"]$/.test(l.t))r.push({t:".",f:"T"});return r};
+  const H2=t=>{ensure(36);txt(M,y+10,t,"HB",9.5);y+=17};
+  const P=runs=>{para(end(runs),M+14,CW-14,10.5,14.5);y+=6};
+  const LC=(rows)=>{rows.forEach(r=>{const L=wrap(segRuns(r.v),10.5,CW-144,CW-144);ensure(14.5);txt(M+14,y+10.5,enc(r.lb),"TB",10.5);L.forEach(l=>{ensure(14.5);drawLine(l,M+144,y+10.5,10.5);y+=14.5})});y+=6};
+  if(m.mode==="death"&&!me){y+=6;P([{t:"Not applicable (patient expired).",f:"T"}])}
+  else if(!me){
+    y+=6;P([{t:m.mode==="abscond"?"Mental status examination not applicable (patient absconded).":"Mental status examination at discharge not recorded in Ward Sync; record it by hand below",f:"T"}]);
+    if(m.mode!=="abscond"){for(let k=0;k<20&&y<640;k++){line(M,y+18,R,y+18,0.5,[150,150,150]);y+=24}}
+  }else{
+    const d=me.data||{};const RS=mseStruct(d);const get=lb=>RS.find(r=>r.lb===lb);
+    const g1=[];const ap=get("Appearance & behaviour"),rp=get("Rapport"),ey=get("Eye contact");
+    if(ap)g1.push(...end(segRuns(ap.v)),{t:" ",f:"T"});
+    if(rp)g1.push({t:"Rapport ",f:"T"},...segRuns(rp.v,true));
+    if(ey)g1.push({t:rp?"; eye contact ":"Eye contact ",f:"T"},...segRuns(ey.v,true));
+    if(g1.length){H2("GENERAL APPEARANCE & BEHAVIOUR");P(g1)}
+    const pm=get("Psychomotor"),hy=get("Hygiene");
+    if(pm||hy){const r=[];if(pm)r.push({t:"Psychomotor activity ",f:"T"},...end(segRuns(pm.v,true)));if(hy)r.push({t:(pm?" ":"")+"Personal hygiene ",f:"T"},...segRuns(hy.v,true));H2("PSYCHOMOTOR ACTIVITY & HYGIENE");P(r)}
+    [["Mood","MOOD"],["Affect","AFFECT"],["Speech","SPEECH"]].forEach(([lb,h])=>{const r=get(lb);if(r){H2(h);P(segRuns(r.v))}});
+    const th=get("Thought");if(th){H2("THOUGHT");LC(th.sub)}
+    const rk=get("Risk");if(rk){H2("RISK");LC(rk.sub)}
+    const pc=get("Perception");if(pc){H2("PERCEPTION");if(pc.sub)LC(pc.sub);else P(segRuns(pc.v))}
+    const cg=["Orientation","Memory","Abstract thinking","Judgement"].map(get).filter(Boolean);if(cg.length){H2("COGNITION");LC(cg)}
+    const ins=get("Insight");if(ins){H2("INSIGHT");P(segRuns(ins.v).map(r=>Object.assign(r,{f:"TB",u:true})))}
+    const nt=get("Note")||get("Notes");if(nt){H2("NOTES");if(nt.sub)LC(nt.sub);else P(segRuns(nt.v))}
+    // summary box
+    const ab=mseAbnormal(d);const it=mseInsightTxt(d);
+    const sr=[{t:"Summary: ",f:"HB"}];
+    if(out&&out!=="—")sr.push({t:out+". ",f:"T"});
+    if(ab.length){ab.forEach((x,i)=>{if(i)sr.push({t:", ",f:"T"});sr.push({t:i?mseLc(x.t):x.t.charAt(0).toUpperCase()+x.t.slice(1),f:"TB",u:!x.hi,hi:!!x.hi})});sr.push({t:". ",f:"T"})}
+    else sr.push({t:"No abnormal findings. ",f:"T"});
+    if(it)sr.push({t:it+". ",f:"T"});
+    if(rk&&!rk.hi&&!rk.ab)sr.push({t:"No current risk to self or others elicited.",f:"T"});else if(rk&&rk.hi)sr.push({t:"High-risk finding present (boxed above).",f:"TB"});
+    const SL=wrap(sr.map(r=>r.f==="HB"?Object.assign({},r):r),10.5,CW-24,CW-24);
+    const bh=SL.length*14.5+14;ensure(bh+44);y+=4;
+    rect(M,y,CW,bh,0.7,[90,90,90]);let yy=y+7;SL.forEach(l=>{drawLine(l,M+12,yy+10.5,10.5);yy+=14.5});y+=bh+10;
+    line(M,y,R,y,0.6,[90,90,90],"1 1.6");y+=5;
+    para([{t:"Key: ",f:"TB"},{t:"underlined bold",f:"TB",u:true},{t:" = abnormal finding ·  ",f:"T"},{t:"boxed",f:"TB",hi:true},{t:"  = high-risk finding"+(RS.some(r=>r.hi)?"":" (none at this examination)")+". Normal sections are printed in full so the record is complete.",f:"T"}],M,CW,8.5,12);
+  }
+  {const sy=760;line(M,sy,M+212,sy,0.7);line(R-212,sy,R,sy,0.7);
+   txt(M,sy+14,"Signature of examining doctor","T",10.5);const cs="Countersigned by VP/VS/Registrar";txt(R-certW(cs,"T",10.5),sy+14,cs,"T",10.5);}
+  // ---- footers ----
+  const N=pages.length;
+  const gen=enc(`Generated by Ward Sync ${APP_VERSION} · ${certDT(o.at)} IST · ${o.reprint?"Re-print · version "+o.version:"Version "+o.version}`);
+  pages.forEach((pg,k)=>{ops=pg.ops;
+    if(pg.kind==="cert"){line(M,785,R,785,0.8);txt(M,798,"N.B. :","TB",9);txt(M+certW("N.B. : ","TB",9),798,"Discharge certificate should be countersigned by VP/VS/Registrar.","T",9)}
+    const pgt=`Page ${k+1} of ${N}`;txt(M,814,gen,"H",7,[90,90,90]);txt(R-certW(pgt,"H",7),814,pgt,"H",7,[90,90,90]);
+  });
+  // ---- assemble ----
+  const objs=[];const add=s=>{objs.push(s);return objs.length};
+  const catalog=add(null),pagesId=add(null);
+  const fids=["Helvetica","Helvetica-Bold","Times-Roman","Times-Bold","Times-Italic"].map(n=>add(`<< /Type /Font /Subtype /Type1 /BaseFont /${n} /Encoding /WinAnsiEncoding >>`));
+  const jpg=atob(CERT_LOGO_JPG);
+  const img=add(`<< /Type /XObject /Subtype /Image /Width 400 /Height 400 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n${jpg}\nendstream`);
+  const res=`/Resources << /Font << ${fids.map((f,i)=>`/F${i+1} ${f} 0 R`).join(" ")} >> /XObject << /Im1 ${img} 0 R >> >>`;
+  const kids=pages.map(pg=>{const st=pg.ops.join("\n");const cid=add(`<< /Length ${st.length} >>\nstream\n${st}\nendstream`);return add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${PW} ${PH}] ${res} /Contents ${cid} 0 R >>`)});
+  objs[catalog-1]=`<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+  objs[pagesId-1]=`<< /Type /Pages /Kids [${kids.map(k=>k+" 0 R").join(" ")}] /Count ${kids.length} >>`;
+  const info=add(`<< /Title (${pdfEsc(enc("Discharge certificate - "+(p.name||"")))}) /Producer (Ward Sync ${pdfEsc(APP_VERSION)}) >>`);
+  let s="%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";const offs=[];
+  objs.forEach((x,i)=>{offs.push(s.length);s+=`${i+1} 0 obj\n${x}\nendobj\n`});
+  const xref=s.length;
+  s+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+offs.map(v=>String(v).padStart(10,"0")+" 00000 n \n").join("");
+  s+=`trailer\n<< /Size ${objs.length+1} /Root ${catalog} 0 R /Info ${info} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  const bytes=new Uint8Array(s.length);for(let i=0;i<s.length;i++)bytes[i]=s.charCodeAt(i)&255;
+  bytes.pageCount=N;bytes.certPages=certPages;
+  return bytes;
+}
+function disDoneHtml(){
+  const dd=ui.disDone;if(!dd) return "";const p=(S.patients||[]).find(x=>x.id===dd.pid);
+  if(!p||!certEligible(p)||!certSame(p.dischargedAt,dd.at)){return ""}
+  return `<div class="card dis-done" id="disDone"><div><b>Discharged ${esc(p.name)}</b><p class="tiny">${esc(labelOf(DISCHARGE_MODES,p.dischargeMode))} · ${esc(certDT(p.dischargedAt))} IST</p></div><div class="dis-done-act">${certBtnHtml(p,"sm primary")}<button class="btn sm ghost" type="button" aria-label="Dismiss" onclick="ui.disDone=null;render()">Done</button></div></div>`;
+}
+const PDF_TIMES_W=[[250,333,408,500,500,833,778,180,333,333,500,564,250,333,250,278,500,500,500,500,500,500,500,500,500,500,278,278,564,564,564,444,921,722,667,667,722,611,556,722,722,333,389,722,611,889,722,722,556,722,667,556,611,722,722,944,722,722,611,333,278,333,469,500,333,444,500,444,500,444,333,500,500,278,278,500,278,778,500,500,500,500,333,389,278,500,500,722,500,500,444,480,200,480,541,350,500,250,333,500,444,1000,500,500,333,1000,556,333,889,250,611,250,250,333,333,444,444,350,500,1000,333,980,389,333,722,250,444,722,250,333,500,500,500,500,200,500,333,760,276,500,564,333,760,333,400,564,350,350,333,500,453,250,333,350,310,500,750,750,750,444,722,722,722,722,722,722,889,667,611,611,611,611,333,333,333,333,722,722,722,722,722,722,722,564,722,722,722,722,722,722,556,500,444,444,444,444,444,444,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,564,500,500,500,500,500,500,500,500],[250,333,555,500,500,1000,833,278,333,333,500,570,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,570,570,570,500,930,722,667,722,722,667,611,778,778,389,500,778,667,944,722,778,611,778,722,556,667,722,722,1000,722,722,667,333,278,333,581,500,333,500,556,444,556,444,333,500,556,278,333,556,278,833,556,500,556,556,444,389,333,556,500,722,500,500,444,394,220,394,520,350,500,250,333,500,500,1000,500,500,333,1000,556,333,1000,250,667,250,250,333,333,500,500,350,500,1000,333,1000,389,333,722,250,444,722,250,333,500,500,500,500,220,500,333,747,300,500,570,333,747,333,400,570,350,350,333,556,540,250,333,350,330,500,750,750,750,500,722,722,722,722,722,722,1000,722,667,667,667,667,389,389,389,389,722,722,778,778,778,778,778,570,778,722,722,722,722,722,611,556,500,500,500,500,500,500,722,444,444,444,444,444,278,278,278,278,500,556,500,500,500,500,500,570,500,556,556,556,556,500,556,500],[250,333,420,500,500,833,778,214,333,333,500,675,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,675,675,675,500,920,611,611,667,722,611,611,722,722,333,444,667,556,833,667,722,611,722,611,500,556,722,611,833,611,556,556,389,278,389,422,500,333,500,500,444,500,444,278,500,500,278,278,444,278,722,500,500,500,500,389,389,278,500,444,667,444,444,389,400,275,400,541,350,500,250,333,500,556,889,500,500,333,1000,500,333,944,250,556,250,250,333,333,556,556,350,500,889,333,980,389,333,667,250,389,556,250,389,500,500,500,500,275,500,333,760,276,500,675,333,760,333,400,675,350,350,333,500,523,250,333,350,310,500,750,750,750,500,611,611,611,611,611,611,889,667,611,611,611,611,333,333,333,333,722,667,722,722,722,722,722,675,722,722,722,722,722,556,611,500,500,500,500,500,500,500,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,675,500,500,500,500,500,444,500,444]];
+// AMCH Dibrugarh, Department of Psychiatry seal (JPEG, 400x400) for the certificate header
+const CERT_LOGO_JPG="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";
 
 function openPgtHistory(id){
   const rows=pgtNotes(id);
@@ -12799,7 +13470,7 @@ function render(opts){
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
   if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){el.innerHTML=`<div class="login"><div class="login-card"><h1>Ward Sync</h1><p class="muted">Checking session…</p></div></div>`;return}
-  const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView};
+  const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView};
   syncRoute();
   const sheetOpen=overlayOpen();
   const depth=overlayDepth();
