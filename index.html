@@ -362,7 +362,7 @@ a{color:var(--teal2);text-decoration:none}
 
 
 .plist-grid{display:grid;grid-template-columns:1fr;gap:var(--gap)}
-.snap-cols{display:grid;gap:12px;grid-template-columns:1fr;grid-template-areas:"id" "pgt" "mse" "crit" "med" "adv" "act"}
+.snap-cols{display:grid;gap:12px;grid-template-columns:1fr;grid-template-areas:"id" "pgt" "mse" "labs" "crit" "med" "adv" "act"}
 .snap-identity{grid-area:id}
 .snap-current{grid-area:pgt}
 .snap-critical-status{grid-area:crit}
@@ -409,7 +409,7 @@ a{color:var(--teal2);text-decoration:none}
 @container ward (min-width: 620px){
   .plist-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,max(240px,28cqi)),1fr))}
   .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;
-    grid-template-areas:"id pgt" "mse med" "crit med" "act med" "act adv"}
+    grid-template-areas:"id pgt" "mse med" "labs med" "crit med" "act med" "act adv"}
   .snap-cols > .card{margin:0;padding:18px 20px;min-height:0;display:flex;flex-direction:column}
   .snap-cols .bedno{font-size:clamp(20px,2.6cqi,28px)}
   .snap-cols h2{font-size:clamp(20px,2.4cqi,26px);font-weight:700}
@@ -424,7 +424,7 @@ a{color:var(--teal2);text-decoration:none}
 @container ward (min-width: 980px){
   .plist-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
   .snap-cols{grid-template-columns:1fr 1fr;gap:18px;align-items:start;
-    grid-template-areas:"id pgt" "mse med" "crit med" "act med" "act adv"}
+    grid-template-areas:"id pgt" "mse med" "labs med" "crit med" "act med" "act adv"}
   .snap-cols > .card{padding:22px 24px;min-height:0;border-radius:24px}
 }
 @media (orientation: landscape){
@@ -458,7 +458,7 @@ a{color:var(--teal2);text-decoration:none}
   .sheet .box{max-width:560px}
   .top h1{font-size:16px}
   .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;
-    grid-template-areas:"id pgt" "mse med" "crit med" "act med" "act adv"}
+    grid-template-areas:"id pgt" "mse med" "labs med" "crit med" "act med" "act adv"}
   .more-grid{grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:12px}
 }
 .seg{display:flex;gap:6px;margin:0 0 10px}
@@ -753,7 +753,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
   .home-split{display:grid;grid-template-columns:minmax(220px,.9fr) minmax(220px,1.1fr);gap:12px;align-items:stretch}
   .plist-grid{grid-template-columns:1fr 1fr}
   .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;
-    grid-template-areas:"id pgt" "mse med" "crit med" "act med" "act adv"}
+    grid-template-areas:"id pgt" "mse med" "labs med" "crit med" "act med" "act adv"}
 }
 
 
@@ -786,6 +786,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
     grid-template-areas:
       "id pgt"
       "mse med"
+      "labs med"
       "crit med"
       "act med"
       "act adv";
@@ -2110,6 +2111,105 @@ html.kb-open .mse-dots{display:none}
 .mse-vstruct .msx{font-size:14px}.mse-vstruct .msx-r{padding:4px 0}
 @media (max-width:380px){.msx{font-size:13px}.msx-r{grid-template-columns:6.4em minmax(0,1fr);column-gap:6px}.msx-l{font-size:12px}.msx-subs{column-gap:8px}}
 @media (max-width:300px){.msx-r{grid-template-columns:1fr}.msx-subs{grid-template-columns:1fr}.msx-sl{white-space:normal}}
+/* R1.3.128 blood investigations */
+.lab-layer{z-index:76}
+.lab-hdr{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:10px 12px;margin:0 0 10px}
+.lab-seg{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px}
+.lab-sg{border:0;background:var(--panel2);color:var(--ink);font:inherit;font-size:14px;font-weight:650;padding:9px 6px;cursor:pointer}
+.lab-sg+.lab-sg{border-left:1px solid var(--line)}
+.lab-sg.on{background:var(--teal);color:#fff}
+.lab-hf{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lab-fld{display:flex;flex-direction:column;gap:3px;min-width:0}
+.lab-fld:first-child{grid-column:1/-1}
+.lab-fld span{font-size:12px;font-weight:700;color:var(--muted)}
+.lab-fld em{font-style:normal;font-weight:500}
+.lab-fld input{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);min-height:40px}
+.lab-pt{margin:8px 0 0}
+.lab-panels{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.chip.lab-pc{font-size:13px;padding:7px 11px;min-height:34px;transform:none}
+.chip.lab-pc.on{background:var(--teal);border-color:var(--teal);color:#fff;transform:none}
+.chip.lab-pc.q:not(.on){border-style:dashed}
+.lab-empty{margin:18px 4px;color:var(--muted);font-size:14px;line-height:1.45}
+.lab-grp{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:6px 10px 8px;margin:0 0 10px}
+.lab-gh{display:flex;align-items:center;gap:8px;padding:4px 0 6px;border-bottom:1px solid var(--line)}
+.lab-gh b{font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.lab-gh .tiny{margin-right:auto}
+.lab-gx{background:none;border:0;color:var(--danger);font:inherit;font-size:12.5px;font-weight:600;text-decoration:underline;cursor:pointer;padding:4px 0}
+.lab-row{display:grid;grid-template-columns:minmax(0,1fr) 92px 46px 26px;align-items:center;column-gap:6px;padding:6px 0;border-top:1px dashed color-mix(in srgb,var(--line) 70%,transparent)}
+.lab-gh+.lab-row{border-top:0}
+.lab-rn{min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.lab-rn b{font-size:14px;font-weight:650;overflow-wrap:anywhere}
+.lab-ref{font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
+.lab-v{width:100%;box-sizing:border-box;font:inherit;font-size:16px;font-weight:700;padding:7px 8px;border:1.5px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);min-height:40px;text-align:right}
+.lab-flag{font-size:11.5px;font-weight:800;text-align:center;white-space:nowrap;color:var(--muted)}
+.lab-rx{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--muted);font-size:14px;line-height:1;padding:0;cursor:pointer}
+.lab-msg{grid-column:1/-1;margin:0;display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12.5px;line-height:1.35}
+.lab-msg:empty{display:none}
+.lab-msg .lab-warn{color:var(--warn);font-weight:650}
+.lab-msg .lab-tier{color:var(--muted);font-weight:650}
+.lab-chk{display:flex;align-items:center;gap:6px;font-weight:650;color:var(--ink)}
+.lab-chk input{width:18px;height:18px}
+.lab-row.fl-H .lab-flag,.lab-row.fl-L .lab-flag,.lab-row.fl-A .lab-flag{color:var(--warn)}
+.lab-row.fl-H .lab-v,.lab-row.fl-L .lab-v,.lab-row.fl-A .lab-v{border-color:color-mix(in srgb,var(--warn) 55%,var(--line))}
+.lab-row.fl-CRIT_H .lab-flag,.lab-row.fl-CRIT_L .lab-flag,.lab-row.fl-URGENT .lab-flag{color:var(--danger)}
+.lab-row.fl-CRIT_H .lab-v,.lab-row.fl-CRIT_L .lab-v,.lab-row.fl-URGENT .lab-v{border-color:var(--danger);background:var(--danger-bg);color:var(--danger)}
+.lab-row.st-amber .lab-v{box-shadow:0 0 0 2px color-mix(in srgb,var(--warn) 35%,transparent)}
+.lab-row.st-red{background:color-mix(in srgb,var(--danger) 6%,transparent);border-radius:8px}
+.lab-row.st-red .lab-v{border-style:dashed;border-color:var(--danger)}
+.lab-row.st-red .lab-warn{color:var(--danger)}
+.lab-cust{gap:4px}
+.lab-ci{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:6px 8px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink)}
+.lab-cust2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+.lab-ci.sm{font-size:16px;padding:5px 6px;min-width:0}
+.lab-crit{margin:0 0 10px;padding:10px 12px;border-radius:14px;background:var(--danger-bg);border:1.5px solid var(--danger);color:var(--ink)}
+.lab-crit p{margin:0 0 4px}
+.lab-crit-h{color:var(--danger);font-size:14px;line-height:1.4}
+.lab-crit-h em{font-style:normal;font-weight:700}
+.lab-crit-ok{display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:14px;font-weight:650;line-height:1.35}
+.lab-crit-ok input{width:20px;height:20px;flex:0 0 auto;margin:0}
+.lab-off{color:var(--danger);font-weight:650}
+.lab-dupbox{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:var(--panel2);border:1.5px solid var(--warn)}
+.lab-dupbox p{margin:0 0 8px;font-size:13.5px;line-height:1.4}
+.lab-dupbox .btns{display:flex;gap:8px;flex-wrap:wrap}
+.lab-rc{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:10px 12px;margin:0 0 10px}
+.lab-rc.crit{border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+.lab-rc-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14.5px}
+.lab-rc-m{margin:3px 0 6px;font-size:12px;color:var(--muted)}
+.lab-rc-a{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
+.lab-rc-a .lab-del{background:none;border:0;padding:0 2px;color:var(--danger);font:inherit;font-size:13px;font-weight:600;text-decoration:underline;cursor:pointer;margin-left:auto}
+.btn.danger-t{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
+.lab-chip{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);line-height:1.5}
+.lab-chip.pend{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
+.lab-chip.warn{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+.lab-tb{width:100%;border-collapse:collapse;font-size:13px;line-height:1.3;table-layout:fixed}
+.lab-tb td{padding:3px 4px;border-top:1px dashed color-mix(in srgb,var(--line) 70%,transparent);vertical-align:top;overflow-wrap:anywhere}
+.lab-tb tr:first-child td{border-top:0}
+.lab-tn{width:38%}.lab-tv{width:28%}.lab-tr{width:22%;color:var(--muted);font-size:11.5px}.lab-tf{width:12%;text-align:right}
+.lab-tv span{color:var(--muted);font-size:11px}
+.lab-tb tr.ab .lab-tv b{color:var(--warn)}
+.lab-tb tr.crit .lab-tv b{color:var(--danger)}
+.lab-fp{display:inline-block;font-size:10.5px;font-weight:800;padding:0 6px;border-radius:999px;border:1px solid color-mix(in srgb,var(--warn) 50%,var(--line));color:var(--warn);line-height:1.6;white-space:nowrap}
+.lab-fp.crit{background:var(--danger);border-color:var(--danger);color:#fff}
+.snap-labs{grid-area:labs}
+.snap-labs.crit{border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+.lab-hchips{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.lab-latest{margin-top:6px}
+.lab-li{display:grid;grid-template-columns:minmax(0,5.6em) minmax(0,1fr) auto;align-items:center;column-gap:8px;padding:4px 0;border-top:1px dashed color-mix(in srgb,var(--line) 70%,transparent);font-size:13.5px}
+.lab-li:first-child{border-top:0}
+.lab-ln{font-weight:650;color:var(--muted);font-size:12.5px;overflow-wrap:anywhere}
+.lab-lv{min-width:0}.lab-lv small{color:var(--muted);font-size:11px}
+.lab-li.ab .lab-lv b{color:var(--warn)}.lab-li.crit .lab-lv b{color:var(--danger)}
+.lab-lt{display:flex;align-items:center;gap:6px;justify-content:flex-end;color:var(--muted);font-size:11px;white-space:nowrap}
+.lab-lt small{font-size:11px}
+.lab-spark{color:var(--teal);flex:0 0 auto}
+.lab-li.crit .lab-spark{color:var(--danger)}
+.lab-ld{opacity:.8}
+.rec-item.rec-lab .rec-dot{background:#0369a1;box-shadow:0 0 0 4px rgba(3,105,161,.12)}
+.lab-rec-d{margin-top:6px}
+.lab-rec-d summary{cursor:pointer;font-size:12.5px;font-weight:650;color:var(--teal)}
+.lab-rec-d .lab-tb{margin-top:4px}
+.cert-labs-t{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);resize:vertical;min-height:70px;margin-top:8px}
+@media (max-width:380px){.lab-row{grid-template-columns:minmax(0,1fr) 84px 42px 24px;column-gap:5px}.lab-rn b{font-size:13.5px}.lab-li{grid-template-columns:minmax(0,4.8em) minmax(0,1fr) auto;column-gap:6px}.lab-lt .lab-spark{display:none}.lab-hf{grid-template-columns:1fr}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -2610,7 +2710,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.127";
+const APP_VERSION="R1.3.128";
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
@@ -3491,6 +3591,7 @@ async function doCloudPull(opts){
     const drop=new Set(localKeep.map(c=>c.pid+"|"+Date.parse(c.dischargedAt)));
     S.dischargeCertificates=localKeep.concat(srv.filter(c=>!drop.has(c.pid+"|"+Date.parse(c.dischargedAt))));
   }
+  if(Array.isArray(wardState.lab_reports)) labMergeState(wardState.lab_reports,unresolved); // R1.3.128
   S.patientEdits=(wardState.patient_edits||[]).map(r=>({id:r.id,pid:r.patient_id,field:r.field,old:r.old_value,new:r.new_value,by:r.edited_by,at:r.edited_at,group:r.edit_group})); // R1.3.90
   const _prevDm=new Map((S.obsStays||[]).map(x=>[x.id,x.dischargeMeds]));
   S.obsStays=(wardState.observation_stays||[]).map(r=>({dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:(_prevDm.get(r.id)||[]),id:r.id,pid:r.patient_id,bedId:r.bed_id,reason:r.reason||"",note:r.note||"",at:r.started_at,by:r.started_by,endedAt:r.ended_at||null,endedBy:r.ended_by||null,outcome:r.outcome||null,referralTo:r.referral_to||""}));
@@ -3506,7 +3607,7 @@ async function doCloudPull(opts){
   // R1.3.125: the server returned every activity_log row it still has from its oldest row onward. A local entry inside
   // that window which the server no longer has was deleted there, so drop it, unless it is still waiting to upload
   // (outbox) or is a fresh local copy of a server-written row (RPC echo, kept 10 min until the server copy arrives).
-  (Array.isArray(wardState.events)?reconcileLocal(S.events,incoming,unresolved,"activity_log",e=>e.local||/^(pt-edit|med-edit|dcert)-/.test(String(e.id))):(S.events||[])).forEach(e=>byId[e.id]=e);
+  (Array.isArray(wardState.events)?reconcileLocal(S.events,incoming,unresolved,"activity_log",e=>e.local||/^(pt-edit|med-edit|dcert|lab|labe|labd)-/.test(String(e.id))):(S.events||[])).forEach(e=>byId[e.id]=e);
   incoming.forEach(e=>byId[e.id]=e);
   S.events=evCollapse(Object.values(byId));
   localStorage.setItem(KEY,JSON.stringify(S));
@@ -3547,6 +3648,9 @@ async function upsert(table,rows){
     }else if(table==="discharge_certificates"){
       ({error}=await sb.rpc("ward_save_discharge_certificate",{p_token:sessionTok,p_row:row})); // R1.3.126
       if(error&&/could not find the function|does not exist|42883/i.test(String(error.message||error))){console.warn("Discharge certificate RPC missing; kept on this device only");error=null}
+    }else if(table==="lab_reports"){
+      ({error}=await sb.rpc("ward_save_lab_report",{p_token:sessionTok,p_report:row})); // R1.3.128
+      if(error&&/could not find the function|does not exist|42883|PGRST202/i.test(String(error.message||error))){console.warn("Lab report RPC missing; kept on this device only");labMarkLocalOnly(row.id);error=null}
     }else if(table==="activity_log"){
       // activity_log.actor_id is derived server-side from the authenticated
       // ward session.
@@ -3641,6 +3745,7 @@ function isStaleOutbox(op){
     if(/handover sender must be|posted by another resident/.test(msg)) return true;
   }
   if(/only the receiving resident/.test(msg)) return true;
+  if(op.table==="lab_reports"&&/this report was removed|belongs to another patient|patient not found/.test(msg)) return true; // R1.3.128
   const gone=/no longer on the ward|active patient not found|patient is required|that patient is no longer/.test(msg);
   if(gone) return true;
   if(p&&p.status==="discharged" && ["tasks","ect_plans","handover_items","medication_orders","medication_doses","patient_snapshots","snapshot_field","snapshot_tag","pgt_note","restrain_toggle"].includes(op.table)) return true;
@@ -3697,7 +3802,7 @@ async function doFlushPending(){
   }
   cloudStatus="syncing";
   Sync.state="RECONCILING";
-  const rank=t=>({patients:0,beds:1,patient_bed_assignments:2,restrain_toggle:3,snapshot_tag:4,pgt_note:5,snapshot_field:6,patient_snapshots:7,patient_consultant:7.5,medication_orders:8,medication_doses:9,ect_plans:10,ect_sessions:11,mse_entries:11.5,discharge_certificates:11.6,tasks:12,handovers:13,handover_items:14,ward_sections:15,unit_consultants:16,unit_settings:17,activity_log:20}[t]??18);
+  const rank=t=>({patients:0,beds:1,patient_bed_assignments:2,restrain_toggle:3,snapshot_tag:4,pgt_note:5,snapshot_field:6,patient_snapshots:7,patient_consultant:7.5,medication_orders:8,medication_doses:9,ect_plans:10,ect_sessions:11,mse_entries:11.5,discharge_certificates:11.6,lab_reports:11.7,tasks:12,handovers:13,handover_items:14,ward_sections:15,unit_consultants:16,unit_settings:17,activity_log:20}[t]??18);
   work.sort((a,b)=>rank(a.table)-rank(b.table));
   let hard=false;
   for(const op of work){
@@ -4522,6 +4627,7 @@ function snapView(){
       }).join("")}</div>`:""}
     </div>
     ${mseCardHtml(p)}
+    ${labsCardHtml(p)}
     <div class="card snap-critical-status">
       <div class="row"><div><p class="tiny">CRITICAL STATUS</p></div></div>
       <div style="margin-top:10px">${renderCriticalStatusHistory(p.id)}</div>
@@ -10596,7 +10702,7 @@ async function savePgtNote(){
 function recKindLabel(k){
   return ({admit:"ADMISSION",obs:"OBSERVATION",med:"MEDICATION",ect:"ECT",pgt:"PGT NOTE",crit:"CRITICAL",xfer:"TRANSFER",dis:"DISCHARGE",restrain:"RESTRAINT",handover:"HANDOVER",task:"TASK",note:"EVENT"}[k]||"EVENT");
 }
-function recCss(k){return ({mse:"mse",admit:"admit",obs:"obs",med:"med",ect:"ect",pgt:"pgt",crit:"crit",xfer:"xfer",dis:"dis",restrain:"restrain"}[k]||"note")}
+function recCss(k){return ({lab:"lab",mse:"mse",admit:"admit",obs:"obs",med:"med",ect:"ect",pgt:"pgt",crit:"crit",xfer:"xfer",dis:"dis",restrain:"restrain"}[k]||"note")}
 function recActor(it){const n=it.byName||rname(it.by)||"";return n==="?"?"":n}
 
 function medEventActor(pid,drug,at,verbs){
@@ -11273,6 +11379,589 @@ function mseCardHtml(p){
   </div>`;
 }
 /* ===== end MSE ===== */
+/* ===== R1.3.128 Blood investigations · phase 0 (manual entry from the patient card; no OCR) =====
+   Reports are typed from the paper report. The patient always comes from the card the form was opened on.
+   Server: ward_save_lab_report (create / edit / soft delete, edit log, timeline row), ward_read_lab_history.
+   Platelets and WBC are typed as printed (×10³/µL) and sent per µL (value_num); value_printed keeps the paper value. */
+const LAB_T={
+  hb:{n:"Haemoglobin",u:"g/dL",lo:13,hi:17,f:[12,15],d:1,p:[2,25]},
+  wbc:{n:"Total WBC count",u:"×10³/µL",cu:"/µL",x:1000,lo:4,hi:10,d:2,p:[0.1,500]},
+  neut:{n:"Neutrophils",u:"%",lo:40,hi:80,d:0,p:[0,100]},
+  lymph:{n:"Lymphocytes",u:"%",lo:20,hi:40,d:0,p:[0,100]},
+  mono:{n:"Monocytes",u:"%",lo:2,hi:10,d:0,p:[0,100]},
+  eos:{n:"Eosinophils",u:"%",lo:1,hi:6,d:0,p:[0,100]},
+  baso:{n:"Basophils",u:"%",lo:0,hi:2,d:0,p:[0,100]},
+  rbc:{n:"RBC count",u:"×10^6/µL",lo:4.5,hi:5.5,f:[3.8,4.8],d:2,p:[0.5,10]},
+  hct:{n:"Haematocrit (PCV)",u:"%",lo:40,hi:50,f:[36,46],d:1,p:[5,75]},
+  mcv:{n:"MCV",u:"fL",lo:83,hi:101,d:1,p:[40,150]},
+  mch:{n:"MCH",u:"pg",lo:27,hi:32,d:1,p:[10,50]},
+  mchc:{n:"MCHC",u:"g/dL",lo:31.5,hi:34.5,d:1,p:[20,45]},
+  rdw:{n:"RDW-CV",u:"%",lo:11.6,hi:14,d:1,p:[8,35]},
+  plt:{n:"Platelet count",u:"×10³/µL",cu:"/µL",x:1000,lo:150,hi:410,d:0,p:[1,2000]},
+  tbil:{n:"Total bilirubin",u:"mg/dL",lo:0.2,hi:1.3,d:2,p:[0,50]},
+  dbil:{n:"Direct bilirubin",u:"mg/dL",lo:0,hi:0.3,d:2,p:[0,40]},
+  ubil:{n:"Unconjugated bilirubin",u:"mg/dL",lo:0,hi:1.1,d:2,p:[0,50]},
+  tp:{n:"Total protein",u:"g/dL",lo:6.3,hi:8.2,d:2,p:[2,14]},
+  alb:{n:"Albumin",u:"g/dL",lo:3.5,hi:5,d:2,p:[0.5,7]},
+  glob:{n:"Globulin",u:"g/dL",lo:2.8,hi:3.2,d:2,p:[0.5,10]},
+  ag:{n:"A/G ratio",u:"",lo:1.3,hi:1.5,d:2,p:[0.1,5]},
+  ast:{n:"SGOT (AST)",u:"U/L",lo:17,hi:59,d:0,p:[1,10000]},
+  alt:{n:"SGPT (ALT)",u:"U/L",hi:50,ref:"<50",d:0,p:[1,10000]},
+  alp:{n:"Alkaline phosphatase",u:"U/L",lo:38,hi:126,d:0,p:[5,5000]},
+  ggt:{n:"Gamma GT",u:"U/L",lo:15,hi:73,d:0,p:[1,5000]},
+  urea:{n:"Urea",u:"mg/dL",lo:19.26,hi:42.8,d:1,p:[2,500]},
+  creat:{n:"Creatinine",u:"mg/dL",lo:0.66,hi:1.25,f:[0.52,1.04],d:2,p:[0.1,20]},
+  na:{n:"Sodium",u:"mmol/L",lo:137,hi:145,d:0,p:[90,200]},
+  k:{n:"Potassium",u:"mmol/L",lo:3.5,hi:5.1,d:1,p:[1,10]},
+  rbs:{n:"Random blood sugar",u:"mg/dL",lo:70,hi:140,d:0,p:[10,1500]},
+  chol:{n:"Total cholesterol",u:"mg/dL",d:0,p:[30,1000],tiers:[{lt:200,l:"Desirable"},{lt:240,l:"Borderline",f:"H"},{l:"High",f:"H"}],ref:"Desirable <200; Borderline 200–239; High ≥240"},
+  tg:{n:"Triglycerides",u:"mg/dL",d:0,p:[10,5000],tiers:[{lt:150,l:"Normal"},{lt:200,l:"Borderline high",f:"H"},{lt:500,l:"High",f:"H"},{l:"Very high",f:"H"}],ref:"Normal <150; Borderline 150–199; High 200–499; Very high ≥500"},
+  hdl:{n:"HDL cholesterol",u:"mg/dL",lo:40,ref:"40–60",d:0,p:[5,200]},
+  ldl:{n:"LDL cholesterol",u:"mg/dL",hi:130,ref:"0–130",d:0,p:[5,600]},
+  vldl:{n:"VLDL cholesterol",u:"mg/dL",hi:50,ref:"<50",d:0,p:[1,1000]},
+  hba1c:{n:"HbA1c",u:"%",d:1,p:[3,20],tiers:[{lt:5.7,l:"Normal"},{lt:6.5,l:"Prediabetes",f:"H"},{l:"Diabetes",f:"H"}],ref:"Normal <5.7; Prediabetes 5.7–6.4; Diabetes ≥6.5"},
+  tsh:{n:"TSH",u:"µIU/mL",lo:0.4,hi:4.05,d:2,p:[0.005,150]},
+  li:{n:"Serum lithium",u:"mmol/L",lo:0.6,hi:1.2,d:2,p:[0.05,5],prov:1},
+  vpa:{n:"Serum valproate",u:"µg/mL",lo:50,hi:100,d:0,p:[1,400],prov:1},
+  u_volume:{n:"Volume",u:"mL",d:0,p:[1,5000],nf:1},
+  u_colour:{n:"Colour",u:"",txt:1,o:["Pale yellow","Straw","Yellow","Dark yellow","Amber","Red","Brown"],ok:/^(pale yellow|straw|yellow|light yellow|colourless|colorless)$/i,norm:"Pale yellow"},
+  u_appearance:{n:"Appearance",u:"",txt:1,o:["Clear","Slightly turbid","Turbid"],ok:/^clear$/i,norm:"Clear"},
+  u_ph:{n:"Reaction (pH)",u:"",lo:4.5,hi:8,d:1,p:[4,9.5]},
+  u_sg:{n:"Specific gravity",u:"",lo:1.003,hi:1.03,d:3,p:[1,1.06]},
+  u_glucose:{n:"Glucose",u:"mg/dL",txt:1,dip:1},
+  u_protein:{n:"Protein",u:"mg/dL",txt:1,dip:1},
+  u_ketone:{n:"Ketone bodies",u:"mg/dL",txt:1,dip:1},
+  u_blood:{n:"Blood",u:"Erythrocytes/µL",txt:1,dip:1},
+  u_urobilinogen:{n:"Urobilinogen",u:"mg/dL",txt:1,o:["Normal","0.2","1","2","4","8"],ok:/^(normal|negative|neg|nil|0\.2|0\.1|1|1\.0)$/i,norm:"Normal"},
+  u_bilirubin:{n:"Bilirubin",u:"mg/dL",txt:1,dip:1},
+  u_nitrite:{n:"Nitrite",u:"",txt:1,o:["Negative","Positive"],ok:/^(negative|neg|nil|absent)$/i,norm:"Negative"},
+  u_epithelial:{n:"Epithelial cells",u:"/HPF",txt:1,cnt:5,o:["Nil","0-1","1-2","2-4","4-6","Plenty"],norm:"0-1"},
+  u_pus:{n:"Pus cells",u:"/HPF",txt:1,cnt:5,o:["Nil","0-1","1-2","2-4","4-6","6-8","Plenty"],norm:"0-1"},
+  u_rbc:{n:"RBC",u:"/HPF",txt:1,cnt:2,o:["Nil","0-1","1-2","2-4","Plenty"],norm:"Nil"},
+  u_crystals:{n:"Crystals",u:"/LPF",txt:1,abs:1},
+  u_casts:{n:"Casts",u:"/LPF",txt:1,abs:1},
+  u_bacteria:{n:"Bacteria",u:"/HPF",txt:1,abs:1}
+};
+const LAB_DIP_O=["Negative","Trace","+","++","+++","++++"];
+const LAB_ABS_O=["Absent","Present"];
+const LAB_PANELS=[
+  {k:"CBC",dept:"pathology",c:["hb","wbc","neut","lymph","mono","eos","baso","rbc","hct","mcv","mch","mchc","rdw","plt"]},
+  {k:"LFT",dept:"biochemistry",c:["tbil","dbil","ubil","tp","alb","glob","ag","ast","alt","alp"]},
+  {k:"KFT",lb:"KFT + Na/K",dept:"biochemistry",c:["urea","creat","na","k"]},
+  {k:"RBS",dept:"biochemistry",c:["rbs"]},
+  {k:"Lipids",lb:"Lipids + HbA1c",dept:"biochemistry",c:["chol","tg","hdl","ldl","vldl","hba1c"]},
+  {k:"TSH",dept:"biochemistry",c:["tsh"]},
+  {k:"GGT",dept:"biochemistry",c:["ggt"]},
+  {k:"Urine R/E",dept:"pathology",c:["u_volume","u_colour","u_appearance","u_ph","u_sg","u_glucose","u_protein","u_ketone","u_blood","u_urobilinogen","u_bilirubin","u_nitrite","u_epithelial","u_pus","u_rbc","u_crystals","u_casts","u_bacteria"]},
+  {k:"Lithium",lb:"+ Lithium",quick:1,dept:"biochemistry",c:["li"]},
+  {k:"Valproate",lb:"+ Valproate",quick:1,dept:"biochemistry",c:["vpa"]}
+];
+const LAB_SHORT={hb:"Hb",wbc:"WBC",plt:"Platelets",na:"Na",k:"K",creat:"Creatinine",urea:"Urea",rbs:"RBS",alt:"ALT",ast:"AST",tbil:"T. bilirubin",tsh:"TSH",li:"Lithium",vpa:"Valproate",hba1c:"HbA1c",chol:"Cholesterol",tg:"TG",ggt:"GGT",alp:"ALP",alb:"Albumin"};
+const LAB_KEY=["hb","wbc","plt","na","k","urea","creat","rbs","alt","ast","tbil","tsh","li","vpa","hba1c","chol","tg","ggt"];
+const LAB_CRIT_TXT={k:"K <2.5 or ≥6.0",na:"Na <120 or ≥160",hb:"Hb <7",rbs:"glucose <50 or >400",plt:"platelets <20 (urgent <10) ×10³/µL",li:"lithium ≥1.5",vpa:"valproate >150"};
+function labDef(code){return LAB_T[code]||null}
+function labPanelOf(code){const p=LAB_PANELS.find(x=>x.c.includes(code));return p?p.k:"Other"}
+/* server mirror: ward_lab_critical(code, canonical value) */
+function labCrit(code,v){
+  if(v==null||!isFinite(v))return null;
+  switch(code){
+    case "k":return v<2.5?"CRIT_L":v>=6?"CRIT_H":null;
+    case "na":return v<120?"CRIT_L":v>=160?"CRIT_H":null;
+    case "hb":return v<7?"CRIT_L":null;
+    case "rbs":case "fbs":case "ppbs":return v<50?"CRIT_L":v>400?"CRIT_H":null;
+    case "plt":return v<10000?"URGENT":v<20000?"CRIT_L":null;
+    case "li":return v>=1.5?"CRIT_H":null;
+    case "vpa":return v>150?"CRIT_H":null;
+  }
+  return null;
+}
+function labRange(code,sex){const t=labDef(code);if(!t)return {};const fem=String(sex||"").toUpperCase().startsWith("F");const r=fem&&t.f?t.f:[t.lo,t.hi];return {lo:r[0],hi:r[1]}}
+function labNumTxt(n){if(n==null||n==="")return "";const s=String(n);return s}
+function labRefText(code,sex,row){
+  const t=labDef(code);
+  if(!t){if(row&&(row.lo!==""&&row.lo!=null||row.hi!==""&&row.hi!=null))return (row.lo!==""&&row.lo!=null?row.lo:"")+(row.hi!==""&&row.hi!=null?"–"+row.hi:"+");return ""}
+  if(t.ref&&!t.f)return t.ref;
+  const r=labRange(code,sex);
+  if(r.lo!=null&&r.hi!=null)return r.lo+"–"+r.hi;
+  if(r.hi!=null)return "<"+r.hi;if(r.lo!=null)return "≥"+r.lo;return "";
+}
+function labUnit(code,row){const t=labDef(code);return t?t.u:String((row&&row.unit)||"").trim()}
+function labFlagLabel(f){return ({H:"H",L:"L",A:"Abn",CRIT_H:"Crit ↑",CRIT_L:"Crit ↓",URGENT:"Urgent"})[f]||""}
+function labIsCrit(f){return f==="CRIT_H"||f==="CRIT_L"||f==="URGENT"}
+function labParseCount(s){const m=String(s||"").trim().match(/^(\d+(?:\.\d+)?)\s*(?:-|–|to)\s*(\d+(?:\.\d+)?)$/i);if(m)return [+m[1],+m[2]];const n=String(s||"").trim().match(/^(\d+(?:\.\d+)?)$/);return n?[+n[1],+n[1]]:null}
+/* evaluate one typed value. Returns {ok,num,text,canon,flag,tier,state,msg,crit,lowV,highV} */
+function labEval(code,raw,sex,row){
+  const s=String(raw==null?"":raw).trim();const t=labDef(code);
+  if(!s)return {empty:true,state:"",flag:null};
+  if(t&&t.txt){
+    let flag=null,lowV=null,highV=null;const low=s.toLowerCase();
+    if(t.dip){if(!/^(negative|neg|nil|absent|not detected|normal)$/i.test(s))flag="A"}
+    else if(t.ok){if(!t.ok.test(s))flag="A"}
+    else if(t.cnt){const c=labParseCount(s);if(c){lowV=c[0];highV=c[1];if(c[1]>t.cnt)flag="A"}else if(!/^(nil|absent|occasional|not seen|none)$/i.test(low))flag="A"}
+    else if(t.abs){if(!/^(absent|nil|not seen|none|negative)$/i.test(low))flag="A"}
+    return {ok:true,num:null,text:s,canon:null,flag,state:"green",msg:"",crit:null,lowV,highV};
+  }
+  const m=s.match(/^([<>]=?|≤|≥)?\s*(-?\d*\.?\d+)$/);
+  if(!m)return {ok:false,state:"red",flag:null,msg:"Enter a number as printed"};
+  const num=parseFloat(m[2]);const qual=m[1]||"";
+  const x=(t&&t.x)||1;const canon=Math.round(num*x*1000)/1000;
+  let state="green",msg="";
+  if(t){
+    const r=labRange(code,sex);const top=r.hi!=null?r.hi:(t.tiers?t.tiers[0].lt:null);
+    if(code==="hb"&&num>25&&num<=250){state="red";msg="Looks like g/L — enter g/dL (÷10)"}
+    else if(code==="creat"&&num>20&&num<=2000){state="red";msg="Looks like µmol/L — enter mg/dL (÷88.4)"}
+    else if((code==="plt"&&num>2000)||(code==="wbc"&&num>500)){state="red";msg="Type it as printed in ×10³/µL (e.g. 250, not 250000)"}
+    else if(code==="rbs"&&num>=2&&num<35){state=num<t.p[0]?"red":"amber";msg="Looks like mmol/L? AMCH prints mg/dL (×18)"}
+    else if(t.d>0&&!/\./.test(m[2])&&top&&num>3*top){state="red";msg="Decimal point missing? Check the paper (e.g. 97 → 9.7)"}
+    else if(t.p&&(num<t.p[0]||num>t.p[1])){state="red";msg="Outside the possible range — check the paper"}
+  }else if(row&&!String(row.unit||"").trim()){state="amber";msg="Add the unit as printed"}
+  let flag=null,tier=null;
+  if(t&&t.tiers){const tr=t.tiers.find(z=>z.lt==null||num<z.lt);tier=tr.l;flag=tr.f||null}
+  else if(!(t&&t.nf)){
+    const r=t?labRange(code,sex):{lo:row&&row.lo!==""?parseFloat(row.lo):null,hi:row&&row.hi!==""?parseFloat(row.hi):null};
+    if(r.hi!=null&&isFinite(r.hi)&&num>r.hi)flag="H";else if(r.lo!=null&&isFinite(r.lo)&&num<r.lo)flag="L";
+  }
+  const crit=labCrit(code,canon);if(crit)flag=crit;
+  return {ok:true,num,text:qual?s:null,canon,flag,tier,state,msg,crit};
+}
+/* ---- local model ---- */
+function labReports(pid,all){return (S.labs||[]).filter(r=>r&&r.pid===pid&&(all||!r.deleted)).sort((a,b)=>String(b.reportedAt||"").localeCompare(String(a.reportedAt||""))||String(b.at||"").localeCompare(String(a.at||"")))}
+function labPendingId(id){return pending.some(o=>o.table==="lab_reports"&&o.row&&o.row.id===id&&o.status!=="acked")}
+function labFromRow(r){
+  return {id:r.id,pid:r.patient_id,lab:r.lab||"AMCH",dept:r.department||"other",sampleNo:r.sample_no||"",collectedAt:r.collected_at||null,reportedAt:r.reported_at,
+    panels:r.panels||[],hasCritical:!!r.has_critical,by:r.created_by||null,byName:r.created_by_name||"",at:r.created_at||r.reported_at,updatedAt:r.updated_at||null,
+    updatedByName:r.updated_by_name||"",editCount:r.edit_count||0,status:r.report_status||"final",
+    results:(r.results||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)).map(x=>({code:x.test_code,name:x.test_name_printed,num:x.value_num==null?null:+x.value_num,text:x.value_text||null,
+      unit:x.unit||"",printed:x.value_printed||"",unitPrinted:x.unit_printed||"",lo:x.ref_low==null?null:+x.ref_low,hi:x.ref_high==null?null:+x.ref_high,refText:x.ref_text||"",
+      flag:x.flag||null,tier:x.tier_label||null,state:x.field_state||null,edited:!!x.edited}))};
+}
+function labResultFromRow(rp){ // a stored result -> the value as printed
+  if(rp.printed)return rp.printed;if(rp.text)return rp.text;const t=labDef(rp.code);if(rp.num==null)return "";const v=t&&t.x?rp.num/t.x:rp.num;return String(Math.round(v*1000)/1000);
+}
+function labResDisp(rp){const v=labResultFromRow(rp);const u=rp.unitPrinted||(labDef(rp.code)?labDef(rp.code).u:rp.unit)||"";return {v,u}}
+function labName(rp){return rp.name||(labDef(rp.code)||{}).n||rp.code}
+function labPanelsLabel(r){return (r.panels&&r.panels.length?r.panels:["Report"]).join(" + ")}
+function labDeptLabel(d){return d==="pathology"?"Pathology":d==="biochemistry"?"Biochemistry":"Lab"}
+function labCritList(r){return (r.results||[]).filter(x=>labIsCrit(x.flag))}
+function labValLine(x){const d=labResDisp(x);return `${LAB_SHORT[x.code]||labName(x)} ${d.v}${d.u&&/\d/.test(String(d.v))?" "+d.u:""}`}
+function labCritText(r){
+  const c=labCritList(r);const p=patient(r.pid)||{};
+  return ("Critical lab value"+(c.length>1?"s":"")+": "+c.map(x=>labValLine(x)+" ("+({CRIT_H:"critical high",CRIT_L:"critical low",URGENT:"urgent"})[x.flag]+")").join("; ")+
+    ` · ${labDeptLabel(r.dept)} report ${stamp(r.reportedAt)}${r.sampleNo?" · sample "+r.sampleNo:""}. Value confirmed against the paper report.`).slice(0,480);
+}
+/* ---- sync: server -> local ---- */
+function labMergeState(rows,unresolved){
+  if(!Array.isArray(rows))return;
+  const busy=new Set((unresolved||pending.filter(o=>o.status!=="acked")).filter(o=>o.table==="lab_reports"&&o.row&&o.row.id).map(o=>String(o.row.id)));
+  const local=S.labs||[];const byId=new Map(local.map(x=>[String(x.id),x]));
+  const out=[],ids=new Set(),tomb=new Set();
+  rows.forEach(r=>{if(!r||!r.id)return;if(r.deleted_at){tomb.add(String(r.id));return}
+    const id=String(r.id);ids.add(id);
+    if(busy.has(id)&&byId.has(id)){out.push(byId.get(id));return}
+    const n=labFromRow(r);const o=byId.get(id);if(o&&o.alertPending)n.alertPending=true;out.push(n)});
+  local.forEach(x=>{const id=String(x.id);if(ids.has(id))return;
+    if(busy.has(id)||x.localOnly||(x.fromHistory&&!tomb.has(id)))out.push(x)});
+  S.labs=out;
+}
+const _labHistLoaded={};
+async function labLoadHistory(pid,force){
+  if(!sb||!sessionTok||!pid)return false;
+  if(_labHistLoaded[pid]&&!force&&Date.now()-_labHistLoaded[pid]<60000)return false;
+  _labHistLoaded[pid]=Date.now();
+  try{
+    const {data,error}=await sb.rpc("ward_read_lab_history",{p_token:sessionTok,p_patient_id:pid});
+    if(error||!Array.isArray(data))return false;
+    const busy=new Set(pending.filter(o=>o.status!=="acked"&&o.table==="lab_reports"&&o.row).map(o=>String(o.row.id)));
+    S.labs=S.labs||[];
+    data.forEach(r=>{
+      if(!r||!r.id||busy.has(String(r.id)))return;
+      const i=S.labs.findIndex(x=>x.id===r.id);
+      if(r.deleted_at){if(i>=0)S.labs.splice(i,1);return}
+      const n=labFromRow(r);n.fromHistory=true;if(i>=0){if(S.labs[i].alertPending)n.alertPending=true;S.labs[i]=n}else S.labs.push(n);
+    });
+    save();return true;
+  }catch(e){return false}
+}
+function labMarkLocalOnly(id){const r=(S.labs||[]).find(x=>x.id===id);if(r){r.localOnly=true;try{save()}catch(e){}}}
+/* ---- layer state ---- */
+let LABU=null; // {mode:"edit"|"list", pid, editId, f:{dept,deptSet,rep,col,sample,rows,critOk,postAlert,dupOk}}
+let __labPushed=0,__labSkipPop=0,__labDraftT=0,__labSaving=false;
+function labDraftKey(pid,editId){return "ws_labdraft_"+(editId?"e_"+editId:"n_"+pid)}
+function labLsGet(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}
+function labLsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function labLocalInput(iso){if(!iso)return "";const d=new Date(iso);if(Number.isNaN(d.getTime()))return "";const z=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`}
+function labFromInput(v){if(!v)return null;const d=new Date(v);return Number.isNaN(d.getTime())?null:d.toISOString()}
+let __labRowSeq=0;
+function labNewRow(code,panel,extra){return Object.assign({k:"r"+(++__labRowSeq)+Math.random().toString(36).slice(2,5),code,panel:panel||labPanelOf(code),raw:"",chk:false},extra||{})}
+function labOpen(pid,editId){
+  const p=patient(pid);if(!p)return;
+  if(!canWrite()){toast("Consultants can view only.","bad");return}
+  let f=null,restored=false;
+  const dr=labLsGet(labDraftKey(pid,editId));
+  if(dr&&dr.f&&Array.isArray(dr.f.rows)){f=dr.f;restored=dr.f.rows.some(r=>String(r.raw||"").trim())}
+  else if(editId){
+    const r=(S.labs||[]).find(x=>x.id===editId&&x.pid===pid&&!x.deleted);if(!r){toast("Report not found","bad");return}
+    f={dept:r.dept,deptSet:true,rep:labLocalInput(r.reportedAt),col:labLocalInput(r.collectedAt),sample:r.sampleNo||"",critOk:false,postAlert:false,dupOk:true,
+      rows:r.results.map(x=>labNewRow(LAB_T[x.code]?x.code:x.code,labPanelOf(x.code),Object.assign({raw:labResultFromRow(x),chk:x.state==="red"},LAB_T[x.code]?{}:{custom:true,name:x.name,unit:x.unitPrinted||x.unit||"",lo:x.lo==null?"":String(x.lo),hi:x.hi==null?"":String(x.hi),panel:"Other"})))};
+  }else f={dept:"",deptSet:false,rep:"",col:"",sample:"",rows:[],critOk:false,postAlert:false,dupOk:false};
+  LABU={mode:"edit",pid,editId:editId||null,f};
+  labMount();
+  if(restored)toast("Draft restored","info");
+}
+function labList(pid){const p=patient(pid);if(!p)return;LABU={mode:"list",pid};labMount();labLoadHistory(pid).then(ch=>{if(ch&&LABU&&LABU.mode==="list"&&LABU.pid===pid)labMount(true)})}
+function labLayerEl(){return document.getElementById("labLayer")}
+function labMount(keepScroll){
+  let el=labLayerEl();
+  if(!el){el=document.createElement("div");el.id="labLayer";el.className="mse-layer lab-layer";el.setAttribute("role","dialog");el.setAttribute("aria-modal","true");document.body.appendChild(el);labWire(el)}
+  document.documentElement.classList.add("mse-open");
+  if(!__labPushed){try{history.pushState(Object.assign({},history.state||{},{lab:1}),"");__labPushed=1}catch(e){}}
+  const sc=el.querySelector(".mse-scroll");const top=keepScroll&&sc?sc.scrollTop:0;
+  el.innerHTML=LABU.mode==="edit"?labEditHtml():labListHtml();
+  const ns=el.querySelector(".mse-scroll");if(ns)ns.scrollTop=top;
+}
+function labClose(fromPop){
+  if(LABU&&LABU.mode==="edit")labSaveDraft();
+  const el=labLayerEl();if(el)el.remove();
+  LABU=null;if(!(typeof MSEU!=="undefined"&&MSEU))document.documentElement.classList.remove("mse-open");
+  if(__labPushed){const n=__labPushed;__labPushed=0;if(!fromPop){__labSkipPop=1;try{history.go(-n)}catch(e){__labSkipPop=0}}}
+  try{render({bg:1})}catch(e){}
+}
+window.addEventListener("popstate",e=>{
+  if(__labSkipPop){__labSkipPop=0;e.stopImmediatePropagation();return}
+  if(LABU){e.stopImmediatePropagation();__labPushed=0;labClose(true)}
+},true);
+function labSaveDraft(){
+  if(!LABU||LABU.mode!=="edit")return;const f=LABU.f;
+  const any=f.rows.some(r=>String(r.raw||"").trim())||f.sample||f.rep;
+  labLsSet(labDraftKey(LABU.pid,LABU.editId),any?{f,at:now()}:null);
+  const t=document.getElementById("labDraftAt");if(t&&any)t.textContent="Draft saved "+new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+}
+function labSex(){const p=LABU&&patient(LABU.pid);return p?p.sex:""}
+/* ---- edit form html ---- */
+function labRowEval(r){return labEval(r.custom?("x_"+(String(r.name||"").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,30)||"other")):r.code,r.raw,labSex(),r.custom?r:null)}
+function labRowHtml(r){
+  const t=r.custom?null:labDef(r.code);const e=labRowEval(r);
+  const st=e.empty?"":e.state;const fl=e.flag;
+  const ref=r.custom?"":labRefText(r.code,labSex());const unit=r.custom?"":(t?t.u:"");
+  const opts=t&&t.txt?(t.o||(t.dip?LAB_DIP_O:t.abs?LAB_ABS_O:[])):null;
+  const nameCell=r.custom?`<div class="lab-rn lab-cust"><input class="lab-ci" data-f="name" data-k="${r.k}" maxlength="80" placeholder="Test name as printed" value="${esc(r.name||"")}" autocomplete="off"><span class="lab-cust2"><input class="lab-ci sm" data-f="unit" data-k="${r.k}" maxlength="30" placeholder="Unit" value="${esc(r.unit||"")}" autocomplete="off"><input class="lab-ci sm" data-f="lo" data-k="${r.k}" inputmode="decimal" placeholder="Ref low" value="${esc(r.lo||"")}" autocomplete="off"><input class="lab-ci sm" data-f="hi" data-k="${r.k}" inputmode="decimal" placeholder="Ref high" value="${esc(r.hi||"")}" autocomplete="off"></span></div>`
+    :`<div class="lab-rn"><b>${esc(t?t.n:r.code)}</b><span class="lab-ref">${esc([ref,unit].filter(Boolean).join(" "))}${t&&t.prov?" · provisional range":""}</span></div>`;
+  return `<div class="lab-row${st?" st-"+st:""}${fl?" fl-"+fl:""}" data-row="${r.k}">
+    ${nameCell}
+    <input class="lab-v" data-k="${r.k}" ${t&&t.txt?`list="labdl-${r.code}" autocapitalize="sentences"`:'inputmode="decimal"'} enterkeyhint="next" maxlength="40" placeholder="—" value="${esc(r.raw||"")}" autocomplete="off" aria-label="${esc(t?t.n:(r.name||"Value"))}">
+    <span class="lab-flag" data-flag="${r.k}">${fl?esc(labFlagLabel(fl)):e.tier&&!e.empty?"":""}</span>
+    <button type="button" class="lab-rx" data-rm="${r.k}" aria-label="Remove ${esc(t?t.n:"test")}">×</button>
+    <p class="lab-msg" data-msg="${r.k}">${labMsgHtml(r,e)}</p>
+  </div>`;
+}
+function labMsgHtml(r,e){
+  if(!e||e.empty)return "";
+  let h="";
+  if(e.tier)h+=`<span class="lab-tier">${esc(e.tier)}</span>`;
+  if(e.msg)h+=`<span class="lab-warn">${esc(e.msg)}</span>`;
+  if(e.state==="red"&&e.ok)h+=`<label class="lab-chk"><input type="checkbox" data-chk="${r.k}" ${r.chk?"checked":""}> Value checked against the paper</label>`;
+  return h;
+}
+function labGroupsHtml(){
+  const f=LABU.f;const groups=[];
+  f.rows.forEach(r=>{let g=groups.find(x=>x.k===r.panel);if(!g){g={k:r.panel,rows:[]};groups.push(g)}g.rows.push(r)});
+  if(!groups.length)return `<p class="lab-empty">Tap a panel above to add its tests, then type the values exactly as printed. Empty rows are left out.</p>`;
+  return groups.map(g=>{const pd=LAB_PANELS.find(x=>x.k===g.k);const filled=g.rows.filter(r=>String(r.raw||"").trim()).length;
+    return `<section class="lab-grp" data-grp="${esc(g.k)}"><div class="lab-gh"><b>${esc(pd?(pd.lb||pd.k).replace(/^\+ /,""):g.k)}</b><span class="tiny muted" data-gcount="${esc(g.k)}">${filled}/${g.rows.length}</span>
+      ${g.k==="Urine R/E"?`<button type="button" class="btn sm ghost" data-unorm="1">Normal findings</button>`:""}<button type="button" class="lab-gx" data-rmgrp="${esc(g.k)}">Remove</button></div>
+      ${g.rows.map(labRowHtml).join("")}</section>`}).join("");
+}
+function labCritRows(){return LABU.f.rows.map(r=>({r,e:labRowEval(r)})).filter(x=>!x.e.empty&&x.e.crit)}
+function labBannerHtml(){
+  const c=labCritRows();if(!c.length)return "";const f=LABU.f;
+  return `<div class="lab-crit" role="alert"><p class="lab-crit-h"><b>Critical value${c.length>1?"s":""}</b> · ${c.map(x=>{const t=labDef(x.r.code);return esc((LAB_SHORT[x.r.code]||t.n)+" "+x.r.raw+" "+(t.u||""))+` <em>(${esc(labFlagLabel(x.e.crit))})</em>`}).join(" · ")}</p>
+    <p class="tiny">Limits: ${esc(c.map(x=>LAB_CRIT_TXT[x.r.code]||"").filter(Boolean).join("; "))}</p>
+    <label class="lab-crit-ok"><input type="checkbox" data-critok="1" ${f.critOk?"checked":""}> <span>I have confirmed ${c.length>1?"these values":"this value"} against the paper</span></label>
+    <label class="lab-crit-ok"><input type="checkbox" data-postalert="1" ${f.postAlert?"checked":""}> <span>Post a critical alert to the ward after saving</span></label>
+    ${navigator.onLine===false?`<p class="tiny lab-off">Offline — the report will sync later; a critical alert can't be shared until you are back online.</p>`:""}</div>`;
+}
+function labPanelChipsHtml(){
+  const f=LABU.f;const on=new Set(f.rows.map(r=>r.panel));
+  return `<div class="lab-panels">${LAB_PANELS.map(p=>`<button type="button" class="chip lab-pc${on.has(p.k)?" on":""}${p.quick?" q":""}" data-panel="${esc(p.k)}" aria-pressed="${on.has(p.k)}">${esc(p.lb||p.k)}</button>`).join("")}<button type="button" class="chip lab-pc q" data-other="1">+ Other test</button></div>`;
+}
+function labEditHtml(){
+  const p=patient(LABU.pid)||{};const f=LABU.f;const bed=p.id?bedOf(p.id):"";
+  const dls=Object.keys(LAB_T).filter(c=>LAB_T[c].txt).map(c=>{const t=LAB_T[c];const o=t.o||(t.dip?LAB_DIP_O:t.abs?LAB_ABS_O:[]);return `<datalist id="labdl-${c}">${o.map(v=>`<option value="${esc(v)}">`).join("")}</datalist>`}).join("");
+  return `<div class="mse-top">
+    <button type="button" class="mse-x" data-close="1" aria-label="Close">✕</button>
+    <div class="mse-tt"><b>${LABU.editId?"Edit investigations":"Add investigations"}</b><span>${esc(p.name||"")}${bed&&bed!=="—"?" · Bed "+esc(bed):""}${p.hospitalNo?" · "+esc(p.hospitalNo):""} · <i id="labDraftAt">Draft autosaves</i></span></div>
+   </div>
+   <div class="mse-scroll lab-scroll">
+    <div class="lab-hdr">
+      <div class="lab-seg" role="group" aria-label="Lab">${["pathology","biochemistry"].map(d=>`<button type="button" class="lab-sg${f.dept===d?" on":""}" data-dept="${d}" aria-pressed="${f.dept===d}">${labDeptLabel(d)}</button>`).join("")}</div>
+      <div class="lab-hf">
+        <label class="lab-fld"><span>Report date &amp; time <em>as printed</em></span><input type="datetime-local" data-h="rep" value="${esc(f.rep||"")}" max="${labLocalInput(new Date(Date.now()+5*60000).toISOString())}"></label>
+        <label class="lab-fld"><span>Collected <em>optional</em></span><input type="datetime-local" data-h="col" value="${esc(f.col||"")}"></label>
+        <label class="lab-fld"><span>Sample no. <em>optional</em></span><input type="text" data-h="sample" maxlength="40" value="${esc(f.sample||"")}" autocomplete="off" autocapitalize="characters" enterkeyhint="next"></label>
+      </div>
+      <p class="tiny muted lab-pt">Patient: <b>${esc(p.name||"")}</b> — from this card. Check the name and number on the paper match.</p>
+    </div>
+    ${labPanelChipsHtml()}
+    <div id="labBanner">${labBannerHtml()}</div>
+    <div id="labDup"></div>
+    <div id="labGroups">${labGroupsHtml()}</div>
+    ${LABU.editId?"":`<button type="button" class="mse-discard" data-discard="1">Discard this draft</button>`}
+    ${dls}
+   </div>
+   <div class="mse-foot"><button type="button" class="btn ghost" data-close="1">Cancel</button><button type="button" class="btn save" data-save="1">${LABU.editId?"Save changes":"Save report"}</button></div>`;
+}
+function labRefreshRow(k){
+  const el=labLayerEl();if(!el||!LABU)return;const r=LABU.f.rows.find(x=>x.k===k);if(!r)return;
+  const row=el.querySelector(`[data-row="${k}"]`);if(!row)return;const e=labRowEval(r);
+  row.className="lab-row"+(e.empty?"":(e.state?" st-"+e.state:""))+(e.flag?" fl-"+e.flag:"");
+  const fl=row.querySelector(".lab-flag");if(fl)fl.textContent=e.flag?labFlagLabel(e.flag):"";
+  const ms=row.querySelector(".lab-msg");if(ms){const had=ms.querySelector("[data-chk]");const nh=labMsgHtml(r,e);if(!(had&&e.state==="red"))ms.innerHTML=nh;else{const w=ms.querySelector(".lab-warn");if(w&&e.msg)w.textContent=e.msg}}
+  const b=el.querySelector("#labBanner");if(b){const was=b.innerHTML;const nb=labBannerHtml();if(was!==nb)b.innerHTML=nb}
+  const gc=el.querySelector(`[data-gcount="${CSS.escape(r.panel)}"]`);if(gc){const g=LABU.f.rows.filter(x=>x.panel===r.panel);gc.textContent=g.filter(x=>String(x.raw||"").trim()).length+"/"+g.length}
+}
+function labRefreshGroups(){const el=labLayerEl();if(!el||!LABU)return;const g=el.querySelector("#labGroups");if(g)g.innerHTML=labGroupsHtml();const c=el.querySelector(".lab-panels");if(c)c.outerHTML=labPanelChipsHtml();const b=el.querySelector("#labBanner");if(b)b.innerHTML=labBannerHtml()}
+function labTogglePanel(k){
+  const f=LABU.f;const pd=LAB_PANELS.find(x=>x.k===k);if(!pd)return;
+  const has=f.rows.filter(r=>r.panel===k);
+  if(has.length){
+    if(has.some(r=>String(r.raw||"").trim())){toast("This panel has values — use Remove on the panel to clear it.","info");return}
+    f.rows=f.rows.filter(r=>r.panel!==k);
+  }else{
+    pd.c.forEach(c=>{if(!f.rows.some(r=>r.code===c&&!r.custom))f.rows.push(labNewRow(c,k))});
+    if(!f.deptSet){f.dept=pd.dept;}
+  }
+  labRefreshGroups();labSyncDept();labSaveDraft();
+  if(!has.length){const el=labLayerEl();const first=el&&el.querySelector(`[data-grp="${CSS.escape(k)}"] .lab-v`);if(first){first.scrollIntoView({block:"nearest"});}}
+}
+function labSyncDept(){const el=labLayerEl();if(!el)return;el.querySelectorAll("[data-dept]").forEach(b=>{const on=b.dataset.dept===LABU.f.dept;b.classList.toggle("on",on);b.setAttribute("aria-pressed",on)})}
+/* ---- commit ---- */
+function labShowErr(msg,k){toast(msg,"bad");if(k){const el=labLayerEl();const i=el&&el.querySelector(`[data-row="${k}"] .lab-v`);if(i){i.scrollIntoView({block:"center"});try{i.focus({preventScroll:true})}catch(e){}}}}
+function labBuild(){
+  const f=LABU.f;const p=patient(LABU.pid);const sex=p?p.sex:"";
+  const rep=labFromInput(f.rep),col=labFromInput(f.col);
+  if(!rep){labShowErr("Enter the report date and time from the paper.");const i=labLayerEl().querySelector('[data-h="rep"]');if(i)i.scrollIntoView({block:"center"});return null}
+  if(Date.parse(rep)>Date.now()+10*60000){labShowErr("Report time is in the future.");return null}
+  if(col&&Date.parse(col)>Date.parse(rep)+10*60000){labShowErr("Collection time is after the report time.");return null}
+  const results=[],codes=new Set();let crit=0;
+  for(const r of f.rows){
+    const raw=String(r.raw||"").trim();if(!raw)continue;
+    let code=r.code,name,unit;
+    if(r.custom){
+      name=String(r.name||"").trim();if(!name){labShowErr("Add the test name for the other test.",r.k);return null}
+      code="x_"+(name.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,30)||"other");unit=String(r.unit||"").trim();
+    }else{const t=labDef(code);name=t.n;unit=t.u}
+    if(codes.has(code)){labShowErr(name+" is entered twice.",r.k);return null}codes.add(code);
+    const e=labEval(code,raw,sex,r.custom?r:null);
+    if(!e.ok){labShowErr(name+": "+(e.msg||"check the value"),r.k);return null}
+    if(e.state==="red"&&!r.chk){labShowErr("Tick “Value checked” for "+name+", or correct it.",r.k);return null}
+    if(e.crit)crit++;
+    const t=labDef(code);const rg=t?labRange(code,sex):{lo:r.lo!==""&&r.lo!=null?parseFloat(r.lo):null,hi:r.hi!==""&&r.hi!=null?parseFloat(r.hi):null};
+    results.push({code,name,num:e.num==null?null:e.canon,text:e.text||null,unit:t?(t.cu||t.u):unit,printed:raw,unitPrinted:t?t.u:unit,
+      lo:rg.lo!=null&&isFinite(rg.lo)?(t&&t.x?rg.lo*t.x:rg.lo):null,hi:rg.hi!=null&&isFinite(rg.hi)?(t&&t.x?rg.hi*t.x:rg.hi):null,
+      refText:t?labRefText(code,sex):((r.lo||"")+(r.hi?"–"+r.hi:"")),tiers:t&&t.tiers?t.tiers:null,lowV:e.lowV==null?null:e.lowV,highV:e.highV==null?null:e.highV,
+      flag:e.flag,tier:e.tier||null,state:e.state||"green",edited:false,panel:r.custom?"Other":r.panel});
+  }
+  if(!results.length){labShowErr("Type at least one value.");return null}
+  if(crit&&!f.critOk){labShowErr("Confirm the critical value against the paper (tick in the red box).");const b=labLayerEl().querySelector(".lab-crit");if(b)b.scrollIntoView({block:"center"});return null}
+  const panels=[];results.forEach(x=>{if(!panels.includes(x.panel))panels.push(x.panel)});
+  return {pid:LABU.pid,dept:f.dept||(panels.length===1&&LAB_PANELS.find(x=>x.k===panels[0])?LAB_PANELS.find(x=>x.k===panels[0]).dept:"other"),rep,col,sample:String(f.sample||"").trim(),results,panels,hasCritical:crit>0};
+}
+function labToRow(rep,opId){
+  return {id:rep.id,op_id:opId,action:"save",patient_id:rep.pid,lab:"AMCH",department:rep.dept,sample_no:rep.sampleNo||null,collected_at:rep.collectedAt||null,reported_at:rep.reportedAt,
+    panels:rep.panels,confirmed:true,created_at:rep.at,
+    results:rep.results.map((x,i)=>({test_code:x.code,test_name_printed:x.name,value_num:x.num,value_text:x.text,unit:x.unit||null,value_printed:x.printed||null,unit_printed:x.unitPrinted||null,
+      ref_low:x.lo,ref_high:x.hi,ref_text:x.refText||null,ref_tiers:x.tiers?x.tiers.map(z=>({lt:z.lt==null?null:z.lt,label:z.l,flag:z.f||null})):null,value_low:x.lowV,value_high:x.highV,
+      flag:x.flag,tier_label:x.tier,field_state:x.state,confirmed:true,edited:!!x.edited,sort_order:i+1}))};
+}
+function labDupOf(b){
+  const day=String(b.rep).slice(0,10),min=String(b.rep).slice(0,16);
+  return labReports(b.pid).find(r=>r.id!==LABU.editId&&((b.sample&&r.sampleNo&&r.sampleNo.toLowerCase()===b.sample.toLowerCase()&&String(r.reportedAt).slice(0,10)===day)||(String(r.reportedAt).slice(0,16)===min&&r.panels.some(x=>b.panels.includes(x)))))||null;
+}
+function labDiffText(o,n){
+  const parts=[];const om=new Map(o.results.map(x=>[x.code,x])),nm=new Map(n.results.map(x=>[x.code,x]));
+  n.results.forEach(x=>{const a=om.get(x.code);const d=labResDisp(x);if(!a)parts.push("+ "+labName(x)+" "+d.v+(d.u?" "+d.u:""));else{const ad=labResDisp(a);if(ad.v!==d.v)parts.push(labName(x)+" "+ad.v+" → "+d.v+(d.u?" "+d.u:""))}});
+  o.results.forEach(x=>{if(!nm.has(x.code))parts.push("removed "+labName(x))});
+  if((o.sampleNo||"")!==(n.sampleNo||""))parts.push("sample no "+(o.sampleNo||"—")+" → "+(n.sampleNo||"—"));
+  if(String(o.reportedAt).slice(0,16)!==String(n.reportedAt).slice(0,16))parts.push("report time "+stamp(o.reportedAt)+" → "+stamp(n.reportedAt));
+  if(o.dept!==n.dept)parts.push("lab "+labDeptLabel(o.dept)+" → "+labDeptLabel(n.dept));
+  return parts.join("; ");
+}
+function labCommit(force){
+  if(!LABU||LABU.mode!=="edit"||__labSaving)return;
+  if(!needWrite())return;
+  const b=labBuild();if(!b)return;
+  const old=LABU.editId?(S.labs||[]).find(x=>x.id===LABU.editId):null;
+  if(!old&&!LABU.f.dupOk&&!force){const d=labDupOf(b);if(d){const el=labLayerEl().querySelector("#labDup");if(el){el.innerHTML=`<div class="lab-dupbox" role="alert"><p><b>Already added?</b> ${esc(labPanelsLabel(d))} · reported ${esc(stamp(d.reportedAt))}${d.sampleNo?" · sample "+esc(d.sampleNo):""} · ${esc(d.byName||rname(d.by)||"")}</p><div class="btns"><button type="button" class="btn sm ghost" data-duplist="1">Open reports</button><button type="button" class="btn sm" data-dupok="1">Save anyway</button></div></div>`;el.scrollIntoView({block:"center"})}return}}
+  __labSaving=true;
+  try{
+    const opId=uid("lop").replace(/_/g,"-")+Date.now().toString(36);
+    const u=user();const byName=(u&&(u.displayName||u.username))||rname(S.userId)||"";
+    const rep={id:old?old.id:("lab-"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)),pid:b.pid,lab:"AMCH",dept:b.dept,sampleNo:b.sample,collectedAt:b.col,reportedAt:b.rep,
+      panels:b.panels,hasCritical:b.hasCritical,by:old?old.by:S.userId,byName:old?old.byName:byName,at:old?old.at:now(),updatedAt:now(),updatedByName:byName,editCount:old?(old.editCount||0)+1:0,
+      results:b.results,alertPending:false};
+    if(old){const diff=labDiffText(old,rep);if(!diff){toast("No changes to save","info");__labSaving=false;labLsSet(labDraftKey(LABU.pid,LABU.editId),null);LABU.mode="done";labClose();return}
+      rep.results.forEach(x=>{const a=old.results.find(y=>y.code===x.code);x.edited=!a||labResultFromRow(a)!==x.printed||!!a.edited});rep.lastDiff=diff}
+    const wantAlert=b.hasCritical&&LABU.f.postAlert;
+    const offline=navigator.onLine===false;
+    if(wantAlert&&offline)rep.alertPending=true;
+    S.labs=(S.labs||[]).filter(x=>x.id!==rep.id);S.labs.push(rep);
+    queue("lab_reports",labToRow(rep,opId));
+    const nc=b.results.filter(x=>labIsCrit(x.flag)).length;
+    const title=old?"Investigations edited · "+labPanelsLabel(rep):"Investigations added · "+labPanelsLabel(rep)+(nc?" · "+nc+" critical":"");
+    const flagged=b.results.filter(x=>x.flag).map(x=>labValLine(x)+" "+labFlagLabel(x.flag)).join("; ");
+    const e=ev(rep.pid,title,true,"lab",old?rep.lastDiff:flagged,{local:true});if(e)e.id=(old?"labe-":"lab-")+opId;
+    save();
+    labLsSet(labDraftKey(LABU.pid,LABU.editId),null);
+    const pid=LABU.pid;LABU.mode="done";labClose();
+    toast(old?"Investigations updated":(nc?"Saved · "+nc+" critical value"+(nc>1?"s":""):"Investigations saved"),nc?"info":"ok");
+    try{flushPending()}catch(x){}
+    if(wantAlert){
+      if(offline)toast("Critical not yet shared — offline. Post the alert from Investigations when back online.","bad");
+      else setTimeout(()=>{try{criticalStatusForm(pid,labCritText(rep))}catch(x){}},60);
+    }
+  }finally{__labSaving=false}
+}
+function labPostAlert(id){
+  const r=(S.labs||[]).find(x=>x.id===id);if(!r)return;if(!needWrite())return;
+  if(navigator.onLine===false){toast("Critical not yet shared — offline.","bad");return}
+  r.alertPending=false;save();
+  const pid=r.pid;if(LABU)labClose();
+  setTimeout(()=>{try{criticalStatusForm(pid,labCritText(r))}catch(x){}},60);
+}
+function labRemove(id,reason){
+  const r=(S.labs||[]).find(x=>x.id===id);if(!r||!needWrite())return;
+  const opId=uid("lop").replace(/_/g,"-")+Date.now().toString(36);
+  r.deleted=true;r.updatedAt=now();
+  queue("lab_reports",{id:r.id,op_id:opId,action:"delete",patient_id:r.pid,reason:reason||""});
+  const e=ev(r.pid,"Investigations removed · "+labPanelsLabel(r),true,"lab",reason||"",{local:true});if(e)e.id="labd-"+opId;
+  save();toast("Report removed","ok");try{flushPending()}catch(x){}
+  if(LABU&&LABU.mode==="list")labMount(true);else render();
+}
+/* ---- list (all reports) ---- */
+function labTableHtml(r,compact){
+  return `<table class="lab-tb"><tbody>${r.results.map(x=>{const d=labResDisp(x);const cr=labIsCrit(x.flag);
+    return `<tr class="${x.flag?(cr?"crit":"ab"):""}"><td class="lab-tn">${esc(labName(x))}</td><td class="lab-tv"><b>${esc(d.v)}</b>${d.u?` <span>${esc(d.u)}</span>`:""}</td>${compact?"":`<td class="lab-tr">${esc(x.tier||x.refText||"")}</td>`}<td class="lab-tf">${x.flag?`<span class="lab-fp ${cr?"crit":""}">${esc(labFlagLabel(x.flag))}</span>`:""}</td></tr>`}).join("")}</tbody></table>`;
+}
+function labMetaLine(r){return [`Reported ${stamp(r.reportedAt)}`,labDeptLabel(r.dept),r.sampleNo?"Sample "+r.sampleNo:"",r.byName||rname(r.by)||""].filter(Boolean).join(" · ")}
+function labChipsHtml(r){
+  return `${r.hasCritical?'<span class="mse-risk-pill sm">Critical</span>':""}${labPendingId(r.id)?'<span class="lab-chip pend">Pending sync</span>':""}${r.localOnly&&!labPendingId(r.id)?'<span class="lab-chip pend">On this phone only</span>':""}${r.editCount?`<span class="lab-chip">Edited${r.editCount>1?" ×"+r.editCount:""}</span>`:""}${r.alertPending?'<span class="lab-chip warn">Critical not yet shared — offline</span>':""}`;
+}
+function labListHtml(){
+  const p=patient(LABU.pid)||{};const list=labReports(LABU.pid);const cw=canWrite();
+  return `<div class="mse-top"><button type="button" class="mse-x" data-close="1" aria-label="Close">✕</button><div class="mse-tt"><b>Investigations</b><span>${esc(p.name||"")} · ${list.length} report${list.length===1?"":"s"}</span></div></div>
+   <div class="mse-scroll">${list.length?list.map(r=>`<div class="lab-rc${r.hasCritical?" crit":""}" data-rep="${esc(r.id)}">
+     <div class="lab-rc-h"><b>${esc(labPanelsLabel(r))}</b>${labChipsHtml(r)}</div>
+     <p class="lab-rc-m">${esc(labMetaLine(r))}</p>
+     ${labTableHtml(r)}
+     ${cw?`<div class="lab-rc-a"><button type="button" class="btn sm ghost" data-edit="${esc(r.id)}">Edit</button>${r.hasCritical?`<button type="button" class="btn sm ghost danger-t" data-alert="${esc(r.id)}">Post critical alert</button>`:""}<button type="button" class="linkbtn lab-del" data-del="${esc(r.id)}">Remove</button></div>`:""}
+    </div>`).join(""):`<p class="muted" style="padding:16px">No investigations recorded yet.</p>`}</div>
+   ${cw?`<div class="mse-foot one"><button type="button" class="btn" data-new="1">Add report</button></div>`:""}`;
+}
+/* ---- events ---- */
+function labWire(el){
+  el.addEventListener("click",e=>{
+    if(!LABU)return;const t=e.target.closest("button");if(!t||!el.contains(t))return;
+    if(t.dataset.close){labClose();return}
+    if(LABU.mode==="edit"){
+      const f=LABU.f;
+      if(t.dataset.dept){f.dept=t.dataset.dept;f.deptSet=true;labSyncDept();labSaveDraft();return}
+      if(t.dataset.panel){labTogglePanel(t.dataset.panel);return}
+      if(t.dataset.other){const r=labNewRow("other","Other",{custom:true,name:"",unit:"",lo:"",hi:""});f.rows.push(r);labRefreshGroups();labSaveDraft();const i=el.querySelector(`[data-row="${r.k}"] .lab-ci`);if(i){i.scrollIntoView({block:"center"});try{i.focus()}catch(x){}}return}
+      if(t.dataset.rm){f.rows=f.rows.filter(r=>r.k!==t.dataset.rm);labRefreshGroups();labSaveDraft();return}
+      if(t.dataset.rmgrp){const k=t.dataset.rmgrp;const has=f.rows.some(r=>r.panel===k&&String(r.raw||"").trim());
+        if(has&&!t.dataset.arm){t.dataset.arm="1";t.textContent="Tap again to remove";setTimeout(()=>{if(t.isConnected){delete t.dataset.arm;t.textContent="Remove"}},3000);return}
+        f.rows=f.rows.filter(r=>r.panel!==k);labRefreshGroups();labSaveDraft();return}
+      if(t.dataset.unorm){f.rows.filter(r=>r.panel==="Urine R/E"&&!String(r.raw||"").trim()&&LAB_T[r.code]&&LAB_T[r.code].txt).forEach(r=>{const d=LAB_T[r.code];r.raw=d.norm||(d.dip?"Negative":d.abs?"Absent":"")});labRefreshGroups();labSaveDraft();toast("Normal findings filled — change anything abnormal","info");return}
+      if(t.dataset.save){labCommit();return}
+      if(t.dataset.dupok){f.dupOk=true;labCommit(true);return}
+      if(t.dataset.duplist){const pid=LABU.pid;labSaveDraft();LABU={mode:"list",pid};labMount();return}
+      if(t.dataset.discard){
+        if(!t.dataset.arm){t.dataset.arm="1";t.textContent="Tap again to discard all entries";setTimeout(()=>{if(t.isConnected){delete t.dataset.arm;t.textContent="Discard this draft"}},3500);return}
+        labLsSet(labDraftKey(LABU.pid,LABU.editId),null);LABU.mode="done";labClose();toast("Draft discarded","info");return}
+    }else{
+      if(t.dataset.new){LABU={mode:"list",pid:LABU.pid};const pid=LABU.pid;LABU=null;const ok=canWrite();if(ok){labOpenInPlace(pid,null)}return}
+      if(t.dataset.edit){labOpenInPlace(LABU.pid,t.dataset.edit);return}
+      if(t.dataset.alert){labPostAlert(t.dataset.alert);return}
+      if(t.dataset.del){if(!t.dataset.arm){t.dataset.arm="1";t.textContent="Tap again to remove";setTimeout(()=>{if(t.isConnected){delete t.dataset.arm;t.textContent="Remove"}},3500);return}labRemove(t.dataset.del,"Removed from the report list");return}
+    }
+  });
+  el.addEventListener("input",e=>{
+    if(!LABU||LABU.mode!=="edit")return;const t=e.target;const f=LABU.f;
+    if(t.dataset.h){f[t.dataset.h]=t.value}
+    else if(t.classList.contains("lab-v")){const r=f.rows.find(x=>x.k===t.dataset.k);if(!r)return;r.raw=t.value;if(r.chk&&labRowEval(r).state!=="red")r.chk=false;labRefreshRow(r.k);LABU.f.dupOk=LABU.f.dupOk&&!!LABU.editId}
+    else if(t.classList.contains("lab-ci")){const r=f.rows.find(x=>x.k===t.dataset.k);if(!r)return;r[t.dataset.f]=t.value;labRefreshRow(r.k)}
+    else return;
+    clearTimeout(__labDraftT);__labDraftT=setTimeout(labSaveDraft,300);
+  });
+  el.addEventListener("change",e=>{
+    if(!LABU||LABU.mode!=="edit")return;const t=e.target;const f=LABU.f;
+    if(t.dataset.chk){const r=f.rows.find(x=>x.k===t.dataset.chk);if(r)r.chk=t.checked;labSaveDraft();return}
+    if(t.dataset.critok){f.critOk=t.checked;labSaveDraft();return}
+    if(t.dataset.postalert){f.postAlert=t.checked;labSaveDraft();return}
+    if(t.dataset.h){f[t.dataset.h]=t.value;labSaveDraft()}
+  });
+  el.addEventListener("keydown",e=>{
+    if(e.key!=="Enter"||!LABU||LABU.mode!=="edit")return;const t=e.target;if(!t.matches||!t.matches("input:not([type=checkbox])"))return;
+    e.preventDefault();const all=[...el.querySelectorAll(".lab-scroll input:not([type=checkbox])")];const i=all.indexOf(t);if(i>=0&&all[i+1]){all[i+1].focus();}else t.blur();
+  });
+  el.addEventListener("focusin",e=>{const t=e.target;if(t&&t.matches&&t.matches("textarea,input:not([type=checkbox])")){try{kbSchedule&&kbSchedule()}catch(x){}setTimeout(()=>{try{ensureFieldVisible(t)}catch(x){t.scrollIntoView({block:"center"})}},60)}});
+}
+function labOpenInPlace(pid,editId){
+  // switch the open layer from the list to the form without touching history (one back closes the layer)
+  if(!canWrite()){toast("Consultants can view only.","bad");return}
+  const keep=__labPushed;LABU=null;labOpen(pid,editId);__labPushed=keep||__labPushed;
+}
+/* ---- Snapshot card: Latest investigations ---- */
+function labSeries(pid,code){
+  const out=[];labReports(pid).forEach(r=>{const x=r.results.find(y=>y.code===code);if(x&&(x.num!=null||x.text))out.push({r,x})});return out; // newest first
+}
+function labSpark(vals){
+  if(vals.length<3)return "";const v=vals.slice().reverse();const mn=Math.min(...v),mx=Math.max(...v);const w=44,h=14;
+  const pts=v.map((y,i)=>`${(i*(w/(v.length-1))).toFixed(1)},${(mx===mn?h/2:h-((y-mn)/(mx-mn))*h).toFixed(1)}`).join(" ");
+  return `<svg class="lab-spark" viewBox="-1 -1 ${w+2} ${h+2}" width="${w}" height="${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+}
+function labsCardHtml(p){
+  const reps=labReports(p.id);const cw=canWrite();
+  const dr=labLsGet(labDraftKey(p.id,null));const hasDr=dr&&dr.f&&dr.f.rows&&dr.f.rows.some(r=>String(r.raw||"").trim());
+  const rows=[];
+  LAB_KEY.forEach(code=>{const s=labSeries(p.id,code);if(!s.length)return;rows.push({code,s})});
+  const crit=reps.filter(r=>r.hasCritical);const anyPend=reps.some(r=>labPendingId(r.id));const alertP=reps.some(r=>r.alertPending);
+  const latest=reps[0];
+  const body=rows.length?`<div class="lab-latest">${rows.slice(0,10).map(({code,s})=>{
+      const cur=s[0].x,d=labResDisp(cur);const nums=s.filter(z=>z.x.num!=null).slice(0,5).map(z=>z.x.num);
+      const prev=s[1]?labResDisp(s[1].x).v:"";let arrow="";
+      if(s[1]&&cur.num!=null&&s[1].x.num!=null){arrow=cur.num>s[1].x.num?"↑":cur.num<s[1].x.num?"↓":"→"}
+      const cr=labIsCrit(cur.flag);
+      return `<div class="lab-li${cur.flag?(cr?" crit":" ab"):""}"><span class="lab-ln">${esc(LAB_SHORT[code]||labName(cur))}</span><span class="lab-lv"><b>${esc(d.v)}</b> <small>${esc(d.u)}</small>${cur.flag?` <span class="lab-fp${cr?" crit":""}">${esc(labFlagLabel(cur.flag))}</span>`:""}</span><span class="lab-lt">${labSpark(nums)}${prev?`<small>${arrow} prev ${esc(prev)}</small>`:""}<small class="lab-ld">${esc(stamp(s[0].r.reportedAt).replace(/ \d{4},?/,"").replace(/,/,""))}</small></span></div>`}).join("")}</div>${rows.length>10?`<p class="tiny muted">+${rows.length-10} more in All reports</p>`:""}`
+    :(latest?`<p class="snap-mse-meta">${esc(labPanelsLabel(latest))} · ${esc(stamp(latest.reportedAt))}</p>`:`<p class="snap-mse-meta muted">No investigations recorded.</p>`);
+  return `<div class="card snap-labs${crit.length?" crit":""}">
+   <div class="snap-mse-h"><p class="tiny">LATEST INVESTIGATIONS</p><span class="lab-hchips">${crit.length?'<span class="mse-risk-pill sm">Critical</span>':""}${anyPend?'<span class="lab-chip pend">Pending sync</span>':""}</span></div>
+   ${alertP?`<p class="tiny lab-off">Critical not yet shared — offline</p>`:""}
+   ${body}
+   <div class="btns snap-mse-act">${cw?`<button class="btn sm" onclick="labOpen('${p.id}')">${hasDr?"Resume draft":"Add report"}</button>`:""}${reps.length?`<button class="btn sm ghost" onclick="labList('${p.id}')">All reports (${reps.length})</button>`:""}</div>
+  </div>`;
+}
+/* ---- clinical record timeline ---- */
+function labRecordItems(pid){
+  return labReports(pid).map(r=>{
+    const ab=r.results.filter(x=>x.flag);
+    return {kind:"lab",labReport:r.id,title:"Investigations · "+labPanelsLabel(r),at:r.reportedAt,by:r.by,byName:r.byName,pill:r.hasCritical?"Critical":"",
+      body:(ab.length?"Abnormal: "+ab.map(x=>labValLine(x)+" ("+labFlagLabel(x.flag)+")").join("; "):"All values within the printed ranges")+" · "+labDeptLabel(r.dept)+(r.sampleNo?" · sample "+r.sampleNo:""),
+      labHtml:`<details class="lab-rec-d"><summary>All ${r.results.length} result${r.results.length===1?"":"s"}</summary>${labTableHtml(r)}</details>`,report:r};
+  });
+}
+/* ---- discharge certificate line ---- */
+function labCertAuto(p){
+  const a=Date.parse(p.admittedAt||0)||0,dsc=Date.parse(p.dischargedAt||0)||Date.now();
+  const reps=labReports(p.id).filter(r=>{const t=Date.parse(r.reportedAt||0)||0;return t>=a-2*864e5&&t<=dsc+864e5});
+  if(!reps.length)return "";
+  const seen=new Set(),parts=[];
+  reps.forEach(r=>r.results.forEach(x=>{if(seen.has(x.code))return;seen.add(x.code);if(x.flag)parts.push(labValLine(x)+" ("+(labIsCrit(x.flag)?"critical":labFlagLabel(x.flag))+", "+certDate(r.reportedAt).replace(/\/\d{4}$/,"")+")")}));
+  if(!parts.length)return "Routine investigations within normal limits (last "+certDate(reps[0].reportedAt)+").";
+  return parts.slice(0,12).join("; ")+".";
+}
+/* ===== end investigations ===== */
+
 function patientRecordItems(pid){
   const p=patient(pid); if(!p) return [];
   const items=[];
@@ -11427,6 +12116,7 @@ function patientRecordItems(pid){
     add({kind:"pgt",title:"PGT note",at:n.at,by:n.by,byName:n.byName,body:n.text||""});
   });
   // R1.3.124: one card per MSE; the discharge MSE is folded into the Discharged card.
+  labRecordItems(pid).forEach(it=>{if(it.at)items.push(it)}); // R1.3.128: one card per lab report, at the printed report time
   const mseDis=mseEntries(pid).find(m=>m.kind==="discharge"&&(!p.dischargedAt||Math.abs(Date.parse(m.at||0)-Date.parse(p.dischargedAt||0))<36*3600e3))||null;
   mseEntries(pid).filter(m=>m.kind!=="discharge").forEach(m=>{
     add({kind:"mse",title:"Mental status examination",at:m.at,by:m.by,byName:m.byName,body:mseAny(m.data)?"":(m.summary||""),msx:mseAny(m.data)?m.data:null,pill:m.highRisk?"High risk":"",mseId:m.id});
@@ -11450,6 +12140,7 @@ function patientRecordItems(pid){
   evCollapse((S.events||[]).filter(e=>e.pid===pid)).forEach(e=>{
     if(recSkipEventTitle(e.title)) return;
     if(/^mse (recorded|at discharge recorded)/i.test(e.title||"")) return; // R1.3.124: MSE has its own card
+    if(/^investigations added/i.test(e.title||"")) return; // R1.3.128: the report has its own card
     const title=e.title||"Event";
     const low=title.toLowerCase();
     if(/^(started |stopped |paused |resumed |pgt note|ect planned|ect session|admitted from observation|under observation|kept under observation|observation ended|admission\b|admitted to\b)/.test(low)) return;
@@ -11499,7 +12190,7 @@ function recordItemHtml(it,pid){
     <div class="rec-rail"><div class="rec-dot"></div></div>
     <div class="rec-card${legal?" has-legal":""}">${legal}
       <h3>${esc(it.title||"")}${it.pill?` <span class="rec-pill stop">${esc(it.pill)}</span>`:""}</h3>
-      ${it.meds?recMedRowsHtml(it):(it.body?`<p class="sm">${esc(it.body)}</p>`:"")}${it.msx?mseStructHtml(it.msx,"rec-msx"):""}${it.advice?`<div class="rec-dm rec-adv"><p class="rec-dm-h">Advice on discharge</p><p class="sm">${esc(it.advice)}</p></div>`:""}${it.dmeds?dmRecordHtml(it):""}${it.mse?`<div class="rec-mse-dis"><p class="rec-mse-h">MSE at discharge${it.mseRisk?' <span class="rec-pill stop">High risk</span>':""}</p>${it.mseData?mseStructHtml(it.mseData):`<p class="sm">${esc(it.mse)}</p>`}</div>`:""}${it.review?`<p class="sm rec-rev"><b>Review in OPD after</b> ${esc(it.review)}</p>`:""}${it.mseId?`<button type="button" class="btn sm ghost rec-mse-open" onclick="mseView('${esc(it.mseId)}')">${it.kind==="dis"?"Full discharge MSE":"Full MSE"}</button>`:""}
+      ${it.meds?recMedRowsHtml(it):(it.body?`<p class="sm">${esc(it.body)}</p>`:"")}${it.msx?mseStructHtml(it.msx,"rec-msx"):""}${it.advice?`<div class="rec-dm rec-adv"><p class="rec-dm-h">Advice on discharge</p><p class="sm">${esc(it.advice)}</p></div>`:""}${it.dmeds?dmRecordHtml(it):""}${it.mse?`<div class="rec-mse-dis"><p class="rec-mse-h">MSE at discharge${it.mseRisk?' <span class="rec-pill stop">High risk</span>':""}</p>${it.mseData?mseStructHtml(it.mseData):`<p class="sm">${esc(it.mse)}</p>`}</div>`:""}${it.review?`<p class="sm rec-rev"><b>Review in OPD after</b> ${esc(it.review)}</p>`:""}${it.mseId?`<button type="button" class="btn sm ghost rec-mse-open" onclick="mseView('${esc(it.mseId)}')">${it.kind==="dis"?"Full discharge MSE":"Full MSE"}</button>`:""}${it.labHtml||""}
       <p class="tiny">${esc(who)}${who?" · ":""}${esc(it.atLabel||stamp(it.at)||fmt(it.at)||"")}</p>
     </div>
   </div>`;
@@ -11508,13 +12199,14 @@ function recordView(){
   const p=patient(route.id); if(!p) return `<div class="card">Not found.</div>`;
   const b=bedObj(p.id)||lastBedObj(p.id);
   const items=patientRecordItems(p.id);
+  labLoadHistory(p.id).then(ch=>{if(ch&&route&&route.id===p.id)try{render({bg:1})}catch(e){}});
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <div class="record-head">
       <div>
         <h2 class="page-title">Clinical record</h2>
         <p class="tiny" style="margin-top:2px">${esc(p.name)} · ${esc(b?b.no:"—")}${p.hospitalNo?` · ${esc(p.hospitalNo)}`:""}${mrdLabel(p)?` · ${esc(mrdLabel(p))}`:""}</p>
       </div>
-      <div class="record-actions">${certBtnHtml(p,"sm")}<button class="btn sm ghost" onclick="exportPatientRecord('${p.id}')">Export PDF</button></div>
+      <div class="record-actions">${certBtnHtml(p,"sm")}<button class="btn sm ghost" onclick="labList('${p.id}')">Investigations</button><button class="btn sm ghost" onclick="exportPatientRecord('${p.id}')">Export PDF</button></div>
     </div>
     ${items.length?`<div class="record-list">${items.map(it=>recordItemHtml(it,p.id)).join("")}</div>`:`<div class="card"><p class="sm">No clinical events recorded yet.</p></div>`}`;
 }
@@ -11584,6 +12276,12 @@ function buildRecordPdf(meta,items){
   ops.push(`${rgb(203,213,225)} RG 0.8 w ${M} ${pdfNum(y)} m ${pdfNum(PW-M)} ${pdfNum(y)} l S`);y-=14;
   if(!items.length){text(M,y-11,"No clinical events recorded yet.",false,11,[71,85,105]);y-=16}
   items.forEach(it=>{
+    if(it.section){ // R1.3.128: section heading (e.g. Investigations)
+      if(y-BOTTOM<90) newPage();
+      y-=6;text(M,y-13,pdfWinAnsi(it.section),true,13);y-=19;
+      ops.push(`${rgb(203,213,225)} RG 0.8 w ${M} ${pdfNum(y)} m ${pdfNum(PW-M)} ${pdfNum(y)} l S`);y-=10;
+      return;
+    }
     const rows=[];
     const legalStr=(it.legal&&it.legal.length)?it.legal.join("  "):"";
     const legalW=legalStr?pdfTextW(legalStr,true,13):0;
@@ -11622,6 +12320,14 @@ function buildRecordPdf(meta,items){
         }else wrapRuns(segRuns(r.v),IW-LW).forEach((ln,k)=>rows.push({runs:ln,s:FS,lh:LH,x:LW,lab:k===0?{t:pdfWinAnsi(r.lb),x:0,c:LB}:null}));
       });
     }
+    if(it.labRows&&it.labRows.length){ // R1.3.128: lab results as columns
+      const IW=CW-2*PAD-6,COL=[[0,150],[150,80],[230,70],[300,130],[430,IW-430]],FS=9.2;
+      const fit=(t,w,b)=>{let s=pdfWinAnsi(t);if(pdfTextW(s,b,FS)<=w-4)return s;while(s.length>1&&pdfTextW(s+"...",b,FS)>w-4)s=s.slice(0,-1);return s+"..."};
+      const mk=(vals,b,cols)=>({cells:vals.map((v,k)=>({t:fit(v,COL[k][1],b||(k===1)),x:COL[k][0],b:b||(k===1),c:cols?cols[k]:[30,41,59]})),s:FS,lh:12.6});
+      rows.push({gap:4});
+      rows.push(mk(["Test","Result","Unit","Reference","Flag"],true,[[100,116,139],[100,116,139],[100,116,139],[100,116,139],[100,116,139]]));
+      it.labRows.forEach(r=>{const c=r.crit?[185,28,28]:r.ab?[180,83,9]:[30,41,59];rows.push(mk([r.n,r.v,r.u,r.ref,r.f],false,[[30,41,59],c,[71,85,105],[100,116,139],c]))});
+    }
     if(it.tail){rows.push({gap:4});pdfWrap(pdfWinAnsi(it.tail),false,10,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:false,s:10,lh:13.5,c:[30,41,59]}))}
     if(it.foot){rows.push({gap:4});pdfWrap(pdfWinAnsi(it.foot),false,8.5,CW-2*PAD-6).forEach(l=>rows.push({t:l,b:false,s:8.5,lh:11.5,c:[100,116,139]}))}
     const rowH=r=>r.gap!=null?r.gap:r.lh;
@@ -11645,6 +12351,7 @@ function buildRecordPdf(meta,items){
         if(r.pill){const w=r.pw,h=11.5,px=M+CW-PAD-w,py=by-2.6,q=h/2,k=q*0.5523;
           ops.push(`${rgb(...r.pill.bg)} rg ${pdfNum(px+q)} ${pdfNum(py)} m ${pdfNum(px+w-q)} ${pdfNum(py)} l ${pdfNum(px+w-q+k)} ${pdfNum(py)} ${pdfNum(px+w)} ${pdfNum(py+q-k)} ${pdfNum(px+w)} ${pdfNum(py+q)} c ${pdfNum(px+w)} ${pdfNum(py+q+k)} ${pdfNum(px+w-q+k)} ${pdfNum(py+h)} ${pdfNum(px+w-q)} ${pdfNum(py+h)} c ${pdfNum(px+q)} ${pdfNum(py+h)} l ${pdfNum(px+q-k)} ${pdfNum(py+h)} ${pdfNum(px)} ${pdfNum(py+q+k)} ${pdfNum(px)} ${pdfNum(py+q)} c ${pdfNum(px)} ${pdfNum(py+q-k)} ${pdfNum(px+q-k)} ${pdfNum(py)} ${pdfNum(px+q)} ${pdfNum(py)} c f`);
           text(px+6,py+3.2,r.pill.l,true,8,r.pill.fg)}
+        if(r.cells){r.cells.forEach(c=>text(bx+c.x,by,c.t,c.b,r.s,c.c));return}
         if(r.runs){if(r.lab)text(bx+r.lab.x,by,r.lab.t,true,r.lab.s||r.s,r.lab.c);let xx=bx+r.x;r.runs.forEach(u=>{text(xx,by,u.t,u.b,r.s,u.c);xx+=pdfTextW(u.t,u.b,r.s)});return}
         text(bx+(r.x||0),by,r.t,r.b,r.s,r.c);
       });
@@ -11699,7 +12406,14 @@ function exportPatientRecord(pid){
   try{
     const b=bedObj(pid)||lastBedObj(pid);
     const legal=legalTagsOf(pid).map(x=>x[1]);
-    const items=patientRecordItems(pid).map(it=>{const who=recActor(it);return {legal:(it.kind==="admit"&&legal.length)?legal:null,title:it.title||"",body:[it.body||"",it.advice?"Advice on discharge:\n"+it.advice:"",it.dmeds?dmText(it.dmOutcome,it.dmeds):"",it.mse&&!it.mseData?"MSE at discharge"+(it.mseRisk?" (HIGH RISK)":"")+":\n"+it.mse:"",it.review&&!it.mseData?"Review in OPD after "+it.review:""].filter(Boolean).join("\n"),msx:it.msx?mseStruct(it.msx):it.mseData?mseStruct(it.mseData):null,msxHead:it.mseData?"MSE at discharge"+(it.mseRisk?"  HIGH RISK":""):"",msxRisk:!!it.mseRisk,tail:it.mseData&&it.review?"Review in OPD after "+it.review:"",pill:it.pill||"",meds:it.meds||null,summary:it.summary||"",foot:`${who}${who?" · ":""}${it.atLabel||stamp(it.at)||fmt(it.at)||""}`}});
+    const items=patientRecordItems(pid).filter(it=>!it.labReport).map(it=>{const who=recActor(it);return {legal:(it.kind==="admit"&&legal.length)?legal:null,title:it.title||"",body:[it.body||"",it.advice?"Advice on discharge:\n"+it.advice:"",it.dmeds?dmText(it.dmOutcome,it.dmeds):"",it.mse&&!it.mseData?"MSE at discharge"+(it.mseRisk?" (HIGH RISK)":"")+":\n"+it.mse:"",it.review&&!it.mseData?"Review in OPD after "+it.review:""].filter(Boolean).join("\n"),msx:it.msx?mseStruct(it.msx):it.mseData?mseStruct(it.mseData):null,msxHead:it.mseData?"MSE at discharge"+(it.mseRisk?"  HIGH RISK":""):"",msxRisk:!!it.mseRisk,tail:it.mseData&&it.review?"Review in OPD after "+it.review:"",pill:it.pill||"",meds:it.meds||null,summary:it.summary||"",foot:`${who}${who?" · ":""}${it.atLabel||stamp(it.at)||fmt(it.at)||""}`}});
+    const labRs=labReports(pid).slice().reverse(); // R1.3.128: Investigations section, oldest first
+    if(labRs.length){
+      items.push({section:"Investigations"});
+      labRs.forEach(r=>items.push({title:labPanelsLabel(r)+" · "+labDeptLabel(r.dept),pill:r.hasCritical?"Critical":"",
+        labRows:r.results.map(x=>{const d=labResDisp(x);return {n:labName(x),v:d.v,u:d.u,ref:x.tier||x.refText||"",f:x.flag?(labIsCrit(x.flag)?({CRIT_H:"CRITICAL H",CRIT_L:"CRITICAL L",URGENT:"URGENT"})[x.flag]:x.flag==="A"?"Abnormal":x.flag):"",crit:labIsCrit(x.flag),ab:!!x.flag}}),
+        foot:[`Reported ${stamp(r.reportedAt)}`,r.collectedAt?`collected ${stamp(r.collectedAt)}`:"",r.sampleNo?`sample ${r.sampleNo}`:"",`entered by ${r.byName||rname(r.by)||"?"}`,r.editCount?`edited ×${r.editCount}`:""].filter(Boolean).join(" · ")}));
+    }
     const ageSex=[p.age,p.sex].filter(x=>x!=null&&x!=="").join(" ");
     const meta={
       name:p.name||"",legal,version:APP_VERSION,dept:RECORD_PDF_DEPT,
@@ -11974,10 +12688,14 @@ function certModel(p){
   const meds=(mode==="abscond"||mode==="death")?[]:(p.dischargeMeds||[]).filter(m=>m&&m.name);
   const adv=String(f.advice||"").split(/\n+/).map(t=>t.trim()).filter(Boolean);
   if(mode==="dama"&&!ed.advice&&!adv.some(t=>/treatment is incomplete/i.test(t))) adv.push("Treatment is incomplete (discharged against medical advice). Continue medicines regularly and return to OPD / Emergency early if symptoms recur.");
-  return {p,row,mse,auto,f,mode,drugs,treat,treatText:treat.map(x=>x.t).join(""),ectN,meds,adv,edited:CERT_EDIT_KEYS.filter(k=>typeof ed[k]==="string"&&ed[k]!==auto[k]).length+((row&&row.keyDrugs)||[]).filter(x=>x&&typeof x.on==="boolean").length};
+  // R1.3.128: optional "Relevant investigations" line; off unless ticked (edits.labs_on), text auto from abnormal results this admission
+  const labsAuto=labCertAuto(p);const labsOn=ed.labs_on===true;const labs=typeof ed.labs==="string"?ed.labs:labsAuto;
+  return {p,row,mse,auto,f,mode,drugs,treat,treatText:treat.map(x=>x.t).join(""),ectN,meds,adv,labsOn,labs,labsAuto,edited:CERT_EDIT_KEYS.filter(k=>typeof ed[k]==="string"&&ed[k]!==auto[k]).length+((row&&row.keyDrugs)||[]).filter(x=>x&&typeof x.on==="boolean").length+(labsOn?1:0)+(typeof ed.labs==="string"&&ed.labs!==labsAuto?1:0)};
 }
 function certHash(m){
-  const s=JSON.stringify([m.f,m.treatText,m.meds.map(dmLine),m.adv,m.mode,m.p.name,m.p.age,m.p.sex,m.p.hospitalNo,m.p.mrdNo,m.p.admittedAt,m.p.dischargedAt,m.mse&&m.mse.e?[m.mse.e.id,m.mse.e.at]:null]);
+  const arr=[m.f,m.treatText,m.meds.map(dmLine),m.adv,m.mode,m.p.name,m.p.age,m.p.sex,m.p.hospitalNo,m.p.mrdNo,m.p.admittedAt,m.p.dischargedAt,m.mse&&m.mse.e?[m.mse.e.id,m.mse.e.at]:null];
+  if(m.labsOn&&String(m.labs||"").trim()) arr.push(["labs",m.labs]); // R1.3.128: only when printed, so older certificates keep their hash
+  const s=JSON.stringify(arr);
   let h=5381;for(let i=0;i<s.length;i++){h=((h<<5)+h+s.charCodeAt(i))|0}
   return "h"+(h>>>0).toString(36)+"-"+s.length.toString(36);
 }
@@ -12004,6 +12722,21 @@ function certTick(key,on){
   if(!!on!==!!d.on) L.push({key,name:d.name,label:d.label,on:!!on});
   row.keyDrugs=L;row.updatedAt=now();
   clearTimeout(_certSaveT);certQueueSave(p,row);render();
+}
+function certLabsTick(on){ // R1.3.128
+  const p=patient(route.id);if(!p||!certEligible(p)) return;
+  const row=certRowEnsure(p);row.edits=Object.assign({},row.edits||{});
+  if(on) row.edits.labs_on=true; else delete row.edits.labs_on;
+  row.updatedAt=now();clearTimeout(_certSaveT);certQueueSave(p,row);render();
+}
+function certLabsEdit(v){
+  const p=patient(route.id);if(!p||!certEligible(p)) return;
+  const row=certRowEnsure(p);row.edits=Object.assign({},row.edits||{});
+  const val=String(v==null?"":v).slice(0,1500);
+  if(val===labCertAuto(p)) delete row.edits.labs; else row.edits.labs=val;
+  row.updatedAt=now();
+  clearTimeout(_certSaveT);_certSaveT=setTimeout(()=>{certQueueSave(p,row);certPaintMeta()},800);
+  certPaintMeta(true);
 }
 function certReset(){
   const p=patient(route.id);if(!p) return;const row=certRow(p);if(!row) return;
@@ -12051,6 +12784,10 @@ function dcertView(){
       ${ta("remarks","Remarks",5,"Auto from mode, outcome, requester (discharge form) and discharge MSE. Edits are saved for re-prints.")}
       ${m.mode==="abscond"||m.mode==="death"?"":ta("advice","Advice (one line each)",3)}
       ${m.mode==="abscond"||m.mode==="death"?"":`<label class="field cert-f"><span>Review in Psychiatry OPD after</span><input id="cert_review" type="text" maxlength="120" value="${esc(f.review||"")}" placeholder="e.g. 2 weeks" oninput="certEdit('review',this.value)"/></label>`}
+    </div>
+    <div class="card cert-card cert-labs">
+      <label class="cert-drug ${m.labsOn?"on":""}"><input type="checkbox" id="cert_labs_on" ${m.labsOn?"checked":""} onchange="certLabsTick(this.checked)"/><span><b>Add “Relevant investigations” line</b><small>${m.labsAuto?"Abnormal results this admission, from Investigations":"No investigations recorded this admission"}</small></span></label>
+      ${m.labsOn?`<textarea id="cert_labs" class="cert-labs-t" rows="3" maxlength="1500" oninput="certLabsEdit(this.value)" placeholder="e.g. Hb 9.8 g/dL (L), TSH 6.2 µIU/mL (H)">${esc(m.labs||"")}</textarea><p class="tiny muted">Prints under Treatment. Edit freely; your text is kept for re-prints.</p>`:""}
     </div>
     <div class="card cert-card cert-also"><p class="tiny"><b>Also printed (from the record):</b> ${meds} · Page 2: ${esc(mseLine)}</p>
       <p class="tiny muted" id="certMeta">${certMetaHtml(m)}</p></div>
@@ -12199,6 +12936,7 @@ function buildCertPdf(m,o){
   const dis=[];String(m.f.disease||"").split(/(\([^)]*\))/).forEach(s=>{if(s)dis.push({t:s,f:/^\(/.test(s)?"T":"TB"})});
   field(M,R,"Disease :",dis.length?dis:V(" "));y+=4;
   field(M,R,"Treatment :",m.treat.map(r=>({t:r.t,f:r.f==="B"?"TB":"T"})));y+=4;
+  if(m.labsOn&&String(m.labs||"").trim()){field(M,R,"Relevant investigations :",certRuns(m.labs,"T"));y+=4} // R1.3.128
   const out=p.dischargeOutcome?labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome):"";
   const esr=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
   const bre=new RegExp("on advice|on the patient's own request|on request|against medical advice \\(DAMA\\)|absconded|expired"+(out&&out!=="—"?"|(?<=: )"+esr(out)+"(?=\\.)":""),"g");
@@ -12926,13 +13664,13 @@ function patientFilterPill(){
   if(!bits.length) return "";
   return `<div class="filter-pill-row" role="status"><button type="button" class="filter-pill" onclick="ui.psec='';ui.ptag='';ui.preason='';ui.pcon='';render()" aria-label="Clear filter: ${esc(bits.join(", "))}"><span>Filtered: ${esc(bits.join(" · "))}</span><span class="filter-pill-x" aria-hidden="true">✕</span></button></div>`;
 }
-function criticalStatusForm(pid){
+function criticalStatusForm(pid,prefill){ // R1.3.128: optional prefill (critical lab values)
   const p=patient(pid); if(!p)return; const b=bedObj(pid);
   ui.sheet=`<div class="sheet mid" id="criticalStatusSheet"><button class="mask" onclick="dismissOverlay()"></button><div class="box">
     <div class="row"><h2>Critical Status Update</h2><button class="btn ghost sm" onclick="dismissOverlay()">Close</button></div>
     <p class="sm" style="margin:8px 0"><b>${esc(p.name)}</b> · Bed ${esc(b?b.no:"—")}</p>
     <p class="tiny" style="margin-bottom:8px">Notifies the whole team.</p>
-    <label class="field"><span>Critical update</span><textarea id="criticalStatusNote" rows="5" maxlength="500" placeholder="e.g. Acute agitation with attempted absconding; close observation required."></textarea></label>
+    <label class="field"><span>Critical update</span><textarea id="criticalStatusNote" rows="5" maxlength="500" placeholder="e.g. Acute agitation with attempted absconding; close observation required.">${esc(String(prefill||"").slice(0,500))}</textarea></label>
     <button class="btn danger block btn-danger" onclick="askCriticalStatusUpdate('${pid}')"${ui._critSending===pid?" disabled":""}>${ui._critSending===pid?"Saving…":"Send critical update"}</button>
   </div></div>`; render();
 }

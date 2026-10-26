@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.3.127-undo-admission";
+const VERSION = "ward-sync-pwa-r1.3.128-lab-reports";
 const PRECACHE = [
   "./",
   "./index.html",
