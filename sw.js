@@ -1,4 +1,6 @@
-const VERSION = "ward-sync-pwa-r1.3.133-dc-form-cert-format";
+const VERSION = "ward-sync-pwa-r1.3.134-lab-ocr-phase1";
+// R1.3.134: the on-device scanner engine lives in its own cache, filled and verified by the page; never deleted on update.
+const OCR_CACHE = "ocr-assets-v7";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -24,7 +26,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== VERSION && k !== OCR_CACHE).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
@@ -86,6 +88,8 @@ self.addEventListener("fetch", (event) => {
     url.hostname.endsWith("supabase.in");
 
   if (isSupabase) return; // live API + realtime — never cache
+  // scanner engine files: the page downloads them itself (with progress + integrity check) into OCR_CACHE
+  if (url.origin === self.location.origin && url.pathname.startsWith("/ocr/")) return;
 
   if (isAppShell) {
     event.respondWith(networkFirst(req));

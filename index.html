@@ -2228,6 +2228,69 @@ html.kb-open .mse-dots{display:none}
 .lab-rec-d summary{cursor:pointer;font-size:12.5px;font-weight:650;color:var(--teal)}
 .lab-rec-d .lab-tb{margin-top:4px}
 .cert-labs-t{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);resize:vertical;min-height:70px;margin-top:8px}
+/* R1.3.134 scan a lab report (pilot) */
+.lab-ocrbar{margin:0 0 10px}
+.lab-scanbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;border-radius:14px;border:1.5px dashed var(--teal);background:color-mix(in srgb,var(--teal) 7%,var(--panel));color:var(--teal);font:inherit;font-size:15px;font-weight:750;cursor:pointer}
+.lab-scanst{display:block;text-align:center;margin:4px 0 0;font-size:12px;color:var(--muted)}
+.lab-scanst.ok{color:var(--ok)}
+.lab-ocrsum{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:9px 12px;font-size:13px;line-height:1.4}
+.lab-ocrsum p{margin:0}
+.lab-ocrsum .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lab-ocrsum .row .linkbtn{margin-left:auto}
+.lab-ocrsum .todo{color:var(--warn);font-weight:750}
+.lab-ocrsum .done{color:var(--ok);font-weight:750}
+.lab-ocr-name{margin-top:6px;font-size:13px}
+.lab-ocr-name.ok{color:var(--ok);font-weight:650}
+.lab-ocr-name.ok i{font-style:normal;display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--ok);color:#fff;font-size:11px;margin-right:4px}
+.lab-ocr-ovr{margin-top:6px;font-size:12.5px;color:var(--warn);font-weight:650}
+.lab-nm{margin:0 0 10px;padding:11px 12px;border-radius:14px;background:var(--warn-bg);border:1.5px solid var(--warn);color:var(--ink)}
+.lab-nm h4{margin:0 0 6px;font-size:14.5px;color:var(--warn)}
+.lab-nm dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;margin:0 0 8px;font-size:13.5px}
+.lab-nm dt{color:var(--muted);font-weight:650}.lab-nm dd{margin:0;font-weight:750;overflow-wrap:anywhere}
+.lab-nm .btns{display:flex;gap:8px;flex-wrap:wrap}
+.lab-nm .why{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.lab-nm textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);min-height:44px;resize:vertical}
+.lab-row.ocr-green .lab-v{border-color:color-mix(in srgb,var(--ok) 55%,var(--line))}
+.lab-row.ocr-amber{background:color-mix(in srgb,var(--warn) 9%,transparent);border-radius:8px}
+.lab-row.ocr-amber .lab-v{border-color:var(--warn);box-shadow:0 0 0 2px color-mix(in srgb,var(--warn) 30%,transparent)}
+.lab-row.ocr-red{background:color-mix(in srgb,var(--danger) 7%,transparent);border-radius:8px}
+.lab-row.ocr-red .lab-v{border-color:var(--danger);border-style:dashed}
+.lab-ocr-n{font-size:11px;font-weight:750;color:var(--muted)}
+.lab-row.ocr-amber .lab-ocr-why{color:var(--warn);font-weight:650}
+.lab-row.ocr-red .lab-ocr-why{color:var(--danger);font-weight:650}
+.lab-ocrok{font:inherit;font-size:12.5px;font-weight:750;padding:3px 10px;border-radius:999px;border:1.5px solid var(--warn);background:var(--panel);color:var(--ink);cursor:pointer;min-height:28px}
+.lab-ocr-acked{font-size:11.5px;color:var(--ok);font-weight:700}
+.lab-ocr-crop{display:block;max-width:100%;height:26px;border-radius:4px;border:1px solid var(--line);margin-top:2px;flex-basis:100%;object-fit:contain;object-position:left}
+.lab-ocr-date{display:block;font-size:12px;color:var(--warn);font-weight:650;margin-top:2px}
+.lab-scan{position:absolute;inset:0;z-index:5;background:var(--bg);display:flex;flex-direction:column}
+.lab-scan .mse-scroll{padding:14px}
+.lab-sc-card{border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:14px;margin:0 0 12px}
+.lab-sc-card h3{margin:0 0 6px;font-size:16px}
+.lab-sc-card p{margin:0 0 8px;font-size:14px;line-height:1.45}
+.lab-sc-card ul{margin:0 0 8px;padding-left:18px;font-size:13.5px;line-height:1.5}
+.lab-sc-size{font-size:22px;font-weight:800}
+.lab-sc-note{color:var(--warn);font-weight:650}
+.lab-sc-card.fail{border-color:var(--danger);background:var(--danger-bg)}
+.lab-sc-card.fail h3{color:var(--danger)}
+.lab-sc-card.ready h3{color:var(--ok)}
+.lab-pb{position:relative;height:14px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);overflow:hidden;margin:10px 0 6px}
+.lab-pb i{position:absolute;left:0;top:0;bottom:0;background:var(--teal);border-radius:999px;transition:width .15s linear}
+.lab-pb.ind i{width:35%!important;animation:labpb 1.2s ease-in-out infinite}
+@keyframes labpb{0%{left:-35%}100%{left:100%}}
+.lab-pbt{display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.lab-pbf{font-size:12px;color:var(--muted);margin-top:2px}
+.lab-sc-pick{display:grid;gap:10px}
+.lab-sc-pick label{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;border-radius:14px;border:1.5px solid var(--teal);font-weight:750;font-size:15px;cursor:pointer;background:var(--panel);color:var(--teal)}
+.lab-sc-pick label.pri{background:var(--teal);color:#fff}
+.lab-sc-pick input{position:absolute;width:1px;height:1px;opacity:0}
+.lab-crop{position:relative;touch-action:none;user-select:none;margin:0 auto 10px;max-width:100%}
+.lab-crop canvas{display:block;width:100%;height:auto;border-radius:10px}
+.lab-crop svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.lab-hdl{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:3px solid #fff;background:color-mix(in srgb,var(--teal) 75%,transparent);box-shadow:0 1px 4px rgba(0,0,0,.45);touch-action:none;cursor:grab}
+.lab-q{margin:0 0 6px;padding:7px 10px;border-radius:10px;font-size:13px;line-height:1.4;background:var(--warn-bg);color:var(--ink);border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line))}
+.lab-q.ok{background:var(--ok-bg);border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.lab-spin{display:inline-block;width:18px;height:18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--teal);animation:labspin .8s linear infinite;vertical-align:-4px;margin-right:8px}
+@keyframes labspin{to{transform:rotate(360deg)}}
 @media (max-width:380px){.lab-row{grid-template-columns:minmax(0,1fr) 84px 42px 24px;column-gap:5px}.lab-rn b{font-size:13.5px}.lab-li{grid-template-columns:minmax(0,4.8em) minmax(0,1fr) auto;column-gap:6px}.lab-lt .lab-spark{display:none}.lab-hf{grid-template-columns:1fr}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -2729,7 +2792,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.133";
+const APP_VERSION="R1.3.134";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -11594,8 +11657,10 @@ const LAB_T={
   vldl:{n:"VLDL cholesterol",u:"mg/dL",hi:50,ref:"<50",d:0,p:[1,1000]},
   hba1c:{n:"HbA1c",u:"%",d:1,p:[3,20],tiers:[{lt:5.7,l:"Normal"},{lt:6.5,l:"Prediabetes",f:"H"},{l:"Diabetes",f:"H"}],ref:"Normal <5.7; Prediabetes 5.7–6.4; Diabetes ≥6.5"},
   tsh:{n:"TSH",u:"µIU/mL",lo:0.4,hi:4.05,d:2,p:[0.005,150]},
-  li:{n:"Serum lithium",u:"mmol/L",lo:0.6,hi:1.2,d:2,p:[0.05,5],prov:1},
-  vpa:{n:"Serum valproate",u:"µg/mL",lo:50,hi:100,d:0,p:[1,400],prov:1},
+  li:{n:"Serum lithium",u:"mmol/L",lo:0.6,hi:1.2,d:2,p:[0.05,5]},
+  vpa:{n:"Serum valproate",u:"µg/mL",lo:50,hi:100,d:0,p:[1,400]},
+  amylase:{n:"Serum amylase",u:"U/L",lo:30,hi:110,d:0,p:[1,5000]},
+  lipase:{n:"Serum lipase",u:"U/L",lo:23,hi:300,d:0,p:[1,10000]},
   u_volume:{n:"Volume",u:"mL",d:0,p:[1,5000],nf:1},
   u_colour:{n:"Colour",u:"",txt:1,o:["Pale yellow","Straw","Yellow","Dark yellow","Amber","Red","Brown"],ok:/^(pale yellow|straw|yellow|light yellow|colourless|colorless)$/i,norm:"Pale yellow"},
   u_appearance:{n:"Appearance",u:"",txt:1,o:["Clear","Slightly turbid","Turbid"],ok:/^clear$/i,norm:"Clear"},
@@ -11625,11 +11690,12 @@ const LAB_PANELS=[
   {k:"Lipids",lb:"Lipids + HbA1c",dept:"biochemistry",c:["chol","tg","hdl","ldl","vldl","hba1c"]},
   {k:"TSH",dept:"biochemistry",c:["tsh"]},
   {k:"GGT",dept:"biochemistry",c:["ggt"]},
+  {k:"Amylase/Lipase",lb:"Amylase + Lipase",dept:"biochemistry",c:["amylase","lipase"]},
   {k:"Urine R/E",dept:"pathology",c:["u_volume","u_colour","u_appearance","u_ph","u_sg","u_glucose","u_protein","u_ketone","u_blood","u_urobilinogen","u_bilirubin","u_nitrite","u_epithelial","u_pus","u_rbc","u_crystals","u_casts","u_bacteria"]},
   {k:"Lithium",lb:"+ Lithium",quick:1,dept:"biochemistry",c:["li"]},
   {k:"Valproate",lb:"+ Valproate",quick:1,dept:"biochemistry",c:["vpa"]}
 ];
-const LAB_SHORT={hb:"Hb",wbc:"WBC",plt:"Platelets",na:"Na",k:"K",creat:"Creatinine",urea:"Urea",rbs:"RBS",alt:"ALT",ast:"AST",tbil:"T. bilirubin",tsh:"TSH",li:"Lithium",vpa:"Valproate",hba1c:"HbA1c",chol:"Cholesterol",tg:"TG",ggt:"GGT",alp:"ALP",alb:"Albumin"};
+const LAB_SHORT={hb:"Hb",wbc:"WBC",plt:"Platelets",na:"Na",k:"K",creat:"Creatinine",urea:"Urea",rbs:"RBS",alt:"ALT",ast:"AST",tbil:"T. bilirubin",tsh:"TSH",li:"Lithium",vpa:"Valproate",hba1c:"HbA1c",chol:"Cholesterol",tg:"TG",ggt:"GGT",alp:"ALP",alb:"Albumin",amylase:"Amylase",lipase:"Lipase"};
 const LAB_KEY=["hb","wbc","plt","na","k","urea","creat","rbs","alt","ast","tbil","tsh","li","vpa","hba1c","chol","tg","ggt"];
 const LAB_CRIT_TXT={k:"K <2.5 or ≥6.0",na:"Na <120 or ≥160",hb:"Hb <7",rbs:"glucose <50 or >400",plt:"platelets <20 (urgent <10) ×10³/µL",li:"lithium ≥1.5",vpa:"valproate >150"};
 function labDef(code){return LAB_T[code]||null}
@@ -11703,7 +11769,7 @@ function labPendingId(id){return pending.some(o=>o.table==="lab_reports"&&o.row&
 function labFromRow(r){
   return {id:r.id,pid:r.patient_id,lab:r.lab||"AMCH",dept:r.department||"other",sampleNo:r.sample_no||"",collectedAt:r.collected_at||null,reportedAt:r.reported_at,
     panels:r.panels||[],hasCritical:!!r.has_critical,by:r.created_by||null,byName:r.created_by_name||"",at:r.created_at||r.reported_at,updatedAt:r.updated_at||null,
-    updatedByName:r.updated_by_name||"",editCount:r.edit_count||0,status:r.report_status||"final",
+    updatedByName:r.updated_by_name||"",editCount:r.edit_count||0,status:r.report_status||"final",entry:r.entry_method||"manual",matchStatus:r.match_status||null,
     results:(r.results||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)).map(x=>({code:x.test_code,name:x.test_name_printed,num:x.value_num==null?null:+x.value_num,text:x.value_text||null,
       unit:x.unit||"",printed:x.value_printed||"",unitPrinted:x.unit_printed||"",lo:x.ref_low==null?null:+x.ref_low,hi:x.ref_high==null?null:+x.ref_high,refText:x.ref_text||"",
       flag:x.flag||null,tier:x.tier_label||null,state:x.field_state||null,edited:!!x.edited}))};
@@ -11804,10 +11870,12 @@ function labMount(keepScroll){
   if(!__labPushed){try{history.pushState(Object.assign({},history.state||{},{lab:1}),"");__labPushed=1}catch(e){}}
   const sc=el.querySelector(".mse-scroll");const top=keepScroll&&sc?sc.scrollTop:0;
   el.innerHTML=LABU.mode==="edit"?labEditHtml():labListHtml();
+  if(LABU.mode==="edit"&&!LABU.f.ocr&&labOcrOn())labScanStatus();
   const ns=el.querySelector(".mse-scroll");if(ns)ns.scrollTop=top;
 }
 function labClose(fromPop){
   if(LABU&&LABU.mode==="edit")labSaveDraft();
+  if(LABSCAN)labScanClose();ocrRelease();
   const el=labLayerEl();if(el)el.remove();
   LABU=null;if(!(typeof MSEU!=="undefined"&&MSEU))document.documentElement.classList.remove("mse-open");
   if(__labPushed){const n=__labPushed;__labPushed=0;if(!fromPop){__labSkipPop=1;try{history.go(-n)}catch(e){__labSkipPop=0}}}
@@ -11832,8 +11900,8 @@ function labRowHtml(r){
   const ref=r.custom?"":labRefText(r.code,labSex());const unit=r.custom?"":(t?t.u:"");
   const opts=t&&t.txt?(t.o||(t.dip?LAB_DIP_O:t.abs?LAB_ABS_O:[])):null;
   const nameCell=r.custom?`<div class="lab-rn lab-cust"><input class="lab-ci" data-f="name" data-k="${r.k}" maxlength="80" placeholder="Test name as printed" value="${esc(r.name||"")}" autocomplete="off"><span class="lab-cust2"><input class="lab-ci sm" data-f="unit" data-k="${r.k}" maxlength="30" placeholder="Unit" value="${esc(r.unit||"")}" autocomplete="off"><input class="lab-ci sm" data-f="lo" data-k="${r.k}" inputmode="decimal" placeholder="Ref low" value="${esc(r.lo||"")}" autocomplete="off"><input class="lab-ci sm" data-f="hi" data-k="${r.k}" inputmode="decimal" placeholder="Ref high" value="${esc(r.hi||"")}" autocomplete="off"></span></div>`
-    :`<div class="lab-rn"><b>${esc(t?t.n:r.code)}</b><span class="lab-ref">${esc([ref,unit].filter(Boolean).join(" "))}${t&&t.prov?" · provisional range":""}</span></div>`;
-  return `<div class="lab-row${st?" st-"+st:""}${fl?" fl-"+fl:""}" data-row="${r.k}">
+    :`<div class="lab-rn"><b>${esc(t?t.n:r.code)}</b><span class="lab-ref">${esc([ref,unit].filter(Boolean).join(" "))}</span></div>`;
+  return `<div class="lab-row${st?" st-"+st:""}${fl?" fl-"+fl:""}${labOcrCls(r)}" data-row="${r.k}">
     ${nameCell}
     <input class="lab-v" data-k="${r.k}" ${t&&t.txt?`list="labdl-${r.code}" autocapitalize="sentences"`:'inputmode="decimal"'} enterkeyhint="next" maxlength="40" placeholder="—" value="${esc(r.raw||"")}" autocomplete="off" aria-label="${esc(t?t.n:(r.name||"Value"))}">
     <span class="lab-flag" data-flag="${r.k}">${fl?esc(labFlagLabel(fl)):e.tier&&!e.empty?"":""}</span>
@@ -11842,8 +11910,8 @@ function labRowHtml(r){
   </div>`;
 }
 function labMsgHtml(r,e){
-  if(!e||e.empty)return "";
-  let h="";
+  if(!e||e.empty)return r.ocr?labOcrMsg(r):"";
+  let h=r.ocr?labOcrMsg(r):"";
   if(e.tier)h+=`<span class="lab-tier">${esc(e.tier)}</span>`;
   if(e.msg)h+=`<span class="lab-warn">${esc(e.msg)}</span>`;
   if(e.state==="red"&&e.ok)h+=`<label class="lab-chk"><input type="checkbox" data-chk="${r.k}" ${r.chk?"checked":""}> Value checked against the paper</label>`;
@@ -11881,10 +11949,11 @@ function labEditHtml(){
    <div class="mse-scroll lab-scroll">
     <div class="lab-hdr">
       <div class="lab-hf">
-        <label class="lab-fld"><span>Report date <em>as printed</em> <b class="lab-req">required</b></span><input type="date" data-h="rep" required aria-required="true" value="${esc(f.rep||"")}" max="${labTodayDay()}"></label>
+        <label class="lab-fld"><span>Report date <em>as printed</em> <b class="lab-req">required</b></span><input type="date" data-h="rep" required aria-required="true" value="${esc(f.rep||"")}" max="${labTodayDay()}">${f.repOcr?'<span class="lab-ocr-date">Read from the scan — check it</span>':""}</label>
       </div>
       <p class="tiny muted lab-pt">Patient: <b>${esc(p.name||"")}</b> — from this card. Check the name and number on the paper match.</p>
     </div>
+    ${labOcrBarHtml()}
     ${labPanelChipsHtml()}
     <div id="labBanner">${labBannerHtml()}</div>
     <div id="labDup"></div>
@@ -11897,9 +11966,9 @@ function labEditHtml(){
 function labRefreshRow(k){
   const el=labLayerEl();if(!el||!LABU)return;const r=LABU.f.rows.find(x=>x.k===k);if(!r)return;
   const row=el.querySelector(`[data-row="${k}"]`);if(!row)return;const e=labRowEval(r);
-  row.className="lab-row"+(e.empty?"":(e.state?" st-"+e.state:""))+(e.flag?" fl-"+e.flag:"");
+  row.className="lab-row"+(e.empty?"":(e.state?" st-"+e.state:""))+(e.flag?" fl-"+e.flag:"")+labOcrCls(r);
   const fl=row.querySelector(".lab-flag");if(fl)fl.textContent=e.flag?labFlagLabel(e.flag):"";
-  const ms=row.querySelector(".lab-msg");if(ms){const had=ms.querySelector("[data-chk]");const nh=labMsgHtml(r,e);if(!(had&&e.state==="red"))ms.innerHTML=nh;else{const w=ms.querySelector(".lab-warn");if(w&&e.msg)w.textContent=e.msg}}
+  const ms=row.querySelector(".lab-msg");if(ms){const had=ms.querySelector("[data-chk]");const nh=labMsgHtml(r,e);if(!(had&&e.state==="red")||r.ocr)ms.innerHTML=nh;else{const w=ms.querySelector(".lab-warn");if(w&&e.msg)w.textContent=e.msg}}
   const b=el.querySelector("#labBanner");if(b){const was=b.innerHTML;const nb=labBannerHtml();if(was!==nb)b.innerHTML=nb}
   const gc=el.querySelector(`[data-gcount="${CSS.escape(r.panel)}"]`);if(gc){const g=LABU.f.rows.filter(x=>x.panel===r.panel);gc.textContent=g.filter(x=>String(x.raw||"").trim()).length+"/"+g.length}
 }
@@ -11925,6 +11994,10 @@ function labBuild(){
   if(repDay>labTodayDay()){labShowErr("Report date is in the future.");return null}
   if(repDay<"2000-01-01"){labShowErr("Report date is invalid.");return null}
   const results=[],codes=new Set();let crit=0;
+  if(f.ocr){const pd=labOcrPending();
+    if(pd.name){labShowErr(f.ocr.name.status==="unread"?"The name on the report couldn't be read — confirm it is this patient or cancel the scan.":"The name on the report doesn't match — confirm or cancel the scan.");const n=labLayerEl().querySelector("#labNm");if(n)n.scrollIntoView({block:"center"});return null}
+    const first=f.rows.find(r=>r.ocr&&!r.ocr.ed&&!r.ocr.ok&&r.ocr.s!=="green");
+    if(first){labShowErr((pd.amber+pd.red)+" scanned value"+(pd.amber+pd.red>1?"s":"")+" to check — tap “Matches paper” or correct "+(pd.amber+pd.red>1?"them":"it")+".",first.k);return null}}
   for(const r of f.rows){
     const raw=String(r.raw||"").trim();if(!raw)continue;
     let code=r.code,name,unit;
@@ -11941,12 +12014,13 @@ function labBuild(){
     results.push({code,name,num:e.num==null?null:e.canon,text:e.text||null,unit:t?(t.cu||t.u):unit,printed:raw,unitPrinted:t?t.u:unit,
       lo:rg.lo!=null&&isFinite(rg.lo)?(t&&t.x?rg.lo*t.x:rg.lo):null,hi:rg.hi!=null&&isFinite(rg.hi)?(t&&t.x?rg.hi*t.x:rg.hi):null,
       refText:t?labRefText(code,sex):((r.lo||"")+(r.hi?"–"+r.hi:"")),tiers:t&&t.tiers?t.tiers:null,lowV:e.lowV==null?null:e.lowV,highV:e.highV==null?null:e.highV,
-      flag:e.flag,tier:e.tier||null,state:e.state||"green",edited:false,panel:r.custom?"Other":r.panel});
+      flag:e.flag,tier:e.tier||null,state:e.state||"green",edited:false,panel:r.custom?"Other":r.panel,
+      ocr:r.ocr?{v:String(r.ocr.v||"").slice(0,40),c:r.ocr.c,s:r.ocr.s,ed:String(r.ocr.v)!==raw,ok:!!r.ocr.ok}:null});
   }
   if(!results.length){labShowErr("Type at least one value.");return null}
   if(crit&&!f.critOk){labShowErr("Confirm the critical value against the paper (tick in the red box).");const b=labLayerEl().querySelector(".lab-crit");if(b)b.scrollIntoView({block:"center"});return null}
   const panels=[];results.forEach(x=>{if(!panels.includes(x.panel))panels.push(x.panel)});
-  return {pid:LABU.pid,rep,repDay,results,panels,hasCritical:crit>0};
+  return {pid:LABU.pid,rep,repDay,results,panels,hasCritical:crit>0,ocr:f.ocr||null};
 }
 function labToRow(rep,opId){
   const row={id:rep.id,op_id:opId,action:"save",patient_id:rep.pid,lab:"AMCH",reported_at:rep.reportedAt,
@@ -11956,10 +12030,18 @@ function labToRow(rep,opId){
   if(rep.dept==="pathology"||rep.dept==="biochemistry")row.department=rep.dept;
   if(rep.sampleNo)row.sample_no=rep.sampleNo;
   if(rep.collectedAt)row.collected_at=rep.collectedAt;
+  if(rep.entry==="ocr"&&rep.ocr){const o=rep.ocr;const sc=rep.results.filter(x=>x.ocr);
+    // R1.3.134: scanned report — no image, only numbers + the audit fields. Before the R1.3.134 migration the server ignores these keys.
+    Object.assign(row,{entry_method:"ocr",ocr_engine:o.engine||null,ocr_mean_conf:o.mean==null?null:o.mean,
+      ocr_stats:{v:1,tpl:o.tpl||"",n:sc.length,green:sc.filter(x=>x.ocr.s==="green").length,amber:sc.filter(x=>x.ocr.s==="amber").length,red:sc.filter(x=>x.ocr.s==="red").length,
+        acked:sc.filter(x=>x.ocr.ok).length,edited:sc.filter(x=>x.ocr.ed).length,ms:o.ms||0,lowRes:!!(o.q&&o.q.lowRes),blurry:!!(o.q&&o.q.blurry),pageFound:!!(o.q&&o.q.page),cornersMoved:!!(o.q&&o.q.moved),nameScore:o.name?o.name.score:null},
+      page_count:o.pages||null,pages_present:o.page?[o.page]:null,match_status:rep.matchStatus||null});
+    if(rep.matchStatus==="override")Object.assign(row,{match_reason:String(o.name.reason||"").slice(0,300),name_printed:String(o.name.printed||"").slice(0,80)});}
   return Object.assign(row,{
     results:rep.results.map((x,i)=>({test_code:x.code,test_name_printed:x.name,value_num:x.num,value_text:x.text,unit:x.unit||null,value_printed:x.printed||null,unit_printed:x.unitPrinted||null,
       ref_low:x.lo,ref_high:x.hi,ref_text:x.refText||null,ref_tiers:x.tiers?x.tiers.map(z=>({lt:z.lt==null?null:z.lt,label:z.l,flag:z.f||null})):null,value_low:x.lowV,value_high:x.highV,
-      flag:x.flag,tier_label:x.tier,field_state:x.state,confirmed:true,edited:!!x.edited,sort_order:i+1}))});
+      flag:x.flag,tier_label:x.tier,field_state:x.ocr?(x.ocr.ed?"green":x.ocr.s):x.state,confirmed:true,edited:!!x.edited||!!(x.ocr&&x.ocr.ed),sort_order:i+1,
+      ocr_value:x.ocr?x.ocr.v:null,ocr_conf:x.ocr?x.ocr.c:null}))});
 }
 function labDupOf(b){ // R1.3.130: same report date (IST) + overlapping panels; a warning with "Save anyway", never a hard block
   const day=b.repDay||labRepDay(b.rep);
@@ -11987,6 +12069,8 @@ function labCommit(force){
     const rep={id:old?old.id:("lab-"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)),pid:b.pid,lab:"AMCH",dept:old?(old.dept||"other"):"other",sampleNo:old?(old.sampleNo||""):"",collectedAt:old?(old.collectedAt||null):null,reportedAt:(old&&labRepDay(old.reportedAt)===b.repDay)?old.reportedAt:b.rep,
       panels:b.panels,hasCritical:b.hasCritical,by:old?old.by:S.userId,byName:old?old.byName:byName,at:old?old.at:now(),updatedAt:now(),updatedByName:byName,editCount:old?(old.editCount||0)+1:0,
       results:b.results,alertPending:false};
+    if(!old&&b.ocr){rep.entry="ocr";rep.ocr=b.ocr;if(b.ocr.sample)rep.sampleNo=b.ocr.sample; // sample no is stored silently (not shown in the form)
+      rep.matchStatus=b.ocr.name.status==="match"?(b.ocr.name.score>=1?"exact":"probable_confirmed"):"override"}
     if(old){const diff=labDiffText(old,rep);if(!diff){toast("No changes to save","info");__labSaving=false;labLsSet(labDraftKey(LABU.pid,LABU.editId),null);LABU.mode="done";labClose();return}
       rep.results.forEach(x=>{const a=old.results.find(y=>y.code===x.code);x.edited=!a||labResultFromRow(a)!==x.printed||!!a.edited});rep.lastDiff=diff}
     const wantAlert=b.hasCritical&&LABU.f.postAlert;
@@ -11995,8 +12079,9 @@ function labCommit(force){
     S.labs=(S.labs||[]).filter(x=>x.id!==rep.id);S.labs.push(rep);
     queue("lab_reports",labToRow(rep,opId));
     const nc=b.results.filter(x=>labIsCrit(x.flag)).length;
-    const title=old?"Investigations edited · "+labPanelsLabel(rep):"Investigations added · "+labPanelsLabel(rep)+(nc?" · "+nc+" critical":"");
-    const flagged=b.results.filter(x=>x.flag).map(x=>labValLine(x)+" "+labFlagLabel(x.flag)).join("; ");
+    const title=old?"Investigations edited · "+labPanelsLabel(rep):"Investigations added"+(rep.entry==="ocr"?" (scanned)":"")+" · "+labPanelsLabel(rep)+(nc?" · "+nc+" critical":"");
+    let flagged=b.results.filter(x=>x.flag).map(x=>labValLine(x)+" "+labFlagLabel(x.flag)).join("; ");
+    if(rep.matchStatus==="override")flagged=[flagged,"Name override: "+rep.ocr.name.reason].filter(Boolean).join("\n");
     const e=ev(rep.pid,title,true,"lab",old?rep.lastDiff:flagged,{local:true});if(e)e.id=(old?"labe-":"lab-")+opId;
     save();
     labLsSet(labDraftKey(LABU.pid,LABU.editId),null);
@@ -12032,7 +12117,7 @@ function labTableHtml(r,compact){
 }
 function labMetaLine(r){return [`Reported ${labRepText(r.reportedAt)}`,labDeptTag(r.dept),r.sampleNo?"Sample "+r.sampleNo:"",r.byName||rname(r.by)||""].filter(Boolean).join(" · ")}
 function labChipsHtml(r){
-  return `${r.hasCritical?'<span class="mse-risk-pill sm">Critical</span>':""}${labPendingId(r.id)?'<span class="lab-chip pend">Pending sync</span>':""}${r.localOnly&&!labPendingId(r.id)?'<span class="lab-chip pend">On this phone only</span>':""}${r.editCount?`<span class="lab-chip">Edited${r.editCount>1?" ×"+r.editCount:""}</span>`:""}${r.alertPending?'<span class="lab-chip warn">Critical not yet shared — offline</span>':""}`;
+  return `${r.hasCritical?'<span class="mse-risk-pill sm">Critical</span>':""}${labPendingId(r.id)?'<span class="lab-chip pend">Pending sync</span>':""}${r.localOnly&&!labPendingId(r.id)?'<span class="lab-chip pend">On this phone only</span>':""}${r.entry==="ocr"?'<span class="lab-chip">Scanned</span>':""}${r.matchStatus==="override"?'<span class="lab-chip warn">Name override</span>':""}${r.editCount?`<span class="lab-chip">Edited${r.editCount>1?" ×"+r.editCount:""}</span>`:""}${r.alertPending?'<span class="lab-chip warn">Critical not yet shared — offline</span>':""}`;
 }
 function labListHtml(){
   const p=patient(LABU.pid)||{};const list=labReports(LABU.pid);const cw=canWrite();
@@ -12045,6 +12130,307 @@ function labListHtml(){
     </div>`).join(""):`<p class="muted" style="padding:16px">No investigations recorded yet.</p>`}</div>
    ${cw?`<div class="mse-foot one"><button type="button" class="btn" data-new="1">Add report</button></div>`:""}`;
 }
+/* ===== R1.3.134 Scan a lab report · phase 1 (pilot, off unless ws_ocr_pilot=1 or ?ocr=1) =====
+   On-device only: Tesseract.js + ward-ocr.js, downloaded once into Cache Storage "ocr-assets-v7" after a size + SHA-256 check.
+   The photo stays in memory while the form is open and is never saved, drafted or sent. Patient match is by printed NAME only. */
+const OCR_CACHE="ocr-assets-v7",OCR_BASE="/ocr/",OCR_STALL_MS=20000;
+let OCRE={eng:null,loading:null,urls:[],meta:null,ready:null};
+let LABSCAN=null; // {stage:"consent"|"dl"|"fail"|"pick"|"crop"|"read", ...}
+const LABOCR_CROPS=new Map(); // row key -> small value crop (data URL), memory only
+function labOcrOn(){try{const q=location.search||"";if(/[?&]ocr=1\b/.test(q))localStorage.setItem("ws_ocr_pilot","1");if(/[?&]ocr=0\b/.test(q))localStorage.removeItem("ws_ocr_pilot");return localStorage.getItem("ws_ocr_pilot")==="1"&&"caches" in window&&typeof WebAssembly==="object"}catch(e){return false}}
+function ocrMB(b){return (Math.max(0,b)/1048576).toFixed(1)}
+function ocrSimd(){try{return WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11]))}catch(e){return false}}
+function OcrErr(kind,msg){const e=new Error(msg||kind);e.kind=kind;return e}
+const OCR_FAIL={offline:"You're offline. Connect to Wi-Fi or mobile data, then retry.",network:"Couldn't reach the server. Check the connection, then retry.",
+  timeout:"The download stalled — no data for 20 seconds. The network may be too slow right now.",interrupted:"The download was interrupted before it finished.",
+  integrity:"A downloaded file failed the integrity check (it may have been damaged on the way).",quota:"Not enough free storage on this phone for the scanner.",
+  http:"The server couldn't send the scanner files.",store:"Couldn't save the scanner on this phone.",cancelled:"Download cancelled.",load:"The scanner couldn't start on this phone.",missing:"The scanner isn't on this phone any more."};
+async function ocrManifest(net){
+  if(net!==false){try{const r=await fetch(OCR_BASE+"manifest.json",{cache:"no-store"});if(r.ok)return await r.json()}catch(e){}}
+  try{if(await caches.has(OCR_CACHE)){const c=await caches.open(OCR_CACHE);const r=await c.match(OCR_BASE+"manifest.json");if(r)return await r.json()}}catch(e){}
+  return null;
+}
+function ocrFileSet(m){const core=ocrSimd()?"tesseract-core-simd-lstm.wasm.js":"tesseract-core-lstm.wasm.js";
+  return ["tesseract.min.js","worker.min.js",core,"eng.traineddata.bin","ward-ocr.js"].map(n=>Object.assign({name:n},m.files[n]||{}))}
+/* ready = the marker is present and every file is in the cache with its verified size; anything less = not ready (prompt again) */
+async function ocrReady(){
+  try{if(!(await caches.has(OCR_CACHE)))return null;const c=await caches.open(OCR_CACHE);const mr=await c.match(OCR_BASE+"__ready");if(!mr)return null;
+    const meta=await mr.json();if(!meta||meta.v!==OCR_CACHE||!Array.isArray(meta.files)||!meta.files.length)return null;
+    for(const f of meta.files){const r=await c.match(OCR_BASE+f.name);if(!r||+r.headers.get("x-ocr-bytes")!==f.b)return null}
+    OCRE.meta=meta;return meta}catch(e){return null}
+}
+async function ocrSha(buf){if(!(window.crypto&&crypto.subtle))return null;const h=await crypto.subtle.digest("SHA-256",buf);return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("")}
+/* streamed download of every file; onProg({loaded,total,known,file}) from real bytes. Nothing is cached unless all files pass. */
+async function ocrDownload(onProg,ctl){
+  if(navigator.onLine===false)throw OcrErr("offline");
+  let m=null;try{const r=await fetch(OCR_BASE+"manifest.json",{cache:"no-store",signal:ctl.signal});if(!r.ok)throw OcrErr("http","HTTP "+r.status);m=await r.json()}catch(e){throw ocrClassify(e,ctl)}
+  if(!m||m.v!==OCR_CACHE||!m.files)throw OcrErr("http","bad manifest");
+  const files=ocrFileSet(m);const need=files.reduce((a,f)=>a+(f.b||0),0);
+  try{if(navigator.storage&&navigator.storage.estimate){const est=await navigator.storage.estimate();if(est&&est.quota&&est.quota-(est.usage||0)<need*1.3)throw OcrErr("quota")}}catch(e){if(e.kind)throw e}
+  const sizes=files.map(f=>f.b||0);let known=sizes.every(Boolean);let total=sizes.reduce((a,b)=>a+b,0);let base=0;const got=[];
+  for(let i=0;i<files.length;i++){const f=files[i];
+    let res;let timer=null;const arm=()=>{clearTimeout(timer);timer=setTimeout(()=>{ctl.stalled=true;try{ctl.abort()}catch(x){}},OCR_STALL_MS)};
+    try{
+      arm();res=await fetch(OCR_BASE+f.name+"?v="+encodeURIComponent(f.sha?f.sha.slice(0,12):m.v),{cache:"no-store",signal:ctl.signal});
+      if(!res.ok)throw OcrErr("http","HTTP "+res.status);
+      const cl=+res.headers.get("content-length")||0;const enc=(res.headers.get("content-encoding")||"").toLowerCase();
+      if(!f.b){if(cl&&(!enc||enc==="identity")){sizes[i]=cl;total=sizes.reduce((a,b)=>a+b,0)}else known=false}
+      const rd=res.body&&res.body.getReader?res.body.getReader():null;const parts=[];let n=0;
+      if(rd){for(;;){const {done,value}=await rd.read();if(done)break;arm();parts.push(value);n+=value.byteLength;onProg({loaded:base+n,total,known,file:f.name,i,count:files.length})}}
+      else{const b=new Uint8Array(await res.arrayBuffer());parts.push(b);n=b.byteLength;onProg({loaded:base+n,total,known,file:f.name,i,count:files.length})}
+      clearTimeout(timer);
+      if(f.b&&n!==f.b)throw OcrErr("interrupted",f.name+": "+n+" of "+f.b+" bytes");
+      const blob=new Blob(parts);
+      if(f.sha){const h=await ocrSha(await blob.arrayBuffer());if(h&&h!==f.sha)throw OcrErr("integrity",f.name)}
+      got.push({f:Object.assign({},f,{b:n}),blob});base+=n;
+    }catch(e){clearTimeout(timer);throw ocrClassify(e,ctl)}
+  }
+  try{await caches.delete(OCR_CACHE);const c=await caches.open(OCR_CACHE);
+    for(const g of got)await c.put(OCR_BASE+g.f.name,new Response(g.blob,{headers:{"content-type":/\.js$/.test(g.f.name)?"text/javascript":"application/octet-stream","x-ocr-bytes":String(g.f.b),"x-ocr-sha":g.f.sha||""}}));
+    await c.put(OCR_BASE+"manifest.json",new Response(JSON.stringify(m),{headers:{"content-type":"application/json"}}));
+    // the marker goes in last: a cache without it is treated as empty
+    await c.put(OCR_BASE+"__ready",new Response(JSON.stringify({v:m.v,engine:m.engine||"",files:got.map(g=>({name:g.f.name,b:g.f.b})),at:Date.now()}),{headers:{"content-type":"application/json"}}));
+  }catch(e){try{await caches.delete(OCR_CACHE)}catch(x){}throw (e&&(e.name==="QuotaExceededError"||/quota/i.test(String(e.message))))?OcrErr("quota"):OcrErr("store",String(e&&e.message||e))}
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+  return await ocrReady();
+}
+function ocrClassify(e,ctl){
+  if(e&&e.kind)return e;
+  if(ctl&&ctl.user)return OcrErr("cancelled");
+  if(ctl&&ctl.stalled)return OcrErr("timeout");
+  if(navigator.onLine===false)return OcrErr("offline");
+  if(e&&e.name==="QuotaExceededError")return OcrErr("quota");
+  if(e&&(e.name==="TypeError"||/fetch|network/i.test(String(e.message))))return ctl&&ctl.started?OcrErr("interrupted",String(e.message||"")):OcrErr("network",String(e.message||""));
+  return OcrErr("interrupted",String(e&&e.message||e));
+}
+/* engine: every script/worker/core/language file comes from the verified cache as blob URLs (works offline, no SW needed) */
+async function ocrEngine(){
+  if(OCRE.eng)return OCRE.eng;if(OCRE.loading)return OCRE.loading;
+  OCRE.loading=(async()=>{
+    const meta=await ocrReady();if(!meta)throw OcrErr("missing");
+    const c=await caches.open(OCR_CACHE);
+    const blob=async n=>{const r=await c.match(OCR_BASE+n);if(!r)throw OcrErr("missing");return r.blob()};
+    const url=async n=>{const u=URL.createObjectURL(new Blob([await blob(n)],{type:"text/javascript"}));OCRE.urls.push(u);return u};
+    const script=u=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=u;s.onload=ok;s.onerror=()=>no(OcrErr("load"));document.head.appendChild(s)});
+    if(!window.Tesseract)await script(await url("tesseract.min.js"));
+    if(!window.WardOCR)await script(await url("ward-ocr.js"));
+    const core=meta.files.find(f=>/^tesseract-core/.test(f.name));if(!core)throw OcrErr("missing");
+    const workerPath=await url("worker.min.js");const corePath=(await url(core.name))+"#"+core.name;
+    const lang=new Uint8Array(await (await blob("eng.traineddata.bin")).arrayBuffer());
+    const opts={workerPath,corePath,workerBlobURL:false,cacheMethod:"none",gzip:true};
+    const page=await Tesseract.createWorker([{code:"eng",data:lang}],1,opts);
+    await page.setParameters({tessedit_pageseg_mode:"4",preserve_interword_spaces:"1"});
+    const dig=await Tesseract.createWorker([{code:"eng",data:lang.slice()}],1,opts);
+    await dig.setParameters({tessedit_pageseg_mode:"7",tessedit_char_whitelist:"0123456789.<>"});
+    const cv=b=>{const k=document.createElement("canvas");k.width=b.w;k.height=b.h;k.getContext("2d").putImageData(new ImageData(WardOCR.greyToRgba(b.g),b.w,b.h),0,0);return k};
+    OCRE.eng={name:"tesseract.js "+(Tesseract.version||"7")+" · eng best_int · ward-ocr "+WardOCR.VERSION,
+      page:async b=>{const r=await page.recognize(cv(b),{},{tsv:true,text:false,blocks:false});return {tsv:r.data.tsv}},
+      digits:async b=>{const r=await dig.recognize(cv(b),{},{text:true,blocks:false});return {text:r.data.text,conf:r.data.confidence}},
+      end:async()=>{try{await page.terminate()}catch(e){}try{await dig.terminate()}catch(e){}}};
+    return OCRE.eng;
+  })();
+  try{return await OCRE.loading}catch(e){OCRE.loading=null;throw e.kind?e:OcrErr("load",String(e&&e.message||e))}
+}
+function ocrRelease(){const e=OCRE.eng;OCRE.eng=null;OCRE.loading=null;if(e)e.end();OCRE.urls.forEach(u=>{try{URL.revokeObjectURL(u)}catch(x){}});OCRE.urls=[];LABOCR_CROPS.clear()}
+/* ---- scan sheet (download prompt / progress / failure / pick / crop / reading) ---- */
+function labScanEl(){const l=labLayerEl();if(!l)return null;let s=l.querySelector("#labScan");if(!s){s=document.createElement("div");s.id="labScan";s.className="lab-scan";s.setAttribute("role","dialog");s.setAttribute("aria-label","Scan report");l.appendChild(s)}return s}
+function labScanClose(){if(LABSCAN&&LABSCAN.ctl&&!LABSCAN.ctl.done){LABSCAN.ctl.user=true;try{LABSCAN.ctl.abort()}catch(e){}}LABSCAN=null;const l=labLayerEl();const s=l&&l.querySelector("#labScan");if(s)s.remove()}
+async function labScanStart(){
+  if(!LABU||LABU.mode!=="edit")return;
+  LABSCAN={stage:"check"};labScanRender();
+  const meta=await ocrReady();if(!LABSCAN)return;
+  if(meta){LABSCAN={stage:"pick",ready:true};labScanRender();return}
+  const m=await ocrManifest(true);if(!LABSCAN)return;
+  const total=m&&m.files?ocrFileSet(m).reduce((a,f)=>a+(f.b||0),0):0;
+  LABSCAN={stage:"consent",total};labScanRender();
+}
+async function labScanDownload(){
+  const ctl=new AbortController();ctl.started=false;
+  LABSCAN={stage:"dl",ctl,prog:{loaded:0,total:LABSCAN&&LABSCAN.total||0,known:!!(LABSCAN&&LABSCAN.total),file:""}};labScanRender();
+  try{
+    const meta=await ocrDownload(p=>{ctl.started=true;if(!LABSCAN||LABSCAN.ctl!==ctl)return;LABSCAN.prog=p;labScanProg()},ctl);
+    ctl.done=true;if(!LABSCAN||LABSCAN.ctl!==ctl)return;
+    if(!meta)throw OcrErr("store");
+    LABSCAN={stage:"pick",ready:true,fresh:true};labScanRender();
+  }catch(e){ctl.done=true;if(!LABSCAN||LABSCAN.ctl!==ctl)return;const k=(e&&e.kind)||"interrupted";
+    if(k==="cancelled"){LABSCAN=null;labScanClose();toast("Download cancelled — nothing was saved","info");return}
+    LABSCAN={stage:"fail",kind:k,detail:String(e&&e.message||"")};labScanRender()}
+}
+function labScanProg(){const s=document.getElementById("labScan");if(!s||!LABSCAN||LABSCAN.stage!=="dl")return;const p=LABSCAN.prog;
+  const bar=s.querySelector(".lab-pb");const pct=p.known&&p.total?Math.min(100,Math.floor(p.loaded*100/p.total)):null;
+  if(bar){bar.classList.toggle("ind",pct==null);bar.setAttribute("aria-valuenow",pct==null?"":String(pct));const i=bar.querySelector("i");if(i&&pct!=null)i.style.width=pct+"%"}
+  const t=s.querySelector("[data-pbt]");if(t)t.innerHTML=pct==null?`<span>Downloading…</span><span>${ocrMB(p.loaded)} MB</span>`:`<span>${pct}%</span><span>${ocrMB(p.loaded)} of ${ocrMB(p.total)} MB</span>`;
+  const f=s.querySelector("[data-pbf]");if(f)f.textContent=p.file?("File "+((p.i||0)+1)+" of "+(p.count||5)+" · "+p.file):"Starting…";
+}
+function labScanHead(t){return `<div class="mse-top"><button type="button" class="mse-x" data-scx="1" aria-label="Close scanner">✕</button><div class="mse-tt"><b>${esc(t)}</b><span>Ward Sync scanner · on this phone only</span></div></div>`}
+function labScanRender(){
+  const s=labScanEl();if(!s||!LABSCAN)return;const L=LABSCAN;let body="",foot="";
+  if(L.stage==="check"){body=`<div class="lab-sc-card"><p><span class="lab-spin"></span>Checking the scanner…</p></div>`}
+  else if(L.stage==="consent"){
+    body=`<div class="lab-sc-card"><h3>Download the scanner (one time)</h3>
+      <p>Reading reports happens on this phone — nothing is uploaded. The scanner needs a one-time download:</p>
+      <p class="lab-sc-size">${L.total?ocrMB(L.total)+" MB":"about 7 MB"}</p>
+      <p class="lab-sc-note">Uses mobile data if you are not on Wi-Fi.</p>
+      <p class="tiny muted">After this the scanner works offline and you won't be asked again.</p></div>`;
+    foot=`<button type="button" class="btn ghost" data-scx="1">Not now</button><button type="button" class="btn save" data-scdl="1">Download</button>`}
+  else if(L.stage==="dl"){const p=L.prog||{};
+    body=`<div class="lab-sc-card"><h3>Downloading the scanner</h3><p>Keep this screen open. ${navigator.connection&&navigator.connection.saveData?"Data saver is on. ":""}</p>
+      <div class="lab-pb${p.known?"":" ind"}" role="progressbar" aria-label="Scanner download" aria-valuemin="0" aria-valuemax="100"><i style="width:0%"></i></div>
+      <div class="lab-pbt" data-pbt="1"></div><div class="lab-pbf" data-pbf="1"></div></div>`;
+    foot=`<button type="button" class="btn ghost" data-sccancel="1" style="grid-column:1/-1">Cancel download</button>`}
+  else if(L.stage==="fail"){
+    body=`<div class="lab-sc-card fail" role="alert"><h3>Scanner download failed</h3><p><b>${esc(OCR_FAIL[L.kind]||OCR_FAIL.interrupted)}</b></p>
+      <p>Nothing was kept — a retry starts cleanly.</p>${L.kind==="quota"?`<p class="tiny">Free some space (photos, old downloads) and retry.</p>`:""}</div>`;
+    foot=`<button type="button" class="btn ghost" data-scmanual="1">Enter manually</button><button type="button" class="btn save" data-scretry="1">Retry</button>`}
+  else if(L.stage==="pick"){
+    body=`<div class="lab-sc-card ready"><h3>✓ Scanner ready (offline)</h3><p>Lay the report flat in good light, fill the frame with the page and hold steady. One page at a time.</p><p class="tiny muted">For now the scanner fills <b>CBC</b> reports only; enter other reports manually.</p></div>
+      ${L.err?`<div class="lab-q" role="alert">${esc(L.err)}</div>`:""}
+      <div class="lab-sc-pick"><label class="pri">📷 Take photo<input type="file" accept="image/*" capture="environment" data-scfile="cam"></label><label>🖼 Choose from gallery / WhatsApp<input type="file" accept="image/*" data-scfile="gal"></label></div>
+      <p class="tiny muted" style="margin-top:12px">The photo stays on this phone while you check the values and is never saved or sent.</p>`;
+    foot=`<button type="button" class="btn ghost" data-scx="1" style="grid-column:1/-1">Cancel</button>`}
+  else if(L.stage==="crop"){const q=L.quality||{};
+    const msgs=[];if(!q.pageFound)msgs.push("Couldn't find the page edges — drag the four corners onto the paper.");if(q.lowRes)msgs.push("Small or compressed image (e.g. forwarded on WhatsApp). Check every value carefully; a camera photo works best.");if(q.blurry)msgs.push("The photo looks blurry — retake it if you can.");
+    body=`${msgs.length?msgs.map(m=>`<div class="lab-q">${esc(m)}</div>`).join(""):`<div class="lab-q ok">Page found. Adjust the corners if needed.</div>`}
+      <div class="lab-crop" id="labCrop"><canvas></canvas><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polygon fill="rgba(13,148,136,.12)" stroke="#0d9488" stroke-width="0.6" vector-effect="non-scaling-stroke" points=""/></svg>${[0,1,2,3].map(i=>`<div class="lab-hdl" data-hdl="${i}"></div>`).join("")}</div>`;
+    foot=`<button type="button" class="btn ghost" data-scretake="1">Retake</button><button type="button" class="btn save" data-scread="1">Read values</button>`}
+  else if(L.stage==="soon"){
+    body=`<div class="lab-sc-card" role="alert"><h3>Not a CBC report</h3><p><b>Scanning for this report type is coming soon — please enter manually.</b></p><p class="tiny muted">Scanning currently fills CBC reports only. Nothing was filled in and the photo has been discarded.</p></div>`;
+    foot=`<button type="button" class="btn save" data-scmanual="1" style="grid-column:1/-1">Enter manually</button>`}
+  else if(L.stage==="read"){body=`<div class="lab-sc-card"><p><span class="lab-spin"></span><b data-scstep="1">${esc(L.step||"Starting the scanner…")}</b></p><p class="tiny muted">Usually 3–8 seconds on a phone.</p></div>`}
+  s.innerHTML=labScanHead(L.stage==="consent"||L.stage==="dl"||L.stage==="fail"?"Scanner":"Scan report")+`<div class="mse-scroll">${body}</div>`+(foot?`<div class="mse-foot">${foot}</div>`:"");
+  if(L.stage==="dl")labScanProg();
+  if(L.stage==="crop")labCropMount();
+}
+async function labScanFile(file){
+  if(!file||!LABSCAN)return;LABSCAN.err="";
+  if(!/^image\//.test(file.type||"image/")){LABSCAN.err="That file isn't a photo.";labScanRender();return}
+  LABSCAN={stage:"read",step:"Opening the photo…"};labScanRender();
+  try{
+    let bmp;try{bmp=await createImageBitmap(file,{imageOrientation:"from-image"})}catch(e){bmp=await new Promise((ok,no)=>{const u=URL.createObjectURL(file);const im=new Image();im.onload=()=>{URL.revokeObjectURL(u);ok(im)};im.onerror=()=>{URL.revokeObjectURL(u);no(e)};im.src=u})}
+    const W0=bmp.width,H0=bmp.height;const sc=Math.min(1,3000/Math.max(W0,H0));const w=Math.round(W0*sc),h=Math.round(H0*sc);
+    const cv=document.createElement("canvas");cv.width=w;cv.height=h;const cx=cv.getContext("2d",{willReadFrequently:true});cx.drawImage(bmp,0,0,w,h);try{bmp.close&&bmp.close()}catch(e){}
+    const rgba=cx.getImageData(0,0,w,h).data;
+    await ocrEngine(); // loads WardOCR too
+    if(!LABSCAN)return;
+    const g=WardOCR.toGrey(rgba,w,h);const dq=WardOCR.detectQuad(g,w,h);const sharp=WardOCR.sharpness(g,w,h);
+    const quality={longEdge:Math.max(W0,H0),lowRes:Math.max(W0,H0)<1400,blurry:sharp<WardOCR.QUALITY.blurMin,pageFound:!!dq.found,sharpness:Math.round(sharp)};
+    LABSCAN={stage:"crop",cv,rgba,w,h,quad:dq.quad.map(p=>[p[0],p[1]]),auto:dq.quad.map(p=>[p[0],p[1]]),quality};labScanRender();
+  }catch(e){const k=e&&e.kind;if(k==="missing"||k==="load"){LABSCAN={stage:"fail",kind:k};labScanRender();return}
+    LABSCAN={stage:"pick",ready:true,err:"Couldn't open that photo. Try another one."};labScanRender()}
+}
+function labCropMount(){
+  const box=document.getElementById("labCrop");const L=LABSCAN;if(!box||!L||!L.cv)return;
+  const c=box.querySelector("canvas");const sc=Math.min(1,1100/Math.max(L.w,L.h));c.width=Math.round(L.w*sc);c.height=Math.round(L.h*sc);c.getContext("2d").drawImage(L.cv,0,0,c.width,c.height);
+  const draw=()=>{const pts=L.quad.map(p=>[p[0]/L.w*100,p[1]/L.h*100]);box.querySelector("polygon").setAttribute("points",pts.map(p=>p.join(",")).join(" "));
+    box.querySelectorAll(".lab-hdl").forEach((d,i)=>{d.style.left=pts[i][0]+"%";d.style.top=pts[i][1]+"%"})};
+  draw();
+  box.querySelectorAll(".lab-hdl").forEach(d=>{d.addEventListener("pointerdown",ev=>{ev.preventDefault();const i=+d.dataset.hdl;try{d.setPointerCapture(ev.pointerId)}catch(x){}
+    const mv=e2=>{const r=box.getBoundingClientRect();const x=Math.max(0,Math.min(1,(e2.clientX-r.left)/r.width)),y=Math.max(0,Math.min(1,(e2.clientY-r.top)/r.height));L.quad[i]=[x*(L.w-1),y*(L.h-1)];L.moved=true;draw()};
+    const up=()=>{d.removeEventListener("pointermove",mv);d.removeEventListener("pointerup",up);d.removeEventListener("pointercancel",up)};
+    d.addEventListener("pointermove",mv);d.addEventListener("pointerup",up);d.addEventListener("pointercancel",up)})});
+}
+const labTick=()=>new Promise(r=>setTimeout(r,30));
+const LAB_OCR_TPLS=["cbc"]; // R1.3.134: report types the scanner may pre-fill
+async function labScanRead(){
+  const L=LABSCAN;if(!L||L.stage!=="crop")return;const {rgba,w,h,quality}=L;const quad=L.quad,moved=!!L.moved;
+  LABSCAN={stage:"read",step:"Straightening the page…"};labScanRender();await labTick();
+  const step=t=>{if(LABSCAN)LABSCAN.step=t;const e=document.querySelector("[data-scstep]");if(e)e.textContent=t};
+  try{
+    const eng=await ocrEngine();const t0=Date.now();
+    const prep=WardOCR.prepare(rgba,w,h,{quad});prep.quality=Object.assign({},prep.quality,quality);
+    step("Reading the report…");await labTick();
+    const out=await WardOCR.read(prep,{page:eng.page,digits:eng.digits},{progress:(i,n)=>step("Double-checking numbers ("+i+" of "+n+")…")});
+    if(!LABSCAN||!LABU)return;
+    out.ms=Date.now()-t0;
+    // R1.3.134 rollout: only CBC is pre-filled. Urine / Biochemistry (and anything unrecognised) fill nothing.
+    if(!LAB_OCR_TPLS.includes(out.tpl)){LABSCAN={stage:"soon",tpl:out.tpl};labScanRender();return}
+    labOcrApply(out,prep,{moved,quality,engine:eng.name});
+    LABSCAN=null;labScanClose();
+  }catch(e){if(!LABSCAN)return;const k=e&&e.kind;LABSCAN={stage:k==="missing"||k==="load"?"fail":"pick",kind:k,ready:true,err:"Couldn't read that photo. Try again in better light, or enter the values manually."};labScanRender()}
+}
+/* ---- put the read values into the form for review ---- */
+function labOcrApply(out,prep,info){
+  const f=LABU.f;const p=patient(LABU.pid)||{};let n=0;
+  LABOCR_CROPS.clear();
+  Object.keys(out.rows).forEach(code=>{
+    const o=out.rows[code];if(!LAB_T[code])return;const panel=labPanelOf(code);
+    if(!f.rows.some(r=>r.panel===panel)){const pd=LAB_PANELS.find(x=>x.k===panel);if(pd)pd.c.forEach(c=>{if(!f.rows.some(r=>r.code===c&&!r.custom))f.rows.push(labNewRow(c,panel))})}
+    let r=f.rows.find(x=>x.code===code&&!x.custom);if(!r){r=labNewRow(code,panel);f.rows.push(r)}
+    if(String(r.raw||"").trim()&&!r.ocr)return; // never overwrite a value someone typed
+    r.raw=o.value==null?"":String(o.value);r.chk=false;
+    r.ocr={v:r.raw,c:Math.round(o.conf||0),s:o.state==="green"||o.state==="amber"||o.state==="red"?o.state:"amber",why:(o.reasons||[]).slice(0,3),ok:false,ed:false};
+    if(r.ocr.s==="red"&&!r.raw)r.ocr.why=["Not read — type it from the paper, or remove the row"];
+    try{if(o.box){const b=o.box;const pad=Math.round(b.h*0.6);const x0=Math.max(0,(o.lineBox?o.lineBox.x:b.x)-pad),y0=Math.max(0,b.y-pad);const cw=Math.min(prep.w-x0,(b.x+b.w+pad)-x0),ch=Math.min(prep.h-y0,b.h+pad*2);
+      const sc=Math.min(1,28/Math.max(1,ch));const cr=WardOCR.crop(prep.grey,prep.w,prep.h,x0,y0,cw,ch,sc);const k=document.createElement("canvas");k.width=cr.w;k.height=cr.h;k.getContext("2d").putImageData(new ImageData(WardOCR.greyToRgba(cr.g),cr.w,cr.h),0,0);LABOCR_CROPS.set(r.k,k.toDataURL("image/jpeg",0.7))}}catch(e){}
+    n++});
+  const hd=out.header||{};const nm=WardOCR.nameMatch(hd.name||"",p.name||"");
+  const day=hd.reported||hd.collected||"";
+  if(!f.rep&&/^\d{4}-\d{2}-\d{2}$/.test(day)&&day<=labTodayDay()&&day>="2000-01-01"){f.rep=day;f.repOcr=1}
+  const st=Object.values(f.rows).filter(r=>r.ocr);
+  f.ocr={v:1,engine:String(info.engine||"").slice(0,120),mean:out.meanConf,ms:out.ms,tpl:out.tpl,n,
+    q:{lowRes:!!info.quality.lowRes,blurry:!!info.quality.blurry,page:!!info.quality.pageFound,moved:!!info.moved,long:info.quality.longEdge||0},
+    sample:hd.sample?String(hd.sample).slice(0,40):"",page:hd.page||null,pages:hd.pages||null,
+    name:{printed:String(hd.name||"").slice(0,80),status:nm.status,score:Math.round((nm.score||0)*100)/100,ov:false,reason:""},
+    counts:{green:st.filter(r=>r.ocr.s==="green").length,amber:st.filter(r=>r.ocr.s==="amber").length,red:st.filter(r=>r.ocr.s==="red").length}};
+  labRefreshAll();labSaveDraft();
+  {const fl=f.ocr.counts.amber+f.ocr.counts.red,nb=f.ocr.name.status!=="match";toast(n?("Read "+n+" value"+(n>1?"s":"")+(fl?" — check the "+fl+" highlighted":" — compare them with the paper")+(nb?" · name doesn't match":"")):"No values found — try another photo or type them","info");}
+  if(!n)return;
+  const el=labLayerEl();const nb=el&&el.querySelector("#labOcrBar");if(nb)nb.scrollIntoView({block:"start"});
+}
+function labRefreshAll(){const el=labLayerEl();if(!el||!LABU)return;const sc=el.querySelector(".mse-scroll");const top=sc?sc.scrollTop:0;labMount(true);const ns=el.querySelector(".mse-scroll");if(ns)ns.scrollTop=top}
+function labOcrPending(){const f=LABU&&LABU.f;if(!f||!f.ocr)return {amber:0,red:0,name:false};let amber=0,red=0;
+  f.rows.forEach(r=>{if(!r.ocr||r.ocr.ed||r.ocr.ok)return;if(r.ocr.s==="amber")amber++;else if(r.ocr.s==="red")red++});
+  return {amber,red,name:f.ocr.name&&f.ocr.name.status!=="match"&&!f.ocr.name.ov}}
+function labOcrCls(r){if(!r.ocr)return "";if(r.ocr.ed)return " ocr-ed";if(r.ocr.ok)return " ocr-green";return " ocr-"+r.ocr.s}
+function labOcrMsg(r){
+  if(!r.ocr||r.ocr.ed)return r.ocr&&r.ocr.ed?`<span class="lab-ocr-n">Scanned · corrected by you</span>`:"";
+  const o=r.ocr;let h=`<span class="lab-ocr-n">Scanned${o.c?" · "+o.c+"%":""}</span>`;
+  if(o.s!=="green"&&!o.ok){h+=`<span class="lab-ocr-why">${esc(o.why.join(" · ")||"Check against the paper")}</span>`;if(String(r.raw||"").trim())h+=`<button type="button" class="lab-ocrok" data-ocrok="${r.k}">✓ Matches paper</button>`}
+  else if(o.ok)h+=`<span class="lab-ocr-acked">✓ Checked against paper</span>`;
+  const im=LABOCR_CROPS.get(r.k);if(im&&o.s!=="green"&&!o.ok)h+=`<img class="lab-ocr-crop" alt="The value as photographed" src="${im}">`;
+  return h;
+}
+function labOcrBarHtml(){
+  if(!labOcrOn()||!LABU||LABU.editId)return "";const f=LABU.f;const p=patient(LABU.pid)||{};
+  if(!f.ocr)return `<div class="lab-ocrbar" id="labOcrBar"><button type="button" class="lab-scanbtn" data-scan="1">📷 Scan report <span class="lab-chip">Pilot</span></button><span class="lab-scanst" id="labScanSt">Reads the values; you check them before saving</span></div>`;
+  const o=f.ocr;const pd=labOcrPending();const left=pd.amber+pd.red;const nm=o.name||{};
+  let name="";
+  if(nm.status==="match")name=`<p class="lab-ocr-name ok"><i>✓</i>Name on the report matches this patient</p>`;
+  else if(nm.ov)name=`<p class="lab-ocr-ovr">⚠ Used for this patient anyway — ${esc(nm.reason)}</p>`;
+  else{const reasons=["Name misspelt on the report","Name cut off in the photo","Name not printed clearly"];
+    name=`<div class="lab-nm" role="alert" id="labNm"><h4>${nm.status==="unread"?"Couldn't read the patient name on the report":"Name on the report doesn't match this patient"}</h4>
+      <dl><dt>On the report</dt><dd>${esc(nm.printed||"— (not readable)")}</dd><dt>This patient</dt><dd>${esc(p.name||"")}</dd></dl>
+      ${f.nmOpen?`<p class="tiny" style="margin:0 0 4px">Why is this the right patient? (saved in the audit trail)</p><div class="why">${reasons.map(x=>`<button type="button" class="chip" data-nmwhy="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+        <textarea data-nmreason="1" maxlength="300" placeholder="Reason (required)">${esc(f.nmReason||"")}</textarea>
+        <div class="btns" style="margin-top:8px"><button type="button" class="btn sm ghost" data-ocrcancel="1">Cancel scan</button><button type="button" class="btn sm" data-nmconfirm="1">Confirm — use for ${esc(p.name||"this patient")}</button></div>`
+      :`<div class="btns"><button type="button" class="btn sm ghost" data-ocrcancel="1">Cancel</button><button type="button" class="btn sm" data-nmuse="1">Use for this patient anyway</button></div>`}</div>`}
+  return `<div class="lab-ocrbar" id="labOcrBar"><div class="lab-ocrsum"><div class="row"><b>Scanned · ${o.n} value${o.n===1?"":"s"}</b>${left?`<span class="todo">${left} to check</span>`:`<span class="done">✓ all checked</span>`}<button type="button" class="linkbtn" data-ocrcancel="1">Cancel scan</button></div>
+    ${o.q&&o.q.lowRes?`<p class="tiny lab-sc-note">Low-resolution photo — check every value.</p>`:""}${o.pages>1?`<p class="tiny muted">Page ${esc(String(o.page||"?"))} of ${esc(String(o.pages))} — scan the other page as a separate report.</p>`:""}
+    ${nm.status==="match"||nm.ov?name:""}</div>${nm.status!=="match"&&!nm.ov?name:""}</div>`;
+}
+function labOcrCancel(){const f=LABU.f;f.rows=f.rows.filter(r=>!r.ocr);if(f.repOcr){f.rep="";f.repOcr=0}f.ocr=null;f.nmOpen=false;f.nmReason="";LABOCR_CROPS.clear();
+  // drop panels that were only added by the scan and are now empty
+  labRefreshAll();labSaveDraft();toast("Scan cancelled — the read values were removed","info")}
+function labOcrClick(t){
+  if(!LABU||LABU.mode!=="edit")return false;const f=LABU.f;const d=t.dataset;
+  if(d.scan){labScanStart();return true}
+  if(d.scx){labScanClose();return true}
+  if(d.scdl||d.scretry){labScanDownload();return true}
+  if(d.sccancel){if(LABSCAN&&LABSCAN.ctl){LABSCAN.ctl.user=true;try{LABSCAN.ctl.abort()}catch(e){}}return true}
+  if(d.scmanual){labScanClose();toast("Type the values from the paper","info");return true}
+  if(d.scretake){LABSCAN={stage:"pick",ready:true};labScanRender();return true}
+  if(d.scread){labScanRead();return true}
+  if(d.ocrok){const r=f.rows.find(x=>x.k===d.ocrok);if(r&&r.ocr){r.ocr.ok=true;labRefreshRow(r.k);labOcrBarRefresh();labSaveDraft()}return true}
+  if(d.ocrcancel){labOcrCancel();return true}
+  if(d.nmuse){f.nmOpen=true;labOcrBarRefresh();const ta=labLayerEl().querySelector("[data-nmreason]");if(ta)try{ta.focus()}catch(e){}return true}
+  if(d.nmwhy){f.nmReason=d.nmwhy;const ta=labLayerEl().querySelector("[data-nmreason]");if(ta)ta.value=d.nmwhy;return true}
+  if(d.nmconfirm){const why=String(f.nmReason||"").trim();if(why.length<3){toast("Give a reason for using this report for this patient.","bad");return true}
+    f.ocr.name.ov=true;f.ocr.name.reason=why.slice(0,300);f.nmOpen=false;labOcrBarRefresh();labSaveDraft();return true}
+  return false;
+}
+function labOcrBarRefresh(){const el=labLayerEl();const b=el&&el.querySelector("#labOcrBar");if(b)b.outerHTML=labOcrBarHtml()}
+async function labScanStatus(){const s=document.getElementById("labScanSt");if(!s)return;const m=await ocrReady();const s2=document.getElementById("labScanSt");if(!s2)return;
+  if(m){s2.textContent="✓ Scanner ready (offline)";s2.classList.add("ok")}else s2.textContent="One-time download (about 7 MB) before the first scan"}
 /* ---- events ---- */
 function labWire(el){
   el.addEventListener("click",e=>{
@@ -12052,6 +12438,7 @@ function labWire(el){
     if(t.dataset.close){labClose();return}
     if(LABU.mode==="edit"){
       const f=LABU.f;
+      if(labOcrClick(t))return;
       if(t.dataset.panel){labTogglePanel(t.dataset.panel);return}
       if(t.dataset.other){const r=labNewRow("other","Other",{custom:true,name:"",unit:"",lo:"",hi:""});f.rows.push(r);labRefreshGroups();labSaveDraft();const i=el.querySelector(`[data-row="${r.k}"] .lab-ci`);if(i){i.scrollIntoView({block:"center"});try{i.focus()}catch(x){}}return}
       if(t.dataset.rm){f.rows=f.rows.filter(r=>r.k!==t.dataset.rm);labRefreshGroups();labSaveDraft();return}
@@ -12075,17 +12462,19 @@ function labWire(el){
   el.addEventListener("input",e=>{
     if(!LABU||LABU.mode!=="edit")return;const t=e.target;const f=LABU.f;
     if(t.dataset.h==="rep"){f.rep=t.value}
-    else if(t.classList.contains("lab-v")){const r=f.rows.find(x=>x.k===t.dataset.k);if(!r)return;r.raw=t.value;if(r.chk&&labRowEval(r).state!=="red")r.chk=false;labRefreshRow(r.k);LABU.f.dupOk=LABU.f.dupOk&&!!LABU.editId}
+    else if(t.dataset.nmreason){f.nmReason=t.value;return}
+    else if(t.classList.contains("lab-v")){const r=f.rows.find(x=>x.k===t.dataset.k);if(!r)return;r.raw=t.value;if(r.ocr){const was=r.ocr.ed;r.ocr.ed=String(t.value).trim()!==String(r.ocr.v);if(was!==r.ocr.ed)labOcrBarRefresh()}if(r.chk&&labRowEval(r).state!=="red")r.chk=false;labRefreshRow(r.k);LABU.f.dupOk=LABU.f.dupOk&&!!LABU.editId}
     else if(t.classList.contains("lab-ci")){const r=f.rows.find(x=>x.k===t.dataset.k);if(!r)return;r[t.dataset.f]=t.value;labRefreshRow(r.k)}
     else return;
     clearTimeout(__labDraftT);__labDraftT=setTimeout(labSaveDraft,300);
   });
   el.addEventListener("change",e=>{
     if(!LABU||LABU.mode!=="edit")return;const t=e.target;const f=LABU.f;
+    if(t.dataset.scfile){const fl=t.files&&t.files[0];t.value="";labScanFile(fl);return}
     if(t.dataset.chk){const r=f.rows.find(x=>x.k===t.dataset.chk);if(r)r.chk=t.checked;labSaveDraft();return}
     if(t.dataset.critok){f.critOk=t.checked;labSaveDraft();return}
     if(t.dataset.postalert){f.postAlert=t.checked;labSaveDraft();return}
-    if(t.dataset.h==="rep"){f.rep=t.value;labSaveDraft()}
+    if(t.dataset.h==="rep"){f.rep=t.value;if(f.repOcr){f.repOcr=0;const n=t.parentElement&&t.parentElement.querySelector(".lab-ocr-date");if(n)n.remove()}labSaveDraft()}
   });
   el.addEventListener("keydown",e=>{
     if(e.key!=="Enter"||!LABU||LABU.mode!=="edit")return;const t=e.target;if(!t.matches||!t.matches("input:not([type=checkbox])"))return;
