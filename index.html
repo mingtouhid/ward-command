@@ -1925,6 +1925,24 @@ button.dx-opt:hover,button.dx-opt:active,button.dx-opt.active{background:var(--p
 .dm-tag{font-style:normal;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px;background:color-mix(in srgb,var(--teal) 14%,transparent);color:var(--teal2,var(--teal))}
 .dm-none{margin:2px 2px 8px}
 .dm-new{border:1px dashed var(--line);border-radius:10px;padding:6px 8px 8px;margin-bottom:6px}
+/* R1.3.133: discharge form — record summary, required marks, instruction / review chips, validation */
+.dm-instr{width:100%;margin-top:6px;font-size:14px}
+.dm-none-tick{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;font-weight:600}
+.dm-none-tick input{width:18px;height:18px;margin:0}
+.dis-star{color:var(--danger,#b91c1c);font-weight:700}
+.dis-rec{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:8px 10px;margin-bottom:12px}
+.dis-rec-h{margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:.02em;opacity:.75}
+.dis-rec dl{margin:0;display:grid;gap:2px}
+.dis-rec-r{display:grid;grid-template-columns:104px 1fr;gap:8px;font-size:13px;line-height:1.35}
+.dis-rec-r dt{opacity:.7}.dis-rec-r dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.dis-rec-miss{color:var(--danger,#b91c1c);font-weight:600}
+.dis-rec .tiny{margin:4px 0 0}
+.dis-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.dis-chips .chip{min-height:32px;font-size:12.5px;white-space:normal;text-align:left;max-width:100%;line-height:1.25}
+.dis-adv textarea{width:100%}
+.dis-need{margin:10px 0 8px;font-weight:600;color:var(--danger,#b91c1c)}
+.dis-need.ok{color:var(--ok,#15803d)}
+.dis-err,.bacc.dis-err{outline:2px solid var(--danger,#b91c1c);outline-offset:2px;border-radius:10px}
 .dm-new-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
 .dm-new-lbl{font-size:11px;font-weight:700;color:var(--muted)}
 .dm-x{all:unset;cursor:pointer;width:28px;height:24px;text-align:center;font-size:20px;line-height:22px;color:var(--muted);border-radius:8px}
@@ -2711,7 +2729,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.131";
+const APP_VERSION="R1.3.133";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -4856,6 +4874,7 @@ function censusDraft(){
   if(g("dmrd")) ui.census.dmrd=g("dmrd").value;
   if(g("dadvice")) ui.census.dadvice=g("dadvice").value;
   if(g("dreview")) ui.census.dreview=g("dreview").value;
+  if(g("dnomeds")) ui.census.dnomeds=!!g("dnomeds").checked; // R1.3.133
   if(g("ddate")&&ui.obsClose&&ui.obsClose.pid===ui.disId) dmDraft();
 }
 function openWardSection(secId){
@@ -4884,6 +4903,7 @@ function openSnapDischarge(pid){
     ddxPid:p.id,
     dadvice:"",
     dreview:"",
+    dnomeds:false,
     dmrd:"",
     dect:null,
     dreq:[],dreqName:"",
@@ -4949,11 +4969,114 @@ function disTreatToggle(id){
 }
 function treatLabelWithEct(mode,n){const l=labelOf(TREATMENT_MODES,mode);return (/ect/.test(String(mode||""))&&n!=null)?`${l} (${n} session${n===1?"":"s"})`:l}
 function disMedsReset(pid){
-  ui.obsClose={pid,open:false,sel:{},add:[]};
+  ui.obsClose={pid,open:true,dis:true,sel:{},add:[]}; // R1.3.133: discharge rows (no default frequency, instructions field)
   if(ui.fields) Object.keys(ui.fields).forEach(k=>{if(/^dm(route|freq)\d+$/.test(k)) delete ui.fields[k]});
   if(ui.mrdErr&&ui.mrdErr.id==="dmrd") ui.mrdErr=null;
 }
 function disNeedsMrd(p){return !!p&&!normMrd(p.mrdNo)}
+/* R1.3.133: discharge form asks for everything the certificate prints.
+   Required for On advice / On request / DAMA (modes that get a certificate with instructions):
+   discharge date & time, medications on discharge (or "No medications"), dose + frequency (or taper) per new medicine,
+   instructions to the patient (DAMA: optional, a DAMA line is added), review interval (DAMA: defaults to 1 week). */
+function disCertMode(m){return ["advice","request","dama"].includes(m||"advice")}
+function disReqMark(on){return on?' <b class="dis-star" aria-label="required">*</b>':' <em style="font-style:normal;opacity:.6">(optional)</em>'}
+const DIS_ADV_CHIPS=["Continue medications as advised.","Remain abstinent from alcohol.","Avoid alcohol and other substances.","Take medicines regularly; do not stop them on your own.","Return earlier if symptoms recur."];
+const DIS_REV_CHIPS=["1 week","2 weeks","3 weeks","1 month"];
+function disRecordHtml(p){
+  if(!p) return "";
+  let adm="";try{adm=certAdmittedAuto(p)}catch(e){}
+  const sex=p.sex?String(p.sex).trim().charAt(0).toUpperCase():"";
+  const row=(k,v,miss)=>`<div class="dis-rec-r"><dt>${k}</dt><dd>${v?esc(v):`<span class="dis-rec-miss">${miss||"not on record"}</span>`}</dd></div>`;
+  return `<div class="dis-rec" id="disRec"><p class="dis-rec-h">From the record · prints on the certificate</p><dl>
+    ${row("Admitted under",adm,"no consultant on record — add in the patient record")}
+    ${row("Hospital No.",p.hospitalNo||"")}
+    ${normMrd(p.mrdNo)?row("M.R.D. No.",normMrd(p.mrdNo)):""}
+    ${row("Admitted on",p.admittedAt?certDate(p.admittedAt):"")}
+    ${row("Age / Sex",[p.age!=null&&p.age!==""?String(p.age)+(/\d$/.test(String(p.age))?" yrs":""):"",sex].filter(Boolean).join(" / "))}
+  </dl><p class="tiny muted">Department: Psychiatry. Wrong? Correct it in the patient record before discharge.</p></div>`;
+}
+function disAdviceHtml(d){
+  const need=disCertMode(d.mode)&&(d.mode||"advice")!=="dama";
+  const have=certAdviceLines({dischargeAdvice:d.dadvice||""}).map(t=>t.toLowerCase().replace(/[.\s]+$/,""));
+  return `<div class="field dis-adv"><label for="dadvice"><span>Instructions to the patient${disReqMark(need)}</span></label>
+    <textarea id="dadvice" rows="3" spellcheck="true" autocapitalize="sentences" placeholder="One instruction per line, e.g.\nRemain abstinent from alcohol.\nContinue medications as advised." oninput="ui.census=ui.census||{};ui.census.dadvice=this.value;disAdvChipsPaint();disNeedPaint()">${esc(d.dadvice||"")}</textarea>
+    <div class="multi dis-chips" id="disAdvChips">${DIS_ADV_CHIPS.map((t,i)=>`<button type="button" class="chip ${have.includes(t.toLowerCase().replace(/[.\s]+$/,""))?"on":""}" data-adv="${i}" onclick="disAdvAdd(${i})">+ ${esc(t.replace(/\.$/,""))}</button>`).join("")}</div>
+    <p class="tiny muted">Prints after the medicines, one numbered line each. The review goes in the box below, not here.${(d.mode||"advice")==="dama"?" DAMA adds “Treatment is incomplete…” automatically.":""}</p></div>`;
+}
+function disAdvChipsPaint(){
+  const box=document.getElementById("disAdvChips");if(!box) return;
+  const have=certAdviceLines({dischargeAdvice:(ui.census||{}).dadvice||""}).map(t=>t.toLowerCase().replace(/[.\s]+$/,""));
+  box.querySelectorAll("[data-adv]").forEach(b=>b.classList.toggle("on",have.includes(DIS_ADV_CHIPS[+b.dataset.adv].toLowerCase().replace(/[.\s]+$/,""))));
+}
+function disAdvAdd(i){
+  const t=DIS_ADV_CHIPS[i];if(!t) return;ui.census=ui.census||{};
+  const el=document.getElementById("dadvice");const cur=el?el.value:(ui.census.dadvice||"");
+  const key=x=>x.toLowerCase().replace(/[.\s]+$/,"");
+  const lines=String(cur||"").split(/\n/);
+  const at=lines.findIndex(x=>key(x.replace(/^\s*(?:[-•*·]|\d+[.)])\s*/,"").trim())===key(t));
+  if(at>=0) lines.splice(at,1); else{while(lines.length&&!lines[lines.length-1].trim())lines.pop();lines.push(t)}
+  const v=lines.join("\n");ui.census.dadvice=v;if(el)el.value=v;
+  disAdvChipsPaint();disNeedPaint();
+}
+function disReviewHtml(d){
+  const mode=d.mode||"advice";const need=disCertMode(mode)&&mode!=="dama";
+  const r=String(d.dreview||"").trim();
+  return `<div class="field dis-review"><label for="dreview"><span>Review after${disReqMark(need)}</span></label>
+    <input id="dreview" type="text" maxlength="200" autocomplete="off" placeholder="${mode==="dama"?"e.g. 1 week (default for DAMA)":"e.g. 3 weeks / 1 month / on 10 Nov"}" value="${esc(d.dreview||"")}" oninput="ui.census=ui.census||{};ui.census.dreview=this.value;disRevPaint();disNeedPaint()"/>
+    <div class="multi dis-chips" id="disRevChips">${DIS_REV_CHIPS.map(t=>`<button type="button" class="chip ${r.toLowerCase()===t?"on":""}" data-rev="${esc(t)}" onclick="disRevSet('${esc(t)}')">${esc(t)}</button>`).join("")}</div>
+    <p class="tiny muted" id="disRevHint">${esc(disRevHint(d))}</p></div>`;
+}
+function disRevHint(d){const t=certReviewText(String(d.dreview||"").trim()||((d.mode||"advice")==="dama"?"1 week":""));return t?"Prints as the last instruction: “"+t+"”":"Prints as the last instruction, e.g. “Review after 3 weeks.”"}
+function disRevPaint(){
+  const d=ui.census||{};const r=String(d.dreview||"").trim().toLowerCase();
+  document.querySelectorAll("#disRevChips [data-rev]").forEach(b=>b.classList.toggle("on",b.dataset.rev===r));
+  const h=document.getElementById("disRevHint");if(h)h.textContent=disRevHint(d);
+}
+function disRevSet(v){ui.census=ui.census||{};ui.census.dreview=v;const el=document.getElementById("dreview");if(el)el.value=v;disRevPaint();disNeedPaint()}
+// Everything still missing before the discharge can be confirmed (after MRD / DAMA requester, which are checked first).
+function disMissing(p,d){
+  const out=[];if(!p) return out;const mode=d.mode||"advice";
+  const t=d.ddate?new Date(d.ddate).getTime():NaN;const adm=Date.parse(p.admittedAt||"");
+  if(!isFinite(t)) out.push({id:"ddate",msg:"Enter the date and time of discharge"});
+  else if(isFinite(adm)&&t<adm-60000) out.push({id:"ddate",msg:"Discharge date is before the admission date"});
+  else if(t>Date.now()+6*3600e3) out.push({id:"ddate",msg:"Discharge date is in the future"});
+  if(!disCertMode(mode)) return out;
+  const dm=ui.obsClose&&ui.obsClose.pid===p.id?ui.obsClose:null;
+  if(dm){try{if(document.getElementById("dmAcc"))dmDraft()}catch(e){}}
+  const n=dm?dmCount(dm):0;
+  if(!n&&!d.dnomeds) out.push({id:"dmAcc",msg:"Add the medications on discharge (or tick “No medications on discharge”)"});
+  if(dm)(dm.add||[]).forEach((m,i)=>{
+    const nm=String(m.drug||"").trim();if(!nm) return;
+    if(!String(m.dose||"").trim()) out.push({id:"dmdose"+i,msg:nm+": enter the dose"});
+    const instr=String(m.instr||"").trim()||dmSplitName(nm).rest;
+    if(!String(m.freq||"").trim()&&!instr) out.push({id:"dmfreq"+i,msg:nm+": choose the frequency (or type the taper / duration)"});
+  });
+  if(mode!=="dama"&&!certAdviceLines({dischargeAdvice:d.dadvice||""}).length) out.push({id:"dadvice",msg:"Add at least one instruction to the patient"});
+  if(mode!=="dama"&&!String(d.dreview||"").trim()) out.push({id:"dreview",msg:"Enter when to review (e.g. 3 weeks)"});
+  return out;
+}
+function disNeedText(p,d){
+  if(!p) return "";const L=[];
+  if(disNeedsMrd(p)&&!normMrd(d.dmrd)) L.push("M.R.D. No.");
+  if((d.mode||"advice")==="dama"&&!disReqNorm(d.dreq,"dama").length) L.push("who requested DAMA");
+  let m=[];try{m=disMissing(p,d)}catch(e){}
+  const short=x=>/^Add the medications/.test(x.msg)?"medications on discharge":/instruction/.test(x.msg)?"instructions to the patient":/review/.test(x.msg)?"review interval":/date/i.test(x.msg)?"discharge date":x.msg;
+  m.forEach(x=>{const s=short(x);if(!L.includes(s))L.push(s)});
+  return L.length?"Still needed: "+L.join(" · "):"All required details are filled.";
+}
+function disNeedPaint(){
+  const el=document.getElementById("disNeed");if(!el) return;const p=patient(ui.disId);if(!p) return;
+  el.textContent=disNeedText(p,ui.census||{});el.classList.toggle("ok",/^All required/.test(el.textContent));
+  document.querySelectorAll(".dis-err").forEach(x=>{const id=x.id||"";const ok=!(disMissing(p,ui.census||{}).some(m=>m.id===id));if(ok)x.classList.remove("dis-err")});
+}
+function disShowMissing(miss){
+  document.querySelectorAll(".dis-err").forEach(x=>x.classList.remove("dis-err"));
+  miss.forEach(m=>{const el=document.getElementById(m.id);if(el)el.classList.add("dis-err")});
+  if(miss.some(m=>m.id==="dmAcc"||/^dm/.test(m.id))){const acc=document.getElementById("dmAcc");if(acc&&!acc.classList.contains("open")){acc.classList.add("open");const b=acc.querySelector(".bacc-h");if(b)b.setAttribute("aria-expanded","true");if(ui.obsClose)ui.obsClose.open=true}}
+  toast(miss[0].msg+(miss.length>1?` (+${miss.length-1} more)`:"")+".","bad");
+  disNeedPaint();
+  const first=document.getElementById(miss[0].id);if(first){try{first.scrollIntoView({block:"center",behavior:"smooth"})}catch(e){}}
+}
 function disConfirmSync(){
   const b=document.getElementById("disConfirm"); if(!b) return;
   const off=(!!document.getElementById("dmrd")&&!normMrd((ui.census||{}).dmrd))||(!!document.getElementById("disReq")&&disReqMissing()); // R1.3.126: DAMA needs a requester
@@ -6994,7 +7117,7 @@ function syncMedInputsFromWrap(wrap){
       drug:drugEl?drugEl.value:"",
       dose:doseEl?doseEl.value:"",
       route:val(routeId)||"PO",
-      freq:val(freqId)||"OD"
+      freq:val(freqId)||(prefix==="dm"&&ui.obsClose&&ui.obsClose.dis?"":"OD") // R1.3.133
     };
     if(prefix==="o"){ui.obs=ui.obs||{meds:[]};ui.obs.meds=ui.obs.meds||[];ui.obs.meds[idx]=rowObj;}
     else if(prefix==="oa"){ui.obsAdmit=ui.obsAdmit||{meds:[]};ui.obsAdmit.meds=ui.obsAdmit.meds||[];ui.obsAdmit.meds[idx]=rowObj;}
@@ -7965,7 +8088,8 @@ function dmDraft(){
   const d=ui.obsClose; if(!d) return;
   d.add=(d.add||[]).map((m,i)=>{
     const dr=document.getElementById("dmdrug"+i), ds=document.getElementById("dmdose"+i);
-    return Object.assign({},m,{drug:dr?dr.value:(m.drug||""),dose:ds?ds.value:(m.dose||""),route:val("dmroute"+i)||m.route||"PO",freq:val("dmfreq"+i)||m.freq||"OD"});
+    const di=document.getElementById("dminstr"+i);
+    return Object.assign({},m,{drug:dr?dr.value:(m.drug||""),dose:ds?ds.value:(m.dose||""),route:val("dmroute"+i)||m.route||"PO",freq:val("dmfreq"+i)||m.freq||(d.dis?"":"OD"),instr:di?di.value:(m.instr||"")});
   });
 }
 function obsCloseDraft(){
@@ -7978,7 +8102,7 @@ function obsCloseDraft(){
 function dmSyncFields(){
   const d=ui.obsClose; if(!d) return; ui.fields=ui.fields||{};
   Object.keys(ui.fields).forEach(k=>{if(/^dm(route|freq)\d+$/.test(k)) delete ui.fields[k]});
-  (d.add||[]).forEach((m,i)=>{ui.fields["dmroute"+i]=m.route||"PO";ui.fields["dmfreq"+i]=m.freq||"OD"});
+  (d.add||[]).forEach((m,i)=>{ui.fields["dmroute"+i]=m.route||"PO";ui.fields["dmfreq"+i]=m.freq||(d.dis?"":"OD")});
 }
 function dmCount(d){return Object.keys(d.sel||{}).filter(k=>d.sel[k]).length+(d.add||[]).filter(m=>String(m.drug||"").trim()).length}
 function dmAdmitSummary(pid,d){
@@ -8000,14 +8124,16 @@ function dmSectionHtml(pid,kind){
   const addHtml=(d.add||[]).map((m,i)=>`<div class="dm-new">
       <div class="dm-new-top"><span class="dm-new-lbl">${m.fromOrder?"Changed":"New"}</span><button type="button" class="dm-x" aria-label="Remove medication" onclick="dmRemove(${i})">×</button></div>
       ${medInputsGridHtml({drugId:"dmdrug"+i,doseId:"dmdose"+i,routeId:"dmroute"+i,freqId:"dmfreq"+i,drugVal:m.drug||"",doseVal:m.dose||"",mode:"row",prefix:"dm",idx:i})}
-      <div class="dm-rf">${picker("dmroute"+i,MED_ROUTES,m.route||"PO","Route")}${picker("dmfreq"+i,MED_FREQS,m.freq||"OD","Frequency")}</div>
+      <div class="dm-rf">${picker("dmroute"+i,MED_ROUTES,m.route||"PO","Route")}${picker("dmfreq"+i,MED_FREQS,m.freq||(d.dis?"":"OD"),"Frequency")}</div>
+      ${d.dis?`<input id="dminstr${i}" class="dm-instr" type="text" maxlength="200" autocomplete="off" spellcheck="true" value="${esc(m.instr||"")}" placeholder="Taper / duration (optional), e.g. 2 tabs HS x 5 days, then 1 tab HS x 5 days" aria-label="Instructions, taper or duration" oninput="dmRefreshCount()"/>`:""}
     </div>`).join("");
   return `<div class="bacc dm-acc${adm?" dm-admit":""} ${d.open?"open":""}" id="dmAcc">
-    <button type="button" class="bacc-h" aria-expanded="${!!d.open}" onclick="dmToggle(this)"><span class="bacc-name">${lbl}</span><span class="bacc-n" id="dmN">${adm?dmAdmitSummary(pid,d):(n?n+" selected":"Optional")}</span>${BED_CHEV}</button>
+    <button type="button" class="bacc-h" aria-expanded="${!!d.open}" onclick="dmToggle(this)"><span class="bacc-name">${lbl}</span><span class="bacc-n" id="dmN">${adm?dmAdmitSummary(pid,d):dmCountLbl(d,n)}</span>${BED_CHEV}</button>
     <div class="bacc-body"><div class="bacc-inner"><div class="dm-in">
       ${ongHtml}
       ${addHtml?`<div class="dm-head"><span>${adm?"New on admission":"Added"}</span></div>${addHtml}`:""}
       <button type="button" class="btn ghost sm dm-add" onclick="dmAdd()">+ Add medication</button>
+      ${d.dis?`<p class="tiny dm-note">Each medicine needs a dose and a frequency. For a taper or a fixed course, type it in the taper / duration box; it prints in the Frequency column instead.</p><label class="dm-none-tick"><input type="checkbox" id="dnomeds" ${(ui.census||{}).dnomeds?"checked":""} onchange="ui.census=ui.census||{};ui.census.dnomeds=this.checked;dmRefreshCount()"/> No medications on discharge</label>`:""}
     </div></div></div>
   </div>`;
 }
@@ -8018,7 +8144,29 @@ function dmToggle(btn){
 }
 function dmRefreshCount(){
   const d=ui.obsClose, el=document.getElementById("dmN"); if(!d||!el) return;
-  dmDraft(); const n=dmCount(d); el.textContent=dmIsAdmit(d)?dmAdmitSummary(d.pid,d):(n?n+" selected":"Optional");
+  dmDraft(); const n=dmCount(d); el.textContent=dmIsAdmit(d)?dmAdmitSummary(d.pid,d):dmCountLbl(d,n);
+  try{if(d.dis){const ae=document.activeElement;
+    // While a drug name is being typed (suggestion list open) defer the "Still needed" repaint to blur so the sheet does not reflow under the list.
+    if(ae&&/^dmdrug/.test(ae.id||"")){if(!ae.dataset.needPend){ae.dataset.needPend="1";ae.addEventListener("blur",()=>{delete ae.dataset.needPend;try{disNeedPaint()}catch(e){}},{once:true})}}
+    else disNeedPaint()}}catch(e){}
+}
+function dmCountLbl(d,n){if(n) return n+" selected";if(!d||!d.dis) return "Optional";return (ui.census||{}).dnomeds?"None":(disCertMode((ui.census||{}).mode)?"Required":"Optional")}
+// R1.3.133: discharge medicine helpers — "666mg" → "666 mg"; a taper typed after the drug name is moved to instructions.
+function dmDoseNorm(s){return String(s==null?"":s).trim().replace(/(\d)\s*(mg|mcg|µg|g|ml|iu|units?)\b/gi,(x,a,u)=>a+" "+(/^iu$/i.test(u)?"IU":u.toLowerCase()))}
+const DM_SCHED=/\b(x|for|days?|weeks?|wks?|months?|then|hs|bd|od|tds|qid|sos|tabs?|taper|tapering|morning|night|daily|alternate)\b/i;
+let _dmNames=null;
+function dmSplitName(name){
+  const s=String(name||"").trim();if(!s) return {name:s,rest:""};
+  if(!_dmNames){_dmNames=[];(MED_CATALOG||[]).forEach(r=>{if(!r||!r[0])return;_dmNames.push(r[0]);const b=r[0].replace(/^(tab|cap|inj|syp|syr)\.?\s+/i,"");if(b!==r[0])_dmNames.push(b)});_dmNames.sort((a,b)=>b.length-a.length)}
+  const lo=s.toLowerCase();
+  for(const n of _dmNames){
+    if(lo.startsWith(n.toLowerCase())&&/\s/.test(s.charAt(n.length))){
+      const rest=s.slice(n.length).trim();
+      if(rest.length>=6&&DM_SCHED.test(rest)) return {name:s.slice(0,n.length).trim(),rest};
+      return {name:s,rest:""};
+    }
+  }
+  return {name:s,rest:""};
 }
 function dmSetOn(d,oid,on){if(dmIsAdmit(d)){d.stop=d.stop||{};if(on)delete d.stop[oid];else d.stop[oid]=true}else d.sel[oid]=!!on}
 function dmPaintRow(d,row,on){row.classList.toggle("on",on);row.classList.toggle("stop",dmIsAdmit(d)&&!on);const t=row.querySelector(".dm-tick");if(t)t.setAttribute("aria-checked",String(on))}
@@ -8046,7 +8194,7 @@ function dmAdmitPlan(pid){
 }
 function dmAdd(){
   obsCloseDraft(); const d=ui.obsClose; if(!d) return;
-  d.open=true; d.add=d.add||[]; d.add.push({drug:"",dose:"",route:"PO",freq:"OD"});
+  d.open=true; d.add=d.add||[]; d.add.push({drug:"",dose:"",route:"PO",freq:d.dis?"":"OD",instr:""}); // R1.3.133: discharge rows start without a frequency
   dmSyncFields(); render({fromInput:1});
   setTimeout(()=>{const el=document.getElementById("dmdrug"+(d.add.length-1)); if(el){try{el.scrollIntoView({block:"center",behavior:"smooth"})}catch(e){} el.focus({preventScroll:true});}},60);
 }
@@ -8067,15 +8215,19 @@ function dmCollect(pid){
   const d=ui.obsClose; if(!d||d.pid!==pid) return [];
   dmDraft();
   const out=[], seen=new Set();
-  const push=m=>{const k=[m.name,m.dose,m.route,m.frequency].join("|").toLowerCase(); if(!m.name||seen.has(k)) return; seen.add(k); out.push(m)};
+  const push=m=>{const k=[m.name,m.dose,m.route,m.frequency,m.instructions||""].join("|").toLowerCase(); if(!m.name||seen.has(k)) return; seen.add(k); out.push(m)};
   dmOngoing(pid).filter(o=>d.sel[o.id]).forEach(o=>push({name:String(o.drug||"").trim(),dose:(o.dose&&o.dose!=="—")?String(o.dose).trim():"",route:o.route||"PO",frequency:o.freq||"OD",source:"ongoing",order_id:o.id}));
-  (d.add||[]).forEach(m=>{const name=String(m.drug||"").trim(); if(!name) return;
-    const r={name,dose:String(m.dose||"").trim(),route:m.route||"PO",frequency:m.freq||"OD",source:m.fromOrder?"ongoing":"new"};
+  (d.add||[]).forEach(m=>{let name=String(m.drug||"").trim(); if(!name) return;
+    let instr=String(m.instr||"").trim(), dose=String(m.dose||"").trim();
+    if(d.dis){const sp=dmSplitName(name);if(sp.rest){name=sp.name;instr=[sp.rest,instr].filter(Boolean).join("; ")}dose=dmDoseNorm(dose)} // R1.3.133
+    const r={name,dose,route:m.route||"PO",frequency:m.freq||(d.dis?"":"OD"),source:m.fromOrder?"ongoing":"new"};
+    if(!r.frequency) delete r.frequency;
+    if(d.dis&&instr) r.instructions=instr.slice(0,200);
     if(m.fromOrder){r.order_id=m.fromOrder;r.modified=true}
     push(r)});
   return out;
 }
-function dmLine(m){return [m.name,m.dose,m.route,m.frequency?freqLabel(m.frequency):""].filter(x=>x&&x!=="—").join(" · ")}
+function dmLine(m){return [m.name,m.dose,m.route,m.instructions?String(m.instructions):(m.frequency?freqLabel(m.frequency):"")].filter(x=>x&&x!=="—").join(" · ")} // R1.3.133: instructions (taper) replace the frequency
 function dmLabel(outcome){return outcome==="admit"?"Medications on admission":outcome==="referred"?"Medications on referral":outcome==="discharge"?"Medications on discharge":"Medications on disposal"}
 function dmRecordHtml(it){
   const list=it.dmeds||[]; if(!list.length) return "";
@@ -8224,7 +8376,7 @@ function censusView(){
   if(tab==="out"){
     const pid=ui.disId||"";
     const p=pid?patient(pid):null;
-    if(p && d.ddxPid!==p.id){ d.ddx=p.diagnosis||""; d.ddxPid=p.id; d.dadvice=""; d.dreview=""; d.dmrd=""; d.dect=null; d.treat=disDefaultTreat(p); disMedsReset(p.id); }
+    if(p && d.ddxPid!==p.id){ d.ddx=p.diagnosis||""; d.ddxPid=p.id; d.dadvice=""; d.dreview=""; d.dnomeds=false; d.dmrd=""; d.dect=null; d.treat=disDefaultTreat(p); disMedsReset(p.id); }
     const needMrd=disNeedsMrd(p), mrdOff=(needMrd&&!normMrd(d.dmrd))||((d.mode||"advice")==="dama"&&!disReqNorm(d.dreq,"dama").length);
     const curDx=d.ddx!=null?d.ddx:(p&&p.diagnosis||"");
     const treat=d.treat||["conservative"];
@@ -8254,6 +8406,7 @@ function censusView(){
       </div>
       ${form?"":`<button class="btn block ${p?"danger":"idle"}" id="disContinue" ${p?"":"disabled"} onclick="if(!ui.disId)return;censusDraft();ui.disForm=true;render()" style="margin-bottom:10px">Continue</button>`}
       ${form?`<div class="card dis-form">
+        ${disRecordHtml(p)}
         ${needMrd?mrdFieldHtml("dmrd",d.dmrd||"",1):""}
         ${dxFieldHtml("Working diagnosis","ddx",curDx,"Diagnosis","census_ddx",p?p.id:"")}
         <div class="field"><span>Mode of treatment</span>
@@ -8264,14 +8417,15 @@ function censusView(){
         </div>
         <div class="dis-2">
           <label class="field"><span>Mode of discharge</span>${picker("dmode",DISCHARGE_MODES,d.mode||"advice","Mode of discharge")}</label>
-          <label class="field"><span>Outcome</span>${picker("dout",DISCHARGE_OUTCOMES,d.outcome||"improved","Outcome")}</label>
+          <label class="field"><span>Condition at discharge</span>${picker("dout",DISCHARGE_OUTCOMES,d.outcome||"improved","Condition at discharge")}</label>
         </div>
         ${disReqRowHtml(d)}
-        <label class="field"><span>Date of discharge</span><input id="ddate" type="datetime-local" value="${esc(d.ddate||localStamp())}"/></label>
-        <label class="field"><span>Advice on discharge <em style="font-style:normal;opacity:.6">(optional)</em></span><textarea id="dadvice" rows="3" placeholder="e.g. Continue medicines, follow-up in OPD after 2 weeks" oninput="ui.census=ui.census||{};ui.census.dadvice=this.value">${esc(d.dadvice||"")}</textarea></label>
+        <label class="field"><span>Date &amp; time of discharge${disReqMark(true)}</span><input id="ddate" type="datetime-local" value="${esc(d.ddate||localStamp())}"/></label>
         ${dmSectionHtml(p.id,"discharge")}
+        ${disAdviceHtml(d)}
+        ${disReviewHtml(d)}
         <div class="field dis-mse"><span>MSE at discharge <em style="font-style:normal;opacity:.6">(optional)</em></span>${mseDisRowHtml(p.id)}</div>
-        <label class="field dis-review"><span>Review in OPD after <em style="font-style:normal;opacity:.6">(optional)</em></span><input id="dreview" type="text" maxlength="200" autocomplete="off" placeholder="e.g. 2 weeks / 1 month / on 10 Nov" value="${esc(d.dreview||"")}" oninput="ui.census=ui.census||{};ui.census.dreview=this.value"/></label>
+        ${(()=>{const t=disNeedText(p,d);return `<p class="tiny dis-need ${/^All required/.test(t)?"ok":""}" id="disNeed" aria-live="polite">${esc(t)}</p>`})()}
         <button class="btn danger block dis-confirm ${mrdOff?"dis-off":""}" id="disConfirm" aria-disabled="${mrdOff}" onclick="censusDraft();dischargeFromCensus()">Confirm discharge</button>
       </div>`:""}
       ${recentAll.length?`<p class="sec">Recent discharges</p>${disSearch}${disCards}`:""}`;
@@ -8477,13 +8631,14 @@ function dischargeFromCensus(){
   // R1.3.120: MRD No. is mandatory at discharge when not already on file (checked before taking the workflow lock).
   const needMrd=disNeedsMrd(p), mrd=normMrd(d.dmrd);
   if(needMrd){
-    if(!mrd){const msg="MRD No. is required to discharge";ui.mrdErr={id:"dmrd",v:"",msg};mrdShowErr("dmrd",msg,true);toast(msg+".","bad");return}
+    if(!mrd){const msg="MRD No. is required to discharge";ui.mrdErr={id:"dmrd",v:"",msg};mrdShowErr("dmrd",msg,true);let more=0;try{const mm=disMissing(p,d);more=mm.length;mm.forEach(m=>{const el=document.getElementById(m.id);if(el)el.classList.add("dis-err")});disNeedPaint()}catch(e){}toast(msg+(more?` (+${more} more)`:"")+".","bad");return}
     if(mrdBlocked("dmrd",mrd,id))return;
   }
   const dmode=d.mode||"advice"; // R1.3.126: who requested the discharge (On request / DAMA)
   const reqBy=disReqMode(dmode)?disReqNorm(d.dreq,dmode):[];
   const reqName=disReqMode(dmode)?String(d.dreqName||"").trim().slice(0,80):"";
   if(dmode==="dama"&&!reqBy.length){toast("Select who requested DAMA.","bad");const el=document.getElementById("disReq");if(el){el.classList.add("dis-req-err");try{el.scrollIntoView({block:"center",behavior:"smooth"})}catch(e){}}return}
+  { const miss=disMissing(p,d); if(miss.length){disShowMissing(miss);return} } // R1.3.133: required discharge details
   if(workflowLocked("discharge",id))return;
   const advice=String(d.dadvice||"").trim();
   const review=String(d.dreview||"").trim().slice(0,200);
@@ -8529,7 +8684,12 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
     const reqArgs=xx&&xx.reqBy&&xx.reqBy.length?{p_discharge_requested_by:xx.reqBy,...(xx.reqName?{p_discharge_requester_name:xx.reqName}:{})}:(xx&&xx.reqName?{p_discharge_requester_name:xx.reqName}:{});
     let atomic=await callAtomicWorkflow("ward_discharge_patient",{...disArgs,...reqArgs});
     if(!atomic.used&&Object.keys(reqArgs).length&&sb&&sessionTok){console.warn("Discharge requester not supported by server; retrying without it");atomic=await callAtomicWorkflow("ward_discharge_patient",disArgs)}
-    if(xx&&atomic.used&&atomic.data&&Array.isArray(atomic.data.discharge_meds)) p.dischargeMeds=atomic.data.discharge_meds;
+    if(xx&&atomic.used&&atomic.data&&Array.isArray(atomic.data.discharge_meds)){
+      // R1.3.133: a server without the R1.3.133 migration drops "instructions" (taper text); keep ours and say so.
+      const lost=(xx.dmeds||[]).some(m=>m&&m.instructions)&&!atomic.data.discharge_meds.some(m=>m&&m.instructions);
+      if(lost){console.warn("Server dropped discharge medicine instructions (R1.3.133 migration not applied)");try{toast("Taper / duration text was not saved on the server (update pending). It prints from this device only.","bad")}catch(e){}}
+      else p.dischargeMeds=atomic.data.discharge_meds;
+    }
     if(!atomic.used){
       const hold=pending.slice(); pending.length=0;
       qPatient(p);if(bed)qBed(bed);activeAssignments.forEach(qAssign);
@@ -10475,7 +10635,7 @@ function patchFrozenSheetPick(id,v){
 function setPick(id,v){
   ui.fields=ui.fields||{};
   ui.fields[id]=v;
-  if(id==="disel"){ui.disId=v;ui.disForm=false;const dp=v?patient(v):null;ui.census=ui.census||{};ui.census.ddx=dp?(dp.diagnosis||""):"";ui.census.ddxPid=v||"";ui.census.dadvice="";ui.census.dreview="";ui.census.dmrd="";ui.census.dect=null;ui.census.dreq=[];ui.census.dreqName="";ui.disDone=null;ui.census.treat=disDefaultTreat(dp);disMedsReset(v||"")}
+  if(id==="disel"){ui.disId=v;ui.disForm=false;const dp=v?patient(v):null;ui.census=ui.census||{};ui.census.ddx=dp?(dp.diagnosis||""):"";ui.census.ddxPid=v||"";ui.census.dadvice="";ui.census.dreview="";ui.census.dnomeds=false;ui.census.dmrd="";ui.census.dect=null;ui.census.dreq=[];ui.census.dreqName="";ui.disDone=null;ui.census.treat=disDefaultTreat(dp);disMedsReset(v||"")}
   if(id==="dmode"||id==="dout"||id==="asex"||id==="abed"||id==="acon"||id==="acon2"||id==="hshift"){
     ui.census=ui.census||{};
     if(id==="dmode"){ui.census.mode=v;if(!disReqMode(v)){ui.census.dreq=[];ui.census.dreqName=""}else ui.census.dreq=disReqNorm(ui.census.dreq,v)} // R1.3.126
@@ -11309,10 +11469,14 @@ function mseCommitDischarge(pid,at){
   return e;
 }
 function mseDisRemove(pid){mseLsSet(mseDisKey(pid),null);mseLsSet(mseDraftKey(pid,"discharge"),null);const r=document.getElementById("disMseRow");if(r)r.outerHTML=mseDisRowHtml(pid);else render()}
+function disMseHint(pid){ // R1.3.133: say which MSE page 2 will print when none is filled here
+  const p=patient(pid);const l=p?certMseLatest(p,Date.now()):null;
+  return l?"Not filled: the certificate prints the last MSE ("+esc(stamp(l.at))+" IST). Fill a fresh one if the state has changed.":"Not filled: page 2 prints blank MSE lines to complete by hand.";
+}
 function mseDisRowHtml(pid){
   const f=mseDisFilled(pid);const dr=mseLsGet(mseDraftKey(pid,"discharge"));const last=mseLast(pid);
   if(f) return `<div class="dis-mse-row filled" id="disMseRow"><p class="dis-mse-sum">${f.highRisk?'<span class="mse-risk-pill sm">Risk</span> ':""}${msePreviewHtml(f.data||{})}</p><div class="dis-mse-act"><button type="button" class="btn sm ghost" onclick="mseOpen('${pid}','discharge')">Edit</button><button type="button" class="linkbtn" onclick="mseDisRemove('${pid}')">Remove</button></div></div>`;
-  return `<div class="dis-mse-row" id="disMseRow"><button type="button" class="btn sm ghost" onclick="mseOpen('${pid}','discharge')">${dr&&dr.data&&mseAny(dr.data)?"Resume MSE draft":"Fill MSE"}</button><span class="tiny muted">${last?"Last MSE "+esc(stamp(last.at))+" — copy it inside":"Optional · saved with the discharge"}</span></div>`;
+  return `<div class="dis-mse-row" id="disMseRow"><button type="button" class="btn sm ghost" onclick="mseOpen('${pid}','discharge')">${dr&&dr.data&&mseAny(dr.data)?"Resume MSE draft":"Fill MSE"}</button><span class="tiny muted">${disMseHint(pid)}</span></div>`;
 }
 
 /* ---- events (delegated) ---- */
@@ -11986,14 +12150,6 @@ function labWindowReports(p){
   const a=Date.parse(p.admittedAt||0)||0,dsc=Date.parse(p.dischargedAt||0)||Date.now();
   return labReports(p.id).filter(r=>{const t=Date.parse(r.reportedAt||0)||0;return t>=a-2*864e5&&t<=dsc+864e5});
 }
-function labCertAuto(p){
-  const reps=labWindowReports(p);
-  if(!reps.length)return "";
-  const seen=new Set(),parts=[];
-  reps.forEach(r=>r.results.forEach(x=>{if(seen.has(x.code))return;seen.add(x.code);if(x.flag)parts.push(labValLine(x)+" ("+(labIsCrit(x.flag)?"critical":labFlagLabel(x.flag))+", "+certDate(r.reportedAt).replace(/\/\d{4}$/,"")+")")}));
-  if(!parts.length)return "Routine investigations within normal limits (last "+certDate(reps[0].reportedAt)+").";
-  return parts.slice(0,12).join("; ")+".";
-}
 /* ---- R1.3.131: certificate page 2 investigations block (latest value per test, grouped) ---- */
 const LAB_P2_GROUPS=[
   {k:"CBC",lb:"CBC",c:["hb","wbc","neut","lymph","mono","eos","baso","rbc","hct","mcv","mch","mchc","rdw","plt"]},
@@ -12578,15 +12734,19 @@ function certRowEnsure(p){
   S.dischargeCertificates.unshift(r);return r;
 }
 function certFromRow(r){return {id:r.id,pid:r.patient_id,dischargedAt:r.discharged_at,mode:r.discharge_mode||null,edits:(r.edits&&typeof r.edits==="object"&&!Array.isArray(r.edits))?r.edits:{},keyDrugs:Array.isArray(r.key_drugs)?r.key_drugs:[],version:Number(r.version)||0,printedHash:r.printed_hash||null,printCount:Number(r.print_count)||0,printedBy:r.printed_by||null,printedByName:r.printed_by_name||"",printedAt:r.printed_at||null,firstPrintedAt:r.first_printed_at||null,updatedAt:r.updated_at||null}}
+// R1.3.133: latest MSE with findings this admission (up to discharge + 36 h), any kind.
+function certMseLatest(p,until){
+  const adm=Date.parse(p.admittedAt||0);const lim=isFinite(until)?until:Date.now();
+  return mseEntries(p.id).find(x=>mseAny(x.data||{})&&(!isFinite(adm)||Date.parse(x.at||0)>=adm-6*3600e3)&&Date.parse(x.at||0)<=lim+36*3600e3)||null;
+}
 function certMseFor(p){
   const all=mseEntries(p.id);const dis=Date.parse(p.dischargedAt||0);
   const m=all.find(x=>x.kind==="discharge"&&Math.abs(Date.parse(x.at||0)-dis)<36*3600e3&&mseAny(x.data||{}));
   if(m) return {e:m,last:false};
-  if(p.dischargeMode==="dama"||p.dischargeMode==="abscond"){
-    const adm=Date.parse(p.admittedAt||0);
-    const l=all.find(x=>mseAny(x.data||{})&&(!isFinite(adm)||Date.parse(x.at||0)>=adm-6*3600e3)&&Date.parse(x.at||0)<=dis+36*3600e3);
-    if(l) return {e:l,last:true};
-  }
+  // R1.3.133: no discharge-form MSE → the latest MSE of the admission, for every mode. Within 24 h of discharge it is
+  // the MSE at discharge; older (or abscond) prints as "Last recorded".
+  const l=certMseLatest(p,dis);
+  if(l){const near=p.dischargeMode!=="abscond"&&isFinite(dis)&&Math.abs(dis-Date.parse(l.at||0))<=24*3600e3;return {e:l,last:!near}}
   return null;
 }
 function certMseLine(d){
@@ -12614,99 +12774,7 @@ function certEctN(p){
   const n=disEctFromRecords(p);return n>0?n:null;
 }
 function certTreatMode(p){const l=p.treatmentMode?labelOf(TREATMENT_MODES,p.treatmentMode):"";return l&&l!=="—"?l:"Conservative"}
-// ---- key drugs ----
-const CERT_CLS_LB={ap:"Antipsychotic",ms:"Mood stabiliser",ad:"Antidepressant",bzd:"Benzodiazepine",dd:"De-addiction",ac:"Anticholinergic",other:"Other"};
-const CERT_CLS_ORD=["ap","ms","ad","bzd","dd","ac","other"];
-const CERT_SEC_FIRST=["Inj. Lorazepam","Tab. Olanzapine","Tab. Lorazepam","Tab. Sodium Valproate","Cap. Fluoxetine","Tab. Trihexyphenidyl","Tab. Silymarin"];
-let _certSec=null;
-function certSections(){
-  if(_certSec) return _certSec;
-  const idx=CERT_SEC_FIRST.map(n=>MED_CATALOG.findIndex(r=>r&&r[0]===n));
-  const ok=idx.every((v,i)=>v>=0&&(i===0||v>idx[i-1]));
-  _certSec={ok,idx};return _certSec;
-}
-function certBase(s){return normMedKey(String(s||"").replace(/^\s*(tab|cap|inj|syp|syr|susp|oral\s+sol|sol|liq|drops?)\.?\s+/i,"").replace(/\b(cr|sr|er|xr|od|md|dt|la|depot)\b/gi," "))}
-function certCatSection(name){
-  const S_=certSections();if(!S_.ok) return -1;
-  const k=normMedKey(name),b=certBase(name);
-  let i=MED_CATALOG.findIndex(r=>normMedKey(r[0])===k);
-  if(i<0) i=MED_CATALOG.findIndex(r=>certBase(r[0])===b);
-  if(i<0) return -1;
-  let sec=0;S_.idx.forEach((v,j)=>{if(i>=v)sec=j});return sec;
-}
-const CERT_DEADDICT=/\b(naltrexone|acamprosate|disulfiram|baclofen|buprenorphine|clonidine|nicotine)\b/i;
-function certDrugClass(name){
-  const sec=certCatSection(name);
-  if(sec<0) return "other";
-  if(sec===0){
-    const b=certBase(name);const S_=certSections();
-    const j=MED_CATALOG.findIndex((r,i)=>i>=S_.idx[1]&&certBase(r[0])===b);
-    if(j>=0) return certDrugClass(MED_CATALOG[j][0]);
-    if(/lorazepam|diazepam|midazolam|clonazepam/i.test(name)) return "bzd";
-    if(/promethazine|trihexyphenidyl|benztropine|biperiden/i.test(name)) return "ac";
-    if(/haloperidol|fluphenazine|flupentixol|zuclopenthixol|olanzapine|aripiprazole|risperidone|paliperidone|chlorpromazine|ziprasidone/i.test(name)) return "ap";
-    return "supp";
-  }
-  if(sec===1) return "ap";
-  if(sec===2) return "bzd";
-  if(sec===3) return "ms";
-  if(sec===4) return "ad";
-  if(sec===5) return /trihexyphenidyl|promethazine/i.test(name)?"ac":"other";
-  return CERT_DEADDICT.test(name)?"dd":"supp";
-}
-const CERT_FREQ_N={OD:1,HS:1,BD:2,TDS:3,QID:4};
-function certDoseNum(dose){const m=String(dose||"").match(/(\d+(?:\.\d+)?)\s*(mg|mcg|µg|g|ml|iu|units?)\b/i);return m?{n:parseFloat(m[1]),u:m[2].toLowerCase().replace("µg","mcg")}:null}
-function certNum(n){return String(Math.round(n*100)/100)}
-function certDayKey(v){const t=certIst(v);return t?t.y+"-"+t.m+"-"+t.d:""}
-function certKeyDrugsAuto(p){
-  const adm=Date.parse(p.admittedAt||0),dis=Date.parse(p.dischargedAt||0);
-  const orders=(S.orders||[]).filter(o=>o&&o.pid===p.id&&o.drug&&(!isFinite(adm)||Date.parse(o.at||o.start||0)>=adm-12*3600e3||!o.at&&!o.start));
-  const dmNames=new Set((p.dischargeMeds||[]).map(m=>certBase(m&&m.name)));
-  const G=new Map();
-  orders.forEach(o=>{
-    const fp=freqParts(oFreq(o));if(!fp.reg) return; // SOS / PRN / one-off STAT only
-    const cls=certDrugClass(o.drug);if(cls==="supp") return;
-    const key=certBase(o.drug);if(!key) return;
-    let g=G.get(key);if(!g){g={key,name:String(o.drug).trim(),cls,orders:[]};G.set(key,g)}
-    g.orders.push(o);
-  });
-  const out=[];
-  G.forEach(g=>{
-    const ids=new Set(g.orders.map(o=>o.id));
-    const days=new Set((S.doses||[]).filter(d=>d&&ids.has(d.oid)&&d.status==="given").map(d=>certDayKey(d.givenAt||d.at)).filter(Boolean));
-    let first=Infinity,last=-Infinity,active=false;
-    g.orders.forEach(o=>{
-      const st=Date.parse(o.start||o.at||0);if(isFinite(st))first=Math.min(first,st);
-      const sp=o.stop?(/^\d{4}-\d{2}-\d{2}$/.test(String(o.stop))?Date.parse(o.stop+"T23:59:59+05:30"):Date.parse(o.stop)):NaN;
-      const end=isFinite(sp)?Math.min(sp,dis||sp):(dis||Date.now());last=Math.max(last,end);
-      if(isFinite(sp)?sp>=dis-10*60000:o.status!=="stopped") active=true;
-    });
-    if(dmNames.has(g.key)) active=true;
-    const span=(isFinite(first)&&isFinite(last))?(last-first)/864e5:0;
-    const eligible=days.size>=2||(!days.size&&span>=2)||active;
-    // highest daily dose
-    let best=null,unit="",period="day",bestO=g.orders[g.orders.length-1];
-    g.orders.forEach(o=>{
-      const dn=certDoseNum(o.dose);if(!dn) return;
-      const fp=freqParts(oFreq(o));
-      let per=1,mult=0;
-      [fp.reg].concat(fp.other||[]).forEach(f=>{const u=String(f).toUpperCase();if(CERT_FREQ_N[u])mult+=CERT_FREQ_N[u];else if(u==="WEEKLY"){per="week";mult+=1}else if(u==="MONTHLY"){per="month";mult+=1}else mult+=1});
-      const tot=dn.n*(mult||1);
-      if(best==null||tot>best){best=tot;unit=dn.u;period=per===1?"day":per;bestO=o}
-    });
-    const doseTxt=best!=null?`up to ${certNum(best)} ${unit}${period==="day"?"/day":period==="week"?" weekly":" monthly"}`:"";
-    const label=g.name+(doseTxt?` (${doseTxt})`:"");
-    const lastO=g.orders.slice().sort((a,b)=>String(b.at||b.start||"").localeCompare(String(a.at||a.start||"")))[0]||bestO;
-    const detail=[doseTxt,lastO&&lastO.route,lastO?freqLabel(oFreq(lastO)):"",active?"active at discharge":(isFinite(first)?certDate(first).slice(0,6)+"–"+certDate(last).slice(0,6)+", stopped":"stopped")].filter(Boolean).join(" · ");
-    out.push({key:g.key,name:g.name,label,cls:g.cls,clsLabel:CERT_CLS_LB[g.cls]||"Other",detail,eligible,on:eligible&&["ap","ms","ad","bzd","dd"].includes(g.cls)});
-  });
-  out.sort((a,b)=>(CERT_CLS_ORD.indexOf(a.cls)-CERT_CLS_ORD.indexOf(b.cls))||a.name.localeCompare(b.name));
-  return out;
-}
-function certKeyDrugs(p,row){
-  const ov=new Map(((row&&row.keyDrugs)||[]).filter(x=>x&&x.key).map(x=>[x.key,x]));
-  return certKeyDrugsAuto(p).map(d=>{const o=ov.get(d.key);return Object.assign({},d,{on:o&&typeof o.on==="boolean"?o.on:d.on,auto:d.on})});
-}
+// R1.3.133: key-drug selection removed; Treatment prints the mode of treatment (+ Modified ECT sessions) only.
 const CERT_FREQ_WORD={OD:"once daily",BD:"twice daily",TDS:"thrice daily",QID:"four times daily",HS:"at night",SOS:"when required",PRN:"when required",STAT:"once, immediately",WEEKLY:"weekly",MONTHLY:"monthly"};
 function certFreqText(f){
   const raw=String(f||"").trim();if(!raw) return "";
@@ -12715,12 +12783,23 @@ function certFreqText(f){
   const lb=freqLabel(raw);
   return words.length&&!/^(weekly|monthly)$/i.test(raw)?`${lb} (${words.join(" + ")})`:lb;
 }
-function certReviewAbout(rev,disAt){
-  const m=String(rev||"").trim().match(/^(\d{1,3})\s*(day|week|wk|month|mo)s?$/i);if(!m) return "";
-  const n=parseInt(m[1],10),u=m[2].toLowerCase();const d=new Date(Date.parse(disAt||Date.now()));
-  if(u.startsWith("d"))d.setTime(d.getTime()+n*864e5);else if(u.startsWith("w"))d.setTime(d.getTime()+n*7*864e5);else{d.setUTCMonth(d.getUTCMonth()+n)}
-  return certDate(d);
+// R1.3.133: one plain line, "Review after 3 weeks." (on / custom text kept as typed)
+function certReviewText(rev){
+  let r=String(rev||"").trim().replace(/\.+$/,"");if(!r) return "";
+  if(/^(review|follow)/i.test(r)) return r.charAt(0).toUpperCase()+r.slice(1)+".";
+  r=r.replace(/^(?:after|in)\s+/i,"");
+  if(/^\d/.test(r)) return "Review after "+r.replace(/\s+/g," ")+".";
+  if(/^on\b/i.test(r)) return "Review "+r+".";
+  return "Review: "+r+".";
 }
+// R1.3.133: certificate view of one discharge medicine (taper typed into the name → instructions; "666mg" → "666 mg").
+function certMedNorm(m){
+  const o=Object.assign({},m);const sp=dmSplitName(o.name);
+  if(sp.rest){o.name=sp.name;o.instructions=[sp.rest,String(o.instructions||"").trim()].filter(Boolean).join("; ")}
+  o.dose=dmDoseNorm(o.dose);return o;
+}
+function certMedFreq(md){const i=String(md.instructions||"").trim();return i||certFreqText(md.frequency||"OD")}
+const CERT_FMT=133; // R1.3.133: layout/wording change → re-prints get a new version
 /* ---- certificate model (auto values + saved edits) ---- */
 const CERT_EDIT_KEYS=["dept","admitted","disease","remarks","advice","review"];
 function certAdviceLines(p){
@@ -12752,23 +12831,24 @@ function certModel(p){
   const auto=certAuto(p,mse);const ed=(row&&row.edits)||{};
   const f={};CERT_EDIT_KEYS.forEach(k=>{f[k]=typeof ed[k]==="string"?ed[k]:auto[k]});
   const mode=p.dischargeMode||"advice";
-  const drugs=certKeyDrugs(p,row);
+  const drugs=[];
   const ectN=certEctN(p);
   const treat=[{t:certTreatMode(p)}];
   if(ectN) treat.push({t:" · "},{t:"Modified ECT: "+ectN+" session"+(ectN===1?"":"s"),f:"B"});
-  drugs.filter(d=>d.on).forEach(d=>treat.push({t:" · "+d.label}));
-  const meds=(mode==="abscond"||mode==="death")?[]:(p.dischargeMeds||[]).filter(m=>m&&m.name);
-  const adv=String(f.advice||"").split(/\n+/).map(t=>t.trim()).filter(Boolean);
+  const meds=(mode==="abscond"||mode==="death")?[]:(p.dischargeMeds||[]).filter(m=>m&&m.name).map(certMedNorm);
+  let adv=String(f.advice||"").split(/\n+/).map(t=>t.replace(/^\s*(?:[-•*·]|\d+[.)])\s*/,"").trim()).filter(Boolean);
+  if(String(f.review||"").trim()) adv=adv.filter(t=>!/^\s*(review|follow[\s-]*up)\b/i.test(t)); // R1.3.133: review prints once, from the Review field
   if(mode==="dama"&&!ed.advice&&!adv.some(t=>/treatment is incomplete/i.test(t))) adv.push("Treatment is incomplete (discharged against medical advice). Continue medicines regularly and return to OPD / Emergency early if symptoms recur.");
   // R1.3.128: optional "Relevant investigations" line; off unless ticked (edits.labs_on), text auto from abnormal results this admission
-  const labsAuto=labCertAuto(p);const labsOn=ed.labs_on===true;const labs=typeof ed.labs==="string"?ed.labs:labsAuto;
+  const labsAuto="";const labsOn=false;const labs=""; // R1.3.133: page-1 "Relevant investigations" removed (investigations print on page 2 only)
   const p2labs=certP2Labs(p); // R1.3.131: page 2 investigations block
-  return {p,row,mse,auto,f,mode,drugs,treat,treatText:treat.map(x=>x.t).join(""),ectN,meds,adv,labsOn,labs,labsAuto,p2labs,edited:CERT_EDIT_KEYS.filter(k=>typeof ed[k]==="string"&&ed[k]!==auto[k]).length+((row&&row.keyDrugs)||[]).filter(x=>x&&typeof x.on==="boolean").length+(labsOn?1:0)+(typeof ed.labs==="string"&&ed.labs!==labsAuto?1:0)};
+  return {p,row,mse,auto,f,mode,drugs,treat,treatText:treat.map(x=>x.t).join(""),ectN,meds,adv,labsOn,labs,labsAuto,p2labs,edited:CERT_EDIT_KEYS.filter(k=>typeof ed[k]==="string"&&ed[k]!==auto[k]).length};
 }
 function certHash(m){
   const arr=[m.f,m.treatText,m.meds.map(dmLine),m.adv,m.mode,m.p.name,m.p.age,m.p.sex,m.p.hospitalNo,m.p.mrdNo,m.p.admittedAt,m.p.dischargedAt,m.mse&&m.mse.e?[m.mse.e.id,m.mse.e.at]:null];
   if(m.labsOn&&String(m.labs||"").trim()) arr.push(["labs",m.labs]); // R1.3.128: only when printed, so older certificates keep their hash
   if(m.p2labs&&m.p2labs.n) arr.push(["p2labs",m.p2labs.key]); // R1.3.131: page 2 investigations; no labs = hash unchanged
+  arr.push(["fmt",CERT_FMT]); // R1.3.133
   const s=JSON.stringify(arr);
   let h=5381;for(let i=0;i<s.length;i++){h=((h<<5)+h+s.charCodeAt(i))|0}
   return "h"+(h>>>0).toString(36)+"-"+s.length.toString(36);
@@ -12785,29 +12865,6 @@ function certEdit(k,v){
   row.edits=Object.assign({},row.edits||{});
   const val=String(v==null?"":v).slice(0,4000);
   if(val===auto[k]) delete row.edits[k]; else row.edits[k]=val;
-  row.updatedAt=now();
-  clearTimeout(_certSaveT);_certSaveT=setTimeout(()=>{certQueueSave(p,row);certPaintMeta()},800);
-  certPaintMeta(true);
-}
-function certTick(key,on){
-  const p=patient(route.id);if(!p||!certEligible(p)) return;
-  const row=certRowEnsure(p);const d=certKeyDrugsAuto(p).find(x=>x.key===key);if(!d) return;
-  const L=(row.keyDrugs||[]).filter(x=>x&&x.key!==key);
-  if(!!on!==!!d.on) L.push({key,name:d.name,label:d.label,on:!!on});
-  row.keyDrugs=L;row.updatedAt=now();
-  clearTimeout(_certSaveT);certQueueSave(p,row);render();
-}
-function certLabsTick(on){ // R1.3.128
-  const p=patient(route.id);if(!p||!certEligible(p)) return;
-  const row=certRowEnsure(p);row.edits=Object.assign({},row.edits||{});
-  if(on) row.edits.labs_on=true; else delete row.edits.labs_on;
-  row.updatedAt=now();clearTimeout(_certSaveT);certQueueSave(p,row);render();
-}
-function certLabsEdit(v){
-  const p=patient(route.id);if(!p||!certEligible(p)) return;
-  const row=certRowEnsure(p);row.edits=Object.assign({},row.edits||{});
-  const val=String(v==null?"":v).slice(0,1500);
-  if(val===labCertAuto(p)) delete row.edits.labs; else row.edits.labs=val;
   row.updatedAt=now();
   clearTimeout(_certSaveT);_certSaveT=setTimeout(()=>{certQueueSave(p,row);certPaintMeta()},800);
   certPaintMeta(true);
@@ -12833,7 +12890,6 @@ function dcertView(){
   if(!certEligible(p)) return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="card"><p class="sm">A discharge certificate is not issued for ${p.status==="discharged"?esc(labelOf(DISCHARGE_MODES,p.dischargeMode)||"this discharge"):"a patient who is not discharged"}.</p></div>`;
   const m=certModel(p);const f=m.f;
   const ta=(k,lb,rows,hint)=>`<label class="field cert-f"><span>${lb}</span><textarea id="cert_${k}" rows="${rows}" oninput="certEdit('${k}',this.value)">${esc(f[k]||"")}</textarea>${hint?`<p class="tiny muted">${hint}</p>`:""}</label>`;
-  const drugs=m.drugs.length?m.drugs.map(d=>`<label class="cert-drug ${d.on?"on":""}"><input type="checkbox" ${d.on?"checked":""} onchange="certTick('${esc(d.key)}',this.checked)"/><span><b>${esc(d.name)}</b><small>${esc(d.detail)}</small><em class="cert-cls">${esc(d.clsLabel)}${d.eligible?"":" · not key by rule"}</em></span></label>`).join(""):`<p class="tiny muted">No regular psychiatric orders found for this admission.</p>`;
   const mseLine=m.mse?`${m.mse.last?"Last recorded MSE":"MSE at discharge"}, ${certDT(m.mse.e.at)} IST`:(m.mode==="death"?"MSE not applicable":m.mode==="abscond"?"MSE not applicable (absconded)":"MSE not recorded (blank lines print)");
   const p2l=m.p2labs||{n:0,reports:0};
   const labNote=p2l.n?`investigations (${p2l.n} test${p2l.n===1?"":"s"} from ${p2l.reports} report${p2l.reports===1?"":"s"}, latest value each)`:(m.mode==="abscond"||m.mode==="death"?"no investigations recorded (block left out)":"investigations (none recorded: prints “No investigations recorded”)");
@@ -12851,21 +12907,15 @@ function dcertView(){
     <div class="card cert-card">
       <p class="cert-h">Treatment</p>
       <div class="cert-tchips"><span class="cert-tchip">${esc(certTreatMode(p))}</span>${m.ectN?`<span class="cert-tchip">ECT · ${m.ectN} session${m.ectN===1?"":"s"}</span>`:""}</div>
-      <div class="cert-kd-h"><b>Key drugs</b> · auto-selected, untick to leave off <button type="button" class="linkbtn" id="certReset" onclick="certReset()" ${m.edited?"":"disabled"}>Reset</button></div>
-      <div class="cert-drugs">${drugs}</div>
-      <p class="tiny muted">Not listed (rule): SOS / STAT orders, supportive medicines (vitamins, PPIs, laxatives, IV fluids).</p>
-      <p class="tiny cert-prints"><b>Prints as:</b> ${esc(m.treatText)}</p>
+      <p class="tiny cert-prints"><b>Prints as:</b> ${esc(m.treatText)} <span class="muted">(mode of treatment from the discharge form)</span></p>
     </div>
     <div class="card cert-card">
-      ${ta("remarks","Remarks",5,"Auto from mode, outcome, requester (discharge form) and discharge MSE. Edits are saved for re-prints.")}
+      ${ta("remarks","Remarks",5,"Auto from mode, condition, requester (discharge form) and the MSE. Edits are saved for re-prints.")}
       ${m.mode==="abscond"||m.mode==="death"?"":ta("advice","Advice (one line each)",3)}
-      ${m.mode==="abscond"||m.mode==="death"?"":`<label class="field cert-f"><span>Review in Psychiatry OPD after</span><input id="cert_review" type="text" maxlength="120" value="${esc(f.review||"")}" placeholder="e.g. 2 weeks" oninput="certEdit('review',this.value)"/></label>`}
+      ${m.mode==="abscond"||m.mode==="death"?"":`<label class="field cert-f"><span>Review after</span><input id="cert_review" type="text" maxlength="120" value="${esc(f.review||"")}" placeholder="e.g. 3 weeks" oninput="certEdit('review',this.value)"/></label>`}
+      <p class="tiny muted">Normally nothing to change here: everything comes from the discharge form. <button type="button" class="linkbtn" id="certReset" onclick="certReset()" ${m.edited?"":"disabled"}>Reset to the record</button></p>
     </div>
-    <div class="card cert-card cert-labs">
-      <label class="cert-drug ${m.labsOn?"on":""}"><input type="checkbox" id="cert_labs_on" ${m.labsOn?"checked":""} onchange="certLabsTick(this.checked)"/><span><b>Add “Relevant investigations” line</b><small>${m.labsAuto?"Abnormal results this admission, from Investigations":"No investigations recorded this admission"}</small></span></label>
-      ${m.labsOn?`<textarea id="cert_labs" class="cert-labs-t" rows="3" maxlength="1500" oninput="certLabsEdit(this.value)" placeholder="e.g. Hb 9.8 g/dL (L), TSH 6.2 µIU/mL (H)">${esc(m.labs||"")}</textarea><p class="tiny muted">Prints under Treatment. Edit freely; your text is kept for re-prints.</p>`:""}
-    </div>
-    <div class="card cert-card cert-also"><p class="tiny"><b>Also printed (from the record):</b> ${meds} · Page 2 (one page): MSE + investigations · ${esc(mseLine)} · ${esc(labNote)}</p>
+    <div class="card cert-card cert-also"><p class="tiny"><b>Also printed (from the record):</b> ${meds}${m.f.review&&m.mode!=="abscond"&&m.mode!=="death"?" · “"+esc(certReviewText(m.f.review))+"”":""} · Page 2 (one page): MSE + investigations · ${esc(mseLine)} · ${esc(labNote)}</p>
       <p class="tiny muted" id="certMeta">${certMetaHtml(m)}</p></div>
     <div class="cert-actions"><button class="btn primary" type="button" id="certPrint" onclick="printDischargeCert('${p.id}')">${isMobileShare()?"Print / Share PDF":"Print / Save PDF"}</button></div>
   </div>`;
@@ -13012,7 +13062,6 @@ function buildCertPdf(m,o){
   const dis=[];String(m.f.disease||"").split(/(\([^)]*\))/).forEach(s=>{if(s)dis.push({t:s,f:/^\(/.test(s)?"T":"TB"})});
   field(M,R,"Disease :",dis.length?dis:V(" "));y+=4;
   field(M,R,"Treatment :",m.treat.map(r=>({t:r.t,f:r.f==="B"?"TB":"T"})));y+=4;
-  if(m.labsOn&&String(m.labs||"").trim()){field(M,R,"Relevant investigations :",certRuns(m.labs,"T"));y+=4} // R1.3.128
   const out=p.dischargeOutcome?labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome):"";
   const esr=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
   const bre=new RegExp("on advice|on the patient's own request|on request|against medical advice \\(DAMA\\)|absconded|expired"+(out&&out!=="—"?"|(?<=: )"+esr(out)+"(?=\\.)":""),"g");
@@ -13025,13 +13074,8 @@ function buildCertPdf(m,o){
   else{
     items.push(m.meds.length?{runs:[{t:"Medications on discharge",f:"TB"},{t:" (take as advised; do not stop on your own):",f:"T"}],table:m.meds}:{runs:[{t:"Medications on discharge",f:"TB"},{t:": none prescribed.",f:"T"}]});
     m.adv.forEach(t=>items.push({runs:certRuns(/[.!?)]$/.test(t)?t:t+".","T")}));
-    const rev=String(m.f.review||"").trim();
-    if(rev){
-      const mm=rev.replace(/^(?:after|in)\s+/i,"").match(/^(\d{1,3}\s*(?:days?|weeks?|wks?|months?|mos?))\b\.?\s*(.*)$/i);
-      if(mm){const about=certReviewAbout(mm[1].replace(/\s+/g," "),p.dischargedAt);items.push({runs:[{t:"Review in Psychiatry OPD after "+mm[1],f:"TB"},{t:(about?" (on or about "+about+")":"")+" with this certificate."+(mm[2]?" "+mm[2]:""),f:"T"}]})}
-      else if(/^on\b/i.test(rev)) items.push({runs:[{t:"Review in Psychiatry OPD "+rev.replace(/\.$/,""),f:"TB"},{t:" with this certificate.",f:"T"}]});
-      else items.push({runs:[{t:"Review in Psychiatry OPD: ",f:"TB"},{t:rev.replace(/\.?$/,".")+" Bring this certificate.",f:"T"}]});
-    }
+    const rev=certReviewText(m.f.review); // R1.3.133: "Review after 3 weeks." as the last instruction
+    if(rev) items.push({runs:[{t:rev,f:"T"}]});
   }
   const IX=M+20,IW=R-IX,S1=10.5,LH1=15.5;
   items.forEach((it,i)=>{
@@ -13043,8 +13087,8 @@ function buildCertPdf(m,o){
       const head=()=>{ensure(18);rect(IX,y,IW,17,0.6,[60,60,60],[238,238,238]);let cx=IX;cols.forEach(([h,w],k)=>{txt(cx+5,y+12,h,"HB",8.5);if(k)line(cx,y,cx,y+17,0.6,[60,60,60]);cx+=w});y+=17};
       head();
       it.table.forEach((md,k)=>{
-        const nameRuns=[{t:md.name,f:"T"}];if(md.source==="new")nameRuns.push({t:" (new)",f:"TI"});else if(md.modified)nameRuns.push({t:" (changed)",f:"TI"});
-        const cells=[[{t:String(k+1),f:"T"}],nameRuns,[{t:md.dose&&md.dose!=="—"?md.dose:"—",f:"T"}],[{t:md.route||"—",f:"T"}],[{t:certFreqText(md.frequency||"OD"),f:"T"}]];
+        const nameRuns=[{t:md.name,f:"T"}]; // R1.3.132: no (new)/(changed) tags on the certificate
+        const cells=[[{t:String(k+1),f:"T"}],nameRuns,[{t:md.dose&&md.dose!=="—"?md.dose:"—",f:"T"}],[{t:md.route||"—",f:"T"}],[{t:certMedFreq(md),f:"T"}]]; // R1.3.133: taper / duration text replaces the frequency
         const wr=cells.map((c,j)=>wrap(c,9.5,cols[j][1]-10,cols[j][1]-10));
         const h=Math.max(...wr.map(w=>w.length))*12+7;
         if(y+h>LIMIT1){ensure(h+18);head()}
@@ -13238,8 +13282,8 @@ function buildCertPdf(m,o){
   p2Draw(pick);
   p2Info={lv:pick.lv,yEnd:Math.round(y*10)/10,lim:pick.lim,paged:!!pick.paged,labs:LX.n,mode:labMode};
   }
-  {const sy=760;line(M,sy,M+212,sy,0.7);line(R-212,sy,R,sy,0.7);
-   txt(M,sy+14,"Signature of examining doctor","T",10.5);const cs="Countersigned by VP/VS/Registrar";txt(R-certW(cs,"T",10.5),sy+14,cs,"T",10.5);}
+  {const sy=760;line(M,sy,M+212,sy,0.7); // page 2: examining doctor only (no countersign, R1.3.132)
+   txt(M,sy+14,"Signature of examining doctor","T",10.5);}
   // ---- footers ----
   const N=pages.length;
   const gen=enc(`Generated by Ward Sync ${APP_VERSION} · ${certDT(o.at)} IST · ${o.reprint?"Re-print · version "+o.version:"Version "+o.version}`);
