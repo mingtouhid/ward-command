@@ -1,0 +1,30 @@
+{
+ "v": "ocr-assets-v7",
+ "engine": "tesseract.js 7.0.0 (worker patched: language-object init fix) + core 7.0.0 (LSTM) · eng best_int (gzip) · ward-ocr ocr-core-1",
+ "files": {
+  "tesseract.min.js": {
+   "b": 62961,
+   "sha": "000c27d9cd0def655f77b36c72a389c0ab13793aa31cb4d7aab56d09c0afbc7e"
+  },
+  "worker.min.js": {
+   "b": 111307,
+   "sha": "fc2c42c739aefe6eaf41404477114f6cb9a80eb7039f438b595f4e9b722d079d"
+  },
+  "tesseract-core-simd-lstm.wasm.js": {
+   "b": 3899472,
+   "sha": "c58b46a4c796c0b8afccf77591d5b875b6896b45d402bbce8caa6f5362447b38"
+  },
+  "tesseract-core-lstm.wasm.js": {
+   "b": 3896484,
+   "sha": "eef5f8b2f8e20e150680b20adaec4a60babafee3adbe8a94583c81fee46e8680"
+  },
+  "eng.traineddata.bin": {
+   "b": 2944699,
+   "sha": "d477f0dd1dbd2297eb09564411dddd5a5cbba3533dc238469d72cde4923b8829"
+  },
+  "ward-ocr.js": {
+   "b": 31560,
+   "sha": "accdf284f776dbfc12c6ba05cb77542902b8f131d8cd89fa547c9c0ea3dce2fc"
+  }
+ }
+}
