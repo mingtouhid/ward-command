@@ -2711,7 +2711,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.130";
+const APP_VERSION="R1.3.131";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -11981,14 +11981,56 @@ function labRecordItems(pid){
   });
 }
 /* ---- discharge certificate line ---- */
-function labCertAuto(p){
+// reports of this admission: admitted - 2 days .. discharged + 1 day (same window as the certificate line)
+function labWindowReports(p){
   const a=Date.parse(p.admittedAt||0)||0,dsc=Date.parse(p.dischargedAt||0)||Date.now();
-  const reps=labReports(p.id).filter(r=>{const t=Date.parse(r.reportedAt||0)||0;return t>=a-2*864e5&&t<=dsc+864e5});
+  return labReports(p.id).filter(r=>{const t=Date.parse(r.reportedAt||0)||0;return t>=a-2*864e5&&t<=dsc+864e5});
+}
+function labCertAuto(p){
+  const reps=labWindowReports(p);
   if(!reps.length)return "";
   const seen=new Set(),parts=[];
   reps.forEach(r=>r.results.forEach(x=>{if(seen.has(x.code))return;seen.add(x.code);if(x.flag)parts.push(labValLine(x)+" ("+(labIsCrit(x.flag)?"critical":labFlagLabel(x.flag))+", "+certDate(r.reportedAt).replace(/\/\d{4}$/,"")+")")}));
   if(!parts.length)return "Routine investigations within normal limits (last "+certDate(reps[0].reportedAt)+").";
   return parts.slice(0,12).join("; ")+".";
+}
+/* ---- R1.3.131: certificate page 2 investigations block (latest value per test, grouped) ---- */
+const LAB_P2_GROUPS=[
+  {k:"CBC",lb:"CBC",c:["hb","wbc","neut","lymph","mono","eos","baso","rbc","hct","mcv","mch","mchc","rdw","plt"]},
+  {k:"KFT",lb:"KFT / RFT",c:["urea","creat"]},
+  {k:"Lytes",lb:"Electrolytes",c:["na","k"]},
+  {k:"LFT",lb:"LFT",c:["tbil","dbil","ubil","tp","alb","glob","ag","ast","alt","alp","ggt"]},
+  {k:"Sugar",lb:"Sugar",c:["rbs","hba1c"]},
+  {k:"Lipids",lb:"Lipids",c:["chol","tg","hdl","ldl","vldl"]},
+  {k:"Thyroid",lb:"Thyroid",c:["tsh"]},
+  {k:"Drug",lb:"Drug levels",c:["li","vpa"]},
+  {k:"Urine",lb:"Urine R/E",c:(LAB_PANELS.find(x=>x.k==="Urine R/E")||{c:[]}).c},
+  {k:"Other",lb:"Others",c:[]}
+];
+const LAB_P2_N={hb:"Hb",wbc:"WBC",neut:"Neutrophils",lymph:"Lymphocytes",mono:"Monocytes",eos:"Eosinophils",baso:"Basophils",rbc:"RBC",hct:"PCV",mcv:"MCV",mch:"MCH",mchc:"MCHC",rdw:"RDW",plt:"Platelets",
+  tbil:"T. bilirubin",dbil:"D. bilirubin",ubil:"U. bilirubin",tp:"T. protein",alb:"Albumin",glob:"Globulin",ag:"A/G ratio",ast:"SGOT",alt:"SGPT",alp:"ALP",ggt:"GGT",urea:"Urea",creat:"Creatinine",na:"Na",k:"K",
+  rbs:"RBS",hba1c:"HbA1c",chol:"T. cholesterol",tg:"TG",hdl:"HDL",ldl:"LDL",vldl:"VLDL",tsh:"TSH",li:"Lithium",vpa:"Valproate",
+  u_volume:"Volume",u_colour:"Colour",u_appearance:"Appearance",u_ph:"pH",u_sg:"Sp. gravity",u_glucose:"Glucose",u_protein:"Protein",u_ketone:"Ketones",u_blood:"Blood",u_urobilinogen:"Urobilinogen",
+  u_bilirubin:"Bilirubin",u_nitrite:"Nitrite",u_epithelial:"Epithelial",u_pus:"Pus cells",u_rbc:"RBC",u_crystals:"Crystals",u_casts:"Casts",u_bacteria:"Bacteria"};
+function labDM(day){const m=/^\d{4}-(\d{2})-(\d{2})$/.exec(String(day||""));return m?m[2]+" "+CERT_MON[+m[1]-1]:""}
+function labP2Flag(f){return ({H:"H",L:"L",A:"A",CRIT_H:"H",CRIT_L:"L",URGENT:"L"})[f]||(f?"A":"")}
+function certP2Labs(p){
+  const reps=labWindowReports(p);const out={n:0,reports:reps.length,groups:[],key:""};if(!reps.length)return out;
+  const by=new Map(); // newest report first, so the first value seen per test is the latest
+  reps.forEach(r=>{const day=labRepDay(r.reportedAt);(r.results||[]).forEach(x=>{const dv=labResDisp(x);if(String(dv.v==null?"":dv.v).trim()==="")return;
+    const key=x.code||labName(x);const e=by.get(key);const it={x,dv,day};if(!e)by.set(key,{last:it,hist:[]});else e.hist.push(it)})});
+  const G=LAB_P2_GROUPS.map(g=>({k:g.k,lb:g.lb,rows:[],day:"",dm:""}));
+  by.forEach((e,key)=>{const {x,dv,day}=e.last;let gi=LAB_P2_GROUPS.findIndex(g=>g.c.includes(x.code));if(gi<0)gi=G.length-1;
+    const crit=labIsCrit(x.flag),v=String(dv.v);
+    const row={code:x.code||key,nm:LAB_P2_N[x.code]||labName(x),v,u:dv.u&&/\d/.test(v)?dv.u:"",fl:labP2Flag(x.flag),ab:!!x.flag,crit,day,dm:labDM(day),old:false,prev:null};
+    if(!crit){const pv=e.hist.find(h=>labIsCrit(h.x.flag))||e.hist.find(h=>h.x.flag&&h.x.flag!==x.flag);
+      if(pv)row.prev={v:String(pv.dv.v),fl:labIsCrit(pv.x.flag)?"crit":labP2Flag(pv.x.flag),dm:labDM(pv.day)}}
+    G[gi].rows.push(row)});
+  G.forEach((g,i)=>{const ord=LAB_P2_GROUPS[i].c;g.rows.sort((a,b)=>(ord.indexOf(a.code)+1||999)-(ord.indexOf(b.code)+1||999));
+    g.day=g.rows.reduce((a,r)=>r.day>a?r.day:a,"");g.dm=labDM(g.day);g.rows.forEach(r=>{r.old=r.day!==g.day})});
+  out.groups=G.filter(g=>g.rows.length);out.n=out.groups.reduce((a,g)=>a+g.rows.length,0);
+  out.key=out.groups.map(g=>g.k+":"+g.rows.map(r=>r.code+"="+r.v+r.fl+"@"+r.day+(r.prev?"<"+r.prev.v+r.prev.fl+"@"+r.prev.dm:"")).join(",")).join("|");
+  return out;
 }
 /* ===== end investigations ===== */
 
@@ -12720,11 +12762,13 @@ function certModel(p){
   if(mode==="dama"&&!ed.advice&&!adv.some(t=>/treatment is incomplete/i.test(t))) adv.push("Treatment is incomplete (discharged against medical advice). Continue medicines regularly and return to OPD / Emergency early if symptoms recur.");
   // R1.3.128: optional "Relevant investigations" line; off unless ticked (edits.labs_on), text auto from abnormal results this admission
   const labsAuto=labCertAuto(p);const labsOn=ed.labs_on===true;const labs=typeof ed.labs==="string"?ed.labs:labsAuto;
-  return {p,row,mse,auto,f,mode,drugs,treat,treatText:treat.map(x=>x.t).join(""),ectN,meds,adv,labsOn,labs,labsAuto,edited:CERT_EDIT_KEYS.filter(k=>typeof ed[k]==="string"&&ed[k]!==auto[k]).length+((row&&row.keyDrugs)||[]).filter(x=>x&&typeof x.on==="boolean").length+(labsOn?1:0)+(typeof ed.labs==="string"&&ed.labs!==labsAuto?1:0)};
+  const p2labs=certP2Labs(p); // R1.3.131: page 2 investigations block
+  return {p,row,mse,auto,f,mode,drugs,treat,treatText:treat.map(x=>x.t).join(""),ectN,meds,adv,labsOn,labs,labsAuto,p2labs,edited:CERT_EDIT_KEYS.filter(k=>typeof ed[k]==="string"&&ed[k]!==auto[k]).length+((row&&row.keyDrugs)||[]).filter(x=>x&&typeof x.on==="boolean").length+(labsOn?1:0)+(typeof ed.labs==="string"&&ed.labs!==labsAuto?1:0)};
 }
 function certHash(m){
   const arr=[m.f,m.treatText,m.meds.map(dmLine),m.adv,m.mode,m.p.name,m.p.age,m.p.sex,m.p.hospitalNo,m.p.mrdNo,m.p.admittedAt,m.p.dischargedAt,m.mse&&m.mse.e?[m.mse.e.id,m.mse.e.at]:null];
   if(m.labsOn&&String(m.labs||"").trim()) arr.push(["labs",m.labs]); // R1.3.128: only when printed, so older certificates keep their hash
+  if(m.p2labs&&m.p2labs.n) arr.push(["p2labs",m.p2labs.key]); // R1.3.131: page 2 investigations; no labs = hash unchanged
   const s=JSON.stringify(arr);
   let h=5381;for(let i=0;i<s.length;i++){h=((h<<5)+h+s.charCodeAt(i))|0}
   return "h"+(h>>>0).toString(36)+"-"+s.length.toString(36);
@@ -12790,7 +12834,9 @@ function dcertView(){
   const m=certModel(p);const f=m.f;
   const ta=(k,lb,rows,hint)=>`<label class="field cert-f"><span>${lb}</span><textarea id="cert_${k}" rows="${rows}" oninput="certEdit('${k}',this.value)">${esc(f[k]||"")}</textarea>${hint?`<p class="tiny muted">${hint}</p>`:""}</label>`;
   const drugs=m.drugs.length?m.drugs.map(d=>`<label class="cert-drug ${d.on?"on":""}"><input type="checkbox" ${d.on?"checked":""} onchange="certTick('${esc(d.key)}',this.checked)"/><span><b>${esc(d.name)}</b><small>${esc(d.detail)}</small><em class="cert-cls">${esc(d.clsLabel)}${d.eligible?"":" · not key by rule"}</em></span></label>`).join(""):`<p class="tiny muted">No regular psychiatric orders found for this admission.</p>`;
-  const mseLine=m.mse?`${m.mse.last?"Last recorded MSE":"MSE at discharge"}, ${certDT(m.mse.e.at)} IST`:(m.mode==="death"?"MSE not applicable":"MSE not recorded (blank lines print)");
+  const mseLine=m.mse?`${m.mse.last?"Last recorded MSE":"MSE at discharge"}, ${certDT(m.mse.e.at)} IST`:(m.mode==="death"?"MSE not applicable":m.mode==="abscond"?"MSE not applicable (absconded)":"MSE not recorded (blank lines print)");
+  const p2l=m.p2labs||{n:0,reports:0};
+  const labNote=p2l.n?`investigations (${p2l.n} test${p2l.n===1?"":"s"} from ${p2l.reports} report${p2l.reports===1?"":"s"}, latest value each)`:(m.mode==="abscond"||m.mode==="death"?"no investigations recorded (block left out)":"investigations (none recorded: prints “No investigations recorded”)");
   const meds=m.meds.length?`medications on discharge (${m.meds.length})`:(m.mode==="abscond"||m.mode==="death"?"no medicines table ("+esc(labelOf(DISCHARGE_MODES,m.mode))+")":"no discharge medications recorded");
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
   <div class="cert-page">
@@ -12819,7 +12865,7 @@ function dcertView(){
       <label class="cert-drug ${m.labsOn?"on":""}"><input type="checkbox" id="cert_labs_on" ${m.labsOn?"checked":""} onchange="certLabsTick(this.checked)"/><span><b>Add “Relevant investigations” line</b><small>${m.labsAuto?"Abnormal results this admission, from Investigations":"No investigations recorded this admission"}</small></span></label>
       ${m.labsOn?`<textarea id="cert_labs" class="cert-labs-t" rows="3" maxlength="1500" oninput="certLabsEdit(this.value)" placeholder="e.g. Hb 9.8 g/dL (L), TSH 6.2 µIU/mL (H)">${esc(m.labs||"")}</textarea><p class="tiny muted">Prints under Treatment. Edit freely; your text is kept for re-prints.</p>`:""}
     </div>
-    <div class="card cert-card cert-also"><p class="tiny"><b>Also printed (from the record):</b> ${meds} · Page 2: ${esc(mseLine)}</p>
+    <div class="card cert-card cert-also"><p class="tiny"><b>Also printed (from the record):</b> ${meds} · Page 2 (one page): MSE + investigations · ${esc(mseLine)} · ${esc(labNote)}</p>
       <p class="tiny muted" id="certMeta">${certMetaHtml(m)}</p></div>
     <div class="cert-actions"><button class="btn primary" type="button" id="certPrint" onclick="printDischargeCert('${p.id}')">${isMobileShare()?"Print / Share PDF":"Print / Save PDF"}</button></div>
   </div>`;
@@ -13016,7 +13062,8 @@ function buildCertPdf(m,o){
    txt(M,sy+14,"Countersigned by VP/VS/Registrar","T",10.5);const cp="Case note prepared by";txt(R-certW(cp,"T",10.5),sy+14,cp,"T",10.5);
    txt(M,sy+42,"Date : ","T",10.5);txt(M+certW("Date : ","T",10.5),sy+42,enc(certDate(p.dischargedAt)),"TB",10.5);
    txt(R-certW("P.T.O.","TB",10.5),sy+42,"P.T.O.","TB",10.5);}
-  // ---- page 2: MSE ----
+  // ---- page 2: MSE + investigations (one page) ----
+  let p2Info=null;
   const me=m.mse&&m.mse.e;const hdr=me&&m.mse.last?"Last recorded Mental Status Examination":"Mental Status Examination at Discharge";
   function msHead(cont){
     const ps=[{t:p.name||"",f:"TB"},{t:" · "+[p.age,p.sex?String(p.sex).charAt(0).toUpperCase():""].filter(Boolean).join(" ")+(p.hospitalNo?" · Hosp. No. "+p.hospitalNo:""),f:"T"}];
@@ -13026,44 +13073,170 @@ function buildCertPdf(m,o){
     line(M,67,R,67,1.1);y=84;
   }
   newPage("mse");msHead(false);
+  // R1.3.131: MSE + investigations always fit on ONE A4 page. Measure first with a ladder of
+  // progressively denser layouts (never below 8 pt), draw the first that fits.
+  {
+  const P2Y=y;
+  const LX=m.p2labs||{n:0,reports:0,groups:[]};
+  const labMode=LX.n?"labs":(m.mode==="death"||m.mode==="abscond")?"none":"empty";
   const segRuns=(v,lcFirst)=>v.map((s,i)=>{if(typeof s==="string")return {t:s,f:"T"};let t=s.t;if(i===0&&lcFirst)t=mseLc(t);return {t,f:s.hi||s.ab?"TB":s.q?"TI":"T",u:!!(s.ab||s.hi)&&!s.hi,hi:!!s.hi}});
-  const end=r=>{const l=r[r.length-1];if(l&&!/[.!?”"]$/.test(l.t))r.push({t:".",f:"T"});return r};
-  const H2=t=>{ensure(36);txt(M,y+10,t,"HB",9.5);y+=17};
-  const P=runs=>{para(end(runs),M+14,CW-14,10.5,14.5);y+=6};
-  const LC=(rows)=>{rows.forEach(r=>{const L=wrap(segRuns(r.v),10.5,CW-144,CW-144);ensure(14.5);txt(M+14,y+10.5,enc(r.lb),"TB",10.5);L.forEach(l=>{ensure(14.5);drawLine(l,M+144,y+10.5,10.5);y+=14.5})});y+=6};
-  if(m.mode==="death"&&!me){y+=6;P([{t:"Not applicable (patient expired).",f:"T"}])}
-  else if(!me){
-    y+=6;P([{t:m.mode==="abscond"?"Mental status examination not applicable (patient absconded).":"Mental status examination at discharge not recorded in Ward Sync; record it by hand below",f:"T"}]);
-    if(m.mode!=="abscond"){for(let k=0;k<20&&y<640;k++){line(M,y+18,R,y+18,0.5,[150,150,150]);y+=24}}
-  }else{
-    const d=me.data||{};const RS=mseStruct(d);const get=lb=>RS.find(r=>r.lb===lb);
+  const end=r=>{while(r.length>1&&!String(r[r.length-1].t).trim())r.pop();const l=r[r.length-1];if(l&&!/[.!?”"]\s*$/.test(l.t))r.push({t:".",f:"T"});return r};
+  const nb=s=>String(s).replace(/ /g,"\u00a0");
+  const cut=(runs,max)=>{if(!max)return runs;let n=0;const o=[];for(const r of runs){const t=r.t||"";if(r.box||n+t.length<=max){o.push(r);n+=t.length;continue}
+    o.push(Object.assign({},r,{t:t.slice(0,Math.max(0,max-n)).replace(/\s+\S*$/,"")+"…"}));o.push({t:" (shortened; full note in Ward Sync)",f:"TI"});break}return o};
+  // MSE sections: data once, drawn at each density
+  const d=me?(me.data||{}):null;const RS=me?mseStruct(d):[];const get=lb=>RS.find(r=>r.lb===lb);
+  const flagged=(...rs)=>rs.some(r=>r&&(r.ab||r.hi));const SEC=[];
+  if(me){
     const g1=[];const ap=get("Appearance & behaviour"),rp=get("Rapport"),ey=get("Eye contact");
     if(ap)g1.push(...end(segRuns(ap.v)),{t:" ",f:"T"});
     if(rp)g1.push({t:"Rapport ",f:"T"},...segRuns(rp.v,true));
     if(ey)g1.push({t:rp?"; eye contact ":"Eye contact ",f:"T"},...segRuns(ey.v,true));
-    if(g1.length){H2("GENERAL APPEARANCE & BEHAVIOUR");P(g1)}
+    if(g1.length)SEC.push({H:"GENERAL APPEARANCE & BEHAVIOUR",lb:"General appearance & behaviour",runs:g1,ab:flagged(ap,rp,ey)});
     const pm=get("Psychomotor"),hy=get("Hygiene");
-    if(pm||hy){const r=[];if(pm)r.push({t:"Psychomotor activity ",f:"T"},...end(segRuns(pm.v,true)));if(hy)r.push({t:(pm?" ":"")+"Personal hygiene ",f:"T"},...segRuns(hy.v,true));H2("PSYCHOMOTOR ACTIVITY & HYGIENE");P(r)}
-    [["Mood","MOOD"],["Affect","AFFECT"],["Speech","SPEECH"]].forEach(([lb,h])=>{const r=get(lb);if(r){H2(h);P(segRuns(r.v))}});
-    const th=get("Thought");if(th){H2("THOUGHT");LC(th.sub)}
-    const rk=get("Risk");if(rk){H2("RISK");LC(rk.sub)}
-    const pc=get("Perception");if(pc){H2("PERCEPTION");if(pc.sub)LC(pc.sub);else P(segRuns(pc.v))}
-    const cg=["Orientation","Memory","Abstract thinking","Judgement"].map(get).filter(Boolean);if(cg.length){H2("COGNITION");LC(cg)}
-    const ins=get("Insight");if(ins){H2("INSIGHT");P(segRuns(ins.v).map(r=>Object.assign(r,{f:"TB",u:true})))}
-    const nt=get("Note")||get("Notes");if(nt){H2("NOTES");if(nt.sub)LC(nt.sub);else P(segRuns(nt.v))}
-    // summary box
+    if(pm||hy){const r=[];if(pm)r.push({t:"Psychomotor activity ",f:"T"},...end(segRuns(pm.v,true)));if(hy)r.push({t:(pm?" ":"")+"Personal hygiene ",f:"T"},...segRuns(hy.v,true));SEC.push({H:"PSYCHOMOTOR ACTIVITY & HYGIENE",lb:"Psychomotor activity & hygiene",runs:r,ab:flagged(pm,hy)})}
+    [["Mood","MOOD"],["Affect","AFFECT"],["Speech","SPEECH"]].forEach(([lb,h])=>{const r=get(lb);if(r)SEC.push({H:h,lb,runs:segRuns(r.v),ab:flagged(r),keep:lb==="Mood"&&!!String(d.words||"").trim()})});
+    const th=get("Thought");if(th)SEC.push({H:"THOUGHT",lb:"Thought",rows:th.sub,ab:flagged(th)});
+    const rk0=get("Risk");if(rk0)SEC.push({H:"RISK",lb:"Risk",rows:rk0.sub,ab:flagged(rk0)});
+    const pc=get("Perception");if(pc)SEC.push({H:"PERCEPTION",lb:"Perception",rows:pc.sub||null,runs:pc.sub?null:segRuns(pc.v),ab:flagged(pc)});
+    const cg=["Orientation","Memory","Abstract thinking","Judgement"].map(get).filter(Boolean);if(cg.length)SEC.push({H:"COGNITION",lb:"Cognition",rows:cg,ab:flagged(...cg)});
+    const ins=get("Insight");if(ins)SEC.push({H:"INSIGHT",lb:"Insight",runs:segRuns(ins.v).map(r=>Object.assign(r,{f:"TB",u:true})),keep:true});
+    const nt=get("Note")||get("Notes");if(nt)SEC.push({H:"NOTES",lb:nt.sub?"Notes":"Note",rows:nt.sub||null,runs:nt.sub?null:segRuns(nt.v),keep:true,note:true});
+  }
+  const rk=get("Risk");let sr=null;
+  if(me){
     const ab=mseAbnormal(d);const it=mseInsightTxt(d);
-    const sr=[{t:"Summary: ",f:"HB"}];
+    sr=[{t:"Summary: ",f:"HB"}];
     if(out&&out!=="—")sr.push({t:out+". ",f:"T"});
     if(ab.length){ab.forEach((x,i)=>{if(i)sr.push({t:", ",f:"T"});sr.push({t:i?mseLc(x.t):x.t.charAt(0).toUpperCase()+x.t.slice(1),f:"TB",u:!x.hi,hi:!!x.hi})});sr.push({t:". ",f:"T"})}
     else sr.push({t:"No abnormal findings. ",f:"T"});
     if(it)sr.push({t:it+". ",f:"T"});
     if(rk&&!rk.hi&&!rk.ab)sr.push({t:"No current risk to self or others elicited.",f:"T"});else if(rk&&rk.hi)sr.push({t:"High-risk finding present (boxed above).",f:"TB"});
-    const SL=wrap(sr.map(r=>r.f==="HB"?Object.assign({},r):r),10.5,CW-24,CW-24);
-    const bh=SL.length*14.5+14;ensure(bh+44);y+=4;
-    rect(M,y,CW,bh,0.7,[90,90,90]);let yy=y+7;SL.forEach(l=>{drawLine(l,M+12,yy+10.5,10.5);yy+=14.5});y+=bh+10;
-    line(M,y,R,y,0.6,[90,90,90],"1 1.6");y+=5;
-    para([{t:"Key: ",f:"TB"},{t:"underlined bold",f:"TB",u:true},{t:" = abnormal finding ·  ",f:"T"},{t:"boxed",f:"TB",hi:true},{t:"  = high-risk finding"+(RS.some(r=>r.hi)?"":" (none at this examination)")+". Normal sections are printed in full so the record is complete.",f:"T"}],M,CW,8.5,12);
+  }
+  let p2meas=0;
+  const p2Draw=C=>{
+    y=P2Y;const s=C.s,lh=C.lh,LIM=C.lim;
+    const brk=h=>{if(C.paged&&!p2meas&&y+h>LIM){newPage("mse");msHead(true)}};
+    const para2=(runs,x,w,size,l)=>{wrap(runs,size,w,w).forEach(ln=>{brk(l);drawLine(ln,x,y+size,size);y+=l})};
+    const head=(t,note)=>{brk(C.hs+lh*2);txt(M,y+C.hs+0.5,t,"HB",C.hs);if(note){const ns=Math.max(8,C.hs-1),q=enc(note);txt(R-certW(q,"TI",ns),y+C.hs+0.5,q,"TI",ns,[70,70,70])}y+=Math.round(C.hs*1.8)};
+    // level 0 = the R1.3.130 look (heading line + indented text)
+    const P0=runs=>{para2(end(runs),M+14,CW-14,s,lh);y+=C.gap};
+    const LC0=(rows,max)=>{rows.forEach(r=>{const L=wrap(cut(segRuns(r.v),max),s,CW-144,CW-144);brk(lh);txt(M+14,y+s,enc(r.lb),"TB",s);L.forEach(l=>{brk(lh);drawLine(l,M+144,y+s,s);y+=lh})});y+=C.gap};
+    // denser levels: run-in labels, short label/content rows two to a line
+    const SLW=Math.max(0,...SEC.filter(x=>x.rows).map(x=>certW(enc(x.lb),"TB",s)))+8;
+    const PR=(lb,runs)=>{para2([{t:lb+": ",f:"TB"}].concat(end(runs)),M,CW,s,lh);y+=C.gap};
+    const LCR=(lb,rows,max)=>{
+      const sbw=Math.min(100,Math.max(0,...rows.map(r=>certW(enc(r.lb),"TI",s)))+6);
+      const x1=M+SLW,full=CW-SLW-sbw,half=(CW-SLW)/2,hw=half-sbw-8;let first=true;
+      const lab=()=>{if(first)txt(M,y+s,enc(lb),"TB",s);first=false};
+      for(let i=0;i<rows.length;i++){
+        const r=rows[i],n2=rows[i+1];
+        if(C.lc2&&n2&&hw>40){const a=wrap(cut(segRuns(r.v),max),s,hw,hw),b=wrap(cut(segRuns(n2.v),max),s,hw,hw);
+          if(a.length===1&&b.length===1){brk(lh);lab();txt(x1,y+s,enc(r.lb),"TI",s);drawLine(a[0],x1+sbw,y+s,s);txt(x1+half,y+s,enc(n2.lb),"TI",s);drawLine(b[0],x1+half+sbw,y+s,s);y+=lh;i++;continue}}
+        const L=wrap(cut(segRuns(r.v),max),s,full,full);brk(lh);lab();txt(x1,y+s,enc(r.lb),"TI",s);
+        L.forEach(l=>{brk(lh);drawLine(l,x1+sbw,y+s,s);y+=lh});
+      }
+      y+=C.gap};
+    // ---- investigations: latest value per test, grouped by panel, flowed into columns ----
+    const labs=()=>{
+      if(labMode==="none")return;
+      y+=C.lv?3:6;
+      head("INVESTIGATIONS",labMode==="labs"?"Latest value per test, this admission · "+LX.reports+" report"+(LX.reports===1?"":"s"):"");
+      if(labMode==="empty"){para2([{t:"No investigations recorded in Ward Sync this admission.",f:"TI"}],M+14,CW-14,s,lh);y+=C.gap;return}
+      const cols=C.lcols,gp=10,cw=(CW-gp*(cols-1))/cols,ls=C.ls,ll=C.llh;
+      const items=[];let dropped=0;
+      LX.groups.forEach(g=>{
+        const gi=[];const add=r=>{gi.push({t:"row",r,g,h:ll});if(C.prev&&r.prev)gi.push({t:"prev",r,g,h:ll})};
+        if(C.norm==="rows")g.rows.forEach(add);
+        else{g.rows.filter(r=>r.ab).forEach(add);const nm=g.rows.filter(r=>!r.ab);
+          if(nm.length){
+            if(C.norm==="pack"){const runs=[];nm.forEach((r,i)=>{if(i)runs.push({t:" · ",f:"T"});runs.push({t:nb(r.nm+" "+r.v),f:"T"});if(r.old)runs.push({t:nb(" ("+r.dm+")"),f:"TI"})});wrap(runs,ls,cw-2,cw-2).forEach(l=>gi.push({t:"pack",l,g,h:ll}))}
+            else if(C.norm==="count")gi.push({t:"note",s:nm.length+" other result"+(nm.length>1?"s":"")+" normal",g,h:ll});
+            else dropped+=nm.length;}}
+        if(gi.length)items.push({t:"hdr",g,h:ll+2},...gi);
+      });
+      if(dropped)items.push({t:"note",s:"+"+dropped+" more normal result"+(dropped>1?"s":"")+" not shown",g:null,h:ll});
+      const fill=tg=>{const o=[[]];let h=0;
+        items.forEach((it,i)=>{let need=it.h;const nx=items[i+1];if((it.t==="hdr"||it.t==="row")&&nx&&(it.t==="hdr"||nx.t==="prev"))need+=nx.h;
+          if(it.t==="hdr"){let gh=0;for(let j=i;j<items.length&&(j===i||items[j].t!=="hdr");j++)gh+=items[j].h;if(gh<=tg+0.01)need=gh} // a group that fits a column is never split
+          if(it.t!=="prev"&&h+need>tg+0.01&&o[o.length-1].length){o.push([]);h=0;if(it.t!=="hdr"&&it.g){const c={t:"hdr",g:it.g,contd:1,h:ll+2};o[o.length-1].push(c);h+=c.h}}
+          o[o.length-1].push(it);h+=it.h});return o};
+      const tot=items.reduce((a,b)=>a+b.h,0);let gmax=0,gh=0;items.forEach(it=>{if(it.t==="hdr")gh=0;gh+=it.h;gmax=Math.max(gmax,gh)});
+      let tg=Math.max(tot/cols,ll*2+2,Math.min(gmax,ll*8+2)),CA=fill(tg);
+      for(let k=0;k<600&&CA.length>cols;k++){tg+=ll/3;CA=fill(tg)}
+      const bH=Math.max(...CA.map(c=>c.reduce((a,b)=>a+b.h,0)));
+      brk(bH);const y0=y;
+      const fs=Math.max(8,ls-0.4);
+      CA.forEach((c,ci)=>{const x=M+ci*(cw+gp);let yy=y0;c.forEach(it=>{const base=yy+ls;
+        if(it.t==="hdr"){const t=enc(it.g.lb+(it.contd?" (contd.)":""));txt(x,base,t,"HB",fs);const dt=enc(it.g.dm||"");if(dt)txt(x+cw-certW(dt,"H",fs),base,dt,"H",fs,[60,60,60]);line(x,yy+ll+0.6,x+cw,yy+ll+0.6,0.4,[140,140,140])}
+        else if(it.t==="note")txt(x+2,base,enc(it.s),"TI",ls,[60,60,60]);
+        else if(it.t==="pack")drawLine(it.l,x+2,base,ls);
+        else if(it.t==="prev"){const pv=it.r.prev,t=enc("earlier "+pv.v+(pv.fl?" "+pv.fl:"")+" · "+pv.dm);txt(x+cw-3-certW(t,"TI",ls),base,t,"TI",ls,[60,60,60])}
+        else{const r=it.r,vf=r.ab?"TB":"T",fl=enc(r.fl||""),xr=x+cw-3,fw=certW("H","TB",ls)+4,flx=xr-certW("H","TB",ls);
+          const nmF=enc(r.nm),ot=r.old?enc(" ("+r.dm+")"):"",ow=ot?certW(ot,"TI",ls):0;
+          let vs=enc(r.v+(r.u?" "+r.u:"")),vw=certW(vs,vf,ls);
+          if(r.u&&xr-fw-vw<x+Math.min(certW(nmF,"T",ls),26)+ow+4){vs=enc(r.v);vw=certW(vs,vf,ls)}
+          const vx=xr-fw-vw,avail=vx-x-4;let b=nmF;
+          if(certW(b,"T",ls)+ow>avail){while(b.length>2&&certW(b+"…","T",ls)+ow>avail)b=b.slice(0,-1);b=b.replace(/[\s.]+$/,"")+"…"}
+          txt(x,base,b,"T",ls);if(ot)txt(x+certW(b,"T",ls),base,ot,"TI",ls,[70,70,70]);
+          txt(vx,base,vs,vf,ls);if(fl)txt(flx,base,fl,"TB",ls);
+          if(r.crit)rect(vx-1.6,base-ls*0.8,xr-vx+2.6,ls*1.1,0.7);
+          else if(r.ab)line(vx,base+1.5,fl?flx+certW(fl,"TB",ls):vx+vw,base+1.5,0.5)}
+        yy+=it.h})});
+      y=y0+bH+C.gap;
+    };
+    const labKey=()=>{if(labMode!=="labs")return;y+=3;para2([{t:"Key: ",f:"TB"},{t:"underlined bold",f:"TB",u:true},{t:" = outside the printed range (H / L / A = high / low / abnormal) ·  ",f:"T"},{t:"boxed",f:"TB",hi:true},{t:"  = critical value. Latest value per test this admission; earlier dates in brackets.",f:"T"}],M,CW,C.ks,C.kl)};
+    if(!me){
+      y+=C.lv?3:6;
+      P0([{t:m.mode==="death"?"Not applicable (patient expired).":m.mode==="abscond"?"Mental status examination not applicable (patient absconded).":"Mental status examination at discharge not recorded in Ward Sync; record it by hand below",f:"T"}]);
+      if(m.mode!=="abscond"&&m.mode!=="death"){ // hand-written lines: as many as fit after the investigations (6-20)
+        const y0=y,so=ops;p2meas++;ops=[];labs();labKey();const hL=y-y0;ops=so;p2meas--;y=y0;
+        const g=C.bl;const n=Math.max(C.blMin,Math.min(20,Math.floor((LIM-y-hL)/g)));
+        for(let k=0;k<n;k++){brk(g);line(M,y+g-6,R,y+g-6,0.5,[150,150,150]);y+=g}
+      }
+      labs();labKey();
+    }else{
+      const wnl=C.wnl?SEC.filter(x=>!x.ab&&!x.keep):[];
+      if(wnl.length){para2([{t:"Within normal limits: ",f:"TB"},{t:wnl.map(x=>x.lb.toLowerCase()).join("; ")+".",f:"T"}],C.runIn?M:M+14,C.runIn?CW:CW-14,s,lh);y+=C.gap}
+      SEC.forEach(x=>{if(wnl.includes(x))return;const max=x.note?C.noteMax:0;
+        if(x.note&&C.noteSum){PR(x.lb,[{t:"recorded for "+(x.rows?x.rows.map(r=>mseLc(r.lb)).join(", "):"this examination")+" (too long for one page; full text in Ward Sync)",f:"TI"}]);return}
+        if(!C.runIn){head(x.H);if(x.rows)LC0(x.rows,max);else P0(cut(x.runs,max))}
+        else{if(x.rows)LCR(x.lb,x.rows,max);else PR(x.lb,cut(x.runs,max))}});
+      // summary box
+      const SL=wrap(sr,s,CW-24,CW-24);const pad=C.lv?9:14;const bh=SL.length*lh+pad;brk(bh+30);y+=C.lv?2:4;
+      rect(M,y,CW,bh,0.7,[90,90,90]);let yy=y+pad/2;SL.forEach(l=>{drawLine(l,M+12,yy+s,s);yy+=lh});y+=bh+(C.lv?6:10);
+      labs();
+      line(M,y,R,y,0.6,[90,90,90],"1 1.6");y+=5;
+      const kr=[{t:"Key: ",f:"TB"},{t:"underlined bold",f:"TB",u:true},{t:" = abnormal finding"+(labMode==="labs"?" / result outside the printed range (H / L / A)":"")+" ·  ",f:"T"},{t:"boxed",f:"TB",hi:true},{t:"  = high-risk finding"+(RS.some(r=>r.hi)?"":" (none at this examination)")+(labMode==="labs"?" / critical value":"")+".",f:"T"}];
+      if(labMode==="labs")kr.push({t:" Investigations: latest value per test this admission; earlier dates in brackets.",f:"T"});
+      if(C.wnl)kr.push({t:" Sections within normal limits are listed together.",f:"T"});else if(C.lv<4)kr.push({t:" Normal sections are printed in full so the record is complete.",f:"T"});
+      para2(kr,M,CW,C.ks,C.kl);
+    }
+  };
+  const B={gap:6,runIn:0,lc2:0,wnl:0,ks:8.5,kl:12,prev:1,bl:24,blMin:10,lim:716,noteMax:0};
+  const LAD=[
+    {lv:0,s:10.5,lh:14.5,hs:9.5,ls:8.6,llh:10.8,lcols:3,norm:"rows",lim:LIMIT2},
+    {lv:1,s:10,lh:13.4,hs:9,gap:4,runIn:1,ls:8.5,llh:10.4,lcols:3,norm:"rows",kl:11.5,bl:22,blMin:9},
+    {lv:2,s:9.5,lh:12.4,hs:8.5,gap:3,runIn:1,lc2:1,ks:8,kl:10.5,ls:8.3,llh:10,lcols:4,norm:"rows",bl:21,blMin:8},
+    {lv:3,s:9.5,lh:12.2,hs:8.5,gap:3,runIn:1,lc2:1,ks:8,kl:10.5,ls:8.3,llh:10,lcols:4,norm:"rows",prev:0,bl:21,blMin:8},
+    {lv:4,s:9,lh:11.5,hs:8.5,gap:2.5,runIn:1,lc2:1,ks:8,kl:10.2,ls:8.2,llh:9.8,lcols:4,norm:"pack",prev:0,bl:20,blMin:8},
+    {lv:5,s:8.5,lh:10.8,hs:8,gap:2,runIn:1,lc2:1,wnl:1,ks:8,kl:10,ls:8,llh:9.5,lcols:4,norm:"pack",prev:0,bl:19,blMin:7},
+    {lv:6,s:8,lh:10.2,hs:8,gap:2,runIn:1,lc2:1,wnl:1,ks:8,kl:10,ls:8,llh:9.3,lcols:4,norm:"count",prev:0,bl:18,blMin:6},
+    {lv:7,s:8,lh:10,hs:8,gap:1.5,runIn:1,lc2:1,wnl:1,ks:8,kl:9.8,ls:8,llh:9.2,lcols:4,norm:"none",prev:0,bl:18,blMin:6},
+    {lv:8,s:8,lh:10,hs:8,gap:1.5,runIn:1,lc2:1,wnl:1,ks:8,kl:9.8,ls:8,llh:9.2,lcols:4,norm:"none",prev:0,bl:18,blMin:6,noteMax:700},
+    {lv:9,s:8,lh:9.8,hs:8,gap:1,runIn:1,lc2:1,wnl:1,ks:8,kl:9.6,ls:8,llh:9.1,lcols:4,norm:"none",prev:0,bl:18,blMin:6,noteMax:250},
+    {lv:10,s:8,lh:9.6,hs:8,gap:1,runIn:1,lc2:1,wnl:1,ks:8,kl:9.4,ls:8,llh:9,lcols:4,norm:"none",prev:0,bl:18,blMin:6,noteMax:90},
+    {lv:11,s:8,lh:9.6,hs:8,gap:1,runIn:1,lc2:1,wnl:1,ks:8,kl:9.4,ls:8,llh:9,lcols:4,norm:"none",prev:0,bl:18,blMin:6,noteMax:90,noteSum:1}
+  ].map(c=>Object.assign({},B,c));
+  let pick=null;const fits=C=>{const so=ops;p2meas++;ops=[];p2Draw(C);const ye=y;p2meas--;ops=so;return ye<=C.lim};
+  for(const C of LAD){if(fits(C)){pick=C;break}}
+  if(pick&&pick.noteMax){ // long notes: keep as much of each note as still fits on the page
+    const prevMax=(LAD[LAD.indexOf(pick)-1]||{}).noteMax||2000;
+    for(let nm=prevMax-20;nm>pick.noteMax;nm-=20){const C=Object.assign({},pick,{noteMax:nm,noteSum:0});if(fits(C)){pick=C;break}}
+  }
+  if(!pick)pick=Object.assign({},LAD[LAD.length-1],{paged:1,lim:LIMIT2}); // not reachable with real data: last resort keeps every word
+  p2Draw(pick);
+  p2Info={lv:pick.lv,yEnd:Math.round(y*10)/10,lim:pick.lim,paged:!!pick.paged,labs:LX.n,mode:labMode};
   }
   {const sy=760;line(M,sy,M+212,sy,0.7);line(R-212,sy,R,sy,0.7);
    txt(M,sy+14,"Signature of examining doctor","T",10.5);const cs="Countersigned by VP/VS/Registrar";txt(R-certW(cs,"T",10.5),sy+14,cs,"T",10.5);}
@@ -13091,7 +13264,7 @@ function buildCertPdf(m,o){
   s+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+offs.map(v=>String(v).padStart(10,"0")+" 00000 n \n").join("");
   s+=`trailer\n<< /Size ${objs.length+1} /Root ${catalog} 0 R /Info ${info} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
   const bytes=new Uint8Array(s.length);for(let i=0;i<s.length;i++)bytes[i]=s.charCodeAt(i)&255;
-  bytes.pageCount=N;bytes.certPages=certPages;
+  bytes.pageCount=N;bytes.certPages=certPages;bytes.p2=p2Info;
   return bytes;
 }
 function disDoneHtml(){
