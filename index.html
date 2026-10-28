@@ -1772,6 +1772,15 @@ html[data-theme="ot"] .duty-badge.ipd{background:rgba(96,165,250,.18);color:#bfd
 html[data-theme="ot"] .duty-badge.opd{background:rgba(251,191,36,.16);color:#fde68a}
 .duty-other{margin:10px 0 0;color:var(--muted)}
 .call-chip{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:4px 11px;min-height:28px;border-radius:999px;border:1px solid rgba(22,163,74,.35);background:rgba(22,163,74,.10);color:#15803d;font-size:12px;font-weight:800;line-height:1;text-decoration:none;vertical-align:middle;-webkit-tap-highlight-color:transparent}.call-chip:active{transform:scale(.95);background:rgba(22,163,74,.2)}.call-chip:focus-visible{outline:2px solid #16a34a;outline-offset:2px}html[data-theme="dark"] .call-chip{color:#4ade80;border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.12)}
+/* R1.3.137 DUTY ROWS: name + shift on the left (ellipsis when long), Call chip pinned in a fixed-width right column */
+.duty-row{display:flex;align-items:center;gap:8px;margin:6px 0 0;min-height:30px}
+.duty-row .duty-who{flex:1 1 auto;min-width:0;margin:0;display:flex;align-items:baseline;gap:4px;white-space:nowrap}
+.duty-row .duty-nm{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.duty-row .duty-sh{flex:none}
+.duty-row .duty-switch{flex:none;margin-left:0}
+.duty-row .duty-call{flex:none;width:76px;display:flex;justify-content:flex-end}
+.duty-row .duty-call .call-chip{margin-left:0;width:100%;justify-content:center;box-sizing:border-box}
+div.duty-other{margin:0;color:inherit}.duty-other-h{margin:10px 0 0;color:var(--muted)}
 .field-err,.field span.field-err{display:block;margin:4px 0 0;color:var(--danger,#e11d48);font-size:12px;font-weight:700;text-transform:none;letter-spacing:0}.field span.field-hint{display:block;margin:4px 0 0;color:var(--muted,#64748b);font-size:12px;font-weight:500;text-transform:none;letter-spacing:0}.field input[aria-invalid="true"]{border-color:var(--danger,#e11d48)}
 .duty-switch{display:inline-flex;align-items:center;margin-left:6px;padding:3px 9px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font:inherit;font-size:11.5px;font-weight:700;line-height:1.3;color:var(--teal);box-shadow:0 1px 2px rgba(15,23,42,.06);vertical-align:middle}.duty-switch:active{transform:scale(.95);border-color:var(--teal)}
 /* /R1.3.88 DUTY AREA */
@@ -2301,6 +2310,19 @@ input.lab-date-ocr{border-color:var(--warn)!important;background:color-mix(in sr
 .lab-spin{display:inline-block;width:18px;height:18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--teal);animation:labspin .8s linear infinite;vertical-align:-4px;margin-right:8px}
 @keyframes labspin{to{transform:rotate(360deg)}}
 @media (max-width:380px){.lab-row{grid-template-columns:minmax(0,1fr) 84px 42px 24px;column-gap:5px}.lab-rn b{font-size:13.5px}.lab-li{grid-template-columns:minmax(0,4.8em) minmax(0,1fr) auto;column-gap:6px}.lab-lt .lab-spark{display:none}.lab-hf{grid-template-columns:1fr}}
+/* R1.3.138: Edit discharge */
+.ded-note{margin:0 0 12px;line-height:1.4;opacity:.85}
+.ded-med-ops{display:flex;gap:2px}
+.ded-mv:disabled{opacity:.25;cursor:default}
+.ded-labs{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
+.ded-lab-g{margin:6px 0 2px;font-weight:700;opacity:.75}
+.ded-lab{display:flex;gap:8px;align-items:center;font-size:13.5px;padding:3px 0}
+.ded-lab input{width:18px;height:18px;margin:0;flex:0 0 auto}
+.ded-vers{display:flex;flex-direction:column;gap:8px}
+.ded-ver{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.35}
+.ded-ver .btn{flex:0 0 auto}
+.dis-req-chips{margin-bottom:6px}
+.record-actions .btn[data-dedit]{white-space:nowrap}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -2917,7 +2939,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.136";
+const APP_VERSION="R1.3.138";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -3452,7 +3474,7 @@ let navDir="fwd";
 let navAnim=false;
 let navScroll={};
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
-const PAGE_TAB={home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more"};
+const PAGE_TAB={home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",dedit:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more"};
 function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more")?tab:"home"}
 function syncRoute(){
   if(nav.stack.length){
@@ -4391,7 +4413,7 @@ function stampSheetEnter(html){
 }
 function shell(inner){
   const u=user();
-  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders"].includes(route.page))?"on":"";
+  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders"].includes(route.page))?"on":"";
   return `<header class="top"><div><p class="kicker">${greet()}${canWrite()?` <span class="who-inline">${esc(u.displayName)}</span>`:""}</p><h1>${esc(S.unit.name)}</h1></div>
     <div class="who-tools">${statusChip()}<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button></div></header>
     <main class="main">${inner}</main>
@@ -7308,12 +7330,13 @@ function syncMedInputsFromWrap(wrap){
       drug:drugEl?drugEl.value:"",
       dose:doseEl?doseEl.value:"",
       route:val(routeId)||"PO",
-      freq:val(freqId)||(prefix==="dm"&&ui.obsClose&&ui.obsClose.dis?"":"OD") // R1.3.133
+      freq:val(freqId)||((prefix==="dm"&&ui.obsClose&&ui.obsClose.dis)||prefix==="de"?"":"OD") // R1.3.133
     };
     if(prefix==="o"){ui.obs=ui.obs||{meds:[]};ui.obs.meds=ui.obs.meds||[];ui.obs.meds[idx]=rowObj;}
     else if(prefix==="oa"){ui.obsAdmit=ui.obsAdmit||{meds:[]};ui.obsAdmit.meds=ui.obsAdmit.meds||[];ui.obsAdmit.meds[idx]=rowObj;}
     else if(prefix==="a"){ui.census=ui.census||{meds:[]};ui.census.meds=ui.census.meds||[];ui.census.meds[idx]=rowObj;}
     else if(prefix==="dm"&&ui.obsClose&&ui.obsClose.add&&ui.obsClose.add[idx]){Object.assign(ui.obsClose.add[idx],rowObj);try{dmRefreshCount()}catch(e){}}
+    else if(prefix==="de"&&ui.dedit&&ui.dedit.meds&&ui.dedit.meds[idx]){Object.assign(ui.dedit.meds[idx],rowObj)} // R1.3.138
   }
 }
 function onMedDrugInput(el){
@@ -8418,7 +8441,14 @@ function dmCollect(pid){
     push(r)});
   return out;
 }
-function dmLine(m){return [m.name,m.dose,m.route,m.instructions?String(m.instructions):(m.frequency?freqLabel(m.frequency):"")].filter(x=>x&&x!=="—").join(" · ")} // R1.3.133: instructions (taper) replace the frequency
+const DM_FREQ_SYN={OD:/\b(od|once\s+(a\s+)?da(il)?y|daily)\b/i,BD:/\b(bd|bid|twice\s+(a\s+)?da(il)?y)\b/i,TDS:/\b(tds|tid|thrice|three\s+times)\b/i,QID:/\b(qid|qds|four\s+times)\b/i,HS:/\b(hs|at\s+night|night|bed\s*time)\b/i,SOS:/\b(sos|prn|when\s+required|as\s+needed|if\s+needed)\b/i,PRN:/\b(sos|prn|when\s+required|as\s+needed|if\s+needed)\b/i,STAT:/\b(stat|immediately)\b/i,WEEKLY:/\bweekly\b/i,MONTHLY:/\bmonthly\b/i};
+function dmInstrHasFreq(instr,freq){ // R1.3.138: instructions that already state a schedule (taper, "HS for 7 days", 1-0-1) print alone
+  const i=String(instr||"");if(!i.trim())return false;
+  if(/\b(od|bd|bid|tds|tid|qid|qds|hs|sos|prn|stat)\b/i.test(i)||/\b\d+(\.\d+)?\s*-\s*\d+(\.\d+)?\s*-\s*\d+(\.\d+)?\b/.test(i))return true;
+  return String(freq||"").split("+").map(t=>t.trim().toUpperCase()).filter(Boolean).some(t=>DM_FREQ_SYN[t]&&DM_FREQ_SYN[t].test(i));
+}
+function dmFreqInstr(m,lab){const i=String(m.instructions||"").trim(),f=String(m.frequency||"").trim();if(!i)return f?lab(f):"";if(!f||dmInstrHasFreq(i,f))return i;return lab(f)+" · "+i}
+function dmLine(m){return [m.name,m.dose,m.route,dmFreqInstr(m,freqLabel)].filter(x=>x&&x!=="—").join(" · ")} // R1.3.133: instructions (taper) replace the frequency
 function dmLabel(outcome){return outcome==="admit"?"Medications on admission":outcome==="referred"?"Medications on referral":outcome==="discharge"?"Medications on discharge":"Medications on disposal"}
 function dmRecordHtml(it){
   const list=it.dmeds||[]; if(!list.length) return "";
@@ -9523,6 +9553,10 @@ function dutyCardBody(){
   // R1.3.88 DUTY AREA: morning list grouped into IPD / OPD (display only)
   const row=x=>{const me=String(x.userId)===String(S.userId);
     const sw=(me&&sh==="morning"&&canWrite()&&x.area)?` <button type="button" class="duty-switch" aria-label="Switch duty area to ${x.area==="ipd"?"OPD":"IPD"}" onclick="switchDutyArea()">Switch to ${x.area==="ipd"?"OPD":"IPD"}</button>`:"";
+    // R1.3.137: consultants get a flex row with a fixed-width call column on the right (empty when no number),
+    // so the chips form one straight column; everyone else keeps the original R1.3.136 markup unchanged.
+    if(isConsultant()){const nm=esc(x.name||rname(x.userId))+(me?" · you":"");
+      return `<div class="duty-row"><p class="sm duty-who"><span class="duty-nm" title="${nm}">${nm}</span><span class="tiny duty-sh">· ${esc(dutyShiftLabel(x))}</span></p>${sw}<span class="duty-call">${callChip(x)}</span></div>`}
     return `<p class="sm" style="margin:6px 0 0">${esc(x.name||rname(x.userId))}${me?" · you":""} <span class="tiny">· ${esc(dutyShiftLabel(x))}</span>${sw}${callChip(x)}</p>`};
   let list;
   if(!open.length) list=`<p class="sm" style="margin-top:8px">No one signed in for ${esc(shiftLabel(sh))}</p>`;
@@ -9530,7 +9564,9 @@ function dutyCardBody(){
     const g=a=>open.filter(x=>x.area===a), other=open.filter(x=>x.area!=="ipd"&&x.area!=="opd");
     const grp=(lb,arr,cls)=>`<div class="duty-grp ${cls}"><p class="duty-grp-h"><span class="duty-badge ${cls}">${lb}</span><span class="tiny">${arr.length}</span></p>${arr.length?arr.map(row).join(""):`<p class="tiny" style="margin:4px 0 0">No one yet</p>`}</div>`;
     list=grp("IPD · Ward",g("ipd"),"ipd")+grp("OPD",g("opd"),"opd")+
-      (other.length?`<p class="tiny duty-other">Not specified: ${other.map(x=>esc(x.name||rname(x.userId))+(String(x.userId)===String(S.userId)?" (you)":"")+callChip(x)).join(", ")}</p>`:"");
+      (other.length?(isConsultant()
+        ? `<div class="duty-other"><p class="tiny duty-other-h">Not specified</p>${other.map(row).join("")}</div>` // R1.3.137: same aligned rows for consultants
+        : `<p class="tiny duty-other">Not specified: ${other.map(x=>esc(x.name||rname(x.userId))+(String(x.userId)===String(S.userId)?" (you)":"")+callChip(x)).join(", ")}</p>`):"");
   } else list=open.map(row).join("");
   const action=canWrite()
     ? (d
@@ -10838,6 +10874,7 @@ function snapshotMedInputs(){
   if(ds) ui.fields.mds=ds.value;
   try{censusDraft()}catch(e){}
   try{obsDraft()}catch(e){}
+  try{dedDraft()}catch(e){}
   try{if(ui.panel&&ui.panel.kind==="obsAdmit")obsAdmitDraft()}catch(e){}
   try{if(ui.panel&&(ui.panel.kind==="obsRefer"||ui.panel.kind==="obsDispose"))obsCloseDraft()}catch(e){}
   try{if(route.page==="pedit")peditDraft()}catch(e){}
@@ -13052,7 +13089,7 @@ function recordView(){
         <h2 class="page-title">Clinical record</h2>
         <p class="tiny" style="margin-top:2px">${esc(p.name)} · ${esc(b?b.no:"—")}${p.hospitalNo?` · ${esc(p.hospitalNo)}`:""}${mrdLabel(p)?` · ${esc(mrdLabel(p))}`:""}</p>
       </div>
-      <div class="record-actions">${certBtnHtml(p,"sm")}<button class="btn sm ghost" onclick="labList('${p.id}')">Investigations</button><button class="btn sm ghost" onclick="exportPatientRecord('${p.id}')">Export PDF</button></div>
+      <div class="record-actions">${certBtnHtml(p,"sm")}${dedBtnHtml(p,"sm ghost")}<button class="btn sm ghost" onclick="labList('${p.id}')">Investigations</button><button class="btn sm ghost" onclick="exportPatientRecord('${p.id}')">Export PDF</button></div>
     </div>
     ${items.length?`<div class="record-list">${items.map(it=>recordItemHtml(it,p.id)).join("")}</div>`:`<div class="card"><p class="sm">No clinical events recorded yet.</p></div>`}`;
 }
@@ -13359,6 +13396,9 @@ function certMseLatest(p,until){
 }
 function certMseFor(p){
   const all=mseEntries(p.id);const dis=Date.parse(p.dischargedAt||0);
+  const _r=certRow(p);const pick=_r&&_r.edits&&typeof _r.edits.mse==="string"?_r.edits.mse:""; // R1.3.138: MSE chosen in Edit discharge
+  if(pick==="none") return null;
+  if(pick){const e=all.find(x=>x.id===pick&&mseAny(x.data||{}));if(e){const near=e.kind==="discharge"||(p.dischargeMode!=="abscond"&&isFinite(dis)&&Math.abs(dis-Date.parse(e.at||0))<=24*3600e3);return {e,last:!near,chosen:true}}}
   const m=all.find(x=>x.kind==="discharge"&&Math.abs(Date.parse(x.at||0)-dis)<36*3600e3&&mseAny(x.data||{}));
   if(m) return {e:m,last:false};
   // R1.3.133: no discharge-form MSE → the latest MSE of the admission, for every mode. Within 24 h of discharge it is
@@ -13416,7 +13456,7 @@ function certMedNorm(m){
   if(sp.rest){o.name=sp.name;o.instructions=[sp.rest,String(o.instructions||"").trim()].filter(Boolean).join("; ")}
   o.dose=dmDoseNorm(o.dose);return o;
 }
-function certMedFreq(md){const i=String(md.instructions||"").trim();return i||certFreqText(md.frequency||"OD")}
+function certMedFreq(md){const i=String(md.instructions||"").trim(),f=String(md.frequency||"").trim();if(!i)return certFreqText(f||"OD");return dmFreqInstr(md,certFreqText)} // R1.3.138: frequency, then instructions; no repeat
 const CERT_FMT=133; // R1.3.133: layout/wording change → re-prints get a new version
 /* ---- certificate model (auto values + saved edits) ---- */
 const CERT_EDIT_KEYS=["dept","admitted","disease","remarks","advice","review"];
@@ -13459,7 +13499,10 @@ function certModel(p){
   if(mode==="dama"&&!ed.advice&&!adv.some(t=>/treatment is incomplete/i.test(t))) adv.push("Treatment is incomplete (discharged against medical advice). Continue medicines regularly and return to OPD / Emergency early if symptoms recur.");
   // R1.3.128: optional "Relevant investigations" line; off unless ticked (edits.labs_on), text auto from abnormal results this admission
   const labsAuto="";const labsOn=false;const labs=""; // R1.3.133: page-1 "Relevant investigations" removed (investigations print on page 2 only)
-  const p2labs=certP2Labs(p); // R1.3.131: page 2 investigations block
+  let p2labs=certP2Labs(p); // R1.3.131: page 2 investigations block
+  const hideL=Array.isArray(ed.labs_hide)?ed.labs_hide.map(String):[];
+  if(hideL.length&&p2labs.n){const hs=new Set(hideL);const g2=p2labs.groups.map(g=>{const rows=g.rows.filter(r=>!hs.has(String(r.code))).map(r=>Object.assign({},r));const day=rows.reduce((a,r)=>r.day>a?r.day:a,"");rows.forEach(r=>{r.old=r.day!==day});return Object.assign({},g,{rows,day,dm:labDM(day)})}).filter(g=>g.rows.length);
+    const n2=g2.reduce((a,g)=>a+g.rows.length,0);p2labs=Object.assign({},p2labs,{groups:g2,n:n2,hidden:p2labs.n-n2,key:p2labs.key+"|hide:"+hideL.slice().sort().join(",")})} // R1.3.138
   return {p,row,mse,auto,f,mode,drugs,treat,treatText:treat.map(x=>x.t).join(""),ectN,meds,adv,labsOn,labs,labsAuto,p2labs,edited:CERT_EDIT_KEYS.filter(k=>typeof ed[k]==="string"&&ed[k]!==auto[k]).length};
 }
 function certHash(m){
@@ -13489,7 +13532,7 @@ function certEdit(k,v){
 }
 function certReset(){
   const p=patient(route.id);if(!p) return;const row=certRow(p);if(!row) return;
-  row.edits={};row.keyDrugs=[];row.updatedAt=now();clearTimeout(_certSaveT);certQueueSave(p,row);toast("Certificate reset to the record","ok");render();
+  const keep={};["mse","labs_hide"].forEach(k=>{if(row.edits&&row.edits[k]!=null)keep[k]=row.edits[k]});row.edits=keep;row.keyDrugs=[];row.updatedAt=now();clearTimeout(_certSaveT);certQueueSave(p,row);toast("Certificate reset to the record","ok");render();
 }
 function certPaintMeta(pending){
   const el=document.getElementById("certMeta");if(!el) return;const p=patient(route.id);if(!p) return;
@@ -13503,14 +13546,272 @@ function certMetaHtml(m,pending){
 /* ---- preview page ---- */
 function openDischargeCert(pid){const p=patient(pid);if(!p||!certEligible(p)){toast("No certificate for this discharge","info");return}go("dcert",pid,1)}
 function certBtnHtml(p,cls){return certEligible(p)?`<button class="btn ${cls||"sm ghost"}" type="button" data-cert="${p.id}" onclick="openDischargeCert('${p.id}')">Discharge certificate</button>`:""}
+/* ===== R1.3.138: Edit discharge — every printed field incl. medications; reason required, audited, restorable ===== */
+function isViewerLogin(){const u=user();return String(u&&u.role||"").toLowerCase()==="viewer"}
+function canEditDischarge(p){return !!(p&&p.status==="discharged"&&p.dischargedAt&&!obsOnlyDischarge(p)&&canWrite()&&!isViewerLogin())}
+function dedBtnHtml(p,cls){return canEditDischarge(p)?`<button class="btn ${cls||"sm ghost"}" type="button" data-dedit="${p.id}" onclick="openDischargeEdit('${p.id}')">Edit discharge</button>`:""}
+function dedClearFields(){if(ui.fields)Object.keys(ui.fields).forEach(k=>{if(/^de(d|route|freq)/.test(k))delete ui.fields[k]})}
+function openDischargeEdit(pid){
+  if(!needWrite())return;const p=patient(pid);
+  if(isViewerLogin()){toast("This login is view-only.","bad");return}
+  if(!canEditDischarge(p)){toast("Only a discharged patient's record can be edited here.","info");return}
+  ui.dedit=null;dedClearFields();go("dedit",pid,1);
+}
+function dedTreatSet(t){return t==="conservative_ect"?["conservative","ect"]:t==="ect"?["ect"]:["conservative"]}
+function dedTreatMode(set){const c=set.includes("conservative"),e=set.includes("ect");return c&&e?"conservative_ect":e?"ect":"conservative"}
+function dedFromPatient(p){
+  const row=certRow(p);const ed=(row&&row.edits)||{};const s=k=>typeof ed[k]==="string"?ed[k]:"";
+  return {pid:p.id,base:p.updatedAt||null,disAt:p.dischargedAt,
+    name:p.name||"",age:p.age==null?"":String(p.age),sex:p.sex||"M",hosp:p.hospitalNo||"",mrd:p.mrdNo||"",
+    adate:p.admittedAt?localStamp(new Date(p.admittedAt)):"",ddate:p.dischargedAt?localStamp(new Date(p.dischargedAt)):"",
+    dx:p.diagnosis||"",dx2:p.dx2||"",dx3:p.dx3||"",comorb:p.comorb||"",
+    mode:p.dischargeMode||"advice",outcome:p.dischargeOutcome||"improved",
+    treat:dedTreatSet(p.treatmentMode),ect:p.dischargeEctSessions==null?"":String(p.dischargeEctSessions),
+    meds:(p.dischargeMeds||[]).filter(m=>m&&m.name).map(m=>({drug:m.name||"",dose:m.dose||"",route:m.route||"PO",freq:m.frequency||"",instr:m.instructions||"",source:m.source==="ongoing"?"ongoing":"new",order_id:m.order_id||"",modified:!!m.modified,orig:{dose:m.dose||"",route:m.route||"",freq:m.frequency||""}})),
+    advice:typeof ed.advice==="string"?ed.advice:(p.dischargeAdvice||""),review:typeof ed.review==="string"?ed.review:(p.dischargeReview||""),
+    req:(p.dischargeRequestedBy||[]).slice(),reqName:p.dischargeRequesterName||"",
+    cdept:s("dept"),cadm:s("admitted"),cdis:s("disease"),crem:s("remarks"),
+    mse:typeof ed.mse==="string"?ed.mse:"",hide:Array.isArray(ed.labs_hide)?ed.labs_hide.map(String):[],
+    reason:"",versions:null};
+}
+function dedSyncFields(){
+  const d=ui.dedit;if(!d)return;ui.fields=ui.fields||{};
+  Object.keys(ui.fields).forEach(k=>{if(/^de(route|freq)\d+$/.test(k))delete ui.fields[k]});
+  d.meds.forEach((m,i)=>{ui.fields["deroute"+i]=m.route||"PO";ui.fields["defreq"+i]=m.freq||""});
+}
+function dedDraft(){
+  const d=ui.dedit;if(!d||route.page!=="dedit")return;
+  const pg=document.querySelector(".ded-page");if(!pg||pg.getAttribute("data-pid")!==String(d.pid)||+(pg.getAttribute("data-gen")||0)!==(d.gen||0))return; // DOM must be this form, this layout
+  const g=id=>{const el=document.getElementById(id);return el?el.value:null};
+  [["name","dedname"],["age","dedage"],["hosp","dedhosp"],["mrd","dedmrd"],["adate","dedadate"],["ddate","dedddate"],["dx","deddx"],["dx2","deddx2"],["dx3","deddx3"],["comorb","dedcomorb"],["ect","dedect"],["advice","dedadvice"],["review","dedreview"],["reqName","dedreqname"],["cdept","dedcdept"],["cadm","dedcadm"],["cdis","dedcdis"],["crem","dedcrem"],["reason","dedreason"]].forEach(([k,id])=>{const v=g(id);if(v!=null)d[k]=v});
+  const pv=id=>document.getElementById(id)?val(id):"";
+  const sx=pv("dedsex");if(sx)d.sex=sx;const md=pv("dedmode");if(md)d.mode=md;const oc=pv("dedout");if(oc)d.outcome=oc;
+  if(document.getElementById("dedmse")){const ms=val("dedmse");d.mse=ms==="auto"?"":ms}
+  d.meds.forEach((m,i)=>{const a=g("dedrug"+i),b=g("dedose"+i),c=g("deinstr"+i);if(a!=null)m.drug=a;if(b!=null)m.dose=b;if(c!=null)m.instr=c;
+    if(document.getElementById("deroute"+i)){const r=val("deroute"+i);if(r)m.route=r}
+    if(document.getElementById("defreq"+i))m.freq=val("defreq"+i)||""});
+}
+function dedRender(){dedDraft();render()}
+function dedTreatToggle(k){const d=ui.dedit;if(!d)return;dedDraft();d.gen=(d.gen||0)+1;const s=new Set(d.treat);if(s.has(k)){if(s.size>1)s.delete(k)}else s.add(k);d.treat=["conservative","ect"].filter(x=>s.has(x));render()}
+function dedReqToggle(k){const d=ui.dedit;if(!d)return;dedDraft();d.gen=(d.gen||0)+1;const s=new Set(d.req);s.has(k)?s.delete(k):s.add(k);d.req=DIS_REQ.map(x=>x[0]).filter(x=>s.has(x));render()}
+function dedMedAdd(){const d=ui.dedit;if(!d)return;dedDraft();d.gen=(d.gen||0)+1;if(d.meds.length>=40){toast("Up to 40 medications.","bad");return}d.meds.push({drug:"",dose:"",route:"PO",freq:"",instr:"",source:"new",order_id:"",modified:false,orig:null});dedSyncFields();render();setTimeout(()=>{const el=document.getElementById("dedrug"+(d.meds.length-1));if(el)el.focus()},60)}
+function dedMedMove(i,dir){const d=ui.dedit;if(!d)return;dedDraft();d.gen=(d.gen||0)+1;const j=i+dir;if(j<0||j>=d.meds.length)return;const t=d.meds[i];d.meds[i]=d.meds[j];d.meds[j]=t;dedSyncFields();render()}
+function dedMedRemove(i){const d=ui.dedit;if(!d)return;dedDraft();d.gen=(d.gen||0)+1;d.meds.splice(i,1);dedSyncFields();render()}
+function dedLabToggle(code,on){const d=ui.dedit;if(!d)return;const s=new Set(d.hide);on?s.delete(code):s.add(code);d.hide=Array.from(s).sort()}
+function dedMark(id){const el=document.getElementById(id);if(!el)return;const f=el.closest(".field")||el;f.classList.add("dis-err");try{el.focus();el.scrollIntoView({block:"center"})}catch(e){}setTimeout(()=>f.classList.remove("dis-err"),2600)}
+function dedMedCanon(m){
+  const t=v=>String(v==null?"":v).trim();const o={name:t(m.name).slice(0,160)};
+  const put=(k,v,n)=>{v=t(v).slice(0,n);if(v)o[k]=v};
+  put("dose",m.dose,60);put("route",m.route,30);put("frequency",m.frequency,40);put("instructions",m.instructions,200);
+  o.source=m.source==="ongoing"?"ongoing":"new";put("order_id",m.order_id,80);if(m.modified===true)o.modified=true;return o;
+}
+function dedEditsCanon(e){const o={};Object.keys(e||{}).sort().forEach(k=>{const v=e[k];if(v==null)return;o[k]=Array.isArray(v)?v.slice().map(String).sort():v});return JSON.stringify(o)}
+function dedBuildChanges(p,d){
+  const o=dedFromPatient(p),ch={};const t=s=>String(s==null?"":s).trim();
+  const name=t(d.name);if(!name)return {err:"Name is required.",field:"dedname"};if(name!==t(p.name))ch.name=name;
+  const age=t(d.age);if(age&&(!/^\d{1,3}$/.test(age)||+age>120))return {err:"Age must be a number from 0 to 120.",field:"dedage"};
+  if(age!==t(o.age))ch.age=age===""?null:+age;
+  if((d.sex||"M")!==(p.sex||"M"))ch.sex=d.sex;
+  const hosp=t(d.hosp);if(!hosp)return {err:"Hospital number is required.",field:"dedhosp"};if(hosp!==t(p.hospitalNo))ch.hospital_no=hosp;
+  if(normMrd(d.mrd)!==normMrd(p.mrdNo))ch.mrd_no=normMrd(d.mrd)||null;
+  const ad=d.adate?new Date(d.adate):null,dd=d.ddate?new Date(d.ddate):null;
+  if(!ad||isNaN(ad))return {err:"Date of admission is required.",field:"dedadate"};
+  if(!dd||isNaN(dd))return {err:"Date & time of discharge is required.",field:"dedddate"};
+  if(dd.getTime()>Date.now()+10*60000)return {err:"Discharge can't be in the future.",field:"dedddate"};
+  const adEff=d.adate!==o.adate?ad.getTime():Date.parse(p.admittedAt),ddEff=d.ddate!==o.ddate?dd.getTime():Date.parse(p.dischargedAt);
+  if(isFinite(adEff)&&isFinite(ddEff)&&ddEff<adEff)return {err:"Discharge can't be before admission.",field:"dedddate"};
+  if(d.adate!==o.adate)ch.admitted_at=ad.toISOString();
+  if(d.ddate!==o.ddate)ch.discharged_at=dd.toISOString();
+  [["dx","diagnosis",p.diagnosis],["dx2","secondary_dx",p.dx2],["dx3","tertiary_dx",p.dx3],["comorb","comorbidities",p.comorb]].forEach(([k,col,old])=>{if(t(d[k])!==t(old))ch[col]=t(d[k])});
+  const mode=d.mode||"advice";const out=mode==="death"?"death":(d.outcome||"improved");
+  if(out==="death"&&mode!=="death")return {err:"Condition “Death” needs mode “Death”.",field:"dedout"};
+  if(mode!==(p.dischargeMode||""))ch.discharge_mode=mode;
+  if(out!==(p.dischargeOutcome||""))ch.discharge_outcome=out;
+  const tm=dedTreatMode(d.treat);if(tm!==(p.treatmentMode||"conservative"))ch.treatment_mode=tm;
+  if(/ect/.test(tm)){const e=t(d.ect);if(e&&!/^\d{1,2}$/.test(e))return {err:"ECT sessions must be 0–99.",field:"dedect"};if(e!==t(o.ect))ch.discharge_ect_sessions=e===""?null:+e}
+  const meds=[];
+  for(let i=0;i<d.meds.length;i++){const m=d.meds[i];if(!t(m.drug)){if(t(m.dose)||t(m.instr))return {err:"Medication "+(i+1)+" needs a name (or remove the row).",field:"dedrug"+i};continue}
+    let mod=m.modified;if(m.source==="ongoing"&&m.orig&&(t(m.dose)!==t(m.orig.dose)||t(m.route)!==t(m.orig.route)||t(m.freq)!==t(m.orig.freq)))mod=true;
+    meds.push(dedMedCanon({name:m.drug,dose:m.dose,route:m.route,frequency:m.freq,instructions:m.instr,source:m.source,order_id:m.order_id,modified:!!mod}))}
+  if(JSON.stringify(meds)!==JSON.stringify((p.dischargeMeds||[]).filter(m=>m&&m.name).map(dedMedCanon)))ch.discharge_meds=meds;
+  if(t(d.advice)!==t(p.dischargeAdvice))ch.discharge_advice=t(d.advice);
+  if(t(d.review)!==t(p.dischargeReview))ch.discharge_review=t(d.review);
+  if(disReqMode(mode)){const list=disReqNorm(d.req,mode);
+    if(mode==="dama"&&!list.length)return {err:"DAMA: choose who requested the discharge.",field:"dedreq"};
+    if(list.join()!==disReqNorm(p.dischargeRequestedBy,mode).join()||mode!==(p.dischargeMode||""))ch.discharge_requested_by=list;
+    if(t(d.reqName)!==t(p.dischargeRequesterName))ch.discharge_requester_name=t(d.reqName)}
+  const row=certRow(p);const old=Object.assign({},(row&&row.edits)||{});const ne=Object.assign({},old);
+  [["cdept","dept"],["cadm","admitted"],["cdis","disease"],["crem","remarks"]].forEach(([k,key])=>{const v=String(d[k]||"");if(t(v))ne[key]=v.slice(0,4000);else delete ne[key]});
+  delete ne.advice;delete ne.review; // shown above as the record's own fields
+  if(d.mse)ne.mse=d.mse;else delete ne.mse;
+  if(d.hide.length)ne.labs_hide=Array.from(new Set(d.hide)).sort();else delete ne.labs_hide;
+  if(dedEditsCanon(ne)!==dedEditsCanon(old))ch.cert_edits=ne;
+  return {ch};
+}
+function dedApply(p,data){
+  const r=data.patient||{};
+  Object.assign(p,{name:r.name,age:r.age,sex:r.sex,hospitalNo:r.hospital_no||"",mrdNo:r.mrd_no||"",admittedAt:r.admitted_at||p.admittedAt,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",
+    dischargedAt:r.discharged_at||p.dischargedAt,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,treatmentMode:r.treatment_mode||null,
+    dischargeEctSessions:r.discharge_ect_sessions==null?null:Number(r.discharge_ect_sessions),dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:[],
+    dischargeAdvice:r.discharge_advice||"",dischargeReview:r.discharge_review||"",dischargeRequestedBy:Array.isArray(r.discharge_requested_by)?r.discharge_requested_by:[],
+    dischargeRequesterName:r.discharge_requester_name||"",updatedAt:r.updated_at||p.updatedAt});
+  if(data.certificate){const c=certFromRow(data.certificate);S.dischargeCertificates=(S.dischargeCertificates||[]).filter(x=>x.id!==c.id);S.dischargeCertificates.unshift(c)}
+  const ev=data.event;
+  if(ev){S.events=S.events||[];S.events=S.events.filter(x=>x.id!==ev.id);S.events.unshift({id:ev.id,pid:p.id,title:ev.title,detail:ev.detail,by:S.userId,actorName:(user()&&user().displayName)||rname(S.userId),patientName:p.name,bed:bedOf(p.id),at:ev.created_at||now(),ok:true,kind:"note"})}
+  save();
+}
+async function dedRpc(fn,args,busy){
+  setBusy(true,busy);
+  try{
+    try{await flushPending()}catch(_){}
+    const {data,error}=await sb.rpc(fn,args);
+    if(error){
+      if(rpcMissingErr(error))throw new Error("Editing a discharge needs a server update. Nothing was changed.");
+      const msg=String(error.message||error);
+      if(/CONFLICT/i.test(msg)){try{await cloudPull()}catch(_){}ui.dedit=null;dedClearFields();render();throw new Error("This discharge was changed by someone else. The form was reloaded; check it and edit again.")}
+      throw new Error(msg);
+    }
+    if(!data||data.ok===false)throw new Error((data&&data.error)||"Could not save the change");
+    return data;
+  }finally{setBusy(false)}
+}
+async function dedSave(){
+  if(!needWrite())return;dedDraft();
+  const d=ui.dedit,p=d&&patient(d.pid);if(!p)return;
+  if(isViewerLogin()){toast("This login is view-only.","bad");return}
+  const reason=String(d.reason||"").trim();
+  if(reason.length<3){toast("Write a short reason for the change.","bad");dedMark("dedreason");return}
+  if(!navigator.onLine||!sb||!sessionTok){toast("You're offline. Editing a discharge needs a connection; nothing was changed.","bad");return}
+  const b=dedBuildChanges(p,d);
+  if(b.err){toast(b.err,"bad");if(b.field)dedMark(b.field);return}
+  if(!Object.keys(b.ch).length){toast("Nothing changed.","bad");return}
+  let data;
+  try{data=await dedRpc("ward_edit_discharge",{p_token:sessionTok,p_patient_id:p.id,p_changes:b.ch,p_reason:reason,p_expected_updated_at:d.base||null,p_edit_id:"de_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8)},"Saving discharge…")}
+  catch(e){toast(e.message||String(e),"bad");return}
+  if(data.nochange){toast("Nothing changed.","bad");return}
+  dedApply(p,data);ui.dedit=null;dedClearFields();
+  toast(`Discharge updated (edit ${data.version_no})${certEligible(p)?" · certificate re-prints as a new version":""}`,"ok");
+  back();setTimeout(()=>{try{cloudPull()}catch(e){}},400);
+}
+async function dedRestore(vid){
+  if(!needWrite())return;dedDraft();
+  const d=ui.dedit,p=d&&patient(d.pid);if(!p)return;
+  const v=(Array.isArray(d.versions)?d.versions:[]).find(x=>x.id===vid);if(!v)return;
+  const reason=String(d.reason||"").trim();
+  if(reason.length<3){toast("Write a short reason for the restore first.","bad");dedMark("dedreason");return}
+  if(!navigator.onLine||!sb||!sessionTok){toast("You're offline. Restoring needs a connection; nothing was changed.","bad");return}
+  if(!confirm(`Undo edit ${v.version_no}? The fields it changed (${(v.changed||[]).map(k=>DED_LABEL[k]||k).join(", ")}) go back to how they were before it.`))return;
+  let data;
+  try{data=await dedRpc("ward_restore_discharge_version",{p_token:sessionTok,p_version_id:vid,p_reason:reason,p_edit_id:"dr_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8)},"Restoring…")}
+  catch(e){toast(e.message||String(e),"bad");return}
+  if(data.nochange){toast("Already the same as before that edit.","info");return}
+  dedApply(p,data);ui.dedit=null;dedClearFields();toast(`Edit ${v.version_no} undone (edit ${data.version_no})`,"ok");render();setTimeout(()=>{try{cloudPull()}catch(e){}},400);
+}
+const DED_LABEL={name:"Name",age:"Age",sex:"Sex",hospital_no:"Hospital No.",mrd_no:"M.R.D. No.",admitted_at:"Date of admission",diagnosis:"Primary diagnosis",secondary_dx:"Secondary diagnosis",tertiary_dx:"Tertiary diagnosis",comorbidities:"Comorbidities",discharged_at:"Date of discharge",discharge_mode:"Mode",discharge_outcome:"Condition",treatment_mode:"Treatment",discharge_ect_sessions:"ECT sessions",discharge_meds:"Medications",discharge_advice:"Instructions",discharge_review:"Review",discharge_requested_by:"Requested by",discharge_requester_name:"Requester name",cert_edits:"Certificate wording / page 2"};
+function dedLoadVersions(p){
+  const d=ui.dedit;if(!d||d.versions!==null)return;
+  if(!navigator.onLine||!sb||!sessionTok){d.versions="offline";return}
+  d.versions="loading";
+  sb.rpc("ward_discharge_edit_versions",{p_token:sessionTok,p_patient_id:p.id}).then(({data,error})=>{
+    if(!ui.dedit||ui.dedit.pid!==p.id)return;
+    ui.dedit.versions=error?(rpcMissingErr(error)?"missing":"error"):(Array.isArray(data)?data:[]);
+    if(route.page==="dedit"){dedDraft();render({bg:1})}
+  }).catch(()=>{if(ui.dedit)ui.dedit.versions="error"});
+}
+function dedVersionsHtml(d){
+  const v=d.versions;
+  if(v==="loading"||v===null)return `<p class="tiny muted">Loading edit history…</p>`;
+  if(v==="offline")return `<p class="tiny muted">Edit history needs a connection.</p>`;
+  if(v==="missing"||v==="error")return `<p class="tiny muted">Couldn't load the edit history.</p>`;
+  if(!v.length)return `<p class="tiny muted">No edits yet. The original discharge is kept with the first edit.</p>`;
+  const can=canEditDischarge(patient(d.pid));
+  return `<div class="ded-vers">${v.map(x=>`<div class="ded-ver" data-ver="${esc(x.id)}"><div><b>Edit ${esc(x.version_no)}</b> · ${esc(certDT(x.edited_at))} IST${x.edited_by_name?" · "+esc(x.edited_by_name):""}<br><span class="tiny">${esc((x.changed||[]).map(k=>DED_LABEL[k]||k).join(", "))}</span><br><span class="tiny muted">Reason: ${esc(x.reason||"")}</span></div>${can?`<button type="button" class="btn sm ghost" onclick="dedRestore('${esc(x.id)}')">Undo</button>`:""}</div>`).join("")}</div>`;
+}
+function dedMseOptions(p){
+  const adm=Date.parse(p.admittedAt||0);
+  const list=mseEntries(p.id).filter(x=>mseAny(x.data||{})&&(!isFinite(adm)||Date.parse(x.at||0)>=adm-6*3600e3)).slice(0,30);
+  return [["auto","Automatic (discharge MSE or latest)"]].concat(list.map(x=>[x.id,certDT(x.at)+" IST"+(x.kind?" · "+String(x.kind).replace(/^\w/,c=>c.toUpperCase()):"")])).concat([["none","None (blank MSE lines)"]]);
+}
+function dedEditView(){
+  const p=patient(route.id);if(!p)return `<div class="card">Not found.</div>`;
+  const bk=`<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="ui.dedit=null;back()">${BACK_ICON}</button>`;
+  if(!canEditDischarge(p))return bk+`<div class="card"><p class="sm">${isViewerLogin()||!canWrite()?"This login can view only.":"Only a discharged patient's record can be edited here."}</p></div>`;
+  if(!ui.dedit||ui.dedit.pid!==p.id){dedClearFields();ui.dedit=dedFromPatient(p);dedSyncFields()}
+  const d=ui.dedit;dedLoadVersions(p);
+  const mode=d.mode||"advice";const dead=mode==="death";const nomeds=mode==="abscond"||mode==="death";
+  const cm=certEligible(p)?certModel(p):null;const auto=cm?cm.auto:{};
+  const tf=(lb,id,v,ph,extra)=>`<label class="field"><span>${lb}</span><input id="${id}" type="text" value="${esc(v||"")}" ${ph?`placeholder="${esc(ph)}"`:""} autocomplete="off" ${extra||""}/></label>`;
+  const ta=(lb,id,v,ph,rows,hint)=>`<label class="field cert-f"><span>${lb}</span><textarea id="${id}" rows="${rows||2}" ${ph?`placeholder="${esc(ph)}"`:""}>${esc(v||"")}</textarea>${hint?`<p class="tiny muted">${hint}</p>`:""}</label>`;
+  const reqSel=new Set(disReqNorm(d.req,mode));
+  const medRows=d.meds.map((m,i)=>`<div class="dm-new ded-med" data-i="${i}">
+      <div class="dm-new-top"><span class="dm-new-lbl">${i+1}.</span><span class="ded-med-ops"><button type="button" class="dm-x ded-mv" aria-label="Move up" ${i?"":"disabled"} onclick="dedMedMove(${i},-1)">↑</button><button type="button" class="dm-x ded-mv" aria-label="Move down" ${i<d.meds.length-1?"":"disabled"} onclick="dedMedMove(${i},1)">↓</button><button type="button" class="dm-x" aria-label="Remove medication" onclick="dedMedRemove(${i})">×</button></span></div>
+      ${medInputsGridHtml({drugId:"dedrug"+i,doseId:"dedose"+i,routeId:"deroute"+i,freqId:"defreq"+i,drugVal:m.drug||"",doseVal:m.dose||"",mode:"row",prefix:"de",idx:i})}
+      <div class="dm-rf">${picker("deroute"+i,MED_ROUTES,m.route||"PO","Route")}${picker("defreq"+i,MED_FREQS,m.freq||"","Frequency")}</div>
+      <input id="deinstr${i}" class="dm-instr" type="text" maxlength="200" autocomplete="off" spellcheck="true" value="${esc(m.instr||"")}" placeholder="Instructions / duration (optional), e.g. for 7 days" aria-label="Instructions"/>
+    </div>`).join("");
+  const p2=certP2Labs(p);const hide=new Set(d.hide);
+  const labs=p2.n?`<div class="ded-labs">${p2.groups.map(g=>`<p class="tiny ded-lab-g">${esc(g.lb)}</p>`+g.rows.map(r=>`<label class="ded-lab"><input type="checkbox" ${hide.has(String(r.code))?"":"checked"} onchange="dedLabToggle('${esc(String(r.code))}',this.checked)"/><span>${esc(r.nm)} <b>${esc(r.v)}</b>${r.u?" "+esc(r.u):""}</span></label>`).join("")).join("")}</div><p class="tiny muted">Untick a test to leave it off page 2.</p>`:`<p class="tiny muted">No investigations recorded this admission.</p>`;
+  return `${bk}
+  <div class="ded-page" data-pid="${esc(String(p.id))}" data-gen="${d.gen||0}">
+    <h2 class="page-title">Edit discharge</h2>
+    <p class="tiny cert-sub">${esc(p.name)}${p.hospitalNo?" · "+esc(p.hospitalNo):""} · Discharged ${esc(certDT(p.dischargedAt))} IST</p>
+    <p class="tiny ded-note">Fix any mistake in the discharge record. Every saved change needs a reason, is kept in the edit history (can be undone) and is logged. ${certEligible(p)?"The certificate re-prints as a new version.":""}</p>
+    <div class="card cert-card"><p class="cert-h">Patient</p>
+      ${tf("Name","dedname",d.name,"Full name",'maxlength="200"')}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tf("Age","dedage",d.age,"",'inputmode="numeric" maxlength="3"')}<label class="field"><span>Sex</span>${picker("dedsex",[["M","M"],["F","F"],["O","O"]],d.sex||"M","Sex")}</label></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tf("Hospital No. *","dedhosp",d.hosp,"UHID / IP number",'maxlength="60"')}${tf("M.R.D. No.","dedmrd",d.mrd,"e.g. 1234/26",'maxlength="60"')}</div>
+      <label class="field"><span>Date of admission</span><input id="dedadate" type="datetime-local" value="${esc(d.adate||"")}"/></label>
+    </div>
+    <div class="card cert-card"><p class="cert-h">Discharge</p>
+      <label class="field"><span>Date &amp; time of discharge</span><input id="dedddate" type="datetime-local" value="${esc(d.ddate||"")}"/></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="field"><span>Mode</span>${picker("dedmode",DISCHARGE_MODES,mode,"Mode of discharge")}</label><label class="field"><span>Condition</span>${dead?`<input id="dedoutx" value="Death" disabled/>`:picker("dedout",DISCHARGE_OUTCOMES.filter(x=>x[0]!=="death"),d.outcome==="death"?"improved":d.outcome,"Condition at discharge")}</label></div>
+      ${disReqMode(mode)?`<div class="field" id="dedreq"><span>Requested by${mode==="dama"?" *":""}</span><div class="multi dis-req-chips">${DIS_REQ.filter(x=>x[0]!=="self"||mode!=="dama").map(([k,lb])=>`<button type="button" class="chip ${reqSel.has(k)?"on":""}" data-dreq="${k}" aria-pressed="${reqSel.has(k)}" onclick="dedReqToggle('${k}')">${lb}</button>`).join("")}</div>
+        <input id="dedreqname" type="text" maxlength="120" autocomplete="off" value="${esc(d.reqName||"")}" placeholder="Name of requester (optional)"/></div>`:""}
+    </div>
+    <div class="card cert-card"><p class="cert-h">Diagnosis</p>
+      ${tf("Primary diagnosis","deddx",d.dx,"Working diagnosis",'maxlength="500"')}
+      ${tf("Secondary diagnosis","deddx2",d.dx2,"Optional",'maxlength="500"')}
+      ${tf("Tertiary diagnosis","deddx3",d.dx3,"Optional",'maxlength="500"')}
+      ${tf("Comorbidities","dedcomorb",d.comorb,"Optional",'maxlength="500"')}
+    </div>
+    <div class="card cert-card"><p class="cert-h">Treatment</p>
+      <div class="multi" id="dedTreat">${TREATMENT_MODES.filter(x=>x[0]==="conservative"||x[0]==="ect").map(([k,lb])=>`<button type="button" class="chip ${d.treat.includes(k)?"on":""}" data-treat="${k}" aria-pressed="${d.treat.includes(k)}" onclick="dedTreatToggle('${k}')">${esc(lb)}</button>`).join("")}</div>
+      ${d.treat.includes("ect")?tf("ECT sessions","dedect",d.ect,"Number of sessions",'inputmode="numeric" maxlength="2"'):""}
+    </div>
+    <div class="card cert-card"><p class="cert-h">Medications on discharge ${nomeds?`<span class="tiny muted">(not printed for ${esc(labelOf(DISCHARGE_MODES,mode))})</span>`:""}</p>
+      <div id="dedMeds">${medRows||`<p class="tiny dm-none">No medications.</p>`}</div>
+      <button type="button" class="btn sm ghost" id="dedMedAdd" onclick="dedMedAdd()">+ Add medication</button>
+      <p class="tiny muted">Prints in this order. Frequency prints first, then the instructions.</p>
+    </div>
+    <div class="card cert-card"><p class="cert-h">Instructions to the patient</p>
+      ${ta("One line each","dedadvice",d.advice,"e.g. Take medicines regularly.",4)}
+      ${tf("Review after","dedreview",d.review,"e.g. 3 weeks",'maxlength="200"')}
+    </div>
+    ${certEligible(p)?`<div class="card cert-card"><p class="cert-h">Certificate wording <span class="tiny muted">(leave blank for the automatic text)</span></p>
+      ${tf("Department of","dedcdept",d.cdept,auto.dept||"Psychiatry",'maxlength="80"')}
+      ${ta("Admitted under","dedcadm",d.cadm,auto.admitted||"",2)}
+      ${ta("Disease","dedcdis",d.cdis,auto.disease||"",2)}
+      ${ta("Remarks","dedcrem",d.crem,auto.remarks||"",4,"Automatic text follows mode, condition, requester and MSE after you save.")}
+    </div>
+    <div class="card cert-card"><p class="cert-h">Page 2</p>
+      <label class="field"><span>MSE to print</span>${picker("dedmse",dedMseOptions(p),d.mse||"auto","MSE to print")}</label>
+      <p class="cert-h" style="margin-top:6px">Investigations</p>${labs}
+    </div>`:""}
+    <div class="card cert-card ded-save"><label class="field"><span>Reason for the change *</span><textarea id="dedreason" rows="2" maxlength="500" placeholder="e.g. Lorazepam frequency entered wrongly">${esc(d.reason||"")}</textarea></label>
+      <button class="btn primary block" type="button" id="dedSave" onclick="dedSave()">Save changes</button>
+      <button class="btn ghost block" type="button" style="margin-top:8px" onclick="ui.dedit=null;dedClearFields();back()">Cancel</button>
+    </div>
+    <div class="card cert-card"><p class="cert-h">Edit history</p>${dedVersionsHtml(d)}</div>
+  </div>`;
+}
 function dcertView(){
   const p=patient(route.id);if(!p) return `<div class="card">Not found.</div>`;
   if(!certEligible(p)) return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="card"><p class="sm">A discharge certificate is not issued for ${p.status==="discharged"?esc(labelOf(DISCHARGE_MODES,p.dischargeMode)||"this discharge"):"a patient who is not discharged"}.</p></div>`;
   const m=certModel(p);const f=m.f;
   const ta=(k,lb,rows,hint)=>`<label class="field cert-f"><span>${lb}</span><textarea id="cert_${k}" rows="${rows}" oninput="certEdit('${k}',this.value)">${esc(f[k]||"")}</textarea>${hint?`<p class="tiny muted">${hint}</p>`:""}</label>`;
-  const mseLine=m.mse?`${m.mse.last?"Last recorded MSE":"MSE at discharge"}, ${certDT(m.mse.e.at)} IST`:(m.mode==="death"?"MSE not applicable":m.mode==="abscond"?"MSE not applicable (absconded)":"MSE not recorded (blank lines print)");
+  const mseLine=m.mse?`${m.mse.last?"Last recorded MSE":"MSE at discharge"}, ${certDT(m.mse.e.at)} IST${m.mse.chosen?" (chosen)":""}`:(m.row&&m.row.edits&&m.row.edits.mse==="none")?"MSE left blank (chosen)":(m.mode==="death"?"MSE not applicable":m.mode==="abscond"?"MSE not applicable (absconded)":"MSE not recorded (blank lines print)");
   const p2l=m.p2labs||{n:0,reports:0};
-  const labNote=p2l.n?`investigations (${p2l.n} test${p2l.n===1?"":"s"} from ${p2l.reports} report${p2l.reports===1?"":"s"}, latest value each)`:(m.mode==="abscond"||m.mode==="death"?"no investigations recorded (block left out)":"investigations (none recorded: prints “No investigations recorded”)");
+  const labNote=p2l.n?`investigations (${p2l.n} test${p2l.n===1?"":"s"} from ${p2l.reports} report${p2l.reports===1?"":"s"}, latest value each${p2l.hidden?`, ${p2l.hidden} left off`:""})`:(m.mode==="abscond"||m.mode==="death"?"no investigations recorded (block left out)":"investigations (none recorded: prints “No investigations recorded”)");
   const meds=m.meds.length?`medications on discharge (${m.meds.length})`:(m.mode==="abscond"||m.mode==="death"?"no medicines table ("+esc(labelOf(DISCHARGE_MODES,m.mode))+")":"no discharge medications recorded");
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
   <div class="cert-page">
@@ -13535,7 +13836,7 @@ function dcertView(){
     </div>
     <div class="card cert-card cert-also"><p class="tiny"><b>Also printed (from the record):</b> ${meds}${m.f.review&&m.mode!=="abscond"&&m.mode!=="death"?" · “"+esc(certReviewText(m.f.review))+"”":""} · Page 2 (one page): MSE + investigations · ${esc(mseLine)} · ${esc(labNote)}</p>
       <p class="tiny muted" id="certMeta">${certMetaHtml(m)}</p></div>
-    <div class="cert-actions"><button class="btn primary" type="button" id="certPrint" onclick="printDischargeCert('${p.id}')">${isMobileShare()?"Print / Share PDF":"Print / Save PDF"}</button></div>
+    <div class="cert-actions">${canEditDischarge(p)?`<button class="btn ghost" type="button" id="certEditDis" data-dedit="${p.id}" style="margin-bottom:8px" onclick="openDischargeEdit('${p.id}')">Edit discharge (any field, medications)</button>`:""}<button class="btn primary" type="button" id="certPrint" onclick="printDischargeCert('${p.id}')">${isMobileShare()?"Print / Share PDF":"Print / Save PDF"}</button></div>
   </div>`;
 }
 function isMobileShare(){try{return !!(((window.matchMedia&&matchMedia("(pointer:coarse)").matches)||/Android|iPhone|iPad|iPod/i.test(navigator.userAgent||""))&&navigator.share&&navigator.canShare)}catch(e){return false}}
@@ -15291,6 +15592,7 @@ function render(opts){
   const scroller=document.querySelector("main")||document.querySelector(".page");
   const keepY=scroller?scroller.scrollTop:0;
   const keep=typingTarget();
+  if(route.page==="dedit"&&ui.dedit){try{dedDraft()}catch(e){}} // R1.3.138: keep typed values across background renders
   if(keep && !opts.force && !opts.fromInput){
     renderHeld=true;
     return;
@@ -15301,7 +15603,7 @@ function render(opts){
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
   if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){el.innerHTML=`<div class="login"><div class="login-card"><h1>Ward Sync</h1><p class="muted">Checking session…</p></div></div>`;return}
-  const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView};
+  const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,dedit:dedEditView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView};
   syncRoute();
   const sheetOpen=overlayOpen();
   const depth=overlayDepth();
