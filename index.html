@@ -1771,6 +1771,8 @@ html[data-theme="light"] .about-card .about-tag,html[data-theme="light"] .about-
 html[data-theme="ot"] .duty-badge.ipd{background:rgba(96,165,250,.18);color:#bfdbfe}
 html[data-theme="ot"] .duty-badge.opd{background:rgba(251,191,36,.16);color:#fde68a}
 .duty-other{margin:10px 0 0;color:var(--muted)}
+.call-chip{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:4px 11px;min-height:28px;border-radius:999px;border:1px solid rgba(22,163,74,.35);background:rgba(22,163,74,.10);color:#15803d;font-size:12px;font-weight:800;line-height:1;text-decoration:none;vertical-align:middle;-webkit-tap-highlight-color:transparent}.call-chip:active{transform:scale(.95);background:rgba(22,163,74,.2)}.call-chip:focus-visible{outline:2px solid #16a34a;outline-offset:2px}html[data-theme="dark"] .call-chip{color:#4ade80;border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.12)}
+.field-err,.field span.field-err{display:block;margin:4px 0 0;color:var(--danger,#e11d48);font-size:12px;font-weight:700;text-transform:none;letter-spacing:0}.field span.field-hint{display:block;margin:4px 0 0;color:var(--muted,#64748b);font-size:12px;font-weight:500;text-transform:none;letter-spacing:0}.field input[aria-invalid="true"]{border-color:var(--danger,#e11d48)}
 .duty-switch{display:inline-flex;align-items:center;margin-left:6px;padding:3px 9px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font:inherit;font-size:11.5px;font-weight:700;line-height:1.3;color:var(--teal);box-shadow:0 1px 2px rgba(15,23,42,.06);vertical-align:middle}.duty-switch:active{transform:scale(.95);border-color:var(--teal)}
 /* /R1.3.88 DUTY AREA */
 /* R1.3.89 MED EDIT */
@@ -2262,6 +2264,13 @@ html.kb-open .mse-dots{display:none}
 .lab-ocr-acked{font-size:11.5px;color:var(--ok);font-weight:700}
 .lab-ocr-crop{display:block;max-width:100%;height:26px;border-radius:4px;border:1px solid var(--line);margin-top:2px;flex-basis:100%;object-fit:contain;object-position:left}
 .lab-ocr-date{display:block;font-size:12px;color:var(--warn);font-weight:650;margin-top:2px}
+.lab-date-chk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}
+input.lab-date-ocr{border-color:var(--warn)!important;background:color-mix(in srgb,var(--warn) 12%,var(--panel))!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--warn) 30%,transparent)}
+.lab-preadm{margin:6px 0 0;padding:8px 10px;border-radius:12px;border:1.5px solid var(--warn);background:color-mix(in srgb,var(--warn) 9%,var(--panel));display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lab-preadm p{margin:0;font-size:13px;line-height:1.4;flex:1 1 200px}
+.lab-preadm.ok{border-color:var(--line);background:var(--panel2)}
+#labRepX{grid-column:1/-1;min-width:0}
+#labRepX:empty{display:none}
 .lab-scan{position:absolute;inset:0;z-index:5;background:var(--bg);display:flex;flex-direction:column}
 .lab-scan .mse-scroll{padding:14px}
 .lab-sc-card{border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:14px;margin:0 0 12px}
@@ -2651,8 +2660,124 @@ function expireSession(){
   cloudStatus="offline";
   try{Sync.state="CONNECTING";Sync.note("session expired")}catch(e){}
 }
+// R1.3.136 PHONE: resident mobile numbers. Memory only: never stored in S, ui snapshots,
+// localStorage, the outbox or the error log. Consultants get on-duty residents' numbers
+// from ward_list_duty_phones; everyone else gets none (enforced server-side).
+const PHONE_RE=/^\+91[6-9]\d{9}$/;
+const PHONE_ERR="Enter a 10-digit Indian mobile number";
+let dutyPhones=new Map();      // resident_id -> +91XXXXXXXXXX (consultant session only)
+let phoneSaved=new Map();      // username -> true (admin: which residents have a number)
+function phonesForget(){dutyPhones=new Map();phoneSaved=new Map()}
+function phoneE164(raw){
+  let d=String(raw==null?"":raw).replace(/[\s().-]/g,"");
+  if(!d) return "";
+  if(/^\+91\d{10}$/.test(d)) d=d.slice(3);
+  else if(/^0091\d{10}$/.test(d)) d=d.slice(4);
+  else if(/^91\d{10}$/.test(d)) d=d.slice(2);
+  else if(/^0\d{10}$/.test(d)) d=d.slice(1);
+  return /^[6-9]\d{9}$/.test(d)?"+91"+d:null;
+}
+function phonePretty(e164){return PHONE_RE.test(String(e164||""))?String(e164).slice(3,8)+" "+String(e164).slice(8):""}
+function phoneErrCopy(e){
+  const m=String((e&&(e.message||e))||"");
+  if(/10-digit Indian mobile/i.test(m)) return PHONE_ERR;
+  if(/residents only/i.test(m)) return "Phone numbers are for residents only";
+  if(/admin/i.test(m)) return "Only an admin can change another user's number";
+  if(/expired|session/i.test(m)) return "Sign in again to save the number";
+  if(/not found/i.test(m)) return "User not found";
+  if(rpcMissing(e)) return "Phone numbers need a server update";
+  return "Could not save the phone number";   // never echo raw server text (could carry digits)
+}
+async function rpcSetPhone(username,raw){
+  const {data,error}=await sb.rpc("ward_set_resident_phone",{p_token:sessionTok,p_username:username,p_phone:raw});
+  if(error) throw error;
+  if(!data||data.ok!==true) throw new Error("save failed");
+  phoneSaved.set(String(username).toLowerCase(),!!data.has_phone);
+  return data;
+}
+async function qDutyPhones(){
+  if(!sb||!sessionTok||!isConsultant()){dutyPhones=new Map();return}
+  try{
+    const {data,error}=await sb.rpc("ward_list_duty_phones",{p_session_token:sessionTok});
+    if(error){dutyPhones=new Map();return}
+    const m=new Map();
+    (Array.isArray(data)?data:[]).forEach(r=>{if(r&&r.resident_id!=null&&PHONE_RE.test(String(r.phone||""))) m.set(String(r.resident_id),String(r.phone))});
+    dutyPhones=m;
+  }catch(e){dutyPhones=new Map()}
+}
+async function qPhoneStatus(){
+  if(!sb||!sessionTok||!canAdmin()) return;
+  try{
+    const {data,error}=await sb.rpc("ward_phone_status",{p_token:sessionTok});
+    if(error) return;
+    const m=new Map(); (Array.isArray(data)?data:[]).forEach(r=>{if(r&&r.username) m.set(String(r.username).toLowerCase(),!!r.has_phone)});
+    phoneSaved=m; if(ui.userEdit) render();
+  }catch(e){}
+}
+const CALL_SVG='<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>';
+function callChip(x){
+  if(!isConsultant()||!x) return "";
+  const ph=dutyPhones.get(String(x.userId));
+  if(!ph||!PHONE_RE.test(ph)) return "";
+  const nm=String(x.name||rname(x.userId)||"resident");
+  return ` <a class="call-chip" href="tel:${ph}" aria-label="Call ${esc(nm)}" title="Call ${esc(nm)}" onclick="event.stopPropagation()">${CALL_SVG}<span>Call</span></a>`;
+}
+function phoneField(id,label,ph,hint,auto){
+  const err=(ui.phoneErr||{})[id]||"";
+  return `<label class="field"><span>${label}</span><input id="${id}" type="tel" inputmode="tel" autocomplete="${auto||"off"}" maxlength="18" placeholder="${esc(ph||"10-digit mobile")}" value="${esc(val(id))}" ${err?`aria-invalid="true" aria-describedby="${id}-err"`:""} oninput="ui.fields=ui.fields||{};ui.fields.${id}=this.value;phoneErrClear('${id}',this)"/>${err?`<span class="field-err" id="${id}-err" role="alert">${esc(err)}</span>`:(hint?`<span class="tiny field-hint">${esc(hint)}</span>`:"")}</label>`;
+}
+function phoneErrSet(id,msg){ui.phoneErr=ui.phoneErr||{};if(msg) ui.phoneErr[id]=msg; else delete ui.phoneErr[id]}
+function phoneErrClear(id,el){
+  if(!(ui.phoneErr||{})[id]) return;
+  delete ui.phoneErr[id];
+  try{el.removeAttribute("aria-invalid");const n=document.getElementById(id+"-err");if(n)n.remove()}catch(e){}
+}
+function phoneFieldsWipe(){if(ui.fields){delete ui.fields.nph;delete ui.fields.eph;delete ui.fields.mph}ui.phoneErr={}}
+// "My phone" (residents + admins edit their own number)
+async function openMyPhone(){
+  if(!canWrite()){toast("Phone numbers are for residents only","bad");return}
+  if(!sb||!sessionTok){toast("Sign in again to edit your number.","bad");return}
+  ui.fields=ui.fields||{}; ui.fields.mph=""; ui.phoneErr={};
+  ui.myPhone={loading:true,has:false}; render();
+  try{
+    const {data,error}=await sb.rpc("ward_get_my_phone",{p_token:sessionTok});
+    if(error) throw error;
+    if(!ui.myPhone) return;
+    const ph=data&&PHONE_RE.test(String(data.phone||""))?String(data.phone):"";
+    ui.myPhone={loading:false,has:!!ph}; ui.fields.mph=phonePretty(ph);
+  }catch(e){ if(ui.myPhone) ui.myPhone={loading:false,has:false,err:phoneErrCopy(e)} }
+  render();
+}
+function myPhoneOverlay(){
+  const m=ui.myPhone; if(!m) return "";
+  return `<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box" role="dialog" aria-modal="true" aria-label="My phone" style="border-radius:24px;max-width:400px">
+    <h2 class="page-title" style="margin:0 0 4px">My phone</h2>
+    <p class="tiny" style="margin:0 0 12px">Only consultants can call you, and only while you are signed in on duty. The number is never shown to other residents.</p>
+    ${m.loading?`<p class="sm">Loading…</p>`:(m.err?`<p class="field-err" role="alert">${esc(m.err)}</p>`:phoneField("mph","Mobile number (+91)","10-digit mobile","Optional",'tel'))}
+    ${(m.loading||m.err)?"":`<button class="btn block" onclick="saveMyPhone()">Save number</button>`}
+    ${(!m.loading&&!m.err&&m.has)?`<button class="btn ghost block" style="margin-top:8px;color:var(--danger)" onclick="saveMyPhone(true)">Remove number</button>`:""}
+    <button class="btn ghost block" style="margin-top:8px" onclick="dismissOverlay()">Close</button>
+  </div></div>`;
+}
+async function saveMyPhone(clear){
+  if(!ui.myPhone||!canWrite()) return;
+  const raw=clear?"":String(val("mph")||"").trim();
+  const e164=phoneE164(raw);
+  if(e164===null){phoneErrSet("mph",PHONE_ERR);render({force:1});return}
+  if(!clear&&!e164){phoneErrSet("mph",ui.myPhone.has?"Use Remove number to clear it":PHONE_ERR);render({force:1});return}
+  if(!sb||!sessionTok){toast("Sign in again to edit your number.","bad");return}
+  setBusy(true,"Saving number…");
+  try{
+    const d=await rpcSetPhone(user().username,e164||"");
+    if(d.changed) ev(null,(d.has_phone?"Phone number updated":"Phone number removed")+" · "+(user().displayName||user().username),true);
+    toast(d.has_phone?(d.changed?"Number saved":"Number unchanged"):"Number removed","ok");
+    phoneFieldsWipe(); ui.myPhone=null; save();
+  }catch(e){phoneErrSet("mph",phoneErrCopy(e))}
+  finally{setBusy(false);render({force:1})}
+}
 function setSessionTok(tok){
   sessionTok=tok||null;
+  phonesForget();
   try{
     if(sessionTok){sessionStorage.setItem("wc_tok",sessionTok);localStorage.setItem("wc_tok",sessionTok)}
     else{sessionStorage.removeItem("wc_tok");localStorage.removeItem("wc_tok")}
@@ -2792,7 +2917,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.134";
+const APP_VERSION="R1.3.136";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -3612,7 +3737,7 @@ async function doCloudPull(opts){
   const unresolved=pending.filter(o=>o.status!=="acked");
   const dirtySnaps=snapshotDirtyPids();
   const [wardState,criticalStatusUpdates,adviceRows,facultyRows,consLinks]=await Promise.all([
-    cloudReadWardState(),qCriticalStatusUpdates(),qPatientAdvice(),qFaculty(),qPatientConsultantLinks()
+    cloudReadWardState(),qCriticalStatusUpdates(),qPatientAdvice(),qFaculty(),qPatientConsultantLinks(),qDutyPhones()
   ]);
   if(facultyRows) S.faculty=facultyRows;
   const unit=wardState.unit||[];
@@ -4161,6 +4286,7 @@ function ico(name){
     theme:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <circle cx="12" cy="12" r="9"/> <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/> </g> </svg>',
     notify:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/> <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/> </g> </svg>',
     cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M8 17h8.5a3.2 3.2 0 0 0 .2-6.4 4.8 4.8 0 0 0-9.1-1.3A3.3 3.3 0 0 0 8 17z"/> <g stroke-width="1.1"> <path d="M12 17v2"/> <rect x="10.2" y="19" width="3.6" height="2.4" rx="0.7"/> <path d="M11 21.4v.8M13 21.4v.8"/> </g> </g> </svg>',
+    phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(12 12) scale(0.75) translate(-12 -12)"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></g></svg>',
     users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/> <circle cx="9" cy="7" r="4"/> <path d="M22 21v-2a4 4 0 0 0-3-3.87"/> <path d="M16 3.13a4 4 0 0 1 0 7.75"/> </g> </svg>',
     logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/> <polyline points="16 17 21 12 16 7"/> <line x1="21" y1="12" x2="9" y2="12"/> </g> </svg>'
   };
@@ -4168,13 +4294,14 @@ function ico(name){
 }
 
 function overlayOpen(){
-  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser);
+  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser || ui.myPhone);
 }
 function overlayDepth(){
   let n=0;
   if(ui.sheet||ui.panel||ui.giveOpen) n++;
   if(ui.userEdit) n++;
   if(ui.addUser) n++;
+  if(ui.myPhone) n++;
   if(ui.consEdit) n++;
   if(ui.notifySet) n++;
   if(ui.pick) n++;
@@ -4187,7 +4314,7 @@ function prefersReduceMotion(){
 function clearOverlayState(extra){
   extra=extra||{};
   ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null; ui.medEditId=null;
-  ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null; ui.addUser=null;
+  ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null; ui.addUser=null; ui.myPhone=null; phoneFieldsWipe();
   if(extra.med){
     ui.medPid=null;
     if(ui.fields){try{delete ui.fields.md;delete ui.fields.mds}catch(e){}}
@@ -4198,8 +4325,9 @@ function popTopOverlay(extra){
   if(ui.confirm){ ui.confirm=null; return "confirm"; }
   if(ui.pick){ ui.pick=null; return "pick"; }
   if(ui.notifySet){ ui.notifySet=false; return "notifySet"; }
-  if(ui.addUser){ ui.addUser=null; return "addUser"; }
-  if(ui.userEdit){ ui.userEdit=null; return "userEdit"; }
+  if(ui.myPhone){ ui.myPhone=null; phoneFieldsWipe(); return "myPhone"; }
+  if(ui.addUser){ ui.addUser=null; phoneFieldsWipe(); return "addUser"; }
+  if(ui.userEdit){ ui.userEdit=null; phoneFieldsWipe(); return "userEdit"; }
   if(ui.consEdit){ ui.consEdit=null; return "consEdit"; }
   if(ui.panel){ ui.panel=null; return "panel"; }
   if(ui.giveOpen){ ui.giveOpen=false; return "give"; }
@@ -4273,7 +4401,7 @@ function shell(inner){
       <button class="${on("patients")}" onclick="go('patients')">${ico('patients')}<span class="lbl">Patients</span></button>
       <button class="${on("handover")}" onclick="go('handover')" ${ui.busy?"disabled":""}>${ico('handover')}<span class="lbl">Handovers</span></button>
       <button class="${on("more")}" onclick="go('more')">${ico('more')}<span class="lbl">More</span></button>
-    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||""))}${busyVeil()}`;
+    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||""))}${busyVeil()}`;
 }
 
 /* HOME: occupied beds only, current status */
@@ -9395,14 +9523,14 @@ function dutyCardBody(){
   // R1.3.88 DUTY AREA: morning list grouped into IPD / OPD (display only)
   const row=x=>{const me=String(x.userId)===String(S.userId);
     const sw=(me&&sh==="morning"&&canWrite()&&x.area)?` <button type="button" class="duty-switch" aria-label="Switch duty area to ${x.area==="ipd"?"OPD":"IPD"}" onclick="switchDutyArea()">Switch to ${x.area==="ipd"?"OPD":"IPD"}</button>`:"";
-    return `<p class="sm" style="margin:6px 0 0">${esc(x.name||rname(x.userId))}${me?" · you":""} <span class="tiny">· ${esc(dutyShiftLabel(x))}</span>${sw}</p>`};
+    return `<p class="sm" style="margin:6px 0 0">${esc(x.name||rname(x.userId))}${me?" · you":""} <span class="tiny">· ${esc(dutyShiftLabel(x))}</span>${sw}${callChip(x)}</p>`};
   let list;
   if(!open.length) list=`<p class="sm" style="margin-top:8px">No one signed in for ${esc(shiftLabel(sh))}</p>`;
   else if(sh==="morning"){
     const g=a=>open.filter(x=>x.area===a), other=open.filter(x=>x.area!=="ipd"&&x.area!=="opd");
     const grp=(lb,arr,cls)=>`<div class="duty-grp ${cls}"><p class="duty-grp-h"><span class="duty-badge ${cls}">${lb}</span><span class="tiny">${arr.length}</span></p>${arr.length?arr.map(row).join(""):`<p class="tiny" style="margin:4px 0 0">No one yet</p>`}</div>`;
     list=grp("IPD · Ward",g("ipd"),"ipd")+grp("OPD",g("opd"),"opd")+
-      (other.length?`<p class="tiny duty-other">Not specified: ${other.map(x=>esc(x.name||rname(x.userId))+(String(x.userId)===String(S.userId)?" (you)":"")).join(", ")}</p>`:"");
+      (other.length?`<p class="tiny duty-other">Not specified: ${other.map(x=>esc(x.name||rname(x.userId))+(String(x.userId)===String(S.userId)?" (you)":"")+callChip(x)).join(", ")}</p>`:"");
   } else list=open.map(row).join("");
   const action=canWrite()
     ? (d
@@ -9514,7 +9642,9 @@ function openUserEdit(username){
   ui.fields.ep="";
   ui.fields.erole=normRole(r.role)||"resident";
   ui.fields.edes=(facultyById(r.id)||{}).designation||r.designation||"";
+  ui.fields.eph=""; ui.phoneErr={};
   render();
+  if(normRole(r.role)!=="consultant") qPhoneStatus();
 }
 function closeUserEdit(){dismissOverlay()}
 function userEditOverlay(){
@@ -9532,12 +9662,31 @@ function userEditOverlay(){
     <label class="field"><span>Username</span><input id="eu" autocapitalize="none" value="${esc(val("eu"))}" oninput="ui.fields=ui.fields||{};ui.fields.eu=this.value"/></label>
     <label class="field"><span>Display name</span><input id="ed" value="${esc(val("ed"))}" oninput="ui.fields=ui.fields||{};ui.fields.ed=this.value"/></label>
     ${(normRole(val("erole")||r.role)==="consultant")?`<label class="field"><span>Designation</span><input id="edes" maxlength="80" placeholder="e.g. Assistant Professor" value="${esc(val("edes"))}" oninput="ui.fields=ui.fields||{};ui.fields.edes=this.value"/></label>`:""}
+    ${(normRole(val("erole")||r.role)!=="consultant")?phoneField("eph","Mobile number (+91)",phoneSaved.get(String(r.username).toLowerCase())?"Saved · leave blank to keep":"10-digit mobile, optional",phoneSaved.get(String(r.username).toLowerCase())?"Number saved (hidden). Type a new one to replace it.":"Optional · only consultants see it, as a Call button"):""}
+    ${(normRole(val("erole")||r.role)!=="consultant"&&phoneSaved.get(String(r.username).toLowerCase()))?`<button type="button" class="btn ghost sm" style="margin:-4px 0 10px;color:var(--danger)" onclick="askClearPhone('${esc(r.username)}')">Remove saved number</button>`:""}
     <label class="field"><span>New password</span><input id="ep" type="password" placeholder="Leave blank to keep" value="${esc(val("ep"))}" oninput="ui.fields=ui.fields||{};ui.fields.ep=this.value"/></label>
     ${self?`<p class="tiny" style="margin:8px 0 12px">Your role stays admin. Ask another admin to change it.</p>`:(ROLES.length>1?`<label class="field"><span>Role</span>${picker("erole",ROLES,val("erole")||curRole,"Role")}</label>`:`<div class="field"><span>Role</span><p class="sm role-fixed" style="margin:4px 0 10px">${esc(roleLabel)}</p></div>`)}
     <button class="btn block" onclick="saveUserEdit()">Save changes</button>
     ${self?"":`<button class="btn danger block" style="margin-top:8px" onclick="removeUser('${username}')">Remove account</button>`}
     <button class="btn ghost block" style="margin-top:8px" onclick="closeUserEdit()">Close</button>
   </div></div>`;
+}
+function askClearPhone(username){
+  if(!canAdmin())return;
+  const r=(S.residents||[]).find(x=>x.username===username);
+  ui.confirm={fn:"clearPhone",username,title:"Remove phone number",ok:"Remove",body:"Remove the saved mobile number for "+((r&&r.displayName)||username)+"? Consultants will no longer see a Call button for them."};
+  render();
+}
+async function clearPhoneNow(username){
+  if(!canAdmin()||!sb||!sessionTok){toast("Sign in again as admin.","bad");return}
+  setBusy(true,"Removing number…");
+  try{
+    const d=await rpcSetPhone(username,"");
+    const r=(S.residents||[]).find(x=>x.username===username);
+    if(d.changed) ev(null,"Phone number removed · "+((r&&r.displayName)||username),true);
+    toast("Number removed","ok"); save();
+  }catch(e){toast(phoneErrCopy(e),"bad")}
+  finally{setBusy(false);render()}
 }
 async function saveUserEdit(){
   if(!canAdmin()){toast("Admin only","bad");return}
@@ -9548,6 +9697,10 @@ async function saveUserEdit(){
   const role=val("erole")||"resident";
   if(!username||!name){toast("Username and display name are required.","bad");return}
   if(pw && pw.length<6){toast("Password must be at least 6 characters.","bad");return}
+  const phRaw=normRole(role)==="consultant"?"":String(val("eph")||"").trim();
+  const phNew=phRaw?phoneE164(phRaw):"";
+  if(phNew===null){phoneErrSet("eph",PHONE_ERR);render({force:1});return}
+  phoneErrSet("eph","");
   if(!sessionTok||!sb){toast("Sign in again as admin.","bad");return}
   setBusy(true,"Saving user…");
   try{
@@ -9576,7 +9729,12 @@ async function saveUserEdit(){
     ui.userEdit=username;
     ui.fields.ep="";
     ev(null,"User updated · "+name+" ("+username+")",true);
-    toast("Saved "+name,"ok");save();render();
+    let phMsg="";
+    if(phNew){
+      try{const d=await rpcSetPhone(username,phNew); ui.fields.eph=""; if(d.changed) ev(null,"Phone number updated · "+name,true)}
+      catch(e){phMsg=phoneErrCopy(e); phoneErrSet("eph",phMsg)}
+    }
+    toast(phMsg?"Saved "+name+"; phone not saved":"Saved "+name,phMsg?"bad":"ok");save();render({force:1});
   }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
   finally{setBusy(false)}
 }
@@ -9612,7 +9770,7 @@ function usersView(){
 function openAddUser(role){
   if(!canAdmin()){toast("Admin only","bad");return}
   ui.fields=ui.fields||{};
-  ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.ndes="";ui.fields.nrole=role==="consultant"?"consultant":"resident";
+  ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.ndes="";ui.fields.nph="";ui.phoneErr={};ui.fields.nrole=role==="consultant"?"consultant":"resident";
   ui.addUser=ui.fields.nrole; render();
 }
 function addUserOverlay(){
@@ -9625,6 +9783,7 @@ function addUserOverlay(){
     <label class="field"><span>Username</span><input id="nu" autocapitalize="none" value="${esc(val("nu"))}" oninput="ui.fields=ui.fields||{};ui.fields.nu=this.value"/></label>
     <label class="field"><span>Display name</span><input id="nd" value="${esc(val("nd"))}" oninput="ui.fields=ui.fields||{};ui.fields.nd=this.value"/></label>
     ${cons?`<label class="field"><span>Designation</span><input id="ndes" maxlength="80" placeholder="e.g. Assistant Professor" value="${esc(val("ndes"))}" oninput="ui.fields=ui.fields||{};ui.fields.ndes=this.value"/></label>`:""}
+    ${cons?"":phoneField("nph","Mobile number (+91)","10-digit mobile, optional","Optional · only consultants see it, as a Call button")}
     <label class="field"><span>Password</span><input id="np" type="password" value="${esc(val("np"))}" oninput="ui.fields=ui.fields||{};ui.fields.np=this.value"/></label>
     ${cons?"":`<label class="field"><span>Role</span>${picker("nrole",ROLES,val("nrole")||"resident","Role")}</label>`}
     <button class="btn block" onclick="inviteUser()">Create account</button>
@@ -9635,6 +9794,10 @@ async function inviteUser(){
   if(!canAdmin()){toast("Admin only","bad");return}
   const username=(val("nu")||"").trim(), name=(val("nd")||"").trim(), pw=val("np")||"", role=val("nrole")||"resident";
   if(!username||!name||!pw){toast("Username, display name and password are required.","bad");return}
+  const phRaw=role==="consultant"||ui.addUser==="consultant"?"":String(val("nph")||"").trim();
+  const phNew=phRaw?phoneE164(phRaw):"";
+  if(phNew===null){phoneErrSet("nph",PHONE_ERR);render({force:1});return}
+  phoneErrSet("nph","");
   if(!sessionTok){toast("Sign in again to add a user.","bad");return}
   if(!sb){toast("Connect to the project first.","bad");return}
   setBusy(true,"Creating account…");
@@ -9648,9 +9811,13 @@ async function inviteUser(){
     S.residents.unshift({id:uid("r"),username:username.toLowerCase(),displayName:name,role:role,active:true});
     const des=role==="consultant"?(val("ndes")||"").trim():"";
     if(des){try{const {error:dErr}=await sb.rpc("ward_set_user_designation",{p_token:sessionTok,p_username:username.toLowerCase(),p_designation:des});if(dErr) throw dErr;const nr=S.residents[0];if(nr) nr.designation=des;}catch(e){toast("Account created; designation not saved: "+(e.message||e),"bad")}}
+    let phFail=false;
+    if(phNew){try{const d=await rpcSetPhone(username.toLowerCase(),phNew); if(d.changed) ev(null,"Phone number updated · "+name,true)}catch(e){phFail=true}}
     ui.fields=ui.fields||{};
-    ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.ndes="";ui.fields.nrole="resident";
-    toast("Account created · "+username,"ok");save();
+    ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.ndes="";ui.fields.nph="";ui.fields.nrole="resident";
+    if(phFail) toast("Account created; phone not saved — add it in Settings.","bad");
+    else toast("Account created · "+username,"ok");
+    save();
     if(ui.addUser){dismissOverlay({after:()=>{render();Promise.resolve().then(()=>cloudPull()).catch(()=>{})}})}else render();
   }catch(e){toast(e.message||String(e),"bad")}finally{setBusy(false);}
 }
@@ -9696,6 +9863,7 @@ async function askLogout(){
   render();
 }
 function doLogout(){
+  phonesForget();phoneFieldsWipe();ui.myPhone=null;
   S.userId=null;sessionPw=null;setSessionTok(null);save();render();
 }
 function confirmYes(){
@@ -9703,6 +9871,7 @@ function confirmYes(){
   const run=()=>{
   if(c.fn==="removeUser") return removeUserNow(c.username);
   if(c.fn==="logout") return doLogout();
+  if(c.fn==="clearPhone") return clearPhoneNow(c.username);
   if(c.fn==="setRole") return setUserRoleNow(c.username,c.role);
   if(c.fn==="ackH") return ackHNow(c.id);
   if(c.fn==="withdrawHandover") return withdrawHandoverNow(c.id);
@@ -9995,6 +10164,7 @@ function moreView(){
     <div class="more-grid">
     ${row("ui.setupTab='theme';go('setup')",ico("theme"),"Theme","slate")}
     ${row("ui.setupTab='notify';go('setup')",ico("notify"),"Notifications","sky")}
+    ${canWrite()?row("openMyPhone()",ico("phone"),"My phone","green"):""}
     ${row("go('connection')",ico("cloud"),"Connection","teal")}
     ${row("go('about')",ico("about"),"About","cyan")}
     ${row("askLogout()",ico("logout"),"Log out","rose","color:#e11d48")}
@@ -11800,38 +11970,55 @@ function labMergeState(rows,unresolved){
     const id=String(r.id);ids.add(id);
     if(busy.has(id)&&byId.has(id)){out.push(byId.get(id));return}
     const n=labFromRow(r);const o=byId.get(id);if(o&&o.alertPending)n.alertPending=true;out.push(n)});
+  // R1.3.135: absence from the ward-state window is NOT a delete. A local report goes only on an explicit tombstone
+  // (deleted_at from the server) or when a full history read for that patient confirms it is gone (labLoadHistory).
   local.forEach(x=>{const id=String(x.id);if(ids.has(id))return;
-    if(busy.has(id)||x.localOnly||(x.fromHistory&&!tomb.has(id)))out.push(x)});
+    if(busy.has(id)||x.localOnly){out.push(x);return}
+    if(tomb.has(id))return;
+    if(x.fromHistory||labKeepLocal(x))out.push(x)});
   S.labs=out;
+}
+function labKeepLocal(x){ // R1.3.135
+  if(!x||x.deleted)return false;               // removed here and the removal already reached the server
+  const p=patient(x.pid);if(!p)return false;   // patient no longer in the ward state at all
+  if(p.status!=="discharged")return true;      // current admission: always keep
+  const t=Date.parse(x.updatedAt||x.at||"")||0;return Date.now()-t<14*864e5; // discharged: keep 14 days after the last save (history reloads it)
 }
 const _labHistLoaded={};
 async function labLoadHistory(pid,force){
   if(!sb||!sessionTok||!pid)return false;
   if(_labHistLoaded[pid]&&!force&&Date.now()-_labHistLoaded[pid]<60000)return false;
-  _labHistLoaded[pid]=Date.now();
+  _labHistLoaded[pid]=Date.now();const t0=Date.now();
   try{
     const {data,error}=await sb.rpc("ward_read_lab_history",{p_token:sessionTok,p_patient_id:pid});
-    if(error||!Array.isArray(data))return false;
+    // R1.3.135: the RPC returns {ok,patient_id,lab_reports:[…]}; a plain array is still accepted
+    const list=Array.isArray(data)?data:(data&&Array.isArray(data.lab_reports)&&(!data.patient_id||data.patient_id===pid)?data.lab_reports:null);
+    if(error||!list)return false;
     const busy=new Set(pending.filter(o=>o.status!=="acked"&&o.table==="lab_reports"&&o.row).map(o=>String(o.row.id)));
     S.labs=S.labs||[];
-    data.forEach(r=>{
+    const seen=new Set(list.filter(r=>r&&r.id).map(r=>String(r.id)));
+    list.forEach(r=>{
       if(!r||!r.id||busy.has(String(r.id)))return;
       const i=S.labs.findIndex(x=>x.id===r.id);
       if(r.deleted_at){if(i>=0)S.labs.splice(i,1);return}
       const n=labFromRow(r);n.fromHistory=true;if(i>=0){if(S.labs[i].alertPending)n.alertPending=true;S.labs[i]=n}else S.labs.push(n);
     });
+    // the full history is the server's confirmation: a synced local copy it doesn't contain is gone (saves made in the
+    // last 2 minutes before this read are kept, in case the read raced the save)
+    S.labs=S.labs.filter(x=>{if(!x||x.pid!==pid)return true;const id=String(x.id);if(seen.has(id)||busy.has(id)||x.localOnly)return true;
+      const t=Date.parse(x.updatedAt||x.at||"")||0;return t>t0-120000});
     save();return true;
   }catch(e){return false}
 }
 function labMarkLocalOnly(id){const r=(S.labs||[]).find(x=>x.id===id);if(r){r.localOnly=true;try{save()}catch(e){}}}
 /* ---- layer state ---- */
 let LABU=null; // {mode:"edit"|"list", pid, editId, f:{rep,rows,critOk,postAlert,dupOk}} (R1.3.130: dept/col/sample dropped from the form; old drafts still load)
-let __labPushed=0,__labSkipPop=0,__labDraftT=0,__labSaving=false;
+let __labPushed=0,__labSkipPop=0,__labDraftT=0,__labSaving=false,__labDupWait=false;
 function labDraftKey(pid,editId){return "ws_labdraft_"+(editId?"e_"+editId:"n_"+pid)}
 function labNormDraft(f){ // R1.3.130: drafts saved by R1.3.128 carry dept/deptSet/col/sample; drop them, keep everything else
   const o=Object.assign({},f||{});delete o.dept;delete o.deptSet;delete o.col;delete o.sample;
   o.rep=typeof o.rep==="string"?o.rep.slice(0,10):"";if(o.rep&&!/^\d{4}-\d{2}-\d{2}$/.test(o.rep))o.rep="";o.rows=(Array.isArray(o.rows)?o.rows:[]).filter(r=>r&&typeof r==="object"&&r.k);
-  o.critOk=!!o.critOk;o.postAlert=!!o.postAlert;o.dupOk=!!o.dupOk;return o;
+  o.critOk=!!o.critOk;o.postAlert=!!o.postAlert;o.dupOk=!!o.dupOk;o.repOcr=o.repOcr?1:0;o.repOk=o.repOk?1:0;o.preOk=typeof o.preOk==="string"?o.preOk:"";return o;
 }
 function labLsGet(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}
 function labLsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
@@ -11844,6 +12031,36 @@ function labTodayDay(){return labRepDay(new Date())}
 function labDayIso(day){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(day||"")))return null;const d=new Date(day+"T00:00:00+05:30");return Number.isNaN(d.getTime())?null:d.toISOString()}
 function labDayText(day){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(day||""));return m?m[3]+" "+CERT_MON[+m[2]-1]+" "+m[1]:""}
 function labRepText(iso){return labDayText(labRepDay(iso))}
+/* R1.3.135: report-date checks — a scanner-filled date is amber until checked; a date before this admission needs a confirm tap */
+function labDayShort(day){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(day||""));if(!m)return "";return (+m[3])+" "+CERT_MON[+m[2]-1]+(m[1]!==labTodayDay().slice(0,4)?" "+m[1]:"")}
+function labPreAdm(){ // → {rep,adm} when the report date is before the admission date of this patient
+  if(!LABU||!LABU.f)return null;const f=LABU.f;const rep=String(f.rep||"").slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(rep))return null;
+  if(LABU.editId){const o=(S.labs||[]).find(x=>x.id===LABU.editId);if(o&&labRepDay(o.reportedAt)===rep)return null} // unchanged date on an old report
+  const p=patient(LABU.pid);const adm=p&&p.admittedAt?labRepDay(p.admittedAt):"";if(!adm||rep>=adm)return null;return {rep,adm};
+}
+function labRepXHtml(){
+  const f=LABU.f;let h="";
+  if(f.repOcr&&!f.repOk)h+=`<div class="lab-ocr-date lab-date-chk">Read from the scan — check it against the paper <button type="button" class="lab-ocrok" data-repok="1">Matches paper</button></div>`;
+  else if(f.repOcr&&f.repOk)h+=`<div class="lab-ocr-acked">Report date checked against the paper</div>`;
+  const pa=labPreAdm();
+  if(pa){const ok=f.preOk===pa.rep;h+=`<div class="lab-preadm${ok?" ok":""}" role="${ok?"status":"alert"}"><p>Report dated <b>${esc(labDayShort(pa.rep))}</b> is before this admission (<b>${esc(labDayShort(pa.adm))}</b>) — check the date</p>${ok?'<span class="lab-ocr-acked">Date confirmed</span>':'<button type="button" class="btn sm" data-preok="1">Date is correct</button>'}</div>`}
+  return h;
+}
+function labRefreshRep(){const el=labLayerEl();if(!el||!LABU||LABU.mode!=="edit")return;const f=LABU.f;
+  const i=el.querySelector('[data-h="rep"]');if(i)i.classList.toggle("lab-date-ocr",!!(f.repOcr&&!f.repOk));
+  const x=el.querySelector("#labRepX");if(x){const n=labRepXHtml();if(x.innerHTML!==n)x.innerHTML=n}}
+/* R1.3.135: OCR date only from a labelled field (Reporting / Completion time first, then Collection time); otherwise blank */
+function labOcrDate(text){
+  const lines=String(text||"").split(/\n/);const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  const RX={rep:/(?:report(?:ing|ed)?|complet(?:ion|ed))\s*(?:time|date|dt)\b\s*(?:&\s*time)?\s*[:;.\-]?\s*/ig,col:/(?:c[o0]ll?ect(?:ion|ed))\s*(?:time|date|dt)\b\s*(?:&\s*time)?\s*[:;.\-]?\s*/ig};
+  const dayAt=s=>{let m=/^[^\dA-Za-z]{0,2}(\d{1,2})\s*[-\/.]\s*(\d{1,2})\s*[-\/.]\s*(20\d{2})\b/.exec(s);let d,mo,y;
+    if(m){d=+m[1];mo=+m[2];y=m[3]}else{m=/^[^\dA-Za-z]{0,2}(\d{1,2})\s*[-\/. ]\s*([A-Za-z]{3})[a-z]*\s*[-\/. ,]\s*(20\d{2})\b/.exec(s);if(!m)return "";d=+m[1];mo=MON[m[2].toLowerCase()]||0;y=m[3]}
+    if(d<1||d>31||mo<1||mo>12)return "";return y+"-"+String(mo).padStart(2,"0")+"-"+String(d).padStart(2,"0")};
+  const out={rep:"",col:""};
+  for(const L of lines)for(const k of ["rep","col"]){if(out[k])continue;const g=new RegExp(RX[k].source,"ig");let m;
+    while((m=g.exec(L))){const d=dayAt(L.slice(m.index+m[0].length));if(d){out[k]=d;break}}}
+  return out.rep||out.col||"";
+}
 let __labRowSeq=0;
 function labNewRow(code,panel,extra){return Object.assign({k:"r"+(++__labRowSeq)+Math.random().toString(36).slice(2,5),code,panel:panel||labPanelOf(code),raw:"",chk:false},extra||{})}
 function labOpen(pid,editId){
@@ -11949,7 +12166,8 @@ function labEditHtml(){
    <div class="mse-scroll lab-scroll">
     <div class="lab-hdr">
       <div class="lab-hf">
-        <label class="lab-fld"><span>Report date <em>as printed</em> <b class="lab-req">required</b></span><input type="date" data-h="rep" required aria-required="true" value="${esc(f.rep||"")}" max="${labTodayDay()}">${f.repOcr?'<span class="lab-ocr-date">Read from the scan — check it</span>':""}</label>
+        <label class="lab-fld"><span>Report date <em>as printed</em> <b class="lab-req">required</b></span><input type="date" data-h="rep" required aria-required="true" value="${esc(f.rep||"")}" max="${labTodayDay()}"${f.repOcr&&!f.repOk?' class="lab-date-ocr"':""}></label>
+        <div id="labRepX">${labRepXHtml()}</div>
       </div>
       <p class="tiny muted lab-pt">Patient: <b>${esc(p.name||"")}</b> — from this card. Check the name and number on the paper match.</p>
     </div>
@@ -11993,6 +12211,9 @@ function labBuild(){
   if(!rep){labShowErr("Enter the report date from the paper.");const i=labLayerEl().querySelector('[data-h="rep"]');if(i)i.scrollIntoView({block:"center"});return null}
   if(repDay>labTodayDay()){labShowErr("Report date is in the future.");return null}
   if(repDay<"2000-01-01"){labShowErr("Report date is invalid.");return null}
+  if(f.ocr&&labOcrPending().name){labShowErr(f.ocr.name.status==="unread"?"The name on the report couldn't be read — confirm it is this patient or cancel the scan.":"The name on the report doesn't match — confirm or cancel the scan.");const n=labLayerEl().querySelector("#labNm");if(n)n.scrollIntoView({block:"center"});return null}
+  if(f.repOcr&&!f.repOk){labShowErr("Check the scanned report date — tap “Matches paper” or correct it.");const i=labLayerEl().querySelector("#labRepX");if(i)i.scrollIntoView({block:"center"});return null}
+  {const pa=labPreAdm();if(pa&&f.preOk!==pa.rep){labShowErr("Report date is before admission ("+labDayShort(pa.adm)+") — check it, then tap “Date is correct”.");labRefreshRep();const i=labLayerEl().querySelector(".lab-preadm");if(i)i.scrollIntoView({block:"center"});return null}}
   const results=[],codes=new Set();let crit=0;
   if(f.ocr){const pd=labOcrPending();
     if(pd.name){labShowErr(f.ocr.name.status==="unread"?"The name on the report couldn't be read — confirm it is this patient or cancel the scan.":"The name on the report doesn't match — confirm or cancel the scan.");const n=labLayerEl().querySelector("#labNm");if(n)n.scrollIntoView({block:"center"});return null}
@@ -12061,7 +12282,13 @@ function labCommit(force){
   if(!needWrite())return;
   const b=labBuild();if(!b)return;
   const old=LABU.editId?(S.labs||[]).find(x=>x.id===LABU.editId):null;
-  if(!old&&!LABU.f.dupOk&&!force){const d=labDupOf(b);if(d){const el=labLayerEl().querySelector("#labDup");if(el){el.innerHTML=`<div class="lab-dupbox" role="alert"><p><b>Already added?</b> ${esc(labPanelsLabel(d))} · reported ${esc(labRepText(d.reportedAt))}${d.sampleNo?" · sample "+esc(d.sampleNo):""} · ${esc(d.byName||rname(d.by)||"")}</p><div class="btns"><button type="button" class="btn sm ghost" data-duplist="1">Open reports</button><button type="button" class="btn sm" data-dupok="1">Save anyway</button></div></div>`;el.scrollIntoView({block:"center"})}return}}
+  if(__labDupWait)return;
+  if((!old||labRepDay(old.reportedAt)!==b.repDay)&&!LABU.f.dupOk&&!force){
+    // R1.3.135: compare with this patient's whole server history too (reports outside the ward window / not in view)
+    const pid=b.pid;const fresh=_labHistLoaded[pid]&&Date.now()-_labHistLoaded[pid]<60000;
+    if(!fresh&&sb&&sessionTok&&navigator.onLine!==false){__labDupWait=true;
+      Promise.race([labLoadHistory(pid,true).catch(()=>false),new Promise(r=>setTimeout(r,4000))]).then(()=>{__labDupWait=false;if(LABU&&LABU.mode==="edit"&&LABU.pid===pid)labCommit(force)});return}
+    const d=labDupOf(b);if(d){const el=labLayerEl().querySelector("#labDup");if(el){el.innerHTML=`<div class="lab-dupbox" role="alert"><p><b>Already added?</b> ${esc(labPanelsLabel(d))} · reported ${esc(labRepText(d.reportedAt))}${d.sampleNo?" · sample "+esc(d.sampleNo):""} · ${esc(d.byName||rname(d.by)||"")}</p><div class="btns"><button type="button" class="btn sm ghost" data-duplist="1">Open reports</button><button type="button" class="btn sm" data-dupok="1">Save anyway</button></div></div>`;el.scrollIntoView({block:"center"})}return}}
   __labSaving=true;
   try{
     const opId=uid("lop").replace(/_/g,"-")+Date.now().toString(36);
@@ -12364,8 +12591,8 @@ function labOcrApply(out,prep,info){
       const sc=Math.min(1,28/Math.max(1,ch));const cr=WardOCR.crop(prep.grey,prep.w,prep.h,x0,y0,cw,ch,sc);const k=document.createElement("canvas");k.width=cr.w;k.height=cr.h;k.getContext("2d").putImageData(new ImageData(WardOCR.greyToRgba(cr.g),cr.w,cr.h),0,0);LABOCR_CROPS.set(r.k,k.toDataURL("image/jpeg",0.7))}}catch(e){}
     n++});
   const hd=out.header||{};const nm=WardOCR.nameMatch(hd.name||"",p.name||"");
-  const day=hd.reported||hd.collected||"";
-  if(!f.rep&&/^\d{4}-\d{2}-\d{2}$/.test(day)&&day<=labTodayDay()&&day>="2000-01-01"){f.rep=day;f.repOcr=1}
+  const day=labOcrDate(out.text); // R1.3.135: labelled time fields only — never "the first date on the page"
+  if(!f.rep&&/^\d{4}-\d{2}-\d{2}$/.test(day)&&day<=labTodayDay()&&day>="2000-01-01"){f.rep=day;f.repOcr=1;f.repOk=0}
   const st=Object.values(f.rows).filter(r=>r.ocr);
   f.ocr={v:1,engine:String(info.engine||"").slice(0,120),mean:out.meanConf,ms:out.ms,tpl:out.tpl,n,
     q:{lowRes:!!info.quality.lowRes,blurry:!!info.quality.blurry,page:!!info.quality.pageFound,moved:!!info.moved,long:info.quality.longEdge||0},
@@ -12408,7 +12635,7 @@ function labOcrBarHtml(){
     ${o.q&&o.q.lowRes?`<p class="tiny lab-sc-note">Low-resolution photo — check every value.</p>`:""}${o.pages>1?`<p class="tiny muted">Page ${esc(String(o.page||"?"))} of ${esc(String(o.pages))} — scan the other page as a separate report.</p>`:""}
     ${nm.status==="match"||nm.ov?name:""}</div>${nm.status!=="match"&&!nm.ov?name:""}</div>`;
 }
-function labOcrCancel(){const f=LABU.f;f.rows=f.rows.filter(r=>!r.ocr);if(f.repOcr){f.rep="";f.repOcr=0}f.ocr=null;f.nmOpen=false;f.nmReason="";LABOCR_CROPS.clear();
+function labOcrCancel(){const f=LABU.f;f.rows=f.rows.filter(r=>!r.ocr);if(f.repOcr){f.rep="";f.repOcr=0;f.repOk=0}f.ocr=null;f.nmOpen=false;f.nmReason="";LABOCR_CROPS.clear();
   // drop panels that were only added by the scan and are now empty
   labRefreshAll();labSaveDraft();toast("Scan cancelled — the read values were removed","info")}
 function labOcrClick(t){
@@ -12448,6 +12675,8 @@ function labWire(el){
       if(t.dataset.unorm){f.rows.filter(r=>r.panel==="Urine R/E"&&!String(r.raw||"").trim()&&LAB_T[r.code]&&LAB_T[r.code].txt).forEach(r=>{const d=LAB_T[r.code];r.raw=d.norm||(d.dip?"Negative":d.abs?"Absent":"")});labRefreshGroups();labSaveDraft();toast("Normal findings filled — change anything abnormal","info");return}
       if(t.dataset.save){labCommit();return}
       if(t.dataset.dupok){f.dupOk=true;labCommit(true);return}
+      if(t.dataset.repok){f.repOk=1;labRefreshRep();labSaveDraft();return}
+      if(t.dataset.preok){f.preOk=String(f.rep||"").slice(0,10);labRefreshRep();labSaveDraft();return}
       if(t.dataset.duplist){const pid=LABU.pid;labSaveDraft();LABU={mode:"list",pid};labMount();return}
       if(t.dataset.discard){
         if(!t.dataset.arm){t.dataset.arm="1";t.textContent="Tap again to discard all entries";setTimeout(()=>{if(t.isConnected){delete t.dataset.arm;t.textContent="Discard this draft"}},3500);return}
@@ -12461,7 +12690,7 @@ function labWire(el){
   });
   el.addEventListener("input",e=>{
     if(!LABU||LABU.mode!=="edit")return;const t=e.target;const f=LABU.f;
-    if(t.dataset.h==="rep"){f.rep=t.value}
+    if(t.dataset.h==="rep"){f.rep=t.value;if(f.repOcr){f.repOcr=0;f.repOk=0}LABU.f.dupOk=LABU.f.dupOk&&!!LABU.editId;labRefreshRep()}
     else if(t.dataset.nmreason){f.nmReason=t.value;return}
     else if(t.classList.contains("lab-v")){const r=f.rows.find(x=>x.k===t.dataset.k);if(!r)return;r.raw=t.value;if(r.ocr){const was=r.ocr.ed;r.ocr.ed=String(t.value).trim()!==String(r.ocr.v);if(was!==r.ocr.ed)labOcrBarRefresh()}if(r.chk&&labRowEval(r).state!=="red")r.chk=false;labRefreshRow(r.k);LABU.f.dupOk=LABU.f.dupOk&&!!LABU.editId}
     else if(t.classList.contains("lab-ci")){const r=f.rows.find(x=>x.k===t.dataset.k);if(!r)return;r[t.dataset.f]=t.value;labRefreshRow(r.k)}
@@ -12474,7 +12703,7 @@ function labWire(el){
     if(t.dataset.chk){const r=f.rows.find(x=>x.k===t.dataset.chk);if(r)r.chk=t.checked;labSaveDraft();return}
     if(t.dataset.critok){f.critOk=t.checked;labSaveDraft();return}
     if(t.dataset.postalert){f.postAlert=t.checked;labSaveDraft();return}
-    if(t.dataset.h==="rep"){f.rep=t.value;if(f.repOcr){f.repOcr=0;const n=t.parentElement&&t.parentElement.querySelector(".lab-ocr-date");if(n)n.remove()}labSaveDraft()}
+    if(t.dataset.h==="rep"){f.rep=t.value;if(f.repOcr){f.repOcr=0;f.repOk=0}labRefreshRep();labSaveDraft()}
   });
   el.addEventListener("keydown",e=>{
     if(e.key!=="Enter"||!LABU||LABU.mode!=="edit")return;const t=e.target;if(!t.matches||!t.matches("input:not([type=checkbox])"))return;
