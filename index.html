@@ -2323,6 +2323,66 @@ input.lab-date-ocr{border-color:var(--warn)!important;background:color-mix(in sr
 .ded-ver .btn{flex:0 0 auto}
 .dis-req-chips{margin-bottom:6px}
 .record-actions .btn[data-dedit]{white-space:nowrap}
+/* R1.3.139: delete with reason + undo, intern view, vitals */
+.rdel-layer{position:fixed;inset:0;z-index:85;display:flex;align-items:flex-end;justify-content:center;background:rgba(2,6,23,.55);padding:0 0 env(safe-area-inset-bottom,0px)}
+@media(min-width:640px){.rdel-layer{align-items:center}}
+.rdel-box{width:100%;max-width:520px;background:var(--panel);color:var(--ink);border-radius:18px 18px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.25);max-height:88vh;overflow:auto}
+@media(min-width:640px){.rdel-box{border-radius:18px}}
+.rdel-box h2{margin:0 0 6px;font-size:18px}
+.rdel-box textarea{width:100%;min-height:84px;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;background:var(--panel2);color:var(--ink);resize:vertical}
+.rdel-what{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.rdel-reason{margin:8px 0 0;padding:10px 12px;border-radius:12px;background:var(--danger-bg);color:var(--ink);border:1px solid color-mix(in srgb,var(--danger) 35%,var(--line));word-break:break-word}
+.rdel-btns{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-top:14px}
+.rdel-btns .btn{width:100%;justify-content:center}
+.rdel-err{color:var(--danger);font-size:13px;margin:6px 0 0;min-height:1em}
+.undo-toast{position:fixed;left:50%;bottom:calc(var(--nav-h,64px) + 16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:14px;background:#1c2434;color:#fff;border-radius:14px;padding:10px 10px 10px 14px;box-shadow:0 10px 30px rgba(0,0,0,.3);max-width:calc(100vw - 24px);font-size:14px}
+.undo-toast span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.undo-btn{background:transparent;border:1px solid rgba(255,255,255,.35);color:#93c5fd;font-weight:700;border-radius:10px;padding:6px 12px;font:inherit;font-weight:700;flex:0 0 auto}
+.act-del{border-left:4px solid var(--danger)}
+.act-del-r{margin:6px 0 0;padding:8px 10px;border-radius:10px;background:var(--panel2);word-break:break-word}
+.vit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px;margin:8px 0}
+.vit-t{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--panel2);min-width:0}
+.vit-t b{display:block;font-size:18px;line-height:1.2;font-variant-numeric:tabular-nums}
+.vit-t small{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.vit-t.bad{border-color:color-mix(in srgb,var(--danger) 50%,var(--line));background:var(--danger-bg)}
+.vit-t.bad b{color:var(--danger)}
+.vit-pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--warn-bg);color:var(--warn);margin-left:6px}
+.vit-pill.sm{font-size:10px;padding:1px 6px}
+.vit-meta{margin:2px 0 0}
+.vit-more{margin-top:8px}
+.vit-more summary{cursor:pointer;color:var(--teal);font-weight:600;font-size:13px}
+.vit-row{display:flex;flex-wrap:wrap;gap:4px 10px;padding:8px 0;border-top:1px solid var(--line);font-size:13px;font-variant-numeric:tabular-nums}
+.vit-row.bad{color:var(--danger)}
+.vit-form{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.vit-form .field{margin:0}
+.vit-form .vit-bp{grid-column:1/-1}
+.vit-form input{font-size:18px;font-variant-numeric:tabular-nums}
+.vit-bp-in{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.vit-f.bad input{border-color:var(--danger);background:var(--danger-bg)}
+.vit-err{color:var(--danger);font-size:13px;margin:8px 0 0}
+.vit-warn{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--warn-bg);color:var(--ink);border:1px solid color-mix(in srgb,var(--warn) 40%,var(--line));font-size:13px}
+.vit-warn.shake{animation:vitShake .35s}
+@keyframes vitShake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@media (prefers-reduced-motion:reduce){.vit-warn.shake{animation:none}}
+.intern-main{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.intern-top .who-tools{display:flex;gap:8px;align-items:center}
+.intern-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.intern-st{white-space:nowrap;color:var(--muted)}
+.intern-top .kicker{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icard{display:block;width:100%;text-align:left;cursor:pointer}
+.icard-h{display:flex;align-items:center;gap:10px}
+.icard-n{font-weight:700;font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.icard-dx{margin:4px 0 0;color:var(--muted)}
+.intern-tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.intern-tools .btn{width:100%;justify-content:center}
+.vit-t>span{display:block;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.vit-t>em{display:block;color:var(--muted);font-size:11px;font-style:normal}
+.vit-bp-l{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:0 0 4px}
+.vit-bp-in>b{color:var(--muted);font-size:20px;font-weight:700}
+.vit-bp-l em,.vit-f em{font-style:normal;color:var(--muted);font-weight:500}
+.vit-grid{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
+.vit-open{white-space:nowrap;padding-left:18px;padding-right:18px}
+.lab-intern-crit{margin:6px 0 0;color:var(--danger)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -2658,10 +2718,11 @@ function normRole(r){
   r=String(r||"");
   if(r==="admin"||r==="SR") return "admin";
   if(r==="consultant"||r==="Consultant") return "consultant";
+  if(r==="intern"||r==="Intern") return "intern"; // R1.3.139
   return "resident";
 }
-function roleOf(u){return normRole((u||user()||{}).role)}
-function canWrite(){return roleOf()!=="consultant"}
+function roleOf(u){const x=u||user();return normRole(x?x.role:S.loginRole)} // R1.3.139: falls back to the role returned at sign-in
+function canWrite(){const r=roleOf();return r!=="consultant"&&r!=="intern"}
 function isConsultant(){return !!S.userId&&roleOf()==="consultant"}
 function canBroadcast(){return !!S.userId}
 function canAdmin(){return roleOf()==="admin"}
@@ -2806,7 +2867,7 @@ function setSessionTok(tok){
   }catch(e){}
 }
 
-function needWrite(){if(!canWrite()){toast("Consultants can view only.","bad");return false}return true}
+function needWrite(){if(!canWrite()){toast(isIntern()?"Not available for intern accounts.":"Consultants can view only.","bad");return false}return true}
 
 const rcls=l=>"badge r-"+(l||"low");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
@@ -2939,7 +3000,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.138";
+const APP_VERSION="R1.3.139";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -3328,7 +3389,7 @@ function ev(pid,title,ok,kind,detail,opts){
   // {local:true}: the event shows at once but is not queued, so the DB no longer gets a second copy.
   if(opts&&opts.local) e.local=true;
   S.events.unshift(e);
-  if(sessionTok&&!e.local) qEvent(e);
+  if(sessionTok&&!e.local&&!isIntern()) qEvent(e);
   return e
 }
 async function dispatchNotificationId(notificationId){
@@ -3643,7 +3704,7 @@ function projectKeysCard(){
 function cloudConnect(){
   if(!cloudOn()){cloudStatus="offline";Sync.state="OFFLINE";return}
   const fp=(S.supabaseUrl||"").trim()+"|"+(S.supabaseAnonKey||"").trim();
-  if(sb && sbFingerprint===fp) return sb;
+  if(sb && sbFingerprint===fp) return internGuardRpc(sb);
   try{
     if(sb&&liveChan){try{sb.removeChannel(liveChan)}catch(e){}}
     liveChan=null; liveReady=false; Sync.listening=false;
@@ -3651,6 +3712,7 @@ function cloudConnect(){
       auth:{persistSession:false,autoRefreshToken:false},
       realtime:{params:{eventsPerSecond:20}}
     });
+    internGuardRpc(sb); // R1.3.139
     sbFingerprint=fp;
     Sync.note("client created");
   }catch(e){sb=null;sbFingerprint="";cloudStatus="error";cloudLastError=String(e);return}
@@ -3756,6 +3818,7 @@ async function cloudPull(opts){
 }
 async function doCloudPull(opts){
   if(!sb)return {ok:false,pulled:false};
+  if(isIntern())return internPull(); // R1.3.139
   const unresolved=pending.filter(o=>o.status!=="acked");
   const dirtySnaps=snapshotDirtyPids();
   const [wardState,criticalStatusUpdates,adviceRows,facultyRows,consLinks]=await Promise.all([
@@ -3791,7 +3854,7 @@ async function doCloudPull(opts){
   const occupancyHold=unresolved.some(o=>["patients","beds","patient_bed_assignments"].includes(o.table));
   if(!occupancyHold){
     S.beds=beds.map(r=>({id:r.id,no:r.bed_number,sectionId:r.section_id,active:r.active!==false,patientId:r.current_patient_id||null}));
-    S.patients=patients.map(r=>({id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",mrdNo:r.mrd_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,dischargeAdvice:r.discharge_advice||"",dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:[],dischargeReview:r.discharge_review||"",dischargeEctSessions:(r.discharge_ect_sessions==null?null:Number(r.discharge_ect_sessions)),treatmentMode:r.treatment_mode||null,dischargeRequestedBy:Array.isArray(r.discharge_requested_by)?r.discharge_requested_by:[],dischargeRequesterName:r.discharge_requester_name||"",admitConsultants:Array.isArray(r.admit_consultants)?r.admit_consultants:null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}));
+    S.patients=patients.map(patientFromRow);
     S.assignments=assigns.map(r=>({id:r.id,patientId:r.patient_id,bedId:r.bed_id,at:r.assigned_at,released:r.released_at,by:r.assigned_by}));
   }
   const prevLists={orders:S.orders,doses:S.doses,tasks:S.tasks,ect:S.ect,ectSessions:S.ectSessions,handovers:S.handovers,hitems:S.hitems};
@@ -3817,7 +3880,7 @@ async function doCloudPull(opts){
   S.hitems=keepUnsynced("handover_items",S.hitems,prevLists.hitems,unresolved);
   if(Array.isArray(wardState.mse_entries)){ // R1.3.124: keep local MSEs whose save is still in the outbox
     const keep=new Set(unresolved.filter(o=>o.table==="mse_entries"&&o.row).map(o=>o.row.id));
-    const srv=wardState.mse_entries.map(r=>({id:r.id,pid:r.patient_id,kind:r.kind||"routine",data:(r.data&&typeof r.data==="object")?r.data:{},highRisk:!!r.high_risk,summary:r.summary||"",by:r.created_by||null,byName:r.created_by_name||rname(r.created_by)||"",at:r.created_at,admittedAt:r.admitted_at||null}));
+    const srv=wardState.mse_entries.filter(r=>r&&!r.deleted_at).map(mseFromRow); // R1.3.139: a deleted MSE never shows
     const ids=new Set(srv.map(x=>x.id));
     S.mse=uniqById(srv.concat((S.mse||[]).filter(x=>keep.has(x.id)&&!ids.has(x.id))));
   }
@@ -3829,6 +3892,7 @@ async function doCloudPull(opts){
     S.dischargeCertificates=localKeep.concat(srv.filter(c=>!drop.has(c.pid+"|"+Date.parse(c.dischargedAt))));
   }
   if(Array.isArray(wardState.lab_reports)) labMergeState(wardState.lab_reports,unresolved); // R1.3.128
+  if(Array.isArray(wardState.vitals)) vitalsMerge(wardState.vitals); // R1.3.139
   S.patientEdits=(wardState.patient_edits||[]).map(r=>({id:r.id,pid:r.patient_id,field:r.field,old:r.old_value,new:r.new_value,by:r.edited_by,at:r.edited_at,group:r.edit_group})); // R1.3.90
   const _prevDm=new Map((S.obsStays||[]).map(x=>[x.id,x.dischargeMeds]));
   S.obsStays=(wardState.observation_stays||[]).map(r=>({dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:(_prevDm.get(r.id)||[]),id:r.id,pid:r.patient_id,bedId:r.bed_id,reason:r.reason||"",note:r.note||"",at:r.started_at,by:r.started_by,endedAt:r.ended_at||null,endedBy:r.ended_by||null,outcome:r.outcome||null,referralTo:r.referral_to||""}));
@@ -3844,7 +3908,7 @@ async function doCloudPull(opts){
   // R1.3.125: the server returned every activity_log row it still has from its oldest row onward. A local entry inside
   // that window which the server no longer has was deleted there, so drop it, unless it is still waiting to upload
   // (outbox) or is a fresh local copy of a server-written row (RPC echo, kept 10 min until the server copy arrives).
-  (Array.isArray(wardState.events)?reconcileLocal(S.events,incoming,unresolved,"activity_log",e=>e.local||/^(pt-edit|med-edit|dcert|lab|labe|labd)-/.test(String(e.id))):(S.events||[])).forEach(e=>byId[e.id]=e);
+  (Array.isArray(wardState.events)?reconcileLocal(S.events,incoming,unresolved,"activity_log",e=>e.local||/^(pt-edit|med-edit|dcert|lab|labe|labd)-/.test(String(e.id))||/^(msed|mser|labd|labr|vit):/.test(String(e.id))):(S.events||[])).forEach(e=>byId[e.id]=e);
   incoming.forEach(e=>byId[e.id]=e);
   S.events=evCollapse(Object.values(byId));
   localStorage.setItem(KEY,JSON.stringify(S));
@@ -3886,7 +3950,7 @@ async function upsert(table,rows){
       ({error}=await sb.rpc("ward_save_discharge_certificate",{p_token:sessionTok,p_row:row})); // R1.3.126
       if(error&&/could not find the function|does not exist|42883/i.test(String(error.message||error))){console.warn("Discharge certificate RPC missing; kept on this device only");error=null}
     }else if(table==="lab_reports"){
-      ({error}=await sb.rpc("ward_save_lab_report",{p_token:sessionTok,p_report:row})); // R1.3.128
+      ({error}=await sb.rpc(isIntern()?"ward_intern_save_lab_report":"ward_save_lab_report",{p_token:sessionTok,p_report:row})); // R1.3.128 · R1.3.139 intern
       if(error&&/could not find the function|does not exist|42883|PGRST202/i.test(String(error.message||error))){console.warn("Lab report RPC missing; kept on this device only");labMarkLocalOnly(row.id);error=null}
     }else if(table==="activity_log"){
       // activity_log.actor_id is derived server-side from the authenticated
@@ -3941,6 +4005,8 @@ async function upsert(table,rows){
         p_patient_id:row.patient_id||row.pid,
         p_note:{id:row.note_id||row.id,text:row.text,byName:row.byName||"",at:row.at||now()}
       }));
+    }else if(table==="patient_vitals"){ // R1.3.139
+      ({error}=await sb.rpc("ward_save_vitals",{p_token:sessionTok,p_row:row}));
     }else{
       throw new Error("This action has no approved write path.");
     }
@@ -4088,7 +4154,7 @@ async function doFlushPending(){
   if(hard){cloudStatus="error";Sync.state="ERROR"}
   else if(c.failed){cloudStatus="error";Sync.state="ERROR"}
   else if(pending.length){cloudStatus="syncing";Sync.state="RECONCILING"}
-  else if(liveReady){cloudStatus="live";Sync.state="CONNECTED"}
+  else if(liveReady||isIntern()){cloudStatus="live";Sync.state="CONNECTED"}
   if(reconciliationNeeded && !pending.filter(o=>o.status!=="failed").length){
     reconciliationNeeded=false;
     Sync.note("deferred realtime reconcile");
@@ -4147,7 +4213,7 @@ function onRealtimeEvent(table,payload){
   },500);
 }
 function cloudListen(){
-  if(!sb)return;
+  if(!sb||isIntern())return; // R1.3.139: interns read through ward_intern_read_state only
   if(Sync.listening && liveChan && liveReady){Sync.note("listen already active");return}
   if(liveChan){try{sb.removeChannel(liveChan)}catch(e){}}
   liveReady=false; Sync.listening=false;
@@ -4208,6 +4274,12 @@ async function doCloudBoot(){
   Sync.state="CONNECTING";
   Sync.note("boot");
   try{
+    if(isIntern()){ // R1.3.139
+      await flushPending();
+      await cloudPull();
+      Sync.state="CONNECTED";cloudStatus=outboxCounts().failed?"error":"live";sessionVerified=true;internTick();
+      return true;
+    }
     await flushPending();
     cloudListen();
     const r=await cloudPull();
@@ -4269,6 +4341,18 @@ async function doLogin(e){
         }
         if(res&&res.ok&&res.resident){
           S.userId=res.resident.id;sessionPw=pw;setSessionTok(res.token||res.session||null);sessionVerified=true;
+          S.loginRole=res.resident.role||""; // R1.3.139
+          if(normRole(res.resident.role)==="intern"){
+            internWipe();
+            S.residents=[{id:res.resident.id,username:res.resident.username||username,displayName:res.resident.display_name||username,role:"intern",active:true}];
+            internGuardRpc(sb);
+            await cloudPull().catch(()=>{});
+            cloudStatus=navigator.onLine===false?"offline":"live";Sync.state="CONNECTED";
+            save();internTick();
+            ui.loginBusy=false; ui.loginErr="";
+            go("home");
+            return;
+          }
           await cloudPull().catch(()=>{});
           await loadServerNotifyPrefs().catch(()=>{});
           if(res.resident.role){const rr=S.residents.find(x=>x.id===S.userId);if(rr) rr.role=res.resident.role;}
@@ -4868,6 +4952,7 @@ function snapView(){
     </div>
     ${mseCardHtml(p)}
     ${labsCardHtml(p)}
+    ${vitalsCardHtml(p,false)}
     <div class="card snap-critical-status">
       <div class="row"><div><p class="tiny">CRITICAL STATUS</p></div></div>
       <div style="margin-top:10px">${renderCriticalStatusHistory(p.id)}</div>
@@ -9392,6 +9477,7 @@ function livePanels(){
   if(p.kind==="obsRefer") html+=panelBox("Refer from observation",obsReferForm());
   if(p.kind==="obsDispose") html+=panelBox("Dispose observation",obsDisposeForm());
   if(p.kind==="pgtNote") html+=pgtNoteSheet(p);
+  if(p.kind==="vitals") html+=vitalsSheet(); // R1.3.139
   return html;
 }
 function giveHandoverForm(defShift){
@@ -9690,7 +9776,7 @@ function userEditOverlay(){
   if(!r) return "";
   const self=username===user().username;
   const curRole=normRole(r.role);
-  const ROLES=curRole==="consultant"?[["consultant","Consultant"]]:[["resident","Resident"],["admin","Admin"]];
+  const ROLES=curRole==="consultant"?[["consultant","Consultant"]]:[["resident","Resident"],["intern","Intern"],["admin","Admin"]]; // R1.3.139
   const roleLabel=(ROLES.find(x=>x[0]===curRole)||[0,curRole])[1];
   return `<div class="sheet mid"><button class="mask" onclick="closeUserEdit()"></button><div class="box" style="border-radius:24px;max-width:400px">
     <h2 class="page-title" style="margin:0 0 4px">${esc(r.displayName)}</h2>
@@ -9780,7 +9866,8 @@ function usersView(){
   const all=(S.residents||[]).filter(r=>r.active!==false);
   const srt=a=>a.slice().sort((x,y)=>((x.active===false)-(y.active===false))||String(x.displayName||"").localeCompare(String(y.displayName||"")));
   const cons=srt(all.filter(r=>normRole(r.role)==="consultant"));
-  const res=srt(all.filter(r=>normRole(r.role)!=="consultant"));
+  const res=srt(all.filter(r=>!["consultant","intern"].includes(normRole(r.role))));
+  const ints=srt(all.filter(r=>normRole(r.role)==="intern")); // R1.3.139
   const fac=u=>(S.faculty||[]).find(f=>f.username===u.username||f.id===u.id);
   const row=r=>{const ro=normRole(r.role);const d=ro==="consultant"?((fac(r)||{}).designation||r.designation||""):"";
     return `<div class="card user-card${r.active===false?" user-inactive":""}">
@@ -9799,38 +9886,39 @@ function usersView(){
     </section>`;
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <h2 class="page-title">Users</h2>
-    <p class="tiny" style="margin:0 0 10px">Residents write · consultants view</p>
+    <p class="tiny" style="margin:0 0 10px">Residents write · consultants view · interns add reports and vitals</p>
     ${sec("Consultants",cons,"consultant","Add consultant")}
-    ${sec("Residents",res,"resident","Add resident")}`;
+    ${sec("Residents",res,"resident","Add resident")}
+    ${sec("Interns",ints,"intern","Add intern")}`;
 }
 function openAddUser(role){
   if(!canAdmin()){toast("Admin only","bad");return}
   ui.fields=ui.fields||{};
-  ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.ndes="";ui.fields.nph="";ui.phoneErr={};ui.fields.nrole=role==="consultant"?"consultant":"resident";
+  ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.ndes="";ui.fields.nph="";ui.phoneErr={};ui.fields.nrole=role==="consultant"?"consultant":role==="intern"?"intern":"resident";
   ui.addUser=ui.fields.nrole; render();
 }
 function addUserOverlay(){
   if(!ui.addUser) return "";
-  const cons=ui.addUser==="consultant";
+  const cons=ui.addUser==="consultant";const intern=ui.addUser==="intern"; // R1.3.139
   const ROLES=[["resident","Resident"],["admin","Admin"]];
   return `<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box" style="border-radius:24px;max-width:400px">
-    <h2 class="page-title" style="margin:0 0 4px">${cons?"Add consultant":"Add resident"}</h2>
-    <p class="tiny" style="margin:0 0 12px">${cons?"Consultants have view-only access":"Residents can write notes and orders"}</p>
+    <h2 class="page-title" style="margin:0 0 4px">${cons?"Add consultant":intern?"Add intern":"Add resident"}</h2>
+    <p class="tiny" style="margin:0 0 12px">${cons?"Consultants have view-only access":intern?"Interns see admission cards only, and can add lab reports and vitals":"Residents can write notes and orders"}</p>
     <label class="field"><span>Username</span><input id="nu" autocapitalize="none" value="${esc(val("nu"))}" oninput="ui.fields=ui.fields||{};ui.fields.nu=this.value"/></label>
     <label class="field"><span>Display name</span><input id="nd" value="${esc(val("nd"))}" oninput="ui.fields=ui.fields||{};ui.fields.nd=this.value"/></label>
     ${cons?`<label class="field"><span>Designation</span><input id="ndes" maxlength="80" placeholder="e.g. Assistant Professor" value="${esc(val("ndes"))}" oninput="ui.fields=ui.fields||{};ui.fields.ndes=this.value"/></label>`:""}
-    ${cons?"":phoneField("nph","Mobile number (+91)","10-digit mobile, optional","Optional · only consultants see it, as a Call button")}
+    ${cons||intern?"":phoneField("nph","Mobile number (+91)","10-digit mobile, optional","Optional · only consultants see it, as a Call button")}
     <label class="field"><span>Password</span><input id="np" type="password" value="${esc(val("np"))}" oninput="ui.fields=ui.fields||{};ui.fields.np=this.value"/></label>
-    ${cons?"":`<label class="field"><span>Role</span>${picker("nrole",ROLES,val("nrole")||"resident","Role")}</label>`}
+    ${cons||intern?"":`<label class="field"><span>Role</span>${picker("nrole",ROLES,val("nrole")||"resident","Role")}</label>`}
     <button class="btn block" onclick="inviteUser()">Create account</button>
     <button class="btn ghost block" style="margin-top:8px" onclick="dismissOverlay()">Cancel</button>
   </div></div>`;
 }
 async function inviteUser(){
   if(!canAdmin()){toast("Admin only","bad");return}
-  const username=(val("nu")||"").trim(), name=(val("nd")||"").trim(), pw=val("np")||"", role=val("nrole")||"resident";
+  const username=(val("nu")||"").trim(), name=(val("nd")||"").trim(), pw=val("np")||"", role=ui.addUser==="intern"?"intern":(val("nrole")||"resident");
   if(!username||!name||!pw){toast("Username, display name and password are required.","bad");return}
-  const phRaw=role==="consultant"||ui.addUser==="consultant"?"":String(val("nph")||"").trim();
+  const phRaw=role==="consultant"||role==="intern"||ui.addUser==="consultant"?"":String(val("nph")||"").trim();
   const phNew=phRaw?phoneE164(phRaw):"";
   if(phNew===null){phoneErrSet("nph",PHONE_ERR);render({force:1});return}
   phoneErrSet("nph","");
@@ -9900,7 +9988,11 @@ async function askLogout(){
 }
 function doLogout(){
   phonesForget();phoneFieldsWipe();ui.myPhone=null;
-  S.userId=null;sessionPw=null;setSessionTok(null);save();render();
+  const wasIntern=isIntern();
+  try{clearTimeout(__undoT);const ut=document.getElementById("undoToast");if(ut)ut.remove();RDEL=null;const rl=document.getElementById("rdelLayer");if(rl)rl.remove()}catch(e){} // R1.3.139
+  S.userId=null;S.loginRole="";sessionPw=null;setSessionTok(null);
+  if(wasIntern){clearInterval(__internTimer);internWipe();S.patients=[];S.vitals=[];S.residents=[]} // R1.3.139: nothing of the intern session stays on a shared phone
+  save();render();
 }
 function confirmYes(){
   const c=ui.confirm; if(!c)return;
@@ -10572,7 +10664,7 @@ function setupView(){
   if(tab==="notify"){
     const np=notifyPrefs();
     const perm=("Notification" in window)?Notification.permission:"unsupported";
-    if(sessionTok&&!ui.notifyInboxLoading&&(!ui.notifyInboxLoadedAt||Date.now()-ui.notifyInboxLoadedAt>30000)){
+    if(sessionTok&&!isIntern()&&!ui.notifyInboxLoading&&(!ui.notifyInboxLoadedAt||Date.now()-ui.notifyInboxLoadedAt>30000)){
       loadNotificationInbox().catch(()=>{});
     }
     const inbox=Array.isArray(ui.notifyInbox)?ui.notifyInbox:[];
@@ -10819,6 +10911,7 @@ function activityView(){
     if(pairIds.has(e.id)||eventKind(e)==="restrain") return false;
     const k=eventKind(e);
     if(kind==="restrain") return false;
+    if(kind==="deleted") return !!recDelEventInfo(e)&&matchQ(e); // R1.3.139
     if(kind!=="all"&&k!==kind) return false;
     return matchQ(e);
   });
@@ -10829,6 +10922,7 @@ function activityView(){
   others.forEach(e=>{
     const p=e.pid?patient(e.pid):null;
     const k=eventKind(e);
+    if(recDelEventInfo(e)){items.push({t:new Date(e.at||0).getTime(),html:recDelCardHtml(e,p)});return} // R1.3.139
     items.push({t:new Date(e.at||0).getTime(),html:`<button class="card" style="${k==="fail"?"border-color:#e11d48":""}" onclick="${p?`go('snap','${p.id}')`:""}">
         <div class="row">
           <span class="badge" style="background:${colorSafe(k)};color:#082018">${kindLabel(k)}</span>${(e.ok===false||k==="fail")?`<span class="badge" style="background:#e11d48;color:#fff">failed</span>`:""}
@@ -10839,7 +10933,7 @@ function activityView(){
       </button>`});
   });
   items.sort((a,b)=>b.t-a.t);
-  const chips=[["all","All"],["fail","Failed"],["pgt","PGT"],["restrain","Restrain"],["med","Meds"],["ect","ECT"],["handover","Handover"],["task","Tasks"]];
+  const chips=[["all","All"],["fail","Failed"],["pgt","PGT"],["restrain","Restrain"],["med","Meds"],["ect","ECT"],["handover","Handover"],["task","Tasks"],["deleted","Deleted"]];
   return `<div class="act-log"><button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <div class="row" style="margin-bottom:8px"><h2 style="margin:0;min-width:0">Activity log</h2><span class="tiny">${items.length}</span></div>
     <input id="aq" placeholder="Search bed, name, action, resident" value="${esc(ui.aq||"")}" oninput="ui.aq=this.value;render({fromInput:1})" style="margin-bottom:8px" enterkeyhint="search" autocomplete="off"/>
@@ -11775,6 +11869,7 @@ function mseWire(el){
       if(t.dataset.view){mseView(t.dataset.view,"history");try{history.pushState(Object.assign({},history.state||{},{mse:2}),"");__msePushed++}catch(x){}return}
       if(t.dataset.hist){if(MSEU.from==="history"&&__msePushed>1){history.back();return}MSEU={mode:"history",pid:MSEU.pid};mseMount();return}
       if(t.dataset.newmse){const pid=MSEU.pid;MSEU.mode="done";mseClose();setTimeout(()=>mseOpen(pid,"routine"),0);return}
+      if(t.dataset.delmse){recDelAsk("mse",t.dataset.delmse);return} // R1.3.139
     }
   });
   el.addEventListener("input",e=>{
@@ -11806,7 +11901,7 @@ function mseViewHtml(){
    <div class="mse-scroll">${hits.length?`<div class="mse-risk-banner"><b>High risk</b> · ${esc(hits.join(" · "))}</div>`:""}
     <div class="mse-vsum"><p class="tiny">AT A GLANCE</p><p>${msePreviewHtml(d)||esc(m.summary||"")}</p></div>
     <div class="mse-vs mse-vstruct">${mseAny(d)?mseStructHtml(d):`<p class="sm">${esc(m.summary||"")}</p>`}</div></div>
-   <div class="mse-foot one"><button type="button" class="btn ghost" data-hist="1">All MSEs</button></div>`;
+   <div class="mse-foot${canDeleteRecords()?"":" one"}"><button type="button" class="btn ghost" data-hist="1">All MSEs</button>${canDeleteRecords()?`<button type="button" class="btn ghost danger-t" data-delmse="${esc(m.id)}">Delete MSE</button>`:""}</div>`;
 }
 
 /* ---- Snapshot card ---- */
@@ -12023,7 +12118,7 @@ function labKeepLocal(x){ // R1.3.135
 }
 const _labHistLoaded={};
 async function labLoadHistory(pid,force){
-  if(!sb||!sessionTok||!pid)return false;
+  if(!sb||!sessionTok||!pid||isIntern())return false;
   if(_labHistLoaded[pid]&&!force&&Date.now()-_labHistLoaded[pid]<60000)return false;
   _labHistLoaded[pid]=Date.now();const t0=Date.now();
   try{
@@ -12102,7 +12197,8 @@ let __labRowSeq=0;
 function labNewRow(code,panel,extra){return Object.assign({k:"r"+(++__labRowSeq)+Math.random().toString(36).slice(2,5),code,panel:panel||labPanelOf(code),raw:"",chk:false},extra||{})}
 function labOpen(pid,editId){
   const p=patient(pid);if(!p)return;
-  if(!canWrite()){toast("Consultants can view only.","bad");return}
+  if(isIntern()){if(editId){toast("Interns can add new reports only.","bad");return}} // R1.3.139
+  else if(!canWrite()){toast("Consultants can view only.","bad");return}
   let f=null,restored=false;
   const dr=labLsGet(labDraftKey(pid,editId));
   if(dr&&dr.f&&Array.isArray(dr.f.rows)){f=labNormDraft(dr.f);restored=f.rows.some(r=>String(r.raw||"").trim())}
@@ -12186,7 +12282,7 @@ function labBannerHtml(){
   return `<div class="lab-crit" role="alert"><p class="lab-crit-h"><b>Critical value${c.length>1?"s":""}</b> · ${c.map(x=>{const t=labDef(x.r.code);return esc((LAB_SHORT[x.r.code]||t.n)+" "+x.r.raw+" "+(t.u||""))+` <em>(${esc(labFlagLabel(x.e.crit))})</em>`}).join(" · ")}</p>
     <p class="tiny">Limits: ${esc(c.map(x=>LAB_CRIT_TXT[x.r.code]||"").filter(Boolean).join("; "))}</p>
     <label class="lab-crit-ok"><input type="checkbox" data-critok="1" ${f.critOk?"checked":""}> <span>I have confirmed ${c.length>1?"these values":"this value"} against the paper</span></label>
-    <label class="lab-crit-ok"><input type="checkbox" data-postalert="1" ${f.postAlert?"checked":""}> <span>Post a critical alert to the ward after saving</span></label>
+    ${isIntern()?`<p class="tiny lab-intern-crit"><b>Tell the resident on duty now.</b> Interns can't post ward alerts.</p>`:`<label class="lab-crit-ok"><input type="checkbox" data-postalert="1" ${f.postAlert?"checked":""}> <span>Post a critical alert to the ward after saving</span></label>`}
     ${navigator.onLine===false?`<p class="tiny lab-off">Offline — the report will sync later; a critical alert can't be shared until you are back online.</p>`:""}</div>`;
 }
 function labPanelChipsHtml(){
@@ -12316,14 +12412,14 @@ function labDiffText(o,n){
 }
 function labCommit(force){
   if(!LABU||LABU.mode!=="edit"||__labSaving)return;
-  if(!needWrite())return;
+  if(isIntern()){if(LABU.editId){toast("Interns can add new reports only.","bad");return}}else if(!needWrite())return; // R1.3.139
   const b=labBuild();if(!b)return;
   const old=LABU.editId?(S.labs||[]).find(x=>x.id===LABU.editId):null;
   if(__labDupWait)return;
   if((!old||labRepDay(old.reportedAt)!==b.repDay)&&!LABU.f.dupOk&&!force){
     // R1.3.135: compare with this patient's whole server history too (reports outside the ward window / not in view)
     const pid=b.pid;const fresh=_labHistLoaded[pid]&&Date.now()-_labHistLoaded[pid]<60000;
-    if(!fresh&&sb&&sessionTok&&navigator.onLine!==false){__labDupWait=true;
+    if(!fresh&&!isIntern()&&sb&&sessionTok&&navigator.onLine!==false){__labDupWait=true;
       Promise.race([labLoadHistory(pid,true).catch(()=>false),new Promise(r=>setTimeout(r,4000))]).then(()=>{__labDupWait=false;if(LABU&&LABU.mode==="edit"&&LABU.pid===pid)labCommit(force)});return}
     const d=labDupOf(b);if(d){const el=labLayerEl().querySelector("#labDup");if(el){el.innerHTML=`<div class="lab-dupbox" role="alert"><p><b>Already added?</b> ${esc(labPanelsLabel(d))} · reported ${esc(labRepText(d.reportedAt))}${d.sampleNo?" · sample "+esc(d.sampleNo):""} · ${esc(d.byName||rname(d.by)||"")}</p><div class="btns"><button type="button" class="btn sm ghost" data-duplist="1">Open reports</button><button type="button" class="btn sm" data-dupok="1">Save anyway</button></div></div>`;el.scrollIntoView({block:"center"})}return}}
   __labSaving=true;
@@ -12337,7 +12433,7 @@ function labCommit(force){
       rep.matchStatus=b.ocr.name.status==="match"?(b.ocr.name.score>=1?"exact":"probable_confirmed"):"override"}
     if(old){const diff=labDiffText(old,rep);if(!diff){toast("No changes to save","info");__labSaving=false;labLsSet(labDraftKey(LABU.pid,LABU.editId),null);LABU.mode="done";labClose();return}
       rep.results.forEach(x=>{const a=old.results.find(y=>y.code===x.code);x.edited=!a||labResultFromRow(a)!==x.printed||!!a.edited});rep.lastDiff=diff}
-    const wantAlert=b.hasCritical&&LABU.f.postAlert;
+    const wantAlert=b.hasCritical&&LABU.f.postAlert&&!isIntern(); // R1.3.139: interns cannot post ward alerts
     const offline=navigator.onLine===false;
     if(wantAlert&&offline)rep.alertPending=true;
     S.labs=(S.labs||[]).filter(x=>x.id!==rep.id);S.labs.push(rep);
@@ -12350,7 +12446,7 @@ function labCommit(force){
     save();
     labLsSet(labDraftKey(LABU.pid,LABU.editId),null);
     const pid=LABU.pid;LABU.mode="done";labClose();
-    toast(old?"Investigations updated":(nc?"Saved · "+nc+" critical value"+(nc>1?"s":""):"Investigations saved"),nc?"info":"ok");
+    toast(old?"Investigations updated":(nc?"Saved · "+nc+" critical value"+(nc>1?"s":"")+(isIntern()?" — tell the resident on duty now":""):"Investigations saved"),nc?"info":"ok");
     try{flushPending()}catch(x){}
     if(wantAlert){
       if(offline)toast("Critical not yet shared — offline. Post the alert from Investigations when back online.","bad");
@@ -12390,7 +12486,7 @@ function labListHtml(){
      <div class="lab-rc-h"><b>${esc(labPanelsLabel(r))}</b>${labChipsHtml(r)}</div>
      <p class="lab-rc-m">${esc(labMetaLine(r))}</p>
      ${labTableHtml(r)}
-     ${cw?`<div class="lab-rc-a"><button type="button" class="btn sm ghost" data-edit="${esc(r.id)}">Edit</button>${r.hasCritical?`<button type="button" class="btn sm ghost danger-t" data-alert="${esc(r.id)}">Post critical alert</button>`:""}<button type="button" class="linkbtn lab-del" data-del="${esc(r.id)}">Remove</button></div>`:""}
+     ${cw?`<div class="lab-rc-a"><button type="button" class="btn sm ghost" data-edit="${esc(r.id)}">Edit</button>${r.hasCritical?`<button type="button" class="btn sm ghost danger-t" data-alert="${esc(r.id)}">Post critical alert</button>`:""}${canDeleteRecords()&&!labPendingId(r.id)&&!r.localOnly?`<button type="button" class="linkbtn lab-del" data-del="${esc(r.id)}">Delete</button>`:""}</div>`:""}
     </div>`).join(""):`<p class="muted" style="padding:16px">No investigations recorded yet.</p>`}</div>
    ${cw?`<div class="mse-foot one"><button type="button" class="btn" data-new="1">Add report</button></div>`:""}`;
 }
@@ -12722,7 +12818,7 @@ function labWire(el){
       if(t.dataset.new){LABU={mode:"list",pid:LABU.pid};const pid=LABU.pid;LABU=null;const ok=canWrite();if(ok){labOpenInPlace(pid,null)}return}
       if(t.dataset.edit){labOpenInPlace(LABU.pid,t.dataset.edit);return}
       if(t.dataset.alert){labPostAlert(t.dataset.alert);return}
-      if(t.dataset.del){if(!t.dataset.arm){t.dataset.arm="1";t.textContent="Tap again to remove";setTimeout(()=>{if(t.isConnected){delete t.dataset.arm;t.textContent="Remove"}},3500);return}labRemove(t.dataset.del,"Removed from the report list");return}
+      if(t.dataset.del){recDelAsk("lab",t.dataset.del);return} // R1.3.139: reason + confirm, server-side soft delete
     }
   });
   el.addEventListener("input",e=>{
@@ -12750,7 +12846,7 @@ function labWire(el){
 }
 function labOpenInPlace(pid,editId){
   // switch the open layer from the list to the form without touching history (one back closes the layer)
-  if(!canWrite()){toast("Consultants can view only.","bad");return}
+  if(!canWrite()&&!(isIntern()&&!editId)){toast(isIntern()?"Interns can add new reports only.":"Consultants can view only.","bad");return}
   const keep=__labPushed;LABU=null;labOpen(pid,editId);__labPushed=keep||__labPushed;
 }
 /* ---- Snapshot card: Latest investigations ---- */
@@ -15586,6 +15682,326 @@ function patchApp(el,html,o){
   morphChildren(el,tpl.content,{bg:!!o.bg});
   stampSheetSrc(el);
 }
+/* ===== R1.3.139: delete / restore saved MSE and lab reports · Intern role · Vitals ===== */
+function isIntern(){return !!S.userId&&roleOf()==="intern"}
+function canDeleteRecords(){const r=roleOf();return !!S.userId&&(r==="resident"||r==="admin")&&!isIntern()&&!(typeof isViewerLogin==="function"&&isViewerLogin())}
+const INTERN_RPCS=new Set(["ward_login","ward_intern_read_state","ward_intern_save_lab_report","ward_save_vitals"]);
+// Client-side guard: while an intern is signed in, only the four intern RPCs leave the device. The server enforces the same
+// (an intern token exists only in ward_intern_sessions, which no other ward_* function accepts).
+function internGuardRpc(c){
+  if(!c||c.__ig||typeof c.rpc!=="function")return c;
+  const raw=c.rpc.bind(c);c.__ig=1;
+  c.rpc=function(n,a){if(isIntern()&&!INTERN_RPCS.has(n))return Promise.resolve({data:null,error:{message:"Not available for intern accounts"}});return raw(n,a)};
+  return c;
+}
+function patientFromRow(r){return {id:r.id,code:r.patient_code,hospitalNo:r.hospital_no||"",mrdNo:r.mrd_no||"",name:r.name,age:r.age,sex:r.sex,diagnosis:r.diagnosis||"",dx2:r.secondary_dx||"",dx3:r.tertiary_dx||"",comorb:r.comorbidities||"",reason:r.reason_for_admission||"",referredBy:r.referred_by||"",consultant:r.consultant_name||"",consultant2:r.consultant_name_2||"",admittedAt:r.admitted_at,dischargedAt:r.discharged_at||null,dischargeMode:r.discharge_mode||null,dischargeOutcome:r.discharge_outcome||null,dischargeAdvice:r.discharge_advice||"",dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:[],dischargeReview:r.discharge_review||"",dischargeEctSessions:(r.discharge_ect_sessions==null?null:Number(r.discharge_ect_sessions)),treatmentMode:r.treatment_mode||null,dischargeRequestedBy:Array.isArray(r.discharge_requested_by)?r.discharge_requested_by:[],dischargeRequesterName:r.discharge_requester_name||"",admitConsultants:Array.isArray(r.admit_consultants)?r.admit_consultants:null,status:r.active_status||"admitted",address:r.address||"",phone:r.phone||"",updatedAt:r.updated_at||null,by:r.created_by||r.admitted_by||r.by||null,...(r.consultant_id!==undefined?{consultantId:r.consultant_id||null,consultantId2:r.consultant_id_2||null}:{})}}
+function mseFromRow(r){return {id:r.id,pid:r.patient_id,kind:r.kind||"routine",data:(r.data&&typeof r.data==="object")?r.data:{},highRisk:!!r.high_risk,summary:r.summary||"",by:r.created_by||null,byName:r.created_by_name||rname(r.created_by)||"",at:r.created_at,admittedAt:r.admitted_at||null}}
+
+/* ---- Vitals ---- */
+const VIT_LIM={sys:[40,300,"Systolic BP","mmHg"],dia:[20,200,"Diastolic BP","mmHg"],pr:[20,250,"Pulse","/min"],rr:[4,80,"Respiratory rate","/min"],spo2:[40,100,"SpO₂","%"],temp:[85,110,"Temperature","°F"]};
+function vitalsFromRow(r){const n=x=>x==null||x===""?null:Number(x);return {id:r.id,pid:r.patient_id,at:r.recorded_at||r.created_at,sys:n(r.bp_systolic),dia:n(r.bp_diastolic),pr:n(r.pulse),rr:n(r.resp_rate),spo2:n(r.spo2),temp:n(r.temp_f),abn:Array.isArray(r.abnormal)?r.abnormal:null,by:r.recorded_by||null,byName:r.recorded_by_name||rname(r.recorded_by)||""}}
+function vitalsAbn(v){ // same rules as ward_save_vitals
+  const a=[];
+  if(v.sys!=null&&(v.sys>=160||v.dia>=100))a.push("BP high");
+  if(v.sys!=null&&(v.sys<90||v.dia<60))a.push("BP low");
+  if(v.pr!=null){if(v.pr>100)a.push("Pulse high");else if(v.pr<60)a.push("Pulse low")}
+  if(v.rr!=null){if(v.rr>20)a.push("RR high");else if(v.rr<12)a.push("RR low")}
+  if(v.spo2!=null){if(v.spo2<90)a.push("SpO2 very low");else if(v.spo2<94)a.push("SpO2 low")}
+  if(v.temp!=null){if(v.temp>=100.4)a.push("Fever");else if(v.temp<95)a.push("Temperature low")}
+  return a;
+}
+function vitalsMerge(rows){
+  if(!Array.isArray(rows))return;
+  const busy=new Set(pending.filter(o=>o.status!=="acked"&&o.table==="patient_vitals"&&o.row).map(o=>String(o.row.id)));
+  const srv=rows.map(vitalsFromRow);const ids=new Set(srv.map(x=>String(x.id)));
+  S.vitals=srv.concat((S.vitals||[]).filter(x=>busy.has(String(x.id))&&!ids.has(String(x.id))));
+}
+function vitalsOf(pid){return (S.vitals||[]).filter(v=>v&&v.pid===pid).sort((a,b)=>String(b.at||"").localeCompare(String(a.at||"")))}
+function vitalsPendingId(id){return pending.some(o=>o.status!=="acked"&&o.table==="patient_vitals"&&o.row&&String(o.row.id)===String(id))}
+function vitTile(lbl,val,unit,bad){return `<div class="vit-t${bad?" bad":""}"><span>${lbl}</span><b>${val==null?"—":esc(String(val))}</b><em>${unit}</em></div>`}
+function vitalsTilesHtml(v){
+  const ab=v.abn||vitalsAbn(v);const has=k=>ab.some(x=>x.indexOf(k)===0);
+  return `<div class="vit-grid">${vitTile("BP",v.sys!=null?v.sys+"/"+v.dia:null,"mmHg",has("BP"))}${vitTile("Pulse",v.pr,"/min",has("Pulse"))}${vitTile("RR",v.rr,"/min",has("RR"))}${vitTile("SpO₂",v.spo2,"%",has("SpO2"))}${vitTile("Temp",v.temp!=null?Number(v.temp).toFixed(1):null,"°F",has("Fever")||has("Temperature"))}</div>`;
+}
+function vitalsLine(v){return [v.sys!=null?"BP "+v.sys+"/"+v.dia:"",v.pr!=null?"P "+v.pr:"",v.rr!=null?"RR "+v.rr:"",v.spo2!=null?"SpO₂ "+v.spo2+"%":"",v.temp!=null?"T "+Number(v.temp).toFixed(1)+"°F":""].filter(Boolean).join(" · ")}
+function vitalsMetaHtml(v){return `<p class="tiny vit-meta">${esc(stamp(v.at))} IST · ${esc(v.byName||rname(v.by)||"")}${vitalsPendingId(v.id)?' · <span class="lab-chip pend">Pending sync</span>':""}</p>`}
+function vitalsCardHtml(p,intern){
+  const list=vitalsOf(p.id);const v=list[0];
+  if(!v&&!intern)return "";
+  const ab=v?(v.abn||vitalsAbn(v)):[];
+  return `<div class="card snap-vitals" data-vitals="${esc(p.id)}">
+    <div class="row" style="margin:0 0 6px"><p class="tiny" style="margin:0">VITALS</p>${ab.length?`<span class="vit-pill">${esc(ab.join(" · "))}</span>`:""}</div>
+    ${v?vitalsTilesHtml(v)+vitalsMetaHtml(v):`<p class="tiny muted">No vitals recorded yet.</p>`}
+    ${list.length>1?`<details class="vit-more"><summary>Earlier · ${list.length-1}</summary>${list.slice(1,12).map(x=>{const a=x.abn||vitalsAbn(x);return `<div class="vit-row${a.length?" ab":""}"><b>${esc(vitalsLine(x))}</b><span class="tiny">${esc(stamp(x.at))} · ${esc(x.byName||rname(x.by)||"")}${a.length?" · "+esc(a.join(", ")):""}</span></div>`}).join("")}</details>`:""}
+    ${intern?`<div style="margin-top:10px"><button class="btn vit-open" type="button" onclick="vitalsOpen('${p.id}')">Update vitals</button></div>`:`<p class="tiny muted" style="margin-top:6px">Recorded by interns · read-only</p>`}
+  </div>`;
+}
+function vitLocalInput(d){const z=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+"T"+z(d.getHours())+":"+z(d.getMinutes())}
+function vitalsOpen(pid){
+  if(!isIntern()){toast("Vitals are recorded by interns.","bad");return}
+  const p=patient(pid);if(!p)return;
+  ui.fields=ui.fields||{};["vsys","vdia","vpr","vrr","vsp","vtf"].forEach(k=>ui.fields[k]="");
+  ui.fields.vat=vitLocalInput(new Date());ui.vitPid=pid;ui.vitErr="";ui.vitChk=false;
+  openPanel("vitals");
+}
+function vitalsRead(){
+  const num=k=>{const s=String(val(k)||"").trim();if(!s)return null;const n=Number(s);return isFinite(n)?n:NaN};
+  return {sys:num("vsys"),dia:num("vdia"),pr:num("vpr"),rr:num("vrr"),spo2:num("vsp"),temp:num("vtf"),atRaw:String(val("vat")||"")};
+}
+function vitalsCheck(v){ // returns {errs:[...], warn:[...]}
+  const errs=[];
+  ["sys","dia","pr","rr","spo2","temp"].forEach(k=>{const x=v[k];if(x==null)return;const L=VIT_LIM[k];
+    if(!isFinite(x))errs.push(L[2]+" must be a number");
+    else if(k!=="temp"&&Math.round(x)!==x)errs.push(L[2]+" must be a whole number");
+    else if(x<L[0]||x>L[1])errs.push(L[2]+" must be "+L[0]+"–"+L[1]+" "+L[3])});
+  if(["sys","dia","pr","rr","spo2","temp"].every(k=>v[k]==null))errs.push("Enter at least one vital sign");
+  if((v.sys==null)!==(v.dia==null))errs.push("Enter both systolic and diastolic BP");
+  if(v.sys!=null&&v.dia!=null&&isFinite(v.sys)&&isFinite(v.dia)&&v.dia>=v.sys)errs.push("Diastolic BP must be lower than systolic");
+  const t=v.atRaw?new Date(v.atRaw).getTime():NaN;
+  if(!isFinite(t))errs.push("Enter the time the vitals were taken");
+  else if(t>Date.now()+5*60e3)errs.push("Vitals time is in the future");
+  else if(t<Date.now()-24*3600e3)errs.push("Vitals older than 24 hours cannot be added");
+  const ok=k=>v[k]!=null&&isFinite(v[k]);
+  const warn=errs.length?[]:vitalsAbn({sys:ok("sys")?v.sys:null,dia:ok("dia")?v.dia:null,pr:ok("pr")?v.pr:null,rr:ok("rr")?v.rr:null,spo2:ok("spo2")?v.spo2:null,temp:ok("temp")?v.temp:null});
+  return {errs,warn,t};
+}
+const VIT_WARN_TXT={"BP high":"BP high (≥160/100)","BP low":"BP low (<90/60)","Pulse high":"Pulse high (>100)","Pulse low":"Pulse low (<60)","RR high":"RR high (>20)","RR low":"RR low (<12)","SpO2 very low":"SpO₂ very low (<90%)","SpO2 low":"SpO₂ low (<94%)","Fever":"Fever (≥100.4°F)","Temperature low":"Temperature low (<95°F)"};
+function vitalsLiveHtml(){
+  const v=vitalsRead();const c=vitalsCheck(v);
+  const errs=ui.vitErr?c.errs:[];
+  return `${errs.length?`<div class="vit-err" role="alert">${errs.map(e=>`<p>${esc(e)}</p>`).join("")}</div>`:""}
+    ${c.warn.length?`<div class="vit-warn" role="status"><p><b>Outside the usual range</b> · ${esc(c.warn.map(x=>VIT_WARN_TXT[x]||x).join(" · "))}</p><p class="tiny">Recheck, then tell the resident on duty.</p>
+      <label class="lab-crit-ok"><input type="checkbox" id="vchk" ${ui.vitChk?"checked":""} onchange="ui.vitChk=this.checked"> <span>I rechecked these values</span></label></div>`:""}`;
+}
+function vitalsInput(el){ui.fields=ui.fields||{};ui.fields[el.id]=el.value;if(ui.vitErr)ui.vitErr="";const box=document.getElementById("vitLive");if(box)box.innerHTML=vitalsLiveHtml();const f=VIT_FIELD_OF[el.id];if(f){const x=String(el.value).trim();const n=Number(x);const L=VIT_LIM[f];el.setAttribute("aria-invalid",x&&(!isFinite(n)||n<L[0]||n>L[1])?"true":"false")}}
+const VIT_FIELD_OF={vsys:"sys",vdia:"dia",vpr:"pr",vrr:"rr",vsp:"spo2",vtf:"temp"};
+function vitalsSheet(){
+  const p=patient(ui.vitPid);if(!p)return "";const b=bedObj(p.id);
+  const inp=(id,lbl,unit,step,ph)=>`<label class="field vit-f"><span>${lbl} <em>${unit}</em></span><input id="${id}" type="text" inputmode="${step?"decimal":"numeric"}" autocomplete="off" placeholder="${ph}" value="${esc(val(id))}" oninput="vitalsInput(this)"></label>`;
+  return panelBox("Update vitals",`<p class="tiny" style="margin:-4px 0 10px">${esc(b?"Bed "+b.no+" · ":"")}${esc(p.name)}</p>
+    <div class="vit-bp"><span class="vit-bp-l">Blood pressure <em>mmHg</em></span><div class="vit-bp-in">${inp("vsys","Systolic","","","120")}<b>/</b>${inp("vdia","Diastolic","","","80")}</div></div>
+    <div class="vit-form">${inp("vpr","Pulse rate","/min","","72")}${inp("vrr","Resp. rate","/min","","16")}${inp("vsp","SpO₂","%","","98")}${inp("vtf","Temperature","°F",1,"98.6")}</div>
+    <label class="field"><span>Taken at</span><input id="vat" type="datetime-local" value="${esc(val("vat"))}" max="${vitLocalInput(new Date(Date.now()+5*60e3))}" oninput="vitalsInput(this)"></label>
+    <div id="vitLive">${vitalsLiveHtml()}</div>
+    <p class="tiny muted">Leave a box empty if not measured. Saved with your name and the time.</p>
+    <button class="btn block" type="button" onclick="vitalsSave()">Save vitals</button>`);
+}
+function vitalsSave(){
+  if(!isIntern()){toast("Vitals are recorded by interns.","bad");return}
+  const p=patient(ui.vitPid);if(!p)return;
+  const v=vitalsRead();const c=vitalsCheck(v);
+  if(c.errs.length){ui.vitErr="1";const box=document.getElementById("vitLive");if(box)box.innerHTML=vitalsLiveHtml();toast(c.errs[0],"bad");return}
+  if(c.warn.length&&!ui.vitChk){const box=document.getElementById("vitLive");if(box){box.innerHTML=vitalsLiveHtml();const k=box.querySelector(".vit-warn");if(k){k.classList.add("shake");k.scrollIntoView({block:"center"})}}toast("Values outside the usual range — recheck and tick the box","bad");return}
+  const u=user()||{};
+  const id="vit_"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  const at=new Date(Math.min(c.t,Date.now())).toISOString();
+  const row={id,patient_id:p.id,recorded_at:at,bp_systolic:v.sys,bp_diastolic:v.dia,pulse:v.pr,resp_rate:v.rr,spo2:v.spo2,temp_f:v.temp==null?null:Math.round(v.temp*10)/10,op_id:id};
+  const rec={id,pid:p.id,at,sys:v.sys,dia:v.dia,pr:v.pr,rr:v.rr,spo2:v.spo2,temp:row.temp_f,abn:c.warn,by:S.userId,byName:u.displayName||u.username||""};
+  S.vitals=(S.vitals||[]).filter(x=>x.id!==id);S.vitals.push(rec);
+  queue("patient_vitals",row);save();
+  ui.panel=null;ui.vitPid=null;ui.vitChk=false;
+  toast(c.warn.length?"Vitals saved · tell the resident on duty":"Vitals saved",c.warn.length?"info":"ok");
+  render();try{flushPending()}catch(x){}
+}
+
+/* ---- Intern pull / views ---- */
+function internWipe(){
+  ["orders","doses","tasks","handovers","hitems","events","ect","ectSessions","criticalStatusUpdates","obsStays","advice","broadcasts","mse","labs","dischargeCertificates","patientEdits","dutyList","consultants","assignments","faculty","consLinks"].forEach(k=>{if(Array.isArray(S[k]))S[k]=[]});
+  S.snaps={};
+}
+function internApply(st){
+  internWipe();
+  const me=st.me||{};
+  S.residents=[{id:me.id||S.userId,username:me.username||"",displayName:me.display_name||me.username||"",role:"intern",active:me.active!==false}];
+  S.patients=(st.patients||[]).map(patientFromRow);
+  if(Array.isArray(st.beds)){
+    const seen=new Map((S.beds||[]).map(b=>[b.id,b]));
+    S.beds=st.beds.map(r=>Object.assign({},seen.get(r.id)||{},{id:r.id,no:r.bed_number,sectionId:r.section_id,active:r.active!==false,patientId:r.current_patient_id||null}));
+  }
+  vitalsMerge(st.vitals||[]);
+}
+async function internPull(){
+  if(!sb||!sessionTok)return {ok:false,pulled:false};
+  const {data,error}=await sb.rpc("ward_intern_read_state",{p_token:sessionTok});
+  if(error){const m=error.message||String(error);if(sessionDead(m))expireSession();throw new Error(m)}
+  if(!data||data.ok!==true)throw new Error("Could not load the ward");
+  internApply(data);save();
+  Sync.lastServer=now();
+  return {ok:true,pulled:true,partial:false};
+}
+let __internTimer=null;
+function internTick(){
+  clearInterval(__internTimer);
+  __internTimer=setInterval(()=>{if(!isIntern()||!sessionTok||document.hidden||navigator.onLine===false)return;cloudPull().then(()=>{if(!pending.length){cloudStatus="live";Sync.state="CONNECTED"}render({bg:1})}).catch(()=>{})},90000);
+}
+function bedNoOf(pid){const b=bedObj(pid);return b?String(b.no):""}
+function internCardHtml(p){
+  const v=vitalsOf(p.id)[0];const ab=v?(v.abn||vitalsAbn(v)):[];
+  const days=Math.max(1,Math.round((Date.now()-new Date(p.admittedAt))/86400000));
+  return `<button class="card icard" type="button" onclick="go('snap','${p.id}')">
+    <div class="icard-h"><div class="bedno">${esc(bedNoOf(p.id)||"—")}</div><div class="icard-n"><b>${esc(p.name)}</b>${p.status==="observation"?' <span class="badge r-moderate">OBS</span>':""}<span class="tiny">${esc(String(p.age||""))}${esc(p.sex||"")} · ${esc(p.hospitalNo||p.code||"")}</span></div></div>
+    <p class="sm icard-dx">${esc(p.diagnosis||"—")}</p>
+    <p class="tiny">Admitted ${esc(fmt(p.admittedAt))} · Ward day ${days}${v?` · Vitals ${esc(rel(v.at))}${ab.length?' <span class="vit-pill sm">'+esc(ab.length+" outside range")+"</span>":""}`:" · No vitals yet"}</p>
+  </button>`;
+}
+function internHomeView(){
+  const q=String(ui.iq||"").trim().toLowerCase();
+  const list=(S.patients||[]).filter(p=>p.status!=="discharged").filter(p=>!q||[p.name,p.hospitalNo,p.code,p.mrdNo,bedNoOf(p.id),p.diagnosis].join(" ").toLowerCase().includes(q))
+    .sort((a,b)=>(bedNoOf(a.id)||"zzz").localeCompare(bedNoOf(b.id)||"zzz",undefined,{numeric:true})||String(a.name).localeCompare(String(b.name)));
+  return `<div class="intern-home"><div class="row" style="margin:0 0 8px"><h2 class="page-title" style="margin:0">Patients</h2><span class="tiny">${list.length}</span></div>
+    <input id="iq" type="search" placeholder="Search bed, name, hospital no" value="${esc(ui.iq||"")}" oninput="ui.iq=this.value;render({fromInput:1})" enterkeyhint="search" autocomplete="off" style="margin-bottom:10px">
+    ${list.length?list.map(internCardHtml).join(""):`<div class="card"><p class="sm">${q?"No patients match.":"No patients on the ward."}</p></div>`}</div>`;
+}
+function internSnapView(){
+  const p=patient(route.id);
+  if(!p||p.status==="discharged")return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="card"><p class="sm">This patient is not on the ward.</p></div>`;
+  const b=bedObj(p.id);const dr=labLsGet(labDraftKey(p.id,null));const hasDr=dr&&dr.f&&Array.isArray(dr.f.rows)&&dr.f.rows.some(r=>String(r.raw||"").trim());
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
+    <div class="snap-cols">
+    <div class="card snap-identity">
+      <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div></div>
+      <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}</h2>
+      <p class="tiny" style="margin-top:4px">${esc(String(p.age||""))}${esc(p.sex||"")} · ${esc(p.hospitalNo||p.code||"")}${mrdLabel(p)?` · <span class="mrd-chip">${esc(mrdLabel(p))}</span>`:""}</p>
+      <div class="meta">
+        <div><b>Admitted</b>${fmt(p.admittedAt)}</div>
+        <div><b>Ward days</b>${Math.max(1,Math.round((Date.now()-new Date(p.admittedAt))/86400000))}</div>
+      </div>
+      ${snapDxHtml(p)}
+      ${snapAdmitRows(p)}
+    </div>
+    <div class="card intern-acts">
+      <p class="tiny">INVESTIGATIONS</p>
+      <div class="btns" style="margin-top:8px"><button class="btn vit-open" type="button" onclick="labOpen('${p.id}')">${hasDr?"Resume report":"Add report"}</button></div>
+      <p class="tiny muted" style="margin-top:8px">Type or scan a lab report. Critical values: tell the resident on duty at once.</p>
+    </div>
+    ${vitalsCardHtml(p,true)}
+    </div>`;
+}
+function internShell(inner){
+  const u=user()||{};
+  return `<header class="top intern-top"><div style="min-width:0"><p class="kicker">Intern · ${esc(u.displayName||u.username||"")}</p><h1 style="margin:0">${esc((S.unit&&S.unit.name)||"Ward")}</h1></div>
+    <div class="who-tools"><span class="tiny intern-st">${esc(statusLabel())}</span><button type="button" class="btn ghost sm" onclick="askLogout()">Log out</button></div></header>
+    <main class="main intern-main">${inner}</main>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(confirmOverlay()||""))}${busyVeil()}`;
+}
+
+/* ---- Delete / restore a saved MSE or lab report ---- */
+let RDEL=null,__undoT=null;
+function recDelFind(kind,id){return kind==="mse"?(S.mse||[]).find(x=>x.id===id):(S.labs||[]).find(x=>x.id===id&&!x.deleted)}
+function recDelLabel(kind,r){
+  if(kind==="mse")return (r.kind==="discharge"?"MSE at discharge":"MSE")+" · "+stamp(r.at)+(r.byName?" · "+r.byName:"");
+  return labPanelsLabel(r)+" · reported "+labRepText(r.reportedAt)+(r.byName?" · "+r.byName:"");
+}
+function recDelAsk(kind,id){
+  if(!canDeleteRecords()){toast(isIntern()?"Not available for intern accounts.":"Only residents and admins can delete saved records.","bad");return}
+  const r=recDelFind(kind,id);if(!r){toast("Record not found","bad");return}
+  if(kind==="lab"&&(labPendingId(id)||r.localOnly)){toast("This report has not reached the server yet — wait for it to sync, then delete.","bad");return}
+  if(kind==="mse"&&pending.some(o=>o.status!=="acked"&&o.table==="mse_entries"&&o.row&&o.row.id===id)){toast("This MSE has not reached the server yet — wait for it to sync, then delete.","bad");return}
+  RDEL={kind,id,pid:r.pid,label:recDelLabel(kind,r),step:"reason",reason:"",busy:false,err:""};recDelMount();
+}
+function recDelHtml(){
+  const R=RDEL;const nm=R.kind==="mse"?"MSE":"lab report";const p=patient(R.pid)||{};const b=bedObj(R.pid);
+  const who=`<p class="sm rdel-what"><b>${esc(R.label)}</b><br><span class="tiny">${esc((b?"Bed "+b.no+" · ":"")+(p.name||""))}</span></p>`;
+  const err=R.err?`<p class="rdel-err" role="alert">${esc(R.err)}</p>`:"";
+  if(R.step==="reason")return `<div class="rdel-box" role="dialog" aria-modal="true" aria-labelledby="rdelT">
+    <h2 id="rdelT">Delete this ${nm}?</h2>${who}
+    <p class="tiny">It disappears from the patient page, history${R.kind==="lab"?", trends":""} and the discharge certificate. Your name, the time and the reason are logged, and it can be restored from the Activity log.</p>
+    <label class="field"><span>Reason (required)</span><textarea id="rdelReason" rows="3" maxlength="300" placeholder="e.g. Entered on the wrong patient">${esc(R.reason)}</textarea></label>${err}
+    <div class="rdel-btns"><button type="button" class="btn ghost" data-rdel="cancel">Cancel</button><button type="button" class="btn danger" data-rdel="next" ${R.reason.trim().length>=3?"":"disabled"}>Continue</button></div></div>`;
+  return `<div class="rdel-box" role="dialog" aria-modal="true" aria-labelledby="rdelT">
+    <h2 id="rdelT">Confirm delete</h2>${who}
+    <p class="sm rdel-reason"><span class="tiny">Reason</span><br>${esc(R.reason.trim())}</p>
+    ${navigator.onLine===false?`<p class="rdel-err">You are offline — deleting needs a connection.</p>`:""}${err}
+    <div class="rdel-btns"><button type="button" class="btn ghost" data-rdel="back" ${R.busy?"disabled":""}>Back</button><button type="button" class="btn danger" data-rdel="go" ${R.busy?"disabled":""}>${R.busy?"Deleting…":"Delete "+nm}</button></div></div>`;
+}
+function recDelMount(){
+  let el=document.getElementById("rdelLayer");
+  if(!RDEL){if(el)el.remove();return}
+  if(!el){el=document.createElement("div");el.id="rdelLayer";el.className="rdel-layer";document.body.appendChild(el);
+    el.addEventListener("click",e=>{if(e.target===el){if(!RDEL||!RDEL.busy){RDEL=null;recDelMount()}return}
+      const t=e.target.closest("[data-rdel]");if(!t||!RDEL)return;const a=t.dataset.rdel;
+      if(a==="cancel"){RDEL=null;recDelMount();return}
+      if(a==="next"){if(RDEL.reason.trim().length<3){RDEL.err="Give a reason (at least 3 characters).";recDelMount();return}RDEL.step="confirm";RDEL.err="";recDelMount();return}
+      if(a==="back"){RDEL.step="reason";RDEL.err="";recDelMount();return}
+      if(a==="go")recDelGo()});
+    el.addEventListener("input",e=>{if(e.target.id!=="rdelReason"||!RDEL)return;RDEL.reason=e.target.value;const n=el.querySelector('[data-rdel="next"]');if(n)n.disabled=RDEL.reason.trim().length<3});
+  }
+  const focusReason=RDEL.step==="reason"&&!el.querySelector("#rdelReason");
+  el.innerHTML=recDelHtml();
+  if(focusReason){const ta=el.querySelector("#rdelReason");if(ta)setTimeout(()=>{try{ta.focus()}catch(x){}},30)}
+}
+function recOpId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+async function recDelGo(){
+  const R=RDEL;if(!R||R.busy)return;
+  if(navigator.onLine===false||!sb||!sessionTok){R.err=navigator.onLine===false?"You are offline — deleting needs a connection.":"Not connected — sign in again.";recDelMount();return}
+  R.busy=true;R.err="";recDelMount();
+  const op=recOpId();
+  try{
+    const {data,error}=R.kind==="mse"
+      ?await sb.rpc("ward_delete_mse",{p_token:sessionTok,p_mse_id:R.id,p_reason:R.reason.trim(),p_op_id:op})
+      :await sb.rpc("ward_delete_lab_report",{p_token:sessionTok,p_report_id:R.id,p_reason:R.reason.trim(),p_op_id:op});
+    if(error){const m=error.message||String(error);if(sessionDead(m)){expireSession();RDEL=null;recDelMount();render();return}throw new Error(m)}
+    if(!data||data.ok!==true)throw new Error("Delete did not apply");
+    recDelApply(R,op);
+  }catch(e){if(RDEL){RDEL.busy=false;RDEL.err=clinicianCopy?clinicianCopy(e.message||String(e),R.kind==="mse"?"mse_entries":"lab_reports"):(e.message||String(e));recDelMount()}}
+}
+function recDelApply(R,op){
+  const nm=R.kind==="mse"?"MSE":"Report";
+  if(R.kind==="mse"){
+    const m=(S.mse||[]).find(x=>x.id===R.id);
+    S.mse=(S.mse||[]).filter(x=>x.id!==R.id);
+    const e=ev(R.pid,"MSE deleted · "+(m&&m.kind==="discharge"?"discharge MSE":"MSE")+" of "+(m?stamp(m.at):""),true,"mse","Reason: "+R.reason.trim(),{local:true});if(e)e.id="msed:"+R.id+":"+op;
+    if(MSEU&&MSEU.pid===R.pid&&(MSEU.mode==="view"||MSEU.mode==="history")){if(MSEU.mode==="view"){MSEU={mode:"history",pid:R.pid}}mseMount()}
+  }else{
+    const r=(S.labs||[]).find(x=>x.id===R.id);if(r){r.deleted=true;r.deletedReason=R.reason.trim()}
+    const e=ev(R.pid,"Investigations deleted · "+(r?labPanelsLabel(r):"report"),true,"lab","Reason: "+R.reason.trim(),{local:true});if(e)e.id="labd:"+R.id+":"+op;
+    if(LABU&&LABU.mode==="list")labMount(true);
+  }
+  save();RDEL=null;recDelMount();render();
+  undoToast(nm+" deleted",()=>recRestore(R.kind,R.id));
+}
+function undoToast(msg,fn){
+  clearTimeout(__undoT);let el=document.getElementById("undoToast");
+  if(!el){el=document.createElement("div");el.id="undoToast";el.className="undo-toast";el.setAttribute("role","status");document.body.appendChild(el)}
+  el.innerHTML=`<span>${esc(msg)}</span><button type="button" class="undo-btn">Undo</button>`;
+  el.querySelector(".undo-btn").onclick=()=>{clearTimeout(__undoT);el.remove();fn()};
+  __undoT=setTimeout(()=>{if(el.isConnected)el.remove()},10000);
+}
+async function recRestore(kind,id){
+  if(!canDeleteRecords()){toast("Only residents and admins can restore.","bad");return}
+  if(navigator.onLine===false||!sb||!sessionTok){toast("Restoring needs a connection.","bad");return}
+  const op=recOpId();
+  setBusy(true,"Restoring…");
+  try{
+    const {data,error}=kind==="mse"
+      ?await sb.rpc("ward_restore_mse",{p_token:sessionTok,p_mse_id:id,p_op_id:op})
+      :await sb.rpc("ward_restore_lab_report",{p_token:sessionTok,p_report_id:id,p_op_id:op});
+    if(error){const m=error.message||String(error);if(sessionDead(m)){expireSession();render();return}throw new Error(m)}
+    if(!data||data.ok!==true)throw new Error("Restore did not apply");
+    let pid=null,label="";
+    if(kind==="mse"&&data.mse){const m=mseFromRow(data.mse);pid=m.pid;S.mse=(S.mse||[]).filter(x=>x.id!==m.id).concat([m]);label="MSE restored · "+(m.kind==="discharge"?"discharge MSE":"MSE")+" of "+stamp(m.at)}
+    if(kind==="lab"&&data.report){const r=labFromRow(data.report);pid=r.pid;S.labs=(S.labs||[]).filter(x=>x.id!==r.id).concat([r]);label="Investigations restored · "+labPanelsLabel(r)}
+    if(!data.idempotent&&pid){const e=ev(pid,label,true,kind,"",{local:true});if(e)e.id=(kind==="mse"?"mser:":"labr:")+id+":"+op}
+    save();
+    if(LABU&&LABU.mode==="list")labMount(true);
+    if(MSEU&&MSEU.mode==="history")mseMount();
+    toast(data.idempotent?"Already restored":(kind==="mse"?"MSE restored":"Report restored"),"ok");render();
+  }catch(e){toast(e.message||String(e),"bad")}finally{setBusy(false)}
+}
+// Activity log: a deletion entry shows its reason and a Restore button until a later restore of the same record exists.
+function recDelEventInfo(e){const m=/^(msed|labd):(.+):([^:]+)$/.exec(String(e&&e.id||""));return m?{kind:m[1]==="msed"?"mse":"lab",id:m[2]}:null}
+function recRestoredAfter(info,at){const pre=(info.kind==="mse"?"mser:":"labr:")+info.id+":";const t=Date.parse(at||0)||0;return (S.events||[]).some(x=>String(x.id).indexOf(pre)===0&&(Date.parse(x.at||0)||0)>=t)}
+function recDelCardHtml(e,p){
+  const info=recDelEventInfo(e);const done=recRestoredAfter(info,e.at);
+  const lr=info.kind==="lab"?(S.labs||[]).find(x=>x.id===info.id):null;const still=info.kind==="mse"?!(S.mse||[]).some(x=>x.id===info.id):!(lr&&!lr.deleted);
+  return `<div class="card act-del">
+    <div class="row"><span class="badge" style="background:#fda4af;color:#3f0a12">Deleted</span><span class="tiny">${rel(e.at)}</span></div>
+    <p class="sm" style="margin-top:6px"><b>${esc(e.title)}</b></p>
+    ${e.detail?`<p class="sm act-del-r">${esc(e.detail)}</p>`:""}
+    <p class="tiny">${p?esc(bedOf(p.id)||e.bed||"—")+" · "+esc(p.name||e.patientName||"Patient")+" · ":e.pid?"Patient missing · ":""}${esc(e.actorName||rname(e.by)||"Unknown")}</p>
+    <div class="btns" style="margin-top:8px">${done||!still?`<span class="tiny muted">Restored</span>`:canDeleteRecords()?`<button type="button" class="btn sm ghost" onclick="recRestore('${info.kind}','${esc(info.id)}')">Restore</button>`:""}${p?`<button type="button" class="btn sm ghost" onclick="go('snap','${p.id}')">Open patient</button>`:""}</div>
+  </div>`;
+}
+
 function render(opts){
   opts=opts||{};
   if(ui._sheetLeaving && !opts.forceLeave) return;
@@ -15604,6 +16020,7 @@ function render(opts){
   if(!S.userId||!sessionTok){try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
   if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){el.innerHTML=`<div class="login"><div class="login-card"><h1>Ward Sync</h1><p class="muted">Checking session…</p></div></div>`;return}
   const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,dedit:dedEditView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView};
+  if(isIntern()){pages.home=internHomeView;pages.snap=internSnapView;Object.keys(pages).forEach(k=>{if(k!=="home"&&k!=="snap")delete pages[k]})} // R1.3.139: interns see the patient page only
   syncRoute();
   const sheetOpen=overlayOpen();
   const depth=overlayDepth();
@@ -15611,7 +16028,7 @@ function render(opts){
   ui._overlayDepthWas=depth;
   ui._sheetWasOpen=sheetOpen;
   try{document.documentElement.classList.toggle("sheet-open", !!sheetOpen)}catch(e){}
-  let _html=shell((pages[route.page]||patientsView)());
+  let _html=isIntern()?internShell((pages[route.page]||internHomeView)()):shell((pages[route.page]||patientsView)());
   if(ui._sheetEnter) _html=stampSheetEnter(_html);
   // R1.3.74: skip identical re-renders (realtime pulls, inbox refresh) so the page doesn't flash or replay animations.
   const _rk=routeKey(route.page,route.id);
@@ -15632,7 +16049,7 @@ function render(opts){
       if(h>40) document.documentElement.style.setProperty("--nav-h", h+"px");
     }catch(e){}
   })();
-  if(sessionTok&&!ui.notifyInboxLoading&&(!ui.notifyInboxLoadedAt||Date.now()-ui.notifyInboxLoadedAt>60000)){
+  if(sessionTok&&!isIntern()&&!ui.notifyInboxLoading&&(!ui.notifyInboxLoadedAt||Date.now()-ui.notifyInboxLoadedAt>60000)){
     loadNotificationInbox().catch(()=>{});
   }
   const main2=document.querySelector(".main");
