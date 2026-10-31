@@ -367,7 +367,7 @@ a{color:var(--teal2);text-decoration:none}
 
 
 .plist-grid{display:grid;grid-template-columns:1fr;gap:var(--gap)}
-.snap-cols{display:grid;gap:12px;grid-template-columns:1fr;grid-template-areas:"id" "pgt" "mse" "labs" "crit" "med" "adv" "act"}
+.snap-cols{display:grid;gap:12px;grid-template-columns:1fr;grid-template-areas:"id" "vit" "pgt" "mse" "labs" "crit" "med" "adv" "act"}
 .snap-identity{grid-area:id}
 .snap-current{grid-area:pgt}
 .snap-critical-status{grid-area:crit}
@@ -414,7 +414,7 @@ a{color:var(--teal2);text-decoration:none}
 @container ward (min-width: 620px){
   .plist-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,max(240px,28cqi)),1fr))}
   .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;
-    grid-template-areas:"id pgt" "mse med" "labs med" "crit med" "act med" "act adv"}
+    grid-template-areas:"id pgt" "vit med" "mse med" "labs med" "crit med" "act med" "act adv"}
   .snap-cols > .card{margin:0;padding:18px 20px;min-height:0;display:flex;flex-direction:column}
   .snap-cols .bedno{font-size:clamp(20px,2.6cqi,28px)}
   .snap-cols h2{font-size:clamp(20px,2.4cqi,26px);font-weight:700}
@@ -429,7 +429,7 @@ a{color:var(--teal2);text-decoration:none}
 @container ward (min-width: 980px){
   .plist-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
   .snap-cols{grid-template-columns:1fr 1fr;gap:18px;align-items:start;
-    grid-template-areas:"id pgt" "mse med" "labs med" "crit med" "act med" "act adv"}
+    grid-template-areas:"id pgt" "vit med" "mse med" "labs med" "crit med" "act med" "act adv"}
   .snap-cols > .card{padding:22px 24px;min-height:0;border-radius:24px}
 }
 @media (orientation: landscape){
@@ -463,7 +463,7 @@ a{color:var(--teal2);text-decoration:none}
   .sheet .box{max-width:560px}
   .top h1{font-size:16px}
   .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;
-    grid-template-areas:"id pgt" "mse med" "labs med" "crit med" "act med" "act adv"}
+    grid-template-areas:"id pgt" "vit med" "mse med" "labs med" "crit med" "act med" "act adv"}
   .more-grid{grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:12px}
 }
 .seg{display:flex;gap:6px;margin:0 0 10px}
@@ -758,7 +758,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
   .home-split{display:grid;grid-template-columns:minmax(220px,.9fr) minmax(220px,1.1fr);gap:12px;align-items:stretch}
   .plist-grid{grid-template-columns:1fr 1fr}
   .snap-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;
-    grid-template-areas:"id pgt" "mse med" "labs med" "crit med" "act med" "act adv"}
+    grid-template-areas:"id pgt" "vit med" "mse med" "labs med" "crit med" "act med" "act adv"}
 }
 
 
@@ -790,6 +790,7 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
     grid-template-columns:1fr 1fr;
     grid-template-areas:
       "id pgt"
+      "vit med"
       "mse med"
       "labs med"
       "crit med"
@@ -2383,6 +2384,103 @@ input.lab-date-ocr{border-color:var(--warn)!important;background:color-mix(in sr
 .vit-grid{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
 .vit-open{white-space:nowrap;padding-left:18px;padding-right:18px}
 .lab-intern-crit{margin:6px 0 0;color:var(--danger)}
+/* R1.3.140: compact vitals card + Vitals chart page */
+.snap-vitals{grid-area:vit}
+.vc-card{padding:10px 12px}
+.vc-head{display:flex;align-items:center;gap:8px;margin:0 0 6px;min-width:0}
+.vc-head .tiny{margin:0}
+.vc-when{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.vc-when.stale{color:var(--warn);font-weight:700}
+.vc-head .vc-abn{margin-left:auto}
+.vc-strip{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.1fr 1.25fr;gap:4px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line)}
+.vc-c{background:var(--panel2);padding:6px 6px 5px;min-width:0;text-align:center}
+.vc-c>span{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);line-height:1.2}
+.vc-c>b{display:block;font-size:16px;line-height:1.25;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.01em}
+.vc-c>b small{font-size:10px;font-weight:600;color:var(--muted);margin-left:1px}
+.vc-c.bad{background:color-mix(in srgb,var(--danger-bg) 75%,var(--panel2))}
+.vc-c.bad>b{color:var(--danger)}
+.vc-c.bad>span:after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--danger);margin-left:3px;vertical-align:1px}
+.vc-c.nil>b{color:var(--muted);font-weight:500}
+.vc-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;min-width:0}
+.vc-meta{margin:0!important;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vc-sum .vc-meta{margin-top:6px!important}
+.vc-chart-btn{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex:none;margin-left:auto;padding:6px 10px;min-height:32px;font-size:13px}
+.vc-chart-btn svg{flex:none}
+.vc-ifoot{margin-top:10px}
+.vc-empty .vc-head{margin-bottom:0}
+.vc-empty .vc-foot{margin-top:2px}
+.vc-empty .vc-meta{white-space:normal}
+/* full-screen page */
+.vc-top{justify-content:flex-start;gap:6px;padding-left:8px}
+.vc-back{border:0;background:none;color:var(--ink);width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;cursor:pointer}
+.vc-back:active{background:var(--panel2)}
+.vc-ttl{min-width:0;flex:1}
+.vc-upd{flex:none;margin-left:auto}
+.vc-ttl h1{margin:0;line-height:1.2}
+.vc-ttl .tiny{margin:1px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vc-main{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.vc-page{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.vc-page>.card{margin:0}
+.vc-seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.vc-seg button{border:0;background:none;border-radius:9px;padding:7px 4px;font:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+.vc-seg button small{font-size:11px;font-weight:600;opacity:.75;font-variant-numeric:tabular-nums}
+.vc-seg button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(15,23,42,.12)}
+.vc-ghead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 6px}
+.vc-ghead .tiny{margin:0}
+.vc-tcard{padding:10px 8px}
+.vc-tcard .vc-ghead,.vc-tcard>.vc-gnote{padding:0 4px}
+.vc-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.vc-tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13px}
+.vc-tbl th,.vc-tbl td{padding:6px 3px;border-top:1px solid var(--line);text-align:center;vertical-align:top;white-space:nowrap}
+.vc-tbl thead th{border-top:0;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding-top:2px}
+.vc-tbl thead th small{display:block;font-size:9.5px;font-weight:500;letter-spacing:0;text-transform:none}
+.vc-tbl th[scope=row],.vc-tbl thead th:first-child{text-align:left;padding-left:4px;position:sticky;left:0;background:var(--panel);z-index:1}
+.vc-tbl th[scope=row]{font-weight:400;max-width:96px}
+.vc-tbl th[scope=row] b{font-weight:700}
+.vc-tm{color:var(--ink);font-weight:600}
+.vc-tbl th[scope=row] small{display:block;font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;max-width:96px}
+.vc-tbl th[scope=row] small.pend{color:var(--warn)}
+.vc-tbl td{font-weight:600}
+.vc-tbl td.bad{color:var(--danger);background:color-mix(in srgb,var(--danger-bg) 60%,transparent)}
+.vc-tbl td.nil{color:var(--muted);font-weight:400}
+.vc-d{display:block;font-style:normal;font-size:10px;font-weight:500;color:var(--muted);line-height:1.2}
+.vc-d.eq{opacity:.6}
+.vc-tbl tbody tr:first-child td,.vc-tbl tbody tr:first-child th{background-image:linear-gradient(color-mix(in srgb,var(--teal) 6%,transparent),color-mix(in srgb,var(--teal) 6%,transparent))}
+.vc-gcard{padding:10px 10px 8px}
+.vc-svg{display:block;width:100%;height:auto;max-height:240px;overflow:visible}
+.vc-svg .band{fill:var(--danger);opacity:.08}
+.vc-svg.spo2 .band{fill:var(--warn);opacity:.12}
+.vc-svg .grid{stroke:var(--line);stroke-width:1}
+.vc-svg .axis,.vc-svg .tick{stroke:var(--muted);stroke-width:1;opacity:.6}
+.vc-svg .ref{stroke:var(--danger);stroke-width:1.2;stroke-dasharray:4 3;opacity:.8}
+.vc-svg.spo2 .ref{stroke:var(--warn)}
+.vc-svg text{font-family:inherit;font-size:10px;fill:var(--muted)}
+.vc-svg .reflbl{font-size:9.5px;font-weight:700;fill:var(--danger);opacity:.85}
+.vc-svg.spo2 .reflbl{fill:var(--warn)}
+.vc-svg .ln{fill:none;stroke:var(--teal);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.vc-svg .dot{fill:var(--panel);stroke:var(--teal);stroke-width:2}
+.vc-svg .dot.warn{fill:var(--warn);stroke:var(--warn)}
+.vc-svg .dot.bad{fill:var(--danger);stroke:var(--danger)}
+.vc-svg .last{font-size:11px;font-weight:700;fill:var(--ink)}
+.vc-svg .last.bad{fill:var(--danger)}
+.vc-svg .last.warn{fill:var(--warn)}
+.vc-gnote{margin:6px 0 0}
+.vc-gnone{margin:8px 0 6px}
+.vc-foot-note{margin:0 2px;line-height:1.45}
+.vc-emptypage{text-align:center;padding:28px 18px;max-width:520px;margin:12px auto 0}
+.vc-emptypage h3{margin:10px 0 6px;font-size:16px}
+.vc-emptypage .btn{margin-top:12px}
+.vc-eico{width:48px;height:48px;border-radius:14px;margin:0 auto;display:grid;place-items:center;background:var(--panel2);color:var(--teal)}
+.vc-eico svg{width:24px;height:24px}
+@media (max-width:370px){
+  .vc-c{padding:6px 3px 5px}
+  .vc-c>b{font-size:15px}
+  .vc-tbl{font-size:12.5px}
+  .vc-tbl th,.vc-tbl td{padding:6px 2px}
+  .vc-tbl th[scope=row],.vc-tbl th[scope=row] small{max-width:84px}
+}
+
+.vc-svg .reflbl,.vc-svg .last{paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -3000,7 +3098,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.3.139";
+const APP_VERSION="R1.3.140";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -3535,7 +3633,7 @@ let navDir="fwd";
 let navAnim=false;
 let navScroll={};
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
-const PAGE_TAB={home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",dedit:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more"};
+const PAGE_TAB={home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",dedit:"patients",vchart:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more"};
 function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more")?tab:"home"}
 function syncRoute(){
   if(nav.stack.length){
@@ -4497,7 +4595,7 @@ function stampSheetEnter(html){
 }
 function shell(inner){
   const u=user();
-  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders"].includes(route.page))?"on":"";
+  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders"].includes(route.page))?"on":"";
   return `<header class="top"><div><p class="kicker">${greet()}${canWrite()?` <span class="who-inline">${esc(u.displayName)}</span>`:""}</p><h1>${esc(S.unit.name)}</h1></div>
     <div class="who-tools">${statusChip()}<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button></div></header>
     <main class="main">${inner}</main>
@@ -4936,6 +5034,7 @@ function snapView(){
 
       ${tagHtml(p)}
     </div>
+    ${vitalsCardHtml(p,false)}
     <div class="card snap-current">
       <p class="tiny">PGT-NOTE</p>
       ${pgtLatestHtml(p.id)}
@@ -4952,7 +5051,6 @@ function snapView(){
     </div>
     ${mseCardHtml(p)}
     ${labsCardHtml(p)}
-    ${vitalsCardHtml(p,false)}
     <div class="card snap-critical-status">
       <div class="row"><div><p class="tiny">CRITICAL STATUS</p></div></div>
       <div style="margin-top:10px">${renderCriticalStatusHistory(p.id)}</div>
@@ -15725,17 +15823,6 @@ function vitalsTilesHtml(v){
 }
 function vitalsLine(v){return [v.sys!=null?"BP "+v.sys+"/"+v.dia:"",v.pr!=null?"P "+v.pr:"",v.rr!=null?"RR "+v.rr:"",v.spo2!=null?"SpO₂ "+v.spo2+"%":"",v.temp!=null?"T "+Number(v.temp).toFixed(1)+"°F":""].filter(Boolean).join(" · ")}
 function vitalsMetaHtml(v){return `<p class="tiny vit-meta">${esc(stamp(v.at))} IST · ${esc(v.byName||rname(v.by)||"")}${vitalsPendingId(v.id)?' · <span class="lab-chip pend">Pending sync</span>':""}</p>`}
-function vitalsCardHtml(p,intern){
-  const list=vitalsOf(p.id);const v=list[0];
-  if(!v&&!intern)return "";
-  const ab=v?(v.abn||vitalsAbn(v)):[];
-  return `<div class="card snap-vitals" data-vitals="${esc(p.id)}">
-    <div class="row" style="margin:0 0 6px"><p class="tiny" style="margin:0">VITALS</p>${ab.length?`<span class="vit-pill">${esc(ab.join(" · "))}</span>`:""}</div>
-    ${v?vitalsTilesHtml(v)+vitalsMetaHtml(v):`<p class="tiny muted">No vitals recorded yet.</p>`}
-    ${list.length>1?`<details class="vit-more"><summary>Earlier · ${list.length-1}</summary>${list.slice(1,12).map(x=>{const a=x.abn||vitalsAbn(x);return `<div class="vit-row${a.length?" ab":""}"><b>${esc(vitalsLine(x))}</b><span class="tiny">${esc(stamp(x.at))} · ${esc(x.byName||rname(x.by)||"")}${a.length?" · "+esc(a.join(", ")):""}</span></div>`}).join("")}</details>`:""}
-    ${intern?`<div style="margin-top:10px"><button class="btn vit-open" type="button" onclick="vitalsOpen('${p.id}')">Update vitals</button></div>`:`<p class="tiny muted" style="margin-top:6px">Recorded by interns · read-only</p>`}
-  </div>`;
-}
 function vitLocalInput(d){const z=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+"T"+z(d.getHours())+":"+z(d.getMinutes())}
 function vitalsOpen(pid){
   if(!isIntern()){toast("Vitals are recorded by interns.","bad");return}
@@ -15869,12 +15956,12 @@ function internSnapView(){
       ${snapDxHtml(p)}
       ${snapAdmitRows(p)}
     </div>
+    ${vitalsCardHtml(p,true)}
     <div class="card intern-acts">
       <p class="tiny">INVESTIGATIONS</p>
       <div class="btns" style="margin-top:8px"><button class="btn vit-open" type="button" onclick="labOpen('${p.id}')">${hasDr?"Resume report":"Add report"}</button></div>
       <p class="tiny muted" style="margin-top:8px">Type or scan a lab report. Critical values: tell the resident on duty at once.</p>
     </div>
-    ${vitalsCardHtml(p,true)}
     </div>`;
 }
 function internShell(inner){
@@ -16002,6 +16089,120 @@ function recDelCardHtml(e,p){
   </div>`;
 }
 
+/* ---- R1.3.140: compact vitals card + full-screen Vitals chart ---- */
+const VC_TZ="Asia/Kolkata",VC_OFF=19800000,VC_H=3600000;
+const VC_RANGES=[["24h","24h",24],["3d","3d",72],["7d","7d",168],["all","All",0]];
+function vcFmt(t,o){try{return new Intl.DateTimeFormat("en-GB",Object.assign({timeZone:VC_TZ},o)).format(new Date(t))}catch(e){return new Date(t).toLocaleString()}}
+const vcDay=t=>vcFmt(t,{day:"numeric",month:"short"});
+const vcTime=t=>vcFmt(t,{hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
+function vcFlags(v){const ab=(v.abn&&v.abn.length)?v.abn:vitalsAbn(v);const has=k=>ab.some(x=>x.indexOf(k)===0);return {bp:has("BP"),pr:has("Pulse"),rr:has("RR"),spo2:has("SpO2"),temp:has("Fever")||has("Temperature"),n:ab.length,ab}}
+function vcT(v){const t=new Date(v.at).getTime();return isFinite(t)?t:0}
+function vcFmtVal(k,v){if(k==="bp")return v.sys!=null?v.sys+"/"+v.dia:null;const x=v[k];if(x==null)return null;return k==="temp"?Number(x).toFixed(1):String(x)}
+function vcCell(lbl,val,unit,bad){return `<div class="vc-c${bad?" bad":""}${val==null?" nil":""}"><span>${lbl}</span><b>${val==null?"—":esc(val)}${val!=null&&unit?`<small>${unit}</small>`:""}</b></div>`}
+function vcStrip(v){const f=vcFlags(v);
+  return `<div class="vc-strip">${vcCell("BP",vcFmtVal("bp",v),"",f.bp)}${vcCell("PR",vcFmtVal("pr",v),"",f.pr)}${vcCell("RR",vcFmtVal("rr",v),"",f.rr)}${vcCell("SpO₂",vcFmtVal("spo2",v),"%",f.spo2)}${vcCell("Temp",vcFmtVal("temp",v),"°F",f.temp)}</div>`}
+function vcChartBtn(pid){return `<button class="btn sm ghost vc-chart-btn" type="button" data-vchart="${esc(pid)}" onclick="vchartOpen('${pid}')">${VC_CHART_ICON}<span>Vitals chart</span></button>`}
+const VC_CHART_ICON=`<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>`;
+function vitalsCardHtml(p,intern){ // R1.3.140: compact card, sits right under the snapshot card
+  const list=vitalsOf(p.id);const v=list[0];
+  if(!v)return `<div class="card snap-vitals vc-card vc-empty" data-vitals="${esc(p.id)}">
+    <div class="vc-head"><p class="tiny">VITALS</p></div>
+    <div class="vc-foot"><p class="tiny muted vc-meta">${intern?"No vitals recorded yet.":"No vitals recorded yet · interns record vitals"}</p>${intern?`<button class="btn sm vit-open" type="button" onclick="vitalsOpen('${p.id}')">Update vitals</button>`:vcChartBtn(p.id)}</div>
+  </div>`;
+  const f=vcFlags(v);const age=Date.now()-vcT(v);const stale=age>24*VC_H;
+  return `<div class="card snap-vitals vc-card" data-vitals="${esc(p.id)}">
+    <div class="vc-head"><p class="tiny">VITALS</p><span class="vc-when${stale?" stale":""}" title="${stale?"Last reading is over 24 h old":""}">${esc(rel(v.at))}</span>${f.n?`<span class="vit-pill sm vc-abn" title="${esc(f.ab.join(" · "))}">${f.n} outside range</span>`:""}</div>
+    ${vcStrip(v)}
+    <div class="vc-foot"><p class="tiny vc-meta">${esc(vcDay(vcT(v)))}, ${esc(vcTime(vcT(v)))} IST · ${esc(v.byName||rname(v.by)||"—")}${vitalsPendingId(v.id)?' · <span class="lab-chip pend">Pending sync</span>':""}</p>${intern?"":vcChartBtn(p.id)}</div>
+    ${intern?`<div class="vc-foot vc-ifoot"><button class="btn sm vit-open" type="button" onclick="vitalsOpen('${p.id}')">Update vitals</button>${vcChartBtn(p.id)}</div>`:""}
+  </div>`;
+}
+function vchartOpen(pid){if(!patient(pid))return;ui.vcRange=null;go("vchart",pid,1)}
+function vcRangeAuto(list){const now=Date.now();return list.some(v=>vcT(v)>now-168*VC_H)?"7d":"all"}
+function vcSetRange(r){ui.vcRange=r;render({force:1})}
+function vcDelta(cur,prev,k){
+  if(!prev)return "";
+  const a=k==="bp"?cur.sys:cur[k],b=k==="bp"?prev.sys:prev[k];if(a==null||b==null)return "";
+  const d=Math.round((Number(a)-Number(b))*10)/10;if(!d)return `<i class="vc-d eq" title="No change">=</i>`;
+  const s=k==="temp"?Math.abs(d).toFixed(1):String(Math.abs(d));
+  return `<i class="vc-d" title="Change since previous reading">${d>0?"▲":"▼"}${s}</i>`;
+}
+function vcPrevWith(list,i,k){for(let j=i+1;j<list.length;j++){const x=list[j];if(k==="bp"?x.sys!=null:x[k]!=null)return x}return null}
+function vcTable(list,all){
+  const keys=[["bp","BP","mmHg"],["pr","PR","/min"],["rr","RR","/min"],["spo2","SpO₂","%"],["temp","Temp","°F"]];
+  const rows=list.map((v,i)=>{const f=vcFlags(v);const t=vcT(v);const ai=all.indexOf(v);
+    return `<tr class="${f.n?"ab":""}"><th scope="row"><b>${esc(vcDay(t))}</b> <span class="vc-tm">${esc(vcTime(t))}</span><small>${esc(v.byName||rname(v.by)||"—")}</small>${vitalsPendingId(v.id)?'<small class="pend">Pending sync</small>':""}</th>${keys.map(([k])=>{const val=vcFmtVal(k,v);return `<td class="${f[k]?"bad":""}${val==null?" nil":""}">${val==null?"—":esc(val)}${val!=null?vcDelta(v,vcPrevWith(all,ai,k),k):""}</td>`}).join("")}</tr>`}).join("");
+  return `<div class="vc-tbl-wrap"><table class="vc-tbl"><thead><tr><th scope="col">Time (IST)</th>${keys.map(([k,l,u])=>`<th scope="col">${l}<small>${u}</small></th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function vcTicks(t0,t1){
+  const span=t1-t0,steps=[1,2,3,6,12,24,48,72,96,168,336];let st=steps[steps.length-1];
+  for(const s of steps){if(span/(s*VC_H)<=4.5){st=s;break}}
+  const sm=st*VC_H,out=[];let t=Math.ceil((t0+VC_OFF)/sm)*sm-VC_OFF;
+  for(;t<=t1&&out.length<12;t+=sm){const midnight=((t+VC_OFF)%(24*VC_H))===0;out.push({t,l:st>=24||midnight?vcDay(t):vcTime(t)})}
+  return out;
+}
+function vcGraph(pts,o){ // pts ascending [{t,v,bad}] ; o: {kind,lo,hi,ref,refLbl,band:"above"|"below",ticks,dom:[t0,t1],dec,unit}
+  const W=340,H=158,L=34,R=12,T=12,B=24,pw=W-L-R,ph=H-T-B;
+  const [t0,t1]=o.dom;const X=t=>L+(t1===t0?pw/2:(t-t0)/(t1-t0)*pw);const Y=v=>T+(o.hi-v)/(o.hi-o.lo)*ph;
+  const r1=x=>Math.round(x*10)/10;
+  let g=`<svg class="vc-svg ${o.kind}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}" preserveAspectRatio="xMidYMid meet">`;
+  const by=Y(o.ref);
+  const lp=pts.length?pts[pts.length-1]:null;const ly=lp?Y(lp.v):-99;const refY=o.band==="above"?by-4:by+11;const lastY=ly<T+12?ly+14:ly-7;const refLeft=!!lp&&X(lp.t)>L+pw*.55&&Math.abs(refY-lastY)<13;
+  g+=o.band==="above"?`<rect class="band" x="${L}" y="${T}" width="${pw}" height="${r1(by-T)}"/>`:`<rect class="band" x="${L}" y="${r1(by)}" width="${pw}" height="${r1(T+ph-by)}"/>`;
+  o.ticks.forEach(v=>{const y=r1(Y(v));g+=`<line class="grid" x1="${L}" x2="${L+pw}" y1="${y}" y2="${y}"/><text class="ax" x="${L-5}" y="${y+3.5}" text-anchor="end">${v}</text>`});
+  g+=`<line class="ref" x1="${L}" x2="${L+pw}" y1="${r1(by)}" y2="${r1(by)}"/><text class="reflbl" x="${refLeft?L+4:L+pw-2}" y="${r1(refY)}" text-anchor="${refLeft?"start":"end"}">${esc(o.refLbl)}</text>`;
+  g+=`<line class="axis" x1="${L}" x2="${L+pw}" y1="${T+ph}" y2="${T+ph}"/>`;
+  const xt=vcTicks(t0,t1);let lastX=-99;
+  xt.forEach(k=>{const x=r1(X(k.t));g+=`<line class="tick" x1="${x}" x2="${x}" y1="${T+ph}" y2="${T+ph+4}"/>`;if(x-lastX>=44&&x>L+8&&x<L+pw-6){g+=`<text class="ax" x="${x}" y="${H-6}" text-anchor="middle">${esc(k.l)}</text>`;lastX=x}});
+  if(pts.length>1)g+=`<polyline class="ln" points="${pts.map(p=>r1(X(p.t))+","+r1(Y(Math.max(o.lo,Math.min(o.hi,p.v))))).join(" ")}"/>`;
+  pts.forEach((p,i)=>{const cx=r1(X(p.t)),cy=r1(Y(Math.max(o.lo,Math.min(o.hi,p.v))));
+    g+=`<circle class="dot${p.bad?" "+p.bad:""}" cx="${cx}" cy="${cy}" r="${pts.length>40?2.6:3.6}"><title>${esc(vcDay(p.t)+" "+vcTime(p.t)+" IST · "+(o.dec?p.v.toFixed(o.dec):p.v)+o.unit)}</title></circle>`;
+    if(i===pts.length-1){const tx=cx>L+pw-30?cx-6:cx+6;g+=`<text class="last${p.bad?" "+p.bad:""}" x="${tx}" y="${r1(cy<T+12?cy+14:cy-7)}" text-anchor="${cx>L+pw-30?"end":"start"}">${o.dec?p.v.toFixed(o.dec):p.v}</text>`}});
+  return g+`</svg>`;
+}
+function vcGraphCard(title,unit,list,key,dom,note){
+  const pts=list.filter(v=>v[key]!=null&&vcT(v)).map(v=>({t:vcT(v),v:Number(v[key])})).sort((a,b)=>a.t-b.t);
+  let body;
+  if(!pts.length)body=`<p class="tiny muted vc-gnone">No ${key==="temp"?"temperature":"SpO₂"} readings in this range.</p>`;
+  else{
+    const vs=pts.map(p=>p.v);const mn=Math.min(...vs),mx=Math.max(...vs);let o;
+    if(key==="temp"){pts.forEach(p=>{p.bad=p.v>=100.4?"bad":p.v<95?"warn":""});
+      const lo=Math.floor(Math.min(97,mn-0.5)),hi=Math.ceil(Math.max(102,mx+0.5));const st=hi-lo>8?2:1;const ticks=[];for(let x=Math.ceil(lo/st)*st;x<=hi;x+=st)ticks.push(x);
+      o={kind:"temp",lo,hi,ref:100.4,refLbl:"Fever ≥ 100.4",band:"above",ticks,dec:1,unit:" °F",aria:"Temperature trend, °F"};}
+    else{pts.forEach(p=>{p.bad=p.v<90?"bad":p.v<94?"warn":""});
+      const lo=Math.max(50,Math.floor(Math.min(88,mn-2)/2)*2),hi=100;const ticks=[lo];if(lo<90)ticks.push(90);ticks.push(94,100);
+      o={kind:"spo2",lo,hi,ref:94,refLbl:"Target ≥ 94",band:"below",ticks,dec:0,unit:"%",aria:"SpO₂ trend, percent"};}
+    o.dom=dom(pts);
+    body=vcGraph(pts,o)+(pts.length===1?`<p class="tiny muted vc-gnote">One reading so far — the trend line appears from the second reading.</p>`:"");
+  }
+  return `<div class="card vc-gcard" data-graph="${key}"><div class="vc-ghead"><p class="tiny">${title}</p><span class="tiny muted">${unit} · ${pts.length} reading${pts.length===1?"":"s"}</span></div>${body}${note?`<p class="tiny muted vc-gnote">${note}</p>`:""}</div>`;
+}
+function vchartView(){
+  const p=patient(route.id);
+  if(!p||(isIntern()&&p.status==="discharged"))return `<div class="card"><p class="sm">This patient is not on the ward.</p></div>`;
+  const all=vitalsOf(p.id);
+  if(!all.length)return `<div class="vc-emptypage card"><div class="vc-eico">${VC_CHART_ICON}</div><h3>No vitals recorded yet</h3><p class="tiny muted">${isIntern()?"Record the first set with Update vitals.":"Interns record vitals. Readings appear here with time, recorder and trend graphs."}</p>${isIntern()?`<button class="btn sm vit-open" type="button" onclick="vitalsOpen('${p.id}')">Update vitals</button>`:""}</div>`;
+  const rng=ui.vcRange||vcRangeAuto(all);const def=VC_RANGES.find(r=>r[0]===rng)||VC_RANGES[3];const now=Date.now();
+  const cnt=r=>r[2]?all.filter(v=>vcT(v)>now-r[2]*VC_H).length:all.length;
+  const list=def[2]?all.filter(v=>vcT(v)>now-def[2]*VC_H):all;
+  const dom=pts=>{const first=pts[0].t,last=pts[pts.length-1].t;
+    if(def[2])return [Math.min(now-def[2]*VC_H,first),Math.max(now,last)];
+    const end=Math.max(now,last);if(end-first<6*VC_H)return [end-12*VC_H,end];return [first-(end-first)*0.04,end]};
+  const seg=`<div class="vc-seg" role="tablist" aria-label="Range">${VC_RANGES.map(r=>`<button type="button" role="tab" aria-selected="${r[0]===def[0]}" class="${r[0]===def[0]?"on":""}" data-vcr="${r[0]}" onclick="vcSetRange('${r[0]}')">${r[1]}<small>${cnt(r)}</small></button>`).join("")}</div>`;
+  const tbl=list.length?`<div class="card vc-tcard"><div class="vc-ghead"><p class="tiny">READINGS · NEWEST FIRST</p><span class="tiny muted">${list.length}</span></div>${vcTable(list,all)}<p class="tiny muted vc-gnote">▲▼ change since the previous reading of that sign (BP: systolic).</p></div>`
+    :`<div class="card vc-tcard"><p class="sm">No readings in the last ${esc(def[1])}.</p><button class="btn sm ghost" type="button" onclick="vcSetRange('all')">Show all ${all.length}</button></div>`;
+  return `<div class="vc-page">${seg}
+    ${list.length?vcGraphCard("TEMPERATURE","°F",list,"temp",dom,"")+vcGraphCard("SpO₂","%",list,"spo2",dom,""):""}
+    ${tbl}
+    <p class="tiny muted vc-foot-note">Times in IST. Highlighted: BP ≥160/100 or &lt;90/60 · PR &gt;100 or &lt;60 · RR &gt;20 or &lt;12 · SpO₂ &lt;94 · Temp ≥100.4 or &lt;95 °F.${isIntern()?"":" Recorded by interns · read-only."}${def[0]==="all"?" Shows this admission and the last 14 days.":""}</p></div>`;
+}
+function vchartShell(inner){
+  const p=patient(route.id);const b=p?bedObj(p.id):null;
+  const ov=isIntern()?(livePanels()||"")+(ui.sheet||"")+(confirmOverlay()||""):(livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"");
+  return `<header class="top vc-top"><button class="vc-back" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="vc-ttl"><h1>Vitals chart</h1><p class="tiny">${p?esc((b?"Bed "+b.no+" · ":"")+p.name):""}</p></div>${isIntern()&&p&&p.status!=="discharged"?`<button class="btn sm vit-open vc-upd" type="button" onclick="vitalsOpen('${p.id}')">Update vitals</button>`:""}</header>
+    <main class="main vc-main">${inner}</main>${stampSheetEnter(ov)}${busyVeil()}`;
+}
+
 function render(opts){
   opts=opts||{};
   if(ui._sheetLeaving && !opts.forceLeave) return;
@@ -16021,6 +16222,7 @@ function render(opts){
   if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){el.innerHTML=`<div class="login"><div class="login-card"><h1>Ward Sync</h1><p class="muted">Checking session…</p></div></div>`;return}
   const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,dedit:dedEditView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView};
   if(isIntern()){pages.home=internHomeView;pages.snap=internSnapView;Object.keys(pages).forEach(k=>{if(k!=="home"&&k!=="snap")delete pages[k]})} // R1.3.139: interns see the patient page only
+  pages.vchart=vchartView; // R1.3.140: full-screen vitals chart (all roles)
   syncRoute();
   const sheetOpen=overlayOpen();
   const depth=overlayDepth();
@@ -16028,7 +16230,7 @@ function render(opts){
   ui._overlayDepthWas=depth;
   ui._sheetWasOpen=sheetOpen;
   try{document.documentElement.classList.toggle("sheet-open", !!sheetOpen)}catch(e){}
-  let _html=isIntern()?internShell((pages[route.page]||internHomeView)()):shell((pages[route.page]||patientsView)());
+  let _html=route.page==="vchart"?vchartShell(vchartView()):isIntern()?internShell((pages[route.page]||internHomeView)()):shell((pages[route.page]||patientsView)()); // R1.3.140
   if(ui._sheetEnter) _html=stampSheetEnter(_html);
   // R1.3.74: skip identical re-renders (realtime pulls, inbox refresh) so the page doesn't flash or replay animations.
   const _rk=routeKey(route.page,route.id);
