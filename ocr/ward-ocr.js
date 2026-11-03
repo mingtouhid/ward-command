@@ -1,9 +1,9 @@
-/* Ward Sync · lab report OCR core (R1.3.134). One file shared by the app (window.WardOCR) and the test harness (require).
+/* Ward Sync · lab report OCR core (R1.3.134; R1.3.141 adds calcium + magnesium). One file shared by the app (window.WardOCR) and the test harness (require).
    On-device only: image processing in plain JS, text recognition by a Tesseract worker the caller provides.
    Never stores or sends the photo; returns values, confidences and in-memory crop boxes only. */
 (function(root,factory){if(typeof module==="object"&&module.exports)module.exports=factory();else root.WardOCR=factory()})(typeof self!=="undefined"?self:this,function(){
 "use strict";
-const VERSION="ocr-core-1";
+const VERSION="ocr-core-2";
 /* ---------- image helpers (grey Uint8Array, row-major) ---------- */
 function toGrey(rgba,w,h){const g=new Uint8Array(w*h);for(let i=0,j=0;i<g.length;i++,j+=4)g[i]=(rgba[j]*77+rgba[j+1]*150+rgba[j+2]*29)>>8;return g}
 function resize(g,w,h,nw,nh){ // area-average down, bilinear up
@@ -100,19 +100,21 @@ const TESTS={
   ubil:{syn:["bilirubin unconjugated","unconjugated bilirubin","indirect bilirubin"],unit:"mg/dL",ref:"0.0-1.1"},dbil:{syn:["direct bilirubin","bilirubin direct","conjugated bilirubin"],unit:"mg/dL",ref:"0.00-0.30"},
   alt:{syn:["sgpt ( alt)","sgpt (alt)","sgpt"],unit:"U/L",ref:"<50"},ast:{syn:["sgot (ast)","sgot"],unit:"U/L",ref:"17-59"},alp:{syn:["alkaline phosphatase"],unit:"U/L",ref:"38-126"},
   ggt:{syn:["gamma glutamyl transferase","gamma gt","ggt"],unit:"U/L",ref:"15-73"},urea:{syn:["urea"],unit:"mg/dL",ref:"19.26-42.8"},creat:{syn:["creatinine"],unit:"mg/dL",ref:"0.66-1.25"},
-  na:{syn:["sodium"],unit:"mmol/L",ref:"137-145"},k:{syn:["potassium"],unit:"mmol/L",ref:"3.50-5.10"},rbs:{syn:["random blood sugar","glucose random","blood sugar random"],unit:"mg/dL",ref:"70-140"},
+  na:{syn:["sodium"],unit:"mmol/L",ref:"137-145"},k:{syn:["potassium"],unit:"mmol/L",ref:"3.50-5.10"},ca:{syn:["calcium","total calcium","calcium total","serum calcium"],unit:"mg/dL",ref:"8.40-10.20"},mg:{syn:["magnesium","serum magnesium"],unit:"mg/dL",ref:"1.6-2.3"},rbs:{syn:["random blood sugar","glucose random","blood sugar random"],unit:"mg/dL",ref:"70-140"},
   chol:{syn:["cholesterol","total cholesterol"],unit:"mg/dL",ref:""},tg:{syn:["triglycerides","triglyceride"],unit:"mg/dL",ref:""},hdl:{syn:["hdl","hdl cholesterol"],unit:"mg/dL",ref:"40-60"},
   vldl:{syn:["vldl","vldl cholesterol"],unit:"mg/dL",ref:"<50.00"},ldl:{syn:["ldl","ldl cholesterol"],unit:"mg/dL",ref:"0.00-130"},hba1c:{syn:["hba1c (glycosylated hb)","hba1c","glycosylated hb"],unit:"%",ref:""},
   tsh:{syn:["tsh","thyroid stimulating hormone"],unit:"uIU/mL",ref:"0.40-4.05"},amylase:{syn:["amylase"],unit:"U/L",ref:"30-110"},lipase:{syn:["lipase"],unit:"U/L",ref:"23-300"},
   li:{syn:["lithium","serum lithium"],unit:"mmol/L",ref:""},vpa:{syn:["valproate","valproic acid","serum valproate"],unit:"ug/mL",ref:""}},
- urine:{u_volume:{syn:["volume"],unit:"mL"},u_colour:{syn:["colour","color"],txt:1},u_appearance:{syn:["appearance/transparency","appearance"],txt:1},u_ph:{syn:["reaction(ph)","reaction (ph)","reaction"]},
-  u_sg:{syn:["specific gravity"],ref:"1.003-1.030"},u_glucose:{syn:["glucose"],txt:1},u_protein:{syn:["protein"],txt:1},u_ketone:{syn:["ketone bodies","ketone"],txt:1},u_blood:{syn:["blood"],txt:1},
-  u_urobilinogen:{syn:["urobilinogen"],txt:1},u_bilirubin:{syn:["bilirubin"],txt:1},u_nitrite:{syn:["nitrite"],txt:1},u_epithelial:{syn:["epithelial cells","epithelial cell"],txt:1},
-  u_pus:{syn:["leucocyte/pus cell/ wbc","leucocyte/pus cell","pus cells","pus cell"],txt:1},u_rbc:{syn:["r.b.c","rbc"],txt:1},u_crystals:{syn:["crystals"],txt:1},u_casts:{syn:["casts"],txt:1},u_bacteria:{syn:["bacteria"],txt:1}}
+ urine:{u_volume:{syn:["volume"],unit:"mL"},u_colour:{syn:["colour","color"],txt:1},u_appearance:{syn:["appearance/transparency","appearance"],txt:1},u_ph:{syn:["reaction(ph)","reaction (ph)","reaction","ph"]},
+  u_sg:{syn:["specific gravity"],ref:"1.003-1.030"},u_glucose:{syn:["glucose","urinary glucose","urine glucose"],txt:1},u_protein:{syn:["protein","urinary protein","urine protein"],txt:1},u_ketone:{syn:["ketone bodies","ketone","urine ketone","urinary ketone"],txt:1},u_blood:{syn:["blood","urine blood","urinary blood"],txt:1},
+  u_urobilinogen:{syn:["urobilinogen"],txt:1},u_bilirubin:{syn:["bilirubin","urinary bilirubin","urine bilirubin"],txt:1},u_nitrite:{syn:["nitrite"],txt:1},u_le:{syn:["leucocyte esterase","leukocyte esterase"],txt:1},u_epithelial:{syn:["epithelial cells","epithelial cell"],txt:1},
+  u_pus:{syn:["leucocyte/pus cell/ wbc","leucocyte/pus cell","pus cells","pus cell","urinary leucocytes (pus cells)","urinary leucocytes","urinary leukocytes"],txt:1},u_rbc:{syn:["r.b.c","rbc"],txt:1},u_crystals:{syn:["crystals"],txt:1},u_casts:{syn:["casts"],txt:1},u_bacteria:{syn:["bacteria"],txt:1}}
 };
 const UNITS={"g/dl":"g/dL","gm/dl":"g/dL","gm/dI":"g/dL","%":"%","fl":"fL","pg":"pg","mg/dl":"mg/dL","mmol/l":"mmol/L","u/l":"U/L","iu/l":"U/L","10^3/ul":"10^3/uL","10^6/ul":"10^6/uL",
   "uiu/ml":"uIU/mL","µiu/ml":"uIU/mL","piu/ml":"uIU/mL","ml":"mL","/hpf":"/HPF","/lpf":"/LPF","ug/ml":"ug/mL","µg/ml":"ug/mL"};
-const QUAL=/^(negative|positive|normal|absent|present|nil|trace|straw|clear|turbid|pale|yellow|occasional|plenty|\d+-\d+|\+{1,4})$/i;
+const QUAL=/^(negative|positive|normal|absent|present|nil|trace|straw|clear|turbid|slightly|hazy|pale|dark|yellow|amber|red|colourless|colorless|increased|occasional|plenty|\d+-\d+|[1-4]\+|\+{1,4})$/i;
+// R1.3.141: urine reports print a METHODOLOGY column between the test name and the value; these words are never values
+const METHODS=["visual determination","visual","pka change","ph indicator","indicator","pei","god-pod","god pod","god/pod","nitroprusside","diazo coupling","diazo","coupling","peroxidase reaction","peroxidase","esterase reaction","reaction","microscopy","double indicator","ehrlich","dipstick","strip","manual","automated","refractometer"];
 function normName(s){return String(s||"").toLowerCase().replace(/[|]/g,"l").replace(/\s+/g," ").trim()}
 function lev(a,b){if(a===b)return 0;const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=new Array(n+1),c=new Array(n+1);for(let j=0;j<=n;j++)p[j]=j;
   for(let i=1;i<=m;i++){c[0]=i;for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));[p,c]=[c,p]}return p[n]}
@@ -120,7 +122,7 @@ function sim(a,b){const L=Math.max(a.length,b.length);return L?1-lev(a,b)/L:1}
 function detectTemplate(text){const t=text.toLowerCase();
   if(/clinical patholog|urine|specific gravity|pus cell/.test(t))return "urine";
   if(/haematolog|hematolog|complete blood|d\.?l\.?c|platelet count|haemoglobin/.test(t))return "cbc";
-  if(/biochem|bilirubin|creatinine|urea|sgpt|sodium|cholesterol|tsh|protein/.test(t))return "bio";
+  if(/biochem|bilirubin|creatinine|urea|sgpt|sodium|potassium|calcium|magnesium|amylase|lipase|cholesterol|tsh|protein/.test(t))return "bio";
   return "bio";}
 /* ---------- tesseract TSV → lines ---------- */
 function tsvLines(tsv){const lines=new Map();String(tsv||"").split("\n").forEach(r=>{const c=r.split("\t");if(c.length<12||c[0]!=="5")return;const txt=c.slice(11).join("\t").trim();if(!txt)return;
@@ -148,22 +150,38 @@ function parseLines(lines,tpl){
   const dict=TESTS[tpl]||TESTS.bio;const out={};let resCol=null,unitCol=null;
   for(const L of lines){const t=L.text.toLowerCase();
     if(!resCol&&/\bresults?\b/.test(t)&&/\bunit/.test(t)){const r=L.words.find(w=>/^results?$/i.test(w.t));const u=L.words.find(w=>/^units?$/i.test(w.t));if(r)resCol={x0:r.x-r.w*0.6,x1:(u?u.x:r.x+r.w*2)};if(u)unitCol={x0:u.x-u.w*0.5,x1:u.x+u.w*2.5}}}
+  // R1.3.141: value lines whose printed range belongs to exactly one test (rows where the label is printed above/below its values)
+  const refOf={};for(const code in dict){const r=dict[code].ref;if(!r||dict[code].txt)continue;const k=String(r).replace(/[^\d]/g,"");if(k.length<3)continue;(refOf[k]=refOf[k]||[]).push(code)}
+  const claim=lines.map(L=>{if(matchName(L,dict))return null;const t=L.text.match(/(\d+(?:[.,]\d+)?)\s*-\s*(\d+(?:[.,]\d+)?)\s*$/);if(!t)return null;const c=refOf[(t[1]+t[2]).replace(/[^\d]/g,"")];return c&&c.length===1?c[0]:null});
+  const bare=L=>L&&L.words.length===1&&!matchName(L,dict)&&/^[<>]?\d/.test(L.words[0].t)&&cleanNum(L.words[0].t)!=null;
   lines.forEach((L,li)=>{
     const m=matchName(L,dict);if(!m||out[m.code])return;
     if(m.code==="mch"&&/^mchc/i.test(L.words[0].t))return;
-    const rest=L.words.slice(m.n);const def=dict[m.code];
+    let rest=L.words.slice(m.n);const def=dict[m.code];
+    if(tpl==="urine"){let k=0;for(;;){const n2=normName((rest[k]||{}).t||"")+" "+normName((rest[k+1]||{}).t||"");if(rest[k+1]&&METHODS.includes(n2.trim())){k+=2;continue}if(rest[k]&&METHODS.includes(normName(rest[k].t)))k+=1;else break}rest=rest.slice(k)}
     let vw=null,vi=-1;
     for(let i=0;i<rest.length;i++){const w=rest[i];const s=w.t.replace(/^[:=\-]+/,"");if(!s)continue;
       if(def.txt){if(QUAL.test(s)||/^\d/.test(s)){vw=w;vi=i;break}if(/^[a-z]/i.test(s)&&i===0&&s.length>2){vw=w;vi=i;break}continue}
       if(cleanNum(s)!=null){vw=Object.assign({},w,{t:s});vi=i;break}
       if(resCol&&w.x>resCol.x1)break;}
     let via="line";
+    if(!vw&&!def.txt){for(let d=1;d<=3&&!vw;d++)for(const j of [li-d,li+d]){if(claim[j]!==m.code)continue;const L2=lines[j];
+        const w0=L2.words.find((w,i)=>i<L2.words.length-1&&/^[<>]?\d/.test(w.t)&&cleanNum(w.t)!=null&&!/-/.test(w.t));
+        if(w0){vw=Object.assign({},w0,{t:cleanNum(w0.t)});via="adjacent";var adjL={words:L2.words.slice(L2.words.indexOf(w0))};break}
+        for(const k of [j-1,j+1])if(k!==li&&bare(lines[k])&&!claim[k]){const w1=lines[k].words[0];vw=Object.assign({},w1,{t:cleanNum(w1.t)});via="adjacent";var adjL={words:[w1].concat(L2.words)};break}
+        if(vw)break}}
     if(!vw&&resCol){ // value printed on its own (e.g. the line wrapped): look in the RESULTS column at this height
       const cy=(L.y0+L.y1)/2,lh=Math.max(10,L.y1-L.y0);
-      for(const L2 of lines){if(Math.abs((L2.y0+L2.y1)/2-cy)>lh*0.7)continue;for(const w of L2.words){if(w.x>=resCol.x0&&w.x<=resCol.x1&&cleanNum(w.t)!=null){vw=Object.assign({},w,{t:cleanNum(w.t)});via="column";break}}if(vw)break}}
+      for(const [j2,L2] of lines.entries()){if(Math.abs((L2.y0+L2.y1)/2-cy)>lh*0.7)continue;if((claim[j2]&&claim[j2]!==m.code)||(bare(L2)&&((claim[j2-1]&&claim[j2-1]!==m.code)||(claim[j2+1]&&claim[j2+1]!==m.code))))continue;for(const w of L2.words){if(w.x>=resCol.x0&&w.x<=resCol.x1&&cleanNum(w.t)!=null){vw=Object.assign({},w,{t:cleanNum(w.t)});via="column";break}}if(vw)break}}
+    if(!vw&&!def.txt){ // R1.3.141: label printed below/above its value (wrapped row): adopt an adjacent value-only line whose unit or range fits this test
+      const refK=String(def.ref||"").replace(/[^\d]/g,"");
+      for(const L2 of [lines[li-1],lines[li+1]]){if(!L2||!L2.words.length||matchName(L2,dict))continue;const w0=L2.words[0];const v0=cleanNum(w0.t);if(v0==null)continue;
+        const u2=L2.words[1]?normUnit(L2.words[1].t):"";const tail=L2.words.map(w=>w.t).join(" ");const rm=tail.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*$/);
+        const fitsU=def.unit&&u2&&u2.toLowerCase()===String(def.unit).toLowerCase();const fitsR=rm&&refK.length>=3&&(rm[1]+rm[2]).replace(/[^\d]/g,"")===refK;
+        if(fitsU||fitsR){vw=Object.assign({},w0,{t:v0});vi=-1;via="adjacent";var adjL=L2;break}}}
     if(!vw){out[m.code]={code:m.code,value:null,conf:0,box:null,via:"none",name:m.syn,nameScore:m.sc,lineBox:{x:L.x0,y:L.y0,h:L.y1-L.y0},reasons:["Value not read"]};return}
-    let value=def.txt?vw.t:cleanNum(vw.t);let after=vi>=0?rest.slice(vi+1):[];
-    if(def.txt){const more=[];for(const w of after){if(QUAL.test(w.t)&&/^(yellow)$/i.test(w.t)){more.push(w.t)}else break}if(more.length)value+=" "+more.join(" ");}
+    let value=def.txt?vw.t:cleanNum(vw.t);let after=vi>=0?rest.slice(vi+1):(via==="adjacent"?adjL.words.slice(1):[]);
+    if(def.txt&&/^(pale|dark|slightly|light)$/i.test(value)){const more=[];for(const w of after){if(/^(yellow|turbid|hazy|amber)$/i.test(w.t)){more.push(w.t)}else break}if(more.length){value+=" "+more.join(" ");after=after.slice(more.length)}}
     let unit="",ref="";
     if(after.length){
       let u=after[0].t;if(/\/$/.test(u)&&lines[li+1]){const nx=lines[li+1].words[0];if(nx&&/^(u|µ|p)?[lL]$/.test(nx.t))u+="uL"}
@@ -241,13 +259,13 @@ function nameMatch(printed,card){
 }
 /* ---------- checks that set amber / red per value ---------- */
 function plausible(code){return ({hb:[2,25],wbc:[0.1,500],neut:[0,100],lymph:[0,100],mono:[0,100],eos:[0,100],baso:[0,100],rbc:[0.5,10],hct:[5,75],mcv:[40,150],mch:[10,50],mchc:[20,45],rdw:[8,35],plt:[1,2000],
-  tbil:[0,50],dbil:[0,40],ubil:[0,50],tp:[2,14],alb:[0.5,7],glob:[0.5,10],ag:[0.1,5],ast:[1,10000],alt:[1,10000],alp:[5,5000],ggt:[1,5000],urea:[2,500],creat:[0.1,20],na:[90,200],k:[1,10],rbs:[10,1500],
+  tbil:[0,50],dbil:[0,40],ubil:[0,50],tp:[2,14],alb:[0.5,7],glob:[0.5,10],ag:[0.1,5],ast:[1,10000],alt:[1,10000],alp:[5,5000],ggt:[1,5000],urea:[2,500],creat:[0.1,20],na:[90,200],k:[1,10],ca:[2,20],mg:[0.2,10],rbs:[10,1500],
   chol:[30,1000],tg:[10,5000],hdl:[5,200],ldl:[5,600],vldl:[1,1000],hba1c:[3,20],tsh:[0.005,150],amylase:[1,5000],lipase:[1,10000],li:[0.05,5],vpa:[1,400],u_volume:[1,5000],u_ph:[4,9.5],u_sg:[1,1.06]})[code]||null}
 function decimalsExpected(tpl,code){const d=(TESTS[tpl]||{})[code];const r=d&&d.ref||"";return /\.\d/.test(r)}
 const CONF_GREEN=88;
 // decimals AMCH prints for each test (fixed format); used only to suggest where a dropped point belongs
 const DP={cbc:{hb:2,wbc:2,neut:2,lymph:2,mono:2,eos:2,baso:2,rbc:2,hct:2,mcv:2,mch:2,mchc:2,rdw:2,plt:2},
-  bio:{tp:2,alb:2,glob:2,ag:1,tbil:2,ubil:2,dbil:2,alt:2,ast:2,alp:2,ggt:2,urea:2,creat:2,na:2,k:2,chol:2,tg:2,hdl:2,vldl:2,hba1c:1,tsh:2,amylase:2,lipase:2}};
+  bio:{tp:2,alb:2,glob:2,ag:1,tbil:2,ubil:2,dbil:2,alt:2,ast:2,alp:2,ggt:2,urea:2,creat:2,na:2,k:2,ca:2,mg:2,chol:2,tg:2,hdl:2,vldl:2,hba1c:1,tsh:2,amylase:2,lipase:2}};
 function repairDecimal(row,tpl){const dp=(DP[tpl]||{})[row.code];const raw=String(row.value);if(!dp||!/^\d+$/.test(raw)||raw.length<=dp)return;
   const p=plausible(row.code);const v=+raw;const fixed=raw.slice(0,raw.length-dp)+"."+raw.slice(-dp);const fv=+fixed;
   const ref=((TESTS[tpl]||{})[row.code]||{}).ref||"";const top=Math.max(0,...(ref.match(/\d+(\.\d+)?/g)||[]).map(Number));
@@ -264,6 +282,7 @@ function grade(row,tpl,reread){
       if(+a===+b||da===db)row.agree=true;else if(Math.abs(da.length-db.length)<=1&&lev(da,db)<=1)R.push("Two reads differ ("+a+" / "+b+")");else row.agree=false}}
   if(row.conf<CONF_GREEN&&!(row.agree&&row.conf>=70))R.push("Low confidence ("+Math.round(row.conf)+"%)");
   if(row.via==="column")R.push("Read from the results column");
+  if(row.via==="adjacent")R.push("Value printed on the line next to the test name");
   if(def.unit&&row.unit&&row.unit!==def.unit)R.push("Unit reads "+row.unit);
   if(def.ref&&row.ref&&refKey(row.ref)!==refKey(def.ref)&&String(row.ref).replace(/[^\d]/g,"")!==String(def.ref).replace(/[^\d]/g,"")){row.info=(row.info||[]).concat("Range reads "+row.ref);if(!(row.agree&&row.conf>=CONF_GREEN))R.push("Range reads "+row.ref)}
   // a partly read test name is fine when its printed normal range is exactly this test's and two reads agree
