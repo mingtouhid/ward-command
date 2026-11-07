@@ -2447,6 +2447,43 @@ input.lab-date-ocr{border-color:var(--warn)!important;background:color-mix(in sr
 .icard-h{display:flex;align-items:center;gap:10px}
 .icard-n{font-weight:700;font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .icard-dx{margin:4px 0 0;color:var(--muted)}
+.ih-counts{display:flex;gap:16px;margin:0 0 8px;font-size:13px;color:var(--muted)}
+.ih-counts b{color:var(--ink);font-variant-numeric:tabular-nums;font-size:16px;margin-left:4px}
+.ih-flag{margin:0 0 8px;font-size:13px;font-weight:700}
+.ih-flag.saving{color:var(--warn)}
+.ih-flag.failed{color:var(--danger)}
+.ih-list{display:flex;flex-direction:column;gap:8px}
+.ih-row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.ih-bed{font-weight:800;min-width:48px}
+.ih-name{font-weight:700;flex:1;min-width:0}
+.ih-st{font-size:13px;color:var(--muted)}
+.ih-act{margin-left:auto}
+.ih-act .btn{min-height:36px}
+.ih-tasks{margin-top:14px}
+.ih-task{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:10px 12px;margin:0 0 8px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.ih-task b{flex:1;min-width:140px}
+.ih-empty{color:var(--muted)}
+.r17-warn p{margin:0 0 8px}
+.r17-warn-acts{display:flex;gap:8px;margin-top:8px}
+.r17-warn-acts .btn{flex:1}
+.r17-warn-box{max-width:460px;border-radius:18px}
+.r146-sched li.r17-ect,.r146-sched li.r17-other{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding:6px 0}
+.r146-sched li.r17-ect:first-child,.r146-sched li.r17-other:first-child{border-top:0}
+.r146-sched li.r17-ect .r17-ect-main,.r146-sched li.r17-other button{flex:1;min-width:0;display:flex;gap:12px;align-items:baseline;width:auto;border:0;background:none;padding:4px 0;text-align:left;color:var(--ink);font:inherit}
+.r146-sched li.r17-ect .btn{flex:none;width:auto}
+.r17-ect-side{display:flex;align-items:center;gap:8px;margin-left:auto}
+.r17-ect-done{font-size:12px;color:var(--muted)}
+@media (max-width:720px){
+  .r146-sched li.r17-ect .r17-ect-main{flex:1 1 100%}
+  .r17-ect-side{width:100%;margin-left:0;justify-content:space-between}
+}
+@media (min-width:1024px){
+  .ih-list{display:block;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+  .ih-row{display:grid;grid-template-columns:88px minmax(180px,1.4fr) minmax(160px,.9fr) 148px;gap:8px 12px;align-items:center;border:0;border-radius:0;border-top:1px solid var(--line);padding:8px 12px}
+  .ih-row:first-child{border-top:0}
+  .ih-name,.ih-st{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ih-act{margin-left:0;justify-self:end}
+}
 .intern-tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
 .intern-tools .btn{width:100%;justify-content:center}
 .vit-t>span{display:block;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
@@ -3621,7 +3658,7 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.6.2";
+const APP_VERSION="R1.7";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -4632,6 +4669,7 @@ async function doCloudPull(opts){
   (Array.isArray(wardState.events)?reconcileLocal(S.events,incoming,unresolved,"activity_log",e=>e.local||/^(pt-edit|med-edit|dcert|lab|labe|labd)-/.test(String(e.id))||/^(msed|mser|labd|labr|vit):/.test(String(e.id))):(S.events||[])).forEach(e=>byId[e.id]=e);
   incoming.forEach(e=>byId[e.id]=e);
   S.events=evCollapse(Object.values(byId));
+  try{await r17PullStatus()}catch(e){}
   localStorage.setItem(KEY,JSON.stringify(S));
   if(stillUnsent.length){
     reconciliationNeeded=true;
@@ -5215,7 +5253,7 @@ function ico(name){
 }
 
 function overlayOpen(){
-  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser || ui.myPhone);
+  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser || ui.myPhone || ui.r17Gate);
 }
 function overlayDepth(){
   let n=0;
@@ -5234,7 +5272,7 @@ function prefersReduceMotion(){
 }
 function clearOverlayState(extra){
   extra=extra||{};
-  ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null; ui.medEditId=null;
+  ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null; ui.medEditId=null; ui.r17Gate=null; ui.r17Next=null; ui.r17Reason="";
   ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null; ui.addUser=null; ui.myPhone=null; phoneFieldsWipe();
   if(extra.med){
     ui.medPid=null;
@@ -5243,6 +5281,7 @@ function clearOverlayState(extra){
 }
 function popTopOverlay(extra){
   extra=extra||{};
+  if(ui.r17Gate){ ui.r17Gate=null; ui.r17Next=null; ui.r17Reason=""; return "r17"; }
   if(ui.confirm){ ui.confirm=null; return "confirm"; }
   if(ui.pick){ ui.pick=null; return "pick"; }
   if(ui.notifySet){ ui.notifySet=false; return "notifySet"; }
@@ -5321,7 +5360,7 @@ function shell(inner){
       <button class="${on("patients")}" onclick="go('patients')">${ico('patients')}<span class="lbl">Patients</span></button>
       <button class="${on("handover")}" onclick="go('handover')" ${ui.busy?"disabled":""}>${ico('handover')}<span class="lbl">Handovers</span></button>
       <button class="${on("more")}" onclick="go('more')">${ico('more')}<span class="lbl">More</span></button>
-    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||""))}${busyVeil()}`;
+    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review, ui.r17Reason||"")}</div></div>`:""))}${busyVeil()}`;
 }
 
 /* HOME: occupied beds only, current status */
@@ -5804,12 +5843,13 @@ function r146TodayHtml(){
   </section>`;
 }
 function r146ScheduleHtml(){
-  const now=Date.now(),k=wardLocalDayKey(new Date()),items=[];
-  (S.ect||[]).filter(e=>e&&e.status==="planned"&&e.nextAt&&onWard(e.pid)&&wardLocalDayKey(e.nextAt)===k).forEach(e=>{const b=bedObj(e.pid);items.push({t:r146T(e.nextAt),txt:`ECT${e.sessionsDone!=null?" #"+(Number(e.sessionsDone)+1):""} · ${b?b.no:"No bed"}${e.npo?" · NPO":""}`,fn:"go('ect')"})});
-  // R1.6: scale due times are no longer listed (no scale timers).
-  items.sort((a,b)=>a.t-b.t);
+  // R1.7: scheduled ECT completion is an occurrence mark. It does not call markEctDone and does not move the next session.
+  const today=r17IstDay(new Date());
+  const patients=(S.patients||[]).map(p=>({id:p.id,status:p.status,admittedAt:p.admittedAt,bed:(bedObj(p.id)||{}).no||""}));
+  const completions=(S.ectDone||[]).map(r17EctDoneFrom);
+  const ect=r17ScheduleItems(S.ect||[],patients,completions,today).slice(0,8).map(x=>({kind:"ect",planId:x.planId,time:vcTime(r146T(x.at)),txt:`ECT${x.sessionsDone!=null?" #"+(Number(x.sessionsDone)+1):""} · ${x.bed||"No bed"}${x.npo?" · NPO":""}`,done:x.done,by:x.by,when:x.doneAt?r17IstWhen(x.doneAt):""}));
   return `<section class="card r146-sched" aria-label="Today's schedule"><p class="tiny">TODAY'S SCHEDULE</p>
-    ${items.length?`<ul>${items.slice(0,8).map(x=>`<li><button type="button" onclick="${x.fn}"><b>${esc(vcTime(x.t))}</b><span>${esc(x.txt)}</span></button></li>`).join("")}</ul>`:`<p class="sm r146-empty">Nothing scheduled for today.</p>`}
+    ${r17ScheduleHtml(ect, typeof canWrite==="function"?canWrite():true)}
   </section>`;
 }
 function homeView(){
@@ -6475,7 +6515,8 @@ function openRecentDischarges(){
   ui.disForm=false;
   go("census",null,1);
 }
-function openSnapDischarge(pid){
+function openSnapDischarge(pid){r17EnterDischarge(pid,function(){openSnapDischargeNow(pid)})}
+function openSnapDischargeNow(pid){
   if(!needWrite()) return;
   const p=patient(pid);
   if(!p||p.status!=="admitted") return;
@@ -9898,6 +9939,7 @@ async function closeObservation(pid,outcome){
     if(!["improved","unchanged"].includes(dOut)){toast("Choose the outcome.","bad");return}
   }
   const dmeds=dmCollect(pid); // R1.3.116 optional meds on referral / disposal
+  if((outcome==="disposed"||outcome==="referred")&&!r17HoldForSubmit(pid,function(){closeObservation(pid,outcome)}))return;
   if(workflowLocked("obs-close",pid))return;
   setBusy(true,"Closing observation\u2026");
   try{
@@ -9910,7 +9952,16 @@ async function closeObservation(pid,outcome){
       rpcArgs.p_discharge_outcome=dOut;
     }
     if(dmeds.length) rpcArgs.p_discharge_meds=dmeds; // omitted when empty → identical call to R1.3.115
-    let {data,error}=await sb.rpc("ward_close_observation",rpcArgs);
+    const reviewOv=ui.r17Ov&&String(ui.r17Ov.pid)===String(pid)?{reason:ui.r17Ov.reason}:null;
+    let reviewUnstored=false;
+    let data,error;
+    if(reviewOv){
+      ({data,error}=await sb.rpc("ward_close_observation_with_review",Object.assign({},rpcArgs,{p_review_override:reviewOv})));
+      if(error&&/does not exist|could not find the function|PGRST202|42883/i.test(String(error.message||error.code||error))){
+        reviewUnstored=true;
+        ({data,error}=await sb.rpc("ward_close_observation",rpcArgs));
+      }
+    }else ({data,error}=await sb.rpc("ward_close_observation",rpcArgs));
     let dmServer=!!dmeds.length;
     if(error&&dmeds.length&&/p_discharge_meds|PGRST202|could not find the function|function .*does not exist/i.test(String(error.message||error.code||error))){
       // Server not migrated yet: close as before; keep the list on this device only.
@@ -9941,8 +9992,10 @@ async function closeObservation(pid,outcome){
         metadata:{action:isRef?"referral":"dispose",outcome,discharge_meds_count:dmeds.length,bed_no:bedNo||null,department:isRef?(dept||null):null,reason:reason||null,discharge_mode:dMode||null,discharge_outcome:dOut||null}
       });
     }catch(ne){ evFail(pid,"Observation notification",ne); }
-    closePanel();ui.obsRefer=null;ui.obsDispose=null;ui.obsClose=null;
-    toast(outcome==="referred"?"Referred"+(dept?" to "+dept:""):"Disposed","ok");save();go("observe");
+    closePanel();ui.obsRefer=null;ui.obsDispose=null;ui.obsClose=null;ui.r17Ov=null;
+    toast(outcome==="referred"?"Referred"+(dept?" to "+dept:""):"Disposed","ok");
+    if(reviewUnstored)toast("Closed. The review note was not stored on the server (update pending).","bad");
+    save();go("observe");
   }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
   finally{workflowUnlock("obs-close",pid);setBusy(false)}
 }
@@ -10001,7 +10054,7 @@ function censusView(){
         </label>
         ${p?`<p class="tiny">${esc(p.hospitalNo||p.code)}${mrdLabel(p)?" · "+esc(mrdLabel(p)):""} · ${p.age}${p.sex} · ${esc(p.diagnosis||"")}</p>`:`<p class="tiny">Choose a patient to enable discharge.</p>`}
       </div>
-      ${form?"":`<button class="btn block ${p?"danger":"idle"}" id="disContinue" ${p?"":"disabled"} onclick="if(!ui.disId)return;censusDraft();ui.disForm=true;render()" style="margin-bottom:10px">Continue</button>`}
+      ${form?"":`<button class="btn block ${p?"danger":"idle"}" id="disContinue" ${p?"":"disabled"} onclick="if(!ui.disId)return;r17EnterDischarge(ui.disId,function(){censusDraft();ui.disForm=true;render()})" style="margin-bottom:10px">Continue</button>`}
       ${form?`<div class="card dis-form">
         ${disRecordHtml(p)}
         ${needMrd?mrdFieldHtml("dmrd",d.dmrd||"",1):""}
@@ -10247,6 +10300,7 @@ function dischargeFromCensus(){
   const reqName=disReqMode(dmode)?String(d.dreqName||"").trim().slice(0,80):"";
   if(dmode==="dama"&&!reqBy.length){toast("Select who requested DAMA.","bad");const el=document.getElementById("disReq");if(el){el.classList.add("dis-req-err");try{el.scrollIntoView({block:"center",behavior:"smooth"})}catch(e){}}return}
   { const miss=disMissing(p,d); if(miss.length){disShowMissing(miss);return} } // R1.3.133: required discharge details
+  if(!r17HoldForSubmit(p.id,function(){dischargeFromCensus()}))return;
   if(workflowLocked("discharge",id))return;
   const advice=String(d.dadvice||"").trim();
   const review=String(d.dreview||"").trim().slice(0,200);
@@ -10290,7 +10344,14 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
     };
     // R1.3.126: requester only when set, so a server without the R1.3.126 migration still matches the call.
     const reqArgs=xx&&xx.reqBy&&xx.reqBy.length?{p_discharge_requested_by:xx.reqBy,...(xx.reqName?{p_discharge_requester_name:xx.reqName}:{})}:(xx&&xx.reqName?{p_discharge_requester_name:xx.reqName}:{});
-    let atomic=await callAtomicWorkflow("ward_discharge_patient",{...disArgs,...reqArgs});
+    const msePayload=r17MsePayload(p.id);
+    const reviewOv=ui.r17Ov&&String(ui.r17Ov.pid)===String(p.id)?{reason:ui.r17Ov.reason}:null;
+    let reviewUnstored=false;
+    let atomic;
+    if(msePayload||reviewOv){
+      atomic=await callAtomicWorkflow("ward_discharge_with_review",{...disArgs,...reqArgs,p_discharge_mse:msePayload,p_review_override:reviewOv});
+      if(!atomic.used){reviewUnstored=!!reviewOv;atomic=await callAtomicWorkflow("ward_discharge_patient",{...disArgs,...reqArgs})}
+    }else atomic=await callAtomicWorkflow("ward_discharge_patient",{...disArgs,...reqArgs});
     if(!atomic.used&&Object.keys(reqArgs).length&&sb&&sessionTok){console.warn("Discharge requester not supported by server; retrying without it");atomic=await callAtomicWorkflow("ward_discharge_patient",disArgs)}
     if(xx&&atomic.used&&atomic.data&&Array.isArray(atomic.data.discharge_meds)){
       // R1.3.133: a server without the R1.3.133 migration drops "instructions" (taper text); keep ours and say so.
@@ -10336,7 +10397,23 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
       ev(p.id,"Patient details edited",true,"note","MRD No.: — → "+xx.mrd);
     }
     ev(p.id,"Discharged · "+labelOf(DISCHARGE_MODES,p.dischargeMode)+" · "+labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome),true,"note");
-    try{const me=mseCommitDischarge(p.id,p.dischargedAt);if(me){ev(p.id,"MSE at discharge recorded"+(me.highRisk?" · high risk":""),true,"mse",msePreviewText(me.data||{}).slice(0,160));setTimeout(()=>{try{flushPending()}catch(x){}},0)}}catch(me){console.warn("MSE at discharge",me)} // R1.3.124
+    try{
+      const savedId=atomic.used&&atomic.data&&atomic.data.mse_id;
+      if(savedId){
+        const x=mseDisFilled(p.id);
+        if(x&&x.data){
+          const e={id:String(savedId),pid:p.id,kind:"discharge",data:mseClone(x.data),highRisk:!!(x.highRisk||mseHighRisk(x.data)),summary:x.summary||mseSummary(x.data),by:S.userId,byName:mseByName(),at:p.dischargedAt||now(),admittedAt:p.admittedAt||null};
+          S.mse=(S.mse||[]).filter(m=>m.id!==e.id);S.mse.unshift(e);
+          mseLsSet(mseDisKey(p.id),null);mseLsSet(mseDraftKey(p.id,"discharge"),null);
+          ev(p.id,"MSE at discharge recorded"+(e.highRisk?" · high risk":""),true,"mse",msePreviewText(e.data||{}).slice(0,160));
+        }
+      }else{
+        const me=mseCommitDischarge(p.id,p.dischargedAt);
+        if(me){ev(p.id,"MSE at discharge recorded"+(me.highRisk?" · high risk":""),true,"mse",msePreviewText(me.data||{}).slice(0,160));setTimeout(()=>{try{flushPending()}catch(x){}},0)}
+      }
+    }catch(me){console.warn("MSE at discharge",me)} // R1.3.124 · R1.7 atomic only when the discharge RPC saved it
+    if(reviewUnstored){try{toast("Discharged. The review note was not stored on the server (update pending).","bad")}catch(e){}}
+    ui.r17Ov=null;
     if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dreview;delete ui.census.dmrd;delete ui.census.dect;delete ui.census.dreq;delete ui.census.dreqName;}
     if(ui.obsClose&&ui.obsClose.pid===p.id) ui.obsClose=null;
     ui.disDone=certEligible(p)?{pid:p.id,at:p.dischargedAt}:null; // R1.3.126: offer the certificate right away
@@ -10420,6 +10497,7 @@ function dischargeFormBody(id){
 function dischargePatient(id){
   if(!needWrite())return;
   const p=patient(id);if(!p||p.status==="discharged")return;
+  if(!r17HoldForSubmit(id,function(){dischargePatient(id)}))return;
   if(workflowLocked("discharge",id))return;
   const oldDx=p.diagnosis||"";
   const nextDx=(val("ddx")||oldDx).trim()||oldDx;
@@ -11423,6 +11501,7 @@ function tasksView(){
   const my=(S.tasks||[]).filter(t=>String(t.to||"")===String(S.userId||"")&&t.status!=="done").length;
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <div class="row" style="margin-bottom:8px"><h2>Task board</h2><span class="tiny">${open} open · ${done} done</span></div>
+    ${r17InternTasksHtml(r17VisibleInternTasks(), canWrite()?"status":"read")}
     <div class="task-board-summary">
       <div><b>${open}</b><span>Open</span></div>
       <div><b>${my}</b><span>Assigned to me</span></div>
@@ -16578,9 +16657,14 @@ function addQuickTask(id){ if(!needWrite())return; openPanel("task",{id}); }
 function taskFormBody(id){
   const assignees=(S.residents||[]).filter(r=>r.active!==false&&["resident","admin"].includes(normRole(r.role))).map(r=>[r.id,r.displayName||r.username]);
   const defaultAssignee=val("tsk_to")||S.userId||((assignees[0]||[])[0]||"");
+  const who=(ui.fields&&ui.fields.tsk_who)||"resident";
+  const kind=(ui.fields&&ui.fields.tsk_kind)||"general";
+  const whoRow=`<div class="field"><span>Who</span><div class="chips" role="group" aria-label="Who does this task">${[["resident","Resident"],["intern","Intern group"]].map(([k,lb])=>`<button type="button" class="chip ${who===k?"on":""}" onclick="ui.fields=ui.fields||{};ui.fields.tsk_who='${k}';render()">${lb}</button>`).join("")}</div></div>`;
+  const internRow=who==="intern"?`<div class="field"><span>Type</span><div class="chips">${[["general","General"],["report","Report"]].map(([k,lb])=>`<button type="button" class="chip ${kind===k?"on":""}" onclick="ui.fields=ui.fields||{};ui.fields.tsk_kind='${k}';render()">${lb}</button>`).join("")}</div><p class="tiny muted">${kind==="report"?"Completes only when a saved report for this admission is linked.":"An intern marks this complete, with their name. It can be undone."}</p></div><label class="field"><span>Due date</span><input id="tsk_due" type="date" value="${esc(val("tsk_due")||r17IstDay(new Date()))}" oninput="ui.fields=ui.fields||{};ui.fields.tsk_due=this.value"/></label>`:"";
+  const assignRow=who==="intern"?"":`<label class="field"><span>Assign to</span>${picker("tsk_to",assignees,defaultAssignee,"Resident")}</label>`;
   return panelBox("Task", `<label class="field"><span>What to do</span><input id="tsk_t" value="${esc(val("tsk_t")||("Review "+bedOf(id)))}" oninput="ui.fields=ui.fields||{};ui.fields.tsk_t=this.value"/></label>
     <label class="field"><span>Task description</span><textarea id="tsk_d" rows="4" placeholder="Describe what needs to be done..." oninput="ui.fields=ui.fields||{};ui.fields.tsk_d=this.value">${esc(val("tsk_d"))}</textarea></label>
-    <label class="field"><span>Assign to</span>${picker("tsk_to",assignees,defaultAssignee,"Resident")}</label>
+    ${whoRow}${internRow}${assignRow}
     <button class="btn block" onclick="saveQuickTask('${id}')">Add task</button>`);
 }
 async function saveQuickTask(id){
@@ -16588,6 +16672,7 @@ async function saveQuickTask(id){
   const title=(val("tsk_t")||"").trim()||("Review "+bedOf(id));
   const detail=(val("tsk_d")||"").trim();
   const to=val("tsk_to")||S.userId||null;
+  if((ui.fields&&ui.fields.tsk_who)==="intern"){ui.panel=null;return r17AssignIntern(id,title,(ui.fields&&ui.fields.tsk_kind)||"general",val("tsk_due"));}
   const run=()=>saveQuickTaskNow(id,title,detail,to);
   if(!runWhenReady("task",id,run,false)) return;
   return saveQuickTaskNow(id,title,detail,to);
@@ -17211,7 +17296,7 @@ function patchApp(el,html,o){
 /* ===== R1.3.139: delete / restore saved MSE and lab reports · Intern role · Vitals ===== */
 function isIntern(){return !!S.userId&&roleOf()==="intern"}
 function canDeleteRecords(){const r=roleOf();return !!S.userId&&(r==="resident"||r==="admin")&&!isIntern()&&!(typeof isViewerLogin==="function"&&isViewerLogin())}
-const INTERN_RPCS=new Set(["ward_login","ward_intern_read_state","ward_intern_save_lab_report","ward_save_vitals","ward_intern_save_scale"]); // R1.3.143: + CIWA-Ar / COWS
+const INTERN_RPCS=new Set(["ward_login","ward_intern_read_state","ward_intern_save_lab_report","ward_save_vitals","ward_intern_save_scale","ward_complete_intern_task","ward_undo_intern_task"]); // R1.3.143 scales · R1.7 intern tasks only
 // Client-side guard: while an intern is signed in, only the four intern RPCs leave the device. The server enforces the same
 // (an intern token exists only in ward_intern_sessions, which no other ward_* function accepts).
 function internGuardRpc(c){
@@ -17336,7 +17421,7 @@ function vitalsSave(){
 
 /* ---- Intern pull / views ---- */
 function internWipe(){
-  ["orders","doses","tasks","handovers","hitems","events","ect","ectSessions","criticalStatusUpdates","obsStays","advice","broadcasts","mse","labs","dischargeCertificates","patientEdits","dutyList","consultants","assignments","faculty","consLinks","scales"].forEach(k=>{if(Array.isArray(S[k]))S[k]=[]});
+  ["orders","doses","tasks","internTasks","ectDone","handovers","hitems","events","ect","ectSessions","criticalStatusUpdates","obsStays","advice","broadcasts","mse","labs","dischargeCertificates","patientEdits","dutyList","consultants","assignments","faculty","consLinks","scales"].forEach(k=>{if(Array.isArray(S[k]))S[k]=[]});
   S.snaps={};
 }
 function internApply(st,guard){
@@ -17355,6 +17440,7 @@ function internApply(st,guard){
   }
   vitalsMerge(st.vitals||[],guard);
   scalesMerge(st.scales||[],guard); // R1.3.143: CIWA-Ar / COWS only
+  S.internTasks=(st.intern_tasks||[]).map(r17TaskFromRow); // R1.7 narrow shared status, not resident tasks
 }
 async function internPull(){
   if(!sb||!sessionTok)return {ok:false,pulled:false};
@@ -17383,12 +17469,164 @@ function internCardHtml(p,mode){ // R1.3.142: mode "reports" = plain list card; 
     ${mode==="reports"?'<p class="tiny icard-go">Add report ›</p>':internRecentHtml(p)}
   </button>`;
 }
+function r17Ops(){return (typeof pending!=="undefined"?pending:[]).map(function(o){return {table:o.table,status:o.status,row:o.row}})}
+function r17TaskFromRow(r){r=r||{};return {id:r.id,pid:r.patient_id||r.pid,kind:r.kind||r.task_type||"general",title:r.title||"",dueOn:String(r.due_on||r.dueOn||"").slice(0,10),status:r.status||"open",byName:r.assigned_by_name||r.byName||"",completedBy:r.completed_by||r.completedBy||"",completedByName:r.completed_by_name||r.completedByName||"",completedAt:r.completed_at||r.completedAt||"",reportId:r.report_id||r.reportId||""}}
+function r17EctDoneFrom(r){r=r||{};return {id:r.id,planId:r.plan_id||r.planId,pid:r.patient_id||r.pid,occurrenceAt:r.occurrence_at||r.occurrenceAt,by:r.completed_by||r.by||"",byName:r.completed_by_name||r.byName||"",at:r.completed_at||r.at||"",undoneAt:r.undone_at||r.undoneAt||null}}
+function r17VisibleInternTasks(){return (S.internTasks||[]).map(r17TaskFromRow).filter(function(t){const p=patient(t.pid);return p&&p.status!=="discharged"}).sort(function(a,b){return (a.status==="done"?1:0)-(b.status==="done"?1:0)||String(a.dueOn).localeCompare(String(b.dueOn))||String(a.title).localeCompare(String(b.title))})}
+function r17HomeBoard(q){
+  const people=(S.patients||[]).filter(function(p){return p&&p.status!=="discharged"}).map(function(p){return {id:p.id,name:p.name||"",status:p.status,admittedAt:p.admittedAt,bed:bedNoOf(p.id)||""}});
+  const board=r17VitalsBoard(people,S.vitals||[],r17Ops(),r17IstDay(new Date()));
+  if(!q)return board;
+  const rows=board.rows.filter(function(r){const p=patient(r.pid)||{};return [r.name,r.bed,p.hospitalNo,p.code,p.mrdNo,p.diagnosis].join(" ").toLowerCase().includes(q)});
+  return Object.assign({},board,{rows:rows,filteredEmpty:!rows.length});
+}
+let r17SeenDay="";
+function r17DayWatch(){const d=r17IstDay(new Date());if(r17SeenDay&&d!==r17SeenDay){try{render({bg:1})}catch(e){}}r17SeenDay=d}
+try{setInterval(r17DayWatch,30000)}catch(e){}
+function r17ReviewFor(pid){
+  const p=patient(pid);if(!p)return {warn:false,missing:[],pid:pid,hasMse:true,hasReport:true,mseIds:[],reportIds:[],stagedAtomic:false,admittedAt:null,investigationsComplete:false};
+  const mses=(S.mse||[]).filter(function(m){return m&&String(m.pid)===String(pid)}).map(function(m){return {id:m.id,pid:m.pid,at:m.at,deleted:!!m.deleted}});
+  const reports=(S.labs||[]).filter(function(r){return r&&String(r.pid)===String(pid)}).map(function(r){return {id:r.id,pid:r.pid,at:r.at,reportedAt:r.reportedAt,deleted:!!r.deleted}});
+  let staged=null;try{staged=mseDisFilled(pid)}catch(e){staged=null}
+  return r17DischargeReview({id:p.id,admittedAt:p.admittedAt,status:p.status},mses,reports,{ops:r17Ops(),stagedMse:staged&&staged.data?{data:true}:null,stagedAtomic:false});
+}
+function r17OpenWarn(pid, review){ui.r17Gate={pid:pid,review:review||r17ReviewFor(pid)};ui.r17Reason="";render({force:1})}
+function r17HoldForSubmit(pid, again){
+  const review=r17ReviewFor(pid);
+  if(!review.warn)return true;
+  if(ui.r17Ov&&r17OverrideMatches(ui.r17Ov,review)){ui.r17Next=null;return true}
+  ui.r17Next=again;r17OpenWarn(pid,review);return false;
+}
+function r17EnterDischarge(pid, proceed){
+  if(!needWrite())return;
+  const p=patient(pid);if(!p||(p.status!=="admitted"&&p.status!=="observation"))return;
+  const review=r17ReviewFor(pid);
+  if(!review.warn){ui.r17Ov=null;proceed();return}
+  ui.r17Next=proceed;r17OpenWarn(pid,review);
+}
+function r17WarnCancel(){ui.r17Gate=null;ui.r17Next=null;ui.r17Reason="";render({force:1})}
+function r17WarnMse(){const pid=ui.r17Gate&&ui.r17Gate.pid;ui.r17Gate=null;ui.r17Next=null;render({force:1});if(!pid)return;if(ui.disForm&&ui.disId===pid)mseOpen(pid,"discharge");else mseOpen(pid,"routine")}
+function r17WarnReports(){const pid=ui.r17Gate&&ui.r17Gate.pid;ui.r17Gate=null;ui.r17Next=null;render({force:1});if(!pid)return;if(typeof r146Open==="function")r146Open(pid,"results");else go("snap",pid)}
+function r17WarnContinue(){
+  const g=ui.r17Gate;if(!g)return;
+  const reason=String((document.getElementById("r17Reason")||{}).value||ui.r17Reason||"").trim();
+  const fresh=r17ReviewFor(g.pid);
+  if(r17ReviewFingerprint(fresh)!==r17ReviewFingerprint(g.review)){
+    ui.r17Gate.review=fresh;ui.r17Reason=reason;
+    if(!fresh.warn){ui.r17Ov=null;ui.r17Gate=null;const n=ui.r17Next;ui.r17Next=null;render({force:1});if(n)n();return}
+    toast("The record changed. Read the updated warning.","info");render({force:1});return;
+  }
+  if(!fresh.warn){ui.r17Ov=null;ui.r17Gate=null;const n=ui.r17Next;ui.r17Next=null;render({force:1});if(n)n();return}
+  if(reason.length<3){toast("Enter a reason (at least 3 characters).","bad");return}
+  ui.r17Ov={pid:g.pid,reason:reason,fp:r17ReviewFingerprint(fresh)};
+  ui.r17Gate=null;ui.r17Reason="";const n=ui.r17Next;ui.r17Next=null;render({force:1});if(n)n();
+}
+function r17MsePayload(pid){
+  let x=null;try{x=mseDisFilled(pid)}catch(e){x=null}
+  if(!x||!x.data)return null;
+  return {id:"mse_"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),kind:"discharge",data:x.data,high_risk:!!x.highRisk,summary:x.summary||""};
+}
+async function r17PullStatus(){
+  if(!sb||!sessionTok||isIntern())return;
+  try{
+    const res=await sb.rpc("ward_list_r17_status",{p_token:sessionTok});
+    if(!res||res.error||!res.data)return;
+    if(Array.isArray(res.data.intern_tasks))S.internTasks=res.data.intern_tasks.map(r17TaskFromRow);
+    if(Array.isArray(res.data.ect_done))S.ectDone=res.data.ect_done.map(r17EctDoneFrom);
+  }catch(e){}
+}
+async function r17InternTaskDone(id){
+  const t=(S.internTasks||[]).map(r17TaskFromRow).find(function(x){return x.id===id});
+  const live=(S.internTasks||[]).find(function(x){return (x.id)===id});
+  if(!t)return;
+  const d=r17GeneralComplete(t,{id:S.userId,role:roleOf()});
+  if(!d.ok){toast(d.reason,"bad");return}
+  if(d.idempotent){render();return}
+  if(!sb||!sessionTok||navigator.onLine===false){toast("Not saved — you are offline","bad");return}
+  if(live)live._busy=true;render({force:1});
+  try{
+    const res=await sb.rpc("ward_complete_intern_task",{p_token:sessionTok,p_id:id});
+    if(!res||res.error||!res.data||res.data.ok===false)throw new Error((res&&res.error&&res.error.message)||"Task was not completed");
+    const row=r17TaskFromRow(res.data.task||res.data);
+    const i=(S.internTasks||[]).findIndex(function(x){return x.id===id});
+    if(i>=0)S.internTasks[i]=row;else (S.internTasks=S.internTasks||[]).unshift(row);
+    toast("Task completed","ok");save();
+  }catch(e){toast("Task was not completed","bad")}
+  finally{render({force:1})}
+}
+async function r17InternTaskUndo(id){
+  const t=(S.internTasks||[]).map(r17TaskFromRow).find(function(x){return x.id===id});
+  if(!t)return;
+  const d=r17GeneralUndo(t,{id:S.userId,role:roleOf()});
+  if(!d.ok){toast(d.reason,"bad");return}
+  if(!sb||!sessionTok||navigator.onLine===false){toast("Not saved — you are offline","bad");return}
+  try{
+    const res=await sb.rpc("ward_undo_intern_task",{p_token:sessionTok,p_id:id});
+    if(!res||res.error||!res.data||res.data.ok===false)throw new Error("Task was not reopened");
+    const row=r17TaskFromRow(res.data.task||res.data);
+    const i=(S.internTasks||[]).findIndex(function(x){return x.id===id});
+    if(i>=0)S.internTasks[i]=row;
+    toast("Task reopened","ok");save();
+  }catch(e){toast("Task was not reopened","bad")}
+  render({force:1});
+}
+async function r17AssignIntern(pid, title, kind, due){
+  if(!needWrite())return;
+  if(!sb||!sessionTok||navigator.onLine===false){toast("Not saved — you are offline","bad");return}
+  const dueOn=/^\d{4}-\d{2}-\d{2}$/.test(String(due||""))?String(due):r17IstDay(new Date());
+  const id="it_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  setBusy(true,"Saving task…");
+  try{
+    const res=await sb.rpc("ward_assign_intern_task",{p_token:sessionTok,p_row:{id:id,patient_id:pid,kind:kind==="report"?"report":"general",title:title,due_on:dueOn}});
+    if(!res||res.error||!res.data||res.data.ok===false)throw new Error((res&&res.error&&res.error.message)||"Task was not assigned");
+    S.internTasks=S.internTasks||[];S.internTasks.unshift(r17TaskFromRow(res.data.task||res.data));
+    toast("Intern task assigned","ok");save();dismissOverlay();
+  }catch(e){toast(e.message||"Task was not assigned","bad")}
+  finally{setBusy(false)}
+}
+async function r17EctMark(planId){
+  if(!needWrite())return;
+  const plan=(S.ect||[]).find(function(e){return e.id===planId});
+  const p=plan&&patient(plan.pid);
+  const actor={id:S.userId,role:roleOf()};
+  const d=r17EctDecide(plan,p?{id:p.id,status:p.status,admittedAt:p.admittedAt}:null,actor,S.ectDone||[]);
+  if(!d.ok){toast(d.reason,"bad");return}
+  if(d.idempotent){toast("Already completed","ok");render();return}
+  if(!sb||!sessionTok||navigator.onLine===false){toast("Not saved — you are offline","bad");return}
+  const nextBefore=plan.nextAt,countBefore=plan.sessionsDone;
+  try{
+    const res=await sb.rpc("ward_complete_scheduled_ect",{p_token:sessionTok,p_plan_id:plan.id,p_occurrence_at:plan.nextAt});
+    if(!res||res.error||!res.data||res.data.ok===false)throw new Error((res&&res.error&&res.error.message)||"ECT was not marked complete");
+    plan.nextAt=nextBefore;plan.sessionsDone=countBefore;
+    const row=r17EctDoneFrom(res.data.completion||res.data);
+    S.ectDone=(S.ectDone||[]).filter(function(c){return c.id!==row.id});S.ectDone.push(row);
+    toast("ECT marked complete","ok");save();
+  }catch(e){toast(e.message||"ECT was not marked complete","bad")}
+  render();
+}
+async function r17EctUndo(planId){
+  if(!needWrite())return;
+  const plan=(S.ect||[]).find(function(e){return e.id===planId});
+  const row=(S.ectDone||[]).find(function(c){return String(c.planId)===String(planId)&&!c.undoneAt&&plan&&String(c.occurrenceAt)===String(plan.nextAt)});
+  if(!row){toast("Nothing to undo","bad");return}
+  if(!sb||!sessionTok||navigator.onLine===false){toast("Not saved — you are offline","bad");return}
+  const nextBefore=plan.nextAt,countBefore=plan.sessionsDone;
+  try{
+    const res=await sb.rpc("ward_undo_scheduled_ect",{p_token:sessionTok,p_id:row.id});
+    if(!res||res.error||!res.data||res.data.ok===false)throw new Error((res&&res.error&&res.error.message)||"ECT completion was not undone");
+    plan.nextAt=nextBefore;plan.sessionsDone=countBefore;
+    S.ectDone=(S.ectDone||[]).filter(function(c){return c.id!==row.id});
+    toast("ECT completion undone","ok");save();
+  }catch(e){toast(e.message||"ECT completion was not undone","bad")}
+  render();
+}
 function internHomeView(){
   const q=String(ui.iq||"").trim().toLowerCase();
-  const list=internSortedList(q);
-  return `<div class="intern-home">${internBanner()}${syncIssuesHtml()}<div class="row" style="margin:0 0 8px"><h2 class="page-title" style="margin:0">Patients</h2><span class="tiny">${list.length}</span></div>
+  const board=r17HomeBoard(q);
+  return `<div class="intern-home">${syncIssuesHtml()}<div class="row" style="margin:0 0 8px"><h2 class="page-title" style="margin:0">Today's vitals</h2><span class="tiny">${esc((r17IstWhen(new Date()).split(",")[0])||"")}</span></div>
     <input id="iq" type="search" placeholder="Search bed, name, hospital no" value="${esc(ui.iq||"")}" oninput="ui.iq=this.value;render({fromInput:1})" enterkeyhint="search" autocomplete="off" style="margin-bottom:10px">
-    ${list.length?list.map(p=>internCardHtml(p)).join(""):`<div class="card"><p class="sm">${q?"No patients match.":"No patients on the ward."}</p></div>`}</div>`;
+    ${r17InternVitalsHtml(board)}
+    ${r17InternTasksHtml(r17VisibleInternTasks())}</div>`;
 }
 function internSnapView(){
   const p=patient(route.id);
@@ -17449,7 +17687,160 @@ function ivd(){
 }
 function ivdSave(){try{localStorage.setItem(ivdKey(),JSON.stringify(ivd()))}catch(e){}}
 function ivHasDraft(pid){const d=ivd().d[pid];return !!d&&IV_KEYS.some(k=>String(d[k]||"").trim())}
-function ivVitToday(pid){const t=labTodayDay();return vitalsOf(pid).filter(v=>labRepDay(v.at)===t&&!((opFor("patient_vitals",v.id)||{}).status==="failed"))}
+/* R17_RULES_START */
+function r17Esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
+function r17IstParts(v){const d=v instanceof Date?v:new Date(v);if(v==null||v===""||isNaN(d.getTime()))return null;const t=new Date(d.getTime()+330*60000);return {y:t.getUTCFullYear(),m:t.getUTCMonth(),d:t.getUTCDate(),hh:t.getUTCHours(),mm:t.getUTCMinutes()}}
+function r17IstDay(v){const p=r17IstParts(v);if(!p)return "";const z=function(n){return String(n).padStart(2,"0")};return p.y+"-"+z(p.m+1)+"-"+z(p.d)}
+function r17IstWhen(v){const p=r17IstParts(v);if(!p)return "";const z=function(n){return String(n).padStart(2,"0")};const mon=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return z(p.d)+" "+mon[p.m]+" "+p.y+", "+z(p.hh)+":"+z(p.mm)}
+function r17OnAdmission(admittedAt, at, slackMs){const a=Date.parse(admittedAt||"");const t=Date.parse(at||"");if(!isFinite(t))return false;if(!isFinite(a))return true;return t>=a-(slackMs==null?6*3600e3:slackMs)}
+function r17OpState(ops, table, id){const op=(ops||[]).find(function(o){return o&&o.table===table&&o.row&&String(o.row.id)===String(id)&&o.status!=="acked"});if(!op)return "saved";if(op.status==="failed")return "failed";return "saving"}
+function r17VitalsRow(patient, vitals, ops, today){
+  const pid=patient&&patient.id;
+  const rows=(vitals||[]).filter(function(v){return v&&String(v.pid)===String(pid)&&!v.deleted&&r17IstDay(v.at)===today&&r17OnAdmission(patient.admittedAt,v.at,60000)});
+  const saved=rows.filter(function(v){return r17OpState(ops,"patient_vitals",v.id)==="saved"}).sort(function(a,b){return String(b.at).localeCompare(String(a.at))});
+  const saving=rows.filter(function(v){return r17OpState(ops,"patient_vitals",v.id)==="saving"});
+  const failed=rows.filter(function(v){return r17OpState(ops,"patient_vitals",v.id)==="failed"});
+  const done=saved[0]||null;
+  const state=done?"completed":saving.length?"saving":failed.length?"failed":"remaining";
+  return {pid:pid,state:state,completed:!!done,by:done?(done.byName||""):"",byId:done?(done.by||""):"",at:done?done.at:"",saving:saving.length,failed:failed.length};
+}
+function r17VitalsBoard(patients, vitals, ops, today){
+  const active=(patients||[]).filter(function(p){return p&&p.status!=="discharged"});
+  const rows=active.map(function(p){return Object.assign({name:p.name||"",bed:p.bed||""}, r17VitalsRow(p,vitals,ops,today))});
+  rows.sort(function(a,b){const rank=function(s){return s==="completed"?1:0};return rank(a.state)-rank(b.state)||String(a.bed).localeCompare(String(b.bed),undefined,{numeric:true})||String(a.name).localeCompare(String(b.name))});
+  const completed=rows.filter(function(r){return r.completed}).length;
+  return {rows:rows,completed:completed,remaining:rows.length-completed,saving:rows.filter(function(r){return r.state==="saving"}).length,failed:rows.filter(function(r){return r.state==="failed"}).length,today:today};
+}
+function r17PickLatest(list){return (list||[]).slice().filter(Boolean).sort(function(a,b){return String(b.at||b.reportedAt||"").localeCompare(String(a.at||a.reportedAt||""))})[0]||null}
+function r17MseWhy(patient, m, ops){if(!m)return "none";if(m.deleted)return "deleted";if(!r17OnAdmission(patient.admittedAt,m.at,6*3600e3))return "prior";const st=r17OpState(ops,"mse_entries",m.id);return st==="saved"?"eligible":st}
+function r17RepWhy(patient, r, ops){if(!r)return "none";if(r.deleted)return "deleted";if(!r17OnAdmission(patient.admittedAt,r.reportedAt||r.at,6*3600e3))return "prior";const st=r17OpState(ops,"lab_reports",r.id);return st==="saved"?"eligible":st}
+function r17DischargeReview(patient, mses, reports, opts){
+  opts=opts||{};const ops=opts.ops||[];
+  const mineM=(mses||[]).filter(function(m){return m&&String(m.pid)===String(patient.id)});
+  const mineR=(reports||[]).filter(function(r){return r&&String(r.pid)===String(patient.id)});
+  const mseOk=mineM.filter(function(m){return r17MseWhy(patient,m,ops)==="eligible"});
+  const repOk=mineR.filter(function(r){return r17RepWhy(patient,r,ops)==="eligible"});
+  const staged=!!(opts.stagedMse&&opts.stagedMse.data);
+  const stagedAtomic=!!opts.stagedAtomic;
+  const hasMse=mseOk.length>0||stagedAtomic;
+  const hasReport=repOk.length>0;
+  const latestEligibleMse=r17PickLatest(mseOk);
+  const latestAnyMse=r17PickLatest(mineM);
+  const latestMse=latestEligibleMse||latestAnyMse;
+  const latestEligibleRep=r17PickLatest(repOk);
+  const latestAnyRep=r17PickLatest(mineR);
+  const latestRep=hasReport?latestEligibleRep:latestAnyRep;
+  const missing=[];if(!hasMse)missing.push("mse");if(!hasReport)missing.push("report");
+  return {pid:patient.id,admittedAt:patient.admittedAt||null,missing:missing,warn:missing.length>0,hasMse:hasMse,hasReport:hasReport,
+    stagedPrepared:staged&&!stagedAtomic,stagedAtomic:stagedAtomic,investigationsComplete:false,
+    mseIds:mseOk.map(function(m){return m.id}),reportIds:repOk.map(function(r){return r.id}),
+    latestMseId:latestMse?latestMse.id:null,latestMseAt:latestMse?(latestMse.at||null):null,latestMseWhy:latestMse?r17MseWhy(patient,latestMse,ops):"none",latestMseEligible:!!latestEligibleMse,
+    latestReportId:latestRep?latestRep.id:null,latestReportAt:latestRep?(latestRep.reportedAt||latestRep.at||null):null,latestReportWhy:latestRep?r17RepWhy(patient,latestRep,ops):"none",latestReportEligible:!!latestEligibleRep};
+}
+function r17ReviewFingerprint(review){if(!review)return "";return [review.pid||"",review.admittedAt||"",(review.missing||[]).join(","),(review.mseIds||[]).join(","),(review.reportIds||[]).join(","),review.stagedAtomic?"atomic":"noatomic"].join("|")}
+function r17OverrideMatches(override, review){if(!review||!review.warn)return true;if(!override)return false;if(String(override.reason||"").trim().length<3)return false;if(String(override.pid)!==String(review.pid||""))return false;return override.fp===r17ReviewFingerprint(review)}
+function r17WarnLines(review){
+  const lines=[];
+  if(!review.hasMse){lines.push("No eligible MSE on this admission.");if(review.latestMseAt)lines.push("Latest MSE "+r17IstWhen(review.latestMseAt)+" ("+(review.latestMseWhy||"not counted")+") — not counted.");else lines.push("No MSE on record.")}
+  if(!review.hasReport){lines.push("No eligible investigation report on this admission.");if(review.latestReportAt)lines.push("Latest report "+r17IstWhen(review.latestReportAt)+" ("+(review.latestReportWhy||"not counted")+") — not counted.");else lines.push("No report on record.")}
+  if(review.stagedPrepared)lines.push("An MSE is filled on this device but not saved. It counts only if it is saved with the discharge.");
+  lines.push("A saved report does not mean every investigation is complete.");
+  return lines;
+}
+function r17ReportCanLink(task, report, patient, ops){
+  if(!task||task.kind!=="report"||task.status==="done")return false;
+  if(!report||report.deleted)return false;
+  if(String(report.pid)!==String(task.pid))return false;
+  if(patient&&!r17OnAdmission(patient.admittedAt, report.reportedAt||report.at, 6*3600e3))return false;
+  if(r17OpState(ops,"lab_reports",report.id)!=="saved")return false;
+  return true;
+}
+function r17GeneralComplete(task, actor){
+  if(!task||task.kind!=="general")return {ok:false,reason:"Report tasks complete only when a saved report is linked."};
+  if(task.status==="done")return {ok:true,idempotent:true};
+  if(!actor||actor.role!=="intern")return {ok:false,reason:"Interns complete intern tasks."};
+  return {ok:true,idempotent:false};
+}
+function r17GeneralUndo(task, actor){
+  if(!task||task.kind!=="general"||task.status!=="done")return {ok:false,reason:"Nothing to undo."};
+  const intern=actor&&actor.role==="intern"&&String(actor.id)===String(task.completedBy);
+  const resident=actor&&(actor.role==="resident"||actor.role==="admin");
+  if(!intern&&!resident)return {ok:false,reason:"Only the intern who completed it, or a resident, can undo."};
+  return {ok:true};
+}
+function r17EctDecide(plan, patient, actor, completions){
+  const no=function(reason){return {ok:false,reason:reason,scheduleNext:false}};
+  if(!actor||actor.role==="consultant"||actor.role==="intern"||actor.role==="viewer"||!actor.role)return no("This login cannot mark ECT complete.");
+  if(!plan||plan.status!=="planned"||!plan.nextAt)return no("This ECT is not scheduled.");
+  if(!patient||patient.status==="discharged")return no("Patient is not on the ward.");
+  if(!r17OnAdmission(patient.admittedAt, plan.nextAt, 60000))return no("That session is not for the current admission.");
+  const hit=(completions||[]).find(function(c){return c&&!c.undoneAt&&String(c.planId)===String(plan.id)&&String(c.occurrenceAt)===String(plan.nextAt)});
+  if(hit)return {ok:true,idempotent:true,scheduleNext:false,occurrenceAt:plan.nextAt,completion:hit};
+  return {ok:true,idempotent:false,scheduleNext:false,occurrenceAt:plan.nextAt};
+}
+function r17ScheduleItems(plans, patients, completions, today){
+  const items=[];
+  (plans||[]).forEach(function(e){
+    if(!e||(e.status&&e.status!=="planned")||!e.nextAt)return;
+    if(r17IstDay(e.nextAt)!==today)return;
+    const p=(patients||[]).find(function(x){return String(x.id)===String(e.pid)});
+    if(!p||p.status==="discharged")return;
+    if(!r17OnAdmission(p.admittedAt, e.nextAt, 60000))return;
+    const hit=(completions||[]).find(function(c){return c&&!c.undoneAt&&String(c.planId)===String(e.id)&&String(c.occurrenceAt)===String(e.nextAt)});
+    items.push({kind:"ect",planId:e.id,pid:e.pid,at:e.nextAt,occurrenceAt:e.nextAt,sessionsDone:e.sessionsDone||0,npo:e.npo!==false,bed:p.bed||"",done:!!hit,by:hit?(hit.byName||""):"",doneAt:hit?(hit.at||""):"",completionId:hit?(hit.id||""):""});
+  });
+  items.sort(function(a,b){return String(a.at).localeCompare(String(b.at))});
+  return items;
+}
+function r17InternVitalsHtml(board){
+  board=board||{rows:[],completed:0,remaining:0,saving:0,failed:0};
+  const counts='<div class="ih-counts" aria-label="Vitals today"><span>Completed <b>'+board.completed+'</b></span><span>Remaining <b>'+board.remaining+'</b></span></div>';
+  const flags=(board.saving?'<p class="ih-flag saving" role="status">Saving '+board.saving+'</p>':"")+(board.failed?'<p class="ih-flag failed" role="status">Failed '+board.failed+'</p>':"");
+  const rows=board.rows||[];
+  if(!rows.length)return counts+flags+'<div class="card"><p class="sm">'+(board.filteredEmpty?"No patients match.":"No patients on the ward.")+'</p></div>';
+  const body=rows.map(function(r){
+    const st=r.state==="completed"?("Completed"+(r.by?" · "+r.by:"")):r.state==="saving"?"Saving":r.state==="failed"?"Failed":"Remaining";
+    const act=r.completed?"":'<button type="button" class="btn sm" onclick="vitalsOpen(\''+r17Esc(r.pid)+'\')">Record vitals</button>';
+    return '<div class="ih-row '+r17Esc(r.state)+'" data-pid="'+r17Esc(r.pid)+'"><span class="ih-bed">'+r17Esc(r.bed||"—")+'</span><span class="ih-name">'+r17Esc(r.name||"")+'</span><span class="ih-st">'+r17Esc(st)+'</span><span class="ih-act">'+act+'</span></div>';
+  }).join("");
+  return counts+flags+'<div class="ih-list">'+body+'</div>';
+}
+function r17InternTasksHtml(tasks, mode){
+  const list=tasks||[];
+  if(!list.length)return '<section class="ih-tasks" aria-label="Assigned work"><p class="tiny">ASSIGNED WORK</p><p class="sm ih-empty">No intern tasks assigned.</p></section>';
+  return '<section class="ih-tasks" aria-label="Assigned work"><p class="tiny">ASSIGNED WORK</p>'+list.map(function(t){
+    const due=t.dueOn?'Due '+r17Esc(t.dueOn):"";
+    const done=t.status==="done";
+    if(t.kind==="report"){
+      return '<div class="ih-task" data-kind="report"><b>'+r17Esc(t.title||"Report")+'</b><span>'+due+'</span>'+(done?'<span class="ih-done">Completed · report saved'+(t.completedByName?' · '+r17Esc(t.completedByName):"")+'</span>':'<span>Completes when a saved report for this admission is linked.</span>')+'</div>';
+    }
+    const undo='<button type="button" class="btn sm ghost" onclick="r17InternTaskUndo(\''+r17Esc(t.id)+'\')">Undo</button>';
+    const btn=mode==="read"?"":mode==="status"?(done?undo:""):(done?undo:'<button type="button" class="btn sm" onclick="r17InternTaskDone(\''+r17Esc(t.id)+'\')">Mark complete</button>');
+    return '<div class="ih-task" data-kind="general"><b>'+r17Esc(t.title||"Task")+'</b><span>'+due+'</span>'+(done?'<span class="ih-done">Completed'+(t.completedByName?' · '+r17Esc(t.completedByName):"")+'</span>':"")+btn+'</div>';
+  }).join("")+'</section>';
+}
+function r17DischargeWarnHtml(review, reason){
+  const lines=r17WarnLines(review).map(function(t){return "<p>"+r17Esc(t)+"</p>"}).join("");
+  return '<div class="r17-warn" role="dialog" aria-modal="true" aria-labelledby="r17WarnT"><h2 id="r17WarnT">Before discharge</h2>'+lines+
+    '<label class="field"><span>Reason to continue</span><textarea id="r17Reason" rows="3" maxlength="300" placeholder="Why discharge should continue" oninput="ui.r17Reason=this.value">'+r17Esc(reason||"")+'</textarea></label>'+
+    '<div class="r17-warn-acts"><button type="button" class="btn sm ghost" onclick="r17WarnMse()">Update MSE</button><button type="button" class="btn sm ghost" onclick="r17WarnReports()">Review or add reports</button></div>'+
+    '<div class="r17-warn-acts"><button type="button" class="btn ghost" onclick="r17WarnCancel()">Cancel</button><button type="button" class="btn danger" onclick="r17WarnContinue()">Continue discharge</button></div></div>';
+}
+function r17ScheduleHtml(items, writable){
+  if(!items||!items.length)return '<p class="sm r146-empty">Nothing scheduled for today.</p>';
+  const write=writable!==false;
+  return "<ul>"+items.map(function(x){
+    if(x.kind!=="ect")return '<li class="r17-other"><button type="button" onclick="'+(x.fn||"")+'"><b>'+r17Esc(x.time||"")+'</b><span>'+r17Esc(x.txt||"")+'</span></button></li>';
+    const main='<button type="button" class="r17-ect-main" onclick="go(\'ect\')"><b>'+r17Esc(x.time||"")+'</b><span>'+r17Esc(x.txt||"")+'</span></button>';
+    const doneTxt='<span class="r17-ect-done">Completed'+(x.by?" · "+r17Esc(x.by):"")+(x.when?" · "+r17Esc(x.when)+" IST":"")+"</span>";
+    const side=x.done?doneTxt+(write?'<button type="button" class="btn sm ghost" onclick="r17EctUndo(\''+r17Esc(x.planId)+'\')">Undo</button>':""):(write?'<button type="button" class="btn sm r17-ect-go" onclick="r17EctMark(\''+r17Esc(x.planId)+'\')">Mark complete</button>':"");
+    return '<li class="r17-ect">'+main+'<span class="r17-ect-side">'+side+"</span></li>";
+  }).join("")+"</ul>";
+}
+/* R17_RULES_END */
+
+function ivVitToday(pid){const p=patient(pid);if(!p)return [];const today=r17IstDay(new Date());const ops=(typeof pending!=="undefined"?pending:[]).map(o=>({table:o.table,status:o.status,row:o.row}));return vitalsOf(pid).filter(v=>r17VitalsRow(p,[v],ops,today).completed)}
+
 function ivDue(pid){return !ivVitToday(pid).length}
 function ivActive(){return (S.patients||[]).filter(p=>p&&p.status!=="discharged")}
 function ivDueCount(){return ivActive().filter(p=>ivDue(p.id)).length}
