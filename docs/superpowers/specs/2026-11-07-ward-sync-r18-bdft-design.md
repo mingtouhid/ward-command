@@ -22,7 +22,7 @@ Accounts, batch, short name, and the default bed owner live in the existing User
 
 Publishing is one action. There is no approval stage. Replacing the current board asks for confirmation. One current board exists. Saves carry a version. A stale edit or undo is rejected.
 
-A successful generation queues one notice for residents and admins. Interns and consultants do not receive it. Ordinary edits do not. The distribution is still saved when the notice cannot be queued. This build does not send a push and does not create `ward_dispatch_anon_key`.
+A successful generation stores one notice in the same transaction. The key is `bdft:<distribution id>` and the link is `./#/bdft/<id>`, including after that distribution is replaced. Eligible readers are active residents, admins, and SR accounts. Interns and consultants are excluded. Clinical-alert opt-out skips the device push and still leaves the in-app notice. A rejected notice rolls the publication back. Provider success and failure are recorded separately and can be retried. This build does not send a push and does not create `ward_dispatch_anon_key`.
 
 ## Server checks
 

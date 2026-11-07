@@ -296,6 +296,17 @@ begin
           bdft_order = nullif(v_item->>'order','')::int
       where id = v_id;
   end loop;
+  if exists (
+    select 1 from public.bdft_bed_owners o
+    join public.residents r on r.id = o.resident_id
+    where r.active is false
+      and not exists (
+        select 1 from jsonb_array_elements(p_owners) x
+        where x->>'bedId' = o.bed_id and x->>'residentId' = o.resident_id
+      )
+  ) then
+    raise exception 'Disabled owners stay on their beds';
+  end if;
   delete from public.bdft_bed_owners;
   for v_item in select value from jsonb_array_elements(p_owners) loop
     v_bed := nullif(btrim(v_item->>'bedId'), '');
@@ -331,29 +342,40 @@ begin
 end;
 $fn$;
 
+create unique index if not exists bdft_inbox_delivery_uidx
+  on public.notification_deliveries (notification_id, resident_id)
+  where subscription_id is null and fcm_token_id is null;
+
+drop function if exists public.bdft_queue_notice(text, text, date);
 create or replace function public.bdft_queue_notice(p_id text, p_actor text, p_date date)
-returns text
+returns jsonb
 language plpgsql
 security definer
 set search_path to pg_catalog, public
 as $fn$
-declare v_nid uuid;
+declare v_nid uuid; v_key text := 'bdft:'||p_id; v_url text := './#/bdft/'||p_id;
 begin
-  if exists (select 1 from public.notification_events where dedupe_key = 'bdft:'||p_id) then
-    return 'queued';
+  select id into v_nid from public.notification_events where dedupe_key = v_key;
+  if v_nid is null then
+    insert into public.notification_events(
+      event_type, category, priority, actor_id, title, body, target_url, recipient_scope,
+      dedupe_key, metadata, dispatch_due
+    ) values (
+      'bdft', 'clinical', 'normal', p_actor, 'Bed distribution',
+      'A bed distribution for '||to_char(p_date, 'YYYY-MM-DD')||' is ready.',
+      v_url, 'bdft_residents', v_key,
+      jsonb_build_object('distribution_id', p_id, 'plan_date', p_date, 'kind', 'bdft'),
+      true
+    )
+    returning id into v_nid;
   end if;
-  insert into public.notification_events(
-    event_type, category, priority, actor_id, title, body, target_url, recipient_scope, dedupe_key, metadata
-  ) values (
-    'bdft', 'clinical', 'normal', p_actor, 'Bed distribution',
-    'A bed distribution for '||to_char(p_date, 'YYYY-MM-DD')||' is ready.',
-    './#/home', 'active_team', 'bdft:'||p_id,
-    jsonb_build_object('distribution_id', p_id, 'plan_date', p_date, 'kind', 'bdft')
-  )
-  returning id into v_nid;
-  return 'queued';
-exception when others then
-  return 'not_queued';
+  insert into public.notification_deliveries(id, notification_id, resident_id, subscription_id, fcm_token_id, status, attempts, created_at, updated_at)
+  select gen_random_uuid(), v_nid, r.id, null, null, 'skipped', 0, now(), now()
+  from public.residents r
+  where r.active is not false
+    and lower(coalesce(r.role,'')) in ('resident','admin','sr')
+  on conflict (notification_id, resident_id) where subscription_id is null and fcm_token_id is null do nothing;
+  return jsonb_build_object('status','queued','notificationId', v_nid, 'dedupeKey', v_key, 'targetUrl', v_url);
 end;
 $fn$;
 
@@ -365,7 +387,7 @@ security definer
 set search_path to pg_catalog, public
 as $fn$
 declare
-  a record; v_existing public.bdft_distributions; v_current text; v_rows jsonb; v_push text; v_census text;
+  a record; v_existing public.bdft_distributions; v_current text; v_rows jsonb; v_push jsonb; v_census text;
 begin
   select * into a from public.bdft_actor(p_token);
   if p_id is null or p_id !~ '^[A-Za-z0-9._:-]{1,80}$' then raise exception 'Distribution id is invalid'; end if;
@@ -375,7 +397,7 @@ begin
   perform pg_advisory_xact_lock(hashtext('ward-bdft-current'));
   select * into v_existing from public.bdft_distributions where id = p_id;
   if found then
-    return jsonb_build_object('ok', true, 'idempotent', true, 'state', public.ward_bdft_state(p_token));
+    return jsonb_build_object('ok', true, 'idempotent', true, 'push', 'queued', 'notificationId', v_existing.notification_id, 'state', public.ward_bdft_state(p_token));
   end if;
   if not public.bdft_on_evening(a.actor_id) then
     raise exception 'Bed distribution can be generated only while you are signed in for the evening shift';
@@ -399,16 +421,19 @@ begin
       set status = 'archived', replaced_by = p_id, replaced_at = now()
       where id = v_current;
   end if;
-  v_push := public.bdft_queue_notice(p_id, a.actor_id, p_date);
   insert into public.bdft_distributions(
     id, plan_date, status, created_by, created_at, updated_at, updated_by, version,
     occupancy_at, included_beds, absent_ids, census, push_status
   ) values (
     p_id, p_date, 'current', a.actor_id, now(), now(), a.actor_id, 1,
-    now(), coalesce(p_included, '{}'), coalesce(p_absent, '{}'), v_census, v_push
+    now(), coalesce(p_included, '{}'), coalesce(p_absent, '{}'), v_census, 'pending'
   );
   perform public.bdft_write_rows(p_id, v_rows);
-  return jsonb_build_object('ok', true, 'idempotent', false, 'push', v_push, 'state', public.ward_bdft_state(p_token));
+  v_push := public.bdft_queue_notice(p_id, a.actor_id, p_date);
+  update public.bdft_distributions
+    set push_status = 'queued', notification_id = (v_push->>'notificationId')::uuid
+    where id = p_id;
+  return jsonb_build_object('ok', true, 'idempotent', false, 'push', 'queued', 'notificationId', v_push->>'notificationId', 'state', public.ward_bdft_state(p_token));
 end;
 $fn$;
 
@@ -531,23 +556,26 @@ grant execute on function public.ward_bdft_move(uuid, integer, text, text, boole
 grant execute on function public.ward_bdft_undo(uuid, integer) to anon, authenticated, service_role;
 grant execute on function public.ward_bdft_regenerate(uuid, integer, boolean) to anon, authenticated, service_role;
 
--- Allow the bdft event type only when the existing check lists ect and not bdft.
-do $do$
-declare v_def text; v_name text;
-begin
-  select c.conname, pg_get_constraintdef(c.oid) into v_name, v_def
-  from pg_constraint c
-  join pg_class t on t.oid = c.conrelid
-  join pg_namespace n on n.oid = t.relnamespace
-  where n.nspname = 'public' and t.relname = 'notification_events' and c.contype = 'c'
-    and pg_get_constraintdef(c.oid) ilike '%ect%'
-  limit 1;
-  if v_name is not null and v_def not ilike '%bdft%' then
-    execute format('alter table public.notification_events drop constraint %I', v_name);
-    execute format('alter table public.notification_events add constraint %I %s', v_name, replace(v_def, '''ect''', '''ect'', ''bdft'''));
-  end if;
-end
-$do$;
+-- Named production checks. Every existing route stays. bdft is clinical and uses its own recipient scope.
+alter table public.notification_events drop constraint notification_events_event_type_check;
+alter table public.notification_events add constraint notification_events_event_type_check
+  check (event_type = any (array['admission'::text, 'discharge'::text, 'transfer'::text, 'handover'::text, 'task'::text, 'ect'::text, 'critical_status_update'::text, 'observation'::text, 'restrain'::text, 'broadcast'::text, 'advice'::text, 'archive'::text, 'bdft'::text]));
+
+alter table public.notification_events drop constraint notification_events_recipient_scope_check;
+alter table public.notification_events add constraint notification_events_recipient_scope_check
+  check (recipient_scope = any (array['active_team'::text, 'handover'::text, 'task_assignees'::text, 'admins'::text, 'bdft_residents'::text]));
+
+alter table public.notification_events drop constraint notification_events_routing_check;
+alter table public.notification_events add constraint notification_events_routing_check
+  check (
+    ((event_type = any (array['admission'::text, 'discharge'::text, 'transfer'::text, 'critical_status_update'::text, 'observation'::text, 'restrain'::text, 'advice'::text])) and category = 'clinical' and recipient_scope = 'active_team')
+    or (event_type = 'handover' and category = 'handovers' and recipient_scope = 'handover')
+    or (event_type = 'task' and category = 'tasks' and recipient_scope = 'task_assignees')
+    or (event_type = 'ect' and category = 'ect' and recipient_scope = 'active_team')
+    or (event_type = 'broadcast' and category = 'broadcast' and recipient_scope = 'active_team')
+    or (event_type = 'archive' and category = 'archive' and recipient_scope = 'admins')
+    or (event_type = 'bdft' and category = 'clinical' and recipient_scope = 'bdft_residents')
+  );
 
 -- R16 inbox, plus one predicate: bed-distribution notices are for residents and admins.
 CREATE OR REPLACE FUNCTION public.ward_list_notification_inbox(p_session_token uuid, p_limit integer DEFAULT 40)
@@ -595,6 +623,7 @@ BEGIN
       AND (
       v_role IN ('consultant','admin')
       OR e.recipient_scope = 'active_team'
+      OR (e.event_type = 'bdft' AND v_role IN ('resident','admin','sr'))
       OR EXISTS (
         SELECT 1 FROM public.notification_deliveries d
         WHERE d.notification_id = e.id AND d.resident_id = v_resident_id
@@ -620,3 +649,152 @@ BEGIN
   RETURN jsonb_build_object('ok', true, 'resident_id', v_resident_id, 'notifications', v_notifications);
 END;
 $function$;
+
+create or replace function public.ward_bdft_open(p_token uuid, p_id text)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path to pg_catalog, public
+as $fn$
+declare a record; d public.bdft_distributions;
+begin
+  select * into a from public.bdft_actor(p_token);
+  select * into d from public.bdft_distributions where id = p_id;
+  if not found then raise exception 'Distribution not found'; end if;
+  return jsonb_build_object(
+    'ok', true,
+    'editable', d.status = 'current' and d.created_by = a.actor_id,
+    'distribution', public.bdft_pack(p_id)
+  );
+end;
+$fn$;
+
+create or replace function public.ward_bdft_claim_delivery(p_token uuid, p_notification_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path to pg_catalog, public
+as $fn$
+declare
+  a record; e public.notification_events; d public.notification_deliveries; v_id uuid;
+begin
+  select * into a from public.bdft_actor(p_token);
+  select * into e from public.notification_events where id = p_notification_id for update;
+  if not found or e.event_type is distinct from 'bdft' then
+    raise exception 'Not a bed-distribution notice';
+  end if;
+  insert into public.notification_deliveries(id, notification_id, resident_id, subscription_id, fcm_token_id, status, attempts, created_at, updated_at)
+  select gen_random_uuid(), e.id, r.id, null, null, 'skipped', 0, now(), now()
+  from public.residents r
+  where r.active is not false and lower(coalesce(r.role,'')) in ('resident','admin','sr')
+  on conflict (notification_id, resident_id) where subscription_id is null and fcm_token_id is null do nothing;
+  insert into public.notification_deliveries(id, notification_id, resident_id, subscription_id, status, attempts, created_at, updated_at)
+  select gen_random_uuid(), e.id, s.resident_id, s.id, 'pending', 0, now(), now()
+  from public.push_subscriptions s
+  join public.residents r on r.id = s.resident_id
+  left join public.notification_preferences p on p.resident_id = r.id
+  where s.active is not false and r.active is not false
+    and lower(coalesce(r.role,'')) in ('resident','admin','sr')
+    and coalesce(p.clinical_alerts, true)
+    and not exists (
+      select 1 from public.notification_deliveries x
+      where x.notification_id = e.id and x.subscription_id = s.id
+    );
+  insert into public.notification_deliveries(id, notification_id, resident_id, fcm_token_id, status, attempts, created_at, updated_at)
+  select gen_random_uuid(), e.id, t.resident_id, t.id, 'pending', 0, now(), now()
+  from public.fcm_device_tokens t
+  join public.residents r on r.id = t.resident_id
+  left join public.notification_preferences p on p.resident_id = r.id
+  where t.active is not false and r.active is not false
+    and lower(coalesce(r.role,'')) in ('resident','admin','sr')
+    and coalesce(p.clinical_alerts, true)
+    and not exists (
+      select 1 from public.notification_deliveries x
+      where x.notification_id = e.id and x.fcm_token_id = t.id
+    );
+  update public.notification_deliveries x
+    set status = 'sending', attempts = x.attempts + 1, updated_at = now()
+    where x.id = (
+      select y.id from public.notification_deliveries y
+      where y.notification_id = e.id
+        and (y.subscription_id is not null or y.fcm_token_id is not null)
+        and (
+          y.status = 'pending'
+          or (y.status = 'failed' and coalesce(y.last_error,'') not like 'permanent:%'
+              and y.updated_at < now() - make_interval(secs => least(3600, 30 * greatest(y.attempts, 1))))
+          or (y.status = 'sending' and y.updated_at < now() - interval '2 minutes')
+        )
+      order by y.created_at, y.id
+      for update skip locked
+      limit 1
+    )
+  returning id into v_id;
+  if v_id is null then
+    if not exists (
+      select 1 from public.notification_deliveries y
+      where y.notification_id = e.id
+        and (y.subscription_id is not null or y.fcm_token_id is not null)
+        and y.status in ('pending','sending','failed')
+        and coalesce(y.last_error,'') not like 'permanent:%'
+    ) then
+      update public.notification_events set dispatch_due = false where id = e.id;
+    end if;
+    return jsonb_build_object('ok', true, 'claimed', false, 'notificationId', e.id);
+  end if;
+  update public.notification_events set dispatch_due = true where id = e.id and dispatch_due is not true;
+  select * into d from public.notification_deliveries where id = v_id;
+  return jsonb_build_object(
+    'ok', true, 'claimed', true, 'deliveryId', d.id, 'notificationId', e.id,
+    'residentId', d.resident_id, 'subscriptionId', d.subscription_id, 'fcmTokenId', d.fcm_token_id,
+    'attempts', d.attempts, 'tag', e.dedupe_key, 'targetUrl', e.target_url, 'title', e.title, 'body', e.body
+  );
+end;
+$fn$;
+
+create or replace function public.ward_bdft_apply_provider(p_token uuid, p_delivery_id uuid, p_result text, p_error text)
+returns jsonb
+language plpgsql
+security definer
+set search_path to pg_catalog, public
+as $fn$
+declare a record; d public.notification_deliveries; v_type text; v_due boolean;
+begin
+  select * into a from public.bdft_actor(p_token);
+  select * into d from public.notification_deliveries where id = p_delivery_id for update;
+  if not found then raise exception 'Delivery not found'; end if;
+  select event_type into v_type from public.notification_events where id = d.notification_id;
+  if v_type is distinct from 'bdft' then raise exception 'Not a bed-distribution delivery'; end if;
+  if p_result = 'sent' then
+    update public.notification_deliveries
+      set status = 'sent', sent_at = now(), last_error = null, updated_at = now()
+      where id = d.id;
+  elsif p_result = 'permanent' then
+    update public.notification_deliveries
+      set status = 'failed', last_error = 'permanent: '||coalesce(p_error,'provider rejected the device'), updated_at = now()
+      where id = d.id;
+  elsif p_result = 'transient' then
+    update public.notification_deliveries
+      set status = 'failed', last_error = coalesce(p_error,'provider unavailable'), updated_at = now()
+      where id = d.id;
+  else
+    raise exception 'Unknown provider result';
+  end if;
+  v_due := exists (
+    select 1 from public.notification_deliveries y
+    where y.notification_id = d.notification_id
+      and (y.subscription_id is not null or y.fcm_token_id is not null)
+      and y.status in ('pending','sending','failed')
+      and coalesce(y.last_error,'') not like 'permanent:%'
+  );
+  update public.notification_events set dispatch_due = v_due where id = d.notification_id;
+  return jsonb_build_object('ok', true, 'dispatchDue', v_due, 'notificationId', d.notification_id);
+end;
+$fn$;
+
+revoke all on function public.ward_bdft_open(uuid, text) from public;
+revoke all on function public.ward_bdft_claim_delivery(uuid, uuid) from public;
+revoke all on function public.ward_bdft_apply_provider(uuid, uuid, text, text) from public;
+grant execute on function public.ward_bdft_open(uuid, text) to anon, authenticated, service_role;
+grant execute on function public.ward_bdft_claim_delivery(uuid, uuid) to anon, authenticated, service_role;
+grant execute on function public.ward_bdft_apply_provider(uuid, uuid, text, text) to anon, authenticated, service_role;

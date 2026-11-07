@@ -1,7 +1,10 @@
 -- R1.8 bed distribution rollback. PREPARED, NOT APPLIED to production.
--- Drops the bed-distribution tables and columns. Restores the R1.6 inbox function.
--- Does not delete notification history rows that were already queued.
+-- Restores the production notification checks and inbox function captured for this release.
+-- Deletes bed-distribution notice rows so the restored checks can be applied.
 
+drop function if exists public.ward_bdft_apply_provider(uuid, uuid, text, text);
+drop function if exists public.ward_bdft_claim_delivery(uuid, uuid);
+drop function if exists public.ward_bdft_open(uuid, text);
 drop function if exists public.ward_bdft_regenerate(uuid, integer, boolean);
 drop function if exists public.ward_bdft_undo(uuid, integer);
 drop function if exists public.ward_bdft_move(uuid, integer, text, text, boolean);
@@ -15,6 +18,7 @@ drop function if exists public.bdft_compute(text[], text[]);
 drop function if exists public.bdft_on_evening(text);
 drop function if exists public.bdft_actor(uuid);
 
+drop index if exists public.bdft_inbox_delivery_uidx;
 drop table if exists public.bdft_rows;
 drop table if exists public.bdft_distributions;
 drop table if exists public.bdft_bed_owners;
@@ -24,22 +28,22 @@ alter table public.residents drop column if exists bdft_short;
 alter table public.residents drop column if exists bdft_order;
 
 delete from public.notification_events where event_type = 'bdft';
-do $do$
-declare v_def text; v_name text;
-begin
-  select c.conname, pg_get_constraintdef(c.oid) into v_name, v_def
-  from pg_constraint c
-  join pg_class t on t.oid = c.conrelid
-  join pg_namespace n on n.oid = t.relnamespace
-  where n.nspname = 'public' and t.relname = 'notification_events' and c.contype = 'c'
-    and pg_get_constraintdef(c.oid) ilike '%bdft%'
-  limit 1;
-  if v_name is not null then
-    execute format('alter table public.notification_events drop constraint %I', v_name);
-    execute format('alter table public.notification_events add constraint %I %s', v_name, replace(v_def, ', ''bdft''::text', ''));
-  end if;
-end
-$do$;
+alter table public.notification_events drop constraint notification_events_routing_check;
+alter table public.notification_events drop constraint notification_events_recipient_scope_check;
+alter table public.notification_events drop constraint notification_events_event_type_check;
+alter table public.notification_events add constraint notification_events_event_type_check
+  check (event_type = any (array['admission'::text, 'discharge'::text, 'transfer'::text, 'handover'::text, 'task'::text, 'ect'::text, 'critical_status_update'::text, 'observation'::text, 'restrain'::text, 'broadcast'::text, 'advice'::text, 'archive'::text]));
+alter table public.notification_events add constraint notification_events_recipient_scope_check
+  check (recipient_scope = any (array['active_team'::text, 'handover'::text, 'task_assignees'::text, 'admins'::text]));
+alter table public.notification_events add constraint notification_events_routing_check
+  check (
+    ((event_type = any (array['admission'::text, 'discharge'::text, 'transfer'::text, 'critical_status_update'::text, 'observation'::text, 'restrain'::text, 'advice'::text])) and category = 'clinical' and recipient_scope = 'active_team')
+    or (event_type = 'handover' and category = 'handovers' and recipient_scope = 'handover')
+    or (event_type = 'task' and category = 'tasks' and recipient_scope = 'task_assignees')
+    or (event_type = 'ect' and category = 'ect' and recipient_scope = 'active_team')
+    or (event_type = 'broadcast' and category = 'broadcast' and recipient_scope = 'active_team')
+    or (event_type = 'archive' and category = 'archive' and recipient_scope = 'admins')
+  );
 
 CREATE OR REPLACE FUNCTION public.ward_list_notification_inbox(p_session_token uuid, p_limit integer DEFAULT 40)
  RETURNS jsonb

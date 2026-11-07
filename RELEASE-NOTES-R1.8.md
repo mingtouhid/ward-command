@@ -6,7 +6,9 @@ Residents signed in for the evening shift can generate it. The server checks tha
 
 Occupancy is a snapshot. Changing the chips does not move a patient. A published board stays as published until it is replaced or explicitly regenerated. Unassigned beds stay visible. Disabled owners stay flagged.
 
-A generation queues one resident notice. This release does not send that notice. The dispatch key is still absent, and this change does not create one.
+A generation stores one notice for active residents, admins, and SR accounts. The link opens that distribution, including after it is replaced. Interns and consultants do not receive it. Opting out of clinical alerts skips the push and still leaves the in-app notice. The phone or browser permission is unchanged.
+
+The notice is queued with `dispatch_due` set. This build does not send it. `dispatch-bdft` is in the repository and refuses to send or claim. No cron job calls it. Unattended retry needs a later schedule that uses the platform role already used by `dispatch-notification`, plus that function's existing VAPID or FCM environment. `ward_dispatch_anon_key` is not created.
 
 Service worker cache: `ward-sync-pwa-r1.8`.
 

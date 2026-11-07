@@ -15,7 +15,7 @@ The approved rules are specific enough to implement without the original file. O
 
 ## Notification limit
 
-`bdft_queue_notice` inserts one `notification_events` row with dedupe key `bdft:<id>`. A duplicate key returns the existing row. A failure is caught and the distribution remains saved. Nothing in this repository calls the dispatch function. Push delivery stays blocked until a later, separately authorised deploy creates the missing anon key and the edge function is present.
+Publication and the notice commit together. The dedupe key is `bdft:<distribution id>`. The target is `./#/bdft/<id>`. A check failure aborts the publication instead of being reported as queued. Provider success and failure are recorded later by `ward_bdft_claim_delivery` and `ward_bdft_apply_provider`. `supabase/functions/dispatch-bdft/index.ts` does not send.
 
 ## Rollback
 

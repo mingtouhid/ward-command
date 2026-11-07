@@ -12212,6 +12212,13 @@ function openNotification(id){
   if(!n)return;
   ui.sheet=null;
   const kind=String(n.event_type||n.category||"").toLowerCase();
+  const link=String(n.target_url||"");
+  const bdft=link.match(/#\/bdft\/([^/?#]+)/);
+  if(kind==="bdft"||bdft){
+    ui.bdftOpenId=bdft?decodeURIComponent(bdft[1]):"";
+    go("bdft");
+    return;
+  }
   if(kind==="broadcast"){go("broadcast");return;}
   if(kind==="ect"){go("ect");return;}
   if(kind==="handover"){go("handover");return;}
@@ -19203,6 +19210,11 @@ async function bdftLoad(quiet){
   ui.bdftLoading=true;
   try{
     ui.bdftState=await bdftRpc("ward_bdft_state");
+    if(ui.bdftOpenId){
+      const opened=await bdftRpc("ward_bdft_open",{p_id:ui.bdftOpenId});
+      ui.bdftState.opened=opened&&opened.distribution;
+      ui.bdftState.editable=!!(opened&&opened.editable);
+    }
     ui.bdftLoaded=true; ui.bdftErr="";
   }catch(e){ ui.bdftErr=String(e.message||e); if(!quiet) toast("Bed distribution could not be loaded","bad"); }
   ui.bdftLoading=false;
@@ -19216,6 +19228,7 @@ function bdftMount(){
   const st=ui.bdftState;
   if(!st){root.appendChild(bdftEl("p","sm",ui.bdftErr||"Loading bed distribution…")); if(!ui.bdftSkipNet&&!ui.bdftLoading) bdftLoad(); return}
   if(ui.bdftMode==="setup"){bdftMountSetup(root,st);return}
+  if(st.opened){bdftMountBoard(root,st);return}
   if(!st.current){bdftMountGenerate(root,st);return}
   bdftMountBoard(root,st);
 }
@@ -19267,12 +19280,15 @@ async function bdftGenerate(census){
     const data=await bdftRpc("ward_bdft_generate",{p_id:id,p_date:document.getElementById("bdft-date").value,p_included:useCensus==="empty"?[]:included,p_absent:absent,p_census:useCensus,p_replace:!!st.current});
     if(data&&data.code==="confirm_replace"){toast("Confirm replacement first","bad");return}
     ui.bdftState=data.state; ui.bdftLoaded=true;
-    toast(data.push==="queued"?"Distribution saved. A notice is queued.":"Distribution saved. The notice was not queued.");
+    toast("Distribution saved. The notice is queued.");
+    bdftAskDispatch(data.notificationId);
     render();
   }catch(e){toast(String(e.message||e),"bad")}
 }
 function bdftMountBoard(root,st){
-  const cur=st.current, me=st.me||{}, mine=me.id&&cur.createdBy===me.id;
+  const cur=st.opened||st.current, me=st.me||{};
+  const archived=cur.status==="archived"||(ui.bdftOpenId&&cur.id===ui.bdftOpenId&&cur.id!==(st.current&&st.current.id));
+  const mine=!archived&&me.id&&cur.createdBy===me.id&&st.editable!==false;
   const head=bdftEl("p","tiny",cur.planDate+" · "+(cur.createdName||"")+(mine?" · you can edit":" · view only"));
   root.appendChild(head);
   const live=(st.beds||[]).filter(b=>b.occupied).map(b=>b.id).sort().join(",");
@@ -19336,7 +19352,9 @@ function bdftChip(r,mine){
   return chip;
 }
 async function bdftMove(bed,to,allow){
-  const cur=ui.bdftState&&ui.bdftState.current; if(!cur) return;
+  const cur=ui.bdftState&&(ui.bdftState.opened||ui.bdftState.current); if(!cur||ui.bdftBusy) return;
+  if(cur.status==="archived"||cur.createdBy!==(ui.bdftState.me&&ui.bdftState.me.id)){toast("Only the creator can edit this distribution","bad");return}
+  ui.bdftBusy=true;
   try{
     const data=await bdftRpc("ward_bdft_move",{p_version:cur.version,p_bed:bed,p_to:to,p_allow_adjacent:!!allow});
     if(data&&data.code==="adjacent"){
@@ -19344,18 +19362,38 @@ async function bdftMove(bed,to,allow){
       return;
     }
     ui.bdftState=data.state; render();
-  }catch(e){toast(String(e.message||e),"bad")}
+  }catch(e){
+    const msg=String(e.message||e);
+    if(/changed|creator|Distribution/i.test(msg)&&!ui.bdftSkipNet) bdftLoad(true);
+    toast(msg,"bad");
+  }finally{ui.bdftBusy=false}
 }
 async function bdftUndo(){
-  const cur=ui.bdftState&&ui.bdftState.current; if(!cur) return;
+  const cur=ui.bdftState&&ui.bdftState.current; if(!cur||ui.bdftBusy) return;
+  if(cur.createdBy!==(ui.bdftState.me&&ui.bdftState.me.id)){toast("Only the creator can edit this distribution","bad");return}
+  ui.bdftBusy=true;
   try{const data=await bdftRpc("ward_bdft_undo",{p_version:cur.version}); ui.bdftState=data.state; render()}
   catch(e){toast(String(e.message||e),"bad")}
+  finally{ui.bdftBusy=false}
+}
+async function bdftAskDispatch(id){
+  if(!id||ui.bdftSkipNet||!sb||!sessionTok||!navigator.onLine||!S.supabaseUrl) return;
+  try{
+    await fetch(String(S.supabaseUrl).replace(/\/$/,"")+"/functions/v1/dispatch-bdft",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","apikey":S.supabaseAnonKey,"Authorization":"Bearer "+S.supabaseAnonKey},
+      body:JSON.stringify({notification_id:id,session_token:sessionTok})
+    });
+  }catch(e){}
 }
 async function bdftRegen(){
-  const cur=ui.bdftState&&ui.bdftState.current; if(!cur) return;
+  const cur=ui.bdftState&&ui.bdftState.current; if(!cur||ui.bdftBusy) return;
+  if(cur.createdBy!==(ui.bdftState.me&&ui.bdftState.me.id)){toast("Only the creator can edit this distribution","bad");return}
   if(!window.confirm("Rebuild from the default map? Manual moves and undo will be discarded.")) return;
+  ui.bdftBusy=true;
   try{const data=await bdftRpc("ward_bdft_regenerate",{p_version:cur.version,p_confirm:true}); ui.bdftState=data.state; render()}
   catch(e){toast(String(e.message||e),"bad")}
+  finally{ui.bdftBusy=false}
 }
 function bdftPng(cur,st){
   try{
@@ -19441,7 +19479,7 @@ function render(opts){
   if(ui._sheetEnter) _html=stampSheetEnter(_html);
   // R1.3.74: skip identical re-renders (realtime pulls, inbox refresh) so the page doesn't flash or replay animations.
   const _rk=routeKey(route.page,route.id);
-  if(!opts.nav && !opts.force && !navAnim && _html===lastRenderHtml && el.firstChild){ui._sheetEnter=false;renderHeld=false;renderSkips++;return}
+  if(!opts.nav && !opts.force && !navAnim && _html===lastRenderHtml && el.firstChild){ui._sheetEnter=false;renderHeld=false;renderSkips++;try{ if(route.page==="bdft") bdftMount(); }catch(e){}return}
   el.classList.toggle("rerender", !opts.nav && !navAnim && _rk===lastRenderRoute);
   const _sameRoute=(_rk===lastRenderRoute);
   lastRenderHtml=_html; lastRenderRoute=_rk; renderCount++;
@@ -19552,6 +19590,13 @@ document.addEventListener("visibilitychange",()=>{
 });
 window.addEventListener("focus",()=>{if(cloudOn()&&!liveReady)scheduleReconnect()});
 if(!navigator.onLine){cloudStatus="offline";Sync.state="OFFLINE"}
+(function bdftReadHash(){
+  const m=String(location.hash||"").match(/^#\/bdft\/([^/?#]+)$/);
+  if(!m) return;
+  ui.bdftOpenId=decodeURIComponent(m[1]);
+  nav.tab="more";
+  nav.stack=[{page:"bdft",id:null}];
+})();
 render();
 cloudBoot().finally(()=>render());
 setInterval(()=>{
