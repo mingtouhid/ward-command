@@ -8,7 +8,7 @@ Occupancy is a snapshot. Changing the chips does not move a patient. A published
 
 A generation stores one notice for active residents, admins, and SR accounts. The link opens that distribution, including after it is replaced. Interns and consultants do not receive it. Opting out of clinical alerts skips the push and still leaves the in-app notice. The phone or browser permission is unchanged.
 
-The notice is queued with `dispatch_due` set. This build does not send it. `dispatch-bdft` is in the repository and refuses to send or claim. No cron job calls it. Unattended retry needs a later schedule that uses the platform role already used by `dispatch-notification`, plus that function's existing VAPID or FCM environment. `ward_dispatch_anon_key` is not created.
+`dispatch-bdft` sends Web Push and FCM for bed-distribution rows only, using the VAPID or FCM environment already used by `dispatch-notification`. If that environment is absent it returns deferred and does not claim a row. This build does not deploy the function and its tests use mocked HTTP. No cron job calls it. Unattended retry needs an operator-approved schedule that can present an eligible resident session. `ward_dispatch_anon_key` is not created.
 
 Service worker cache: `ward-sync-pwa-r1.8`.
 

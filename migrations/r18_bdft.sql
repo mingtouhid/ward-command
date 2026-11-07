@@ -746,7 +746,10 @@ begin
   select * into d from public.notification_deliveries where id = v_id;
   return jsonb_build_object(
     'ok', true, 'claimed', true, 'deliveryId', d.id, 'notificationId', e.id,
-    'residentId', d.resident_id, 'subscriptionId', d.subscription_id, 'fcmTokenId', d.fcm_token_id,
+    'residentId', d.resident_id,
+    'role', (select lower(coalesce(role,'')) from public.residents where id = d.resident_id),
+    'clinicalAlerts', coalesce((select clinical_alerts from public.notification_preferences where resident_id = d.resident_id), true),
+    'subscriptionId', d.subscription_id, 'fcmTokenId', d.fcm_token_id,
     'attempts', d.attempts, 'tag', e.dedupe_key, 'targetUrl', e.target_url, 'title', e.title, 'body', e.body
   );
 end;

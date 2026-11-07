@@ -1020,7 +1020,10 @@ html[data-theme="dark"] .bdft-panel .pill.full small{color:#99f6e4}
 .bdft-chip{display:inline-flex;margin:3px;padding:6px 8px;border-radius:10px;border:1px solid var(--line);background:color-mix(in srgb,var(--ghost) 72%,transparent);font-weight:700;cursor:pointer}
 .bdft-orphan{border-color:#e11d48}
 .bdft-note{margin:8px 0;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--amber,#f59e0b) 16%,var(--panel))}
-.bdft-abs{display:flex;align-items:center;gap:8px;margin:4px 0}
+.bdft-abs{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;margin:0 0 8px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer}
+.bdft-abs input{width:20px;height:20px;flex:0 0 20px;margin:0;padding:0}
+.bdft-abs span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:650}
+.bdft-abs.on{border-color:#e11d48;background:color-mix(in srgb,#e11d48 10%,var(--panel))}
 .bdft-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 
 
@@ -19189,9 +19192,9 @@ function scShell(inner){const T=scShellTitle();
 function bdftHomeCard(){
   const c=ui.bdftState&&ui.bdftState.current;
   if(!c||isIntern()||isConsultant()||!canWrite()) return "";
-  const when=c.updatedAt?new Date(c.updatedAt).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour12:false}):"";
+  const when=bdftStamp(c.updatedAt);
   return `<button type="button" class="card" style="text-align:left;width:100%;margin:0 0 10px" onclick="go('bdft')">
-    <p class="tiny">BED DISTRIBUTION</p><b>${esc(c.planDate||"")}</b>
+    <p class="tiny">BED DISTRIBUTION</p><b>${esc(dmyShow(c.planDate||""))}</b>
     <p class="tiny">${esc(c.createdName||"Resident")} · ${esc(when)}</p></button>`;
 }
 function bdftOpenSetup(){ui.bdftMode="setup";go("bdft")}
@@ -19220,6 +19223,20 @@ async function bdftLoad(quiet){
   ui.bdftLoading=false;
   if(route.page==="bdft"||route.page==="home") render();
 }
+function bdftStamp(iso){
+  if(!iso) return "";
+  const day=dmyShow(String(iso).slice(0,10));
+  const d=new Date(iso);
+  if(String(iso).length<=10||isNaN(d.getTime())) return day;
+  const t=new Date(d.getTime()+330*60000);
+  const z=n=>String(n).padStart(2,"0");
+  return z(t.getUTCDate())+"/"+z(t.getUTCMonth()+1)+"/"+t.getUTCFullYear()+", "+z(t.getUTCHours())+":"+z(t.getUTCMinutes());
+}
+function bdftCovered(r,people){
+  if(!r||!r.holderId||r.disabled) return false;
+  const p=(people||[]).find(x=>x.id===r.holderId);
+  return !(p&&p.active===false);
+}
 function bdftEl(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n}
 function bdftMount(){
   const root=document.getElementById("bdft-root"); if(!root) return;
@@ -19239,9 +19256,11 @@ function bdftMountGenerate(root,st){
   const occ=(st.beds||[]).filter(b=>b.occupied);
   ui.bdftInclude=ui.bdftInclude||Object.fromEntries(occ.map(b=>[b.id,true]));
   ui.bdftAbsent=ui.bdftAbsent||{};
-  const date=bdftEl("input"); date.type="date"; date.value=ui.bdftDate||bdftIstTomorrow(); date.id="bdft-date";
-  date.addEventListener("input",()=>{ui.bdftDate=date.value});
-  const lab=bdftEl("label","field"); lab.appendChild(bdftEl("span",null,"Distribution date")); lab.appendChild(date);
+  const iso=ui.bdftDate||bdftIstTomorrow();
+  const date=bdftEl("input"); date.type="text"; date.inputMode="numeric"; date.maxLength=10; date.placeholder="dd/mm/yyyy"; date.className="dmy-d"; date.value=dmyShow(iso); date.setAttribute("aria-label","Distribution date, dd/mm/yyyy");
+  const hidden=bdftEl("input"); hidden.type="hidden"; hidden.id="bdft-date"; hidden.value=iso;
+  date.addEventListener("input",()=>{const p=dmyParse(date.value); if(p.iso){hidden.value=p.iso; ui.bdftDate=p.iso;}});
+  const lab=bdftEl("label","field"); lab.appendChild(bdftEl("span",null,"Distribution date")); lab.appendChild(date); lab.appendChild(hidden);
   root.appendChild(lab);
   const census=occ.length? "live":"empty";
   root.appendChild(bdftEl("p","tiny",census==="empty"?"No occupied beds. Generating publishes an empty board.":"Occupancy is a snapshot. Unticking a bed changes only this distribution."));
@@ -19258,10 +19277,12 @@ function bdftMountGenerate(root,st){
   Object.keys(batches).forEach(name=>{
     root.appendChild(bdftEl("p","tiny",name));
     batches[name].forEach(p=>{
-      const row=bdftEl("label","bdft-abs"); const box=document.createElement("input"); box.type="checkbox"; box.checked=!!ui.bdftAbsent[p.id];
-      box.addEventListener("change",()=>{ui.bdftAbsent[p.id]=box.checked});
-      row.appendChild(box); row.appendChild(document.createTextNode(" Unavailable · "+(p.short||p.name||p.id)+(p.active?"":" (disabled)")));
-      root.appendChild(row);
+      const row=bdftEl("label","bdft-abs"+(ui.bdftAbsent[p.id]?" on":""));
+      const box=document.createElement("input"); box.type="checkbox"; box.checked=!!ui.bdftAbsent[p.id];
+      box.setAttribute("aria-label",(p.short||p.name||p.id)+" unavailable");
+      box.addEventListener("change",()=>{ui.bdftAbsent[p.id]=box.checked; render()});
+      const name=bdftEl("span",null,(p.short||p.name||p.id)+(p.active?"":" · disabled")+(ui.bdftAbsent[p.id]?" · Unavailable":""));
+      row.appendChild(box); row.appendChild(name); root.appendChild(row);
     });
   });
   const go=bdftEl("button","btn block","Generate"); go.type="button"; go.style.marginTop="12px";
@@ -19289,7 +19310,7 @@ function bdftMountBoard(root,st){
   const cur=st.opened||st.current, me=st.me||{};
   const archived=cur.status==="archived"||(ui.bdftOpenId&&cur.id===ui.bdftOpenId&&cur.id!==(st.current&&st.current.id));
   const mine=!archived&&me.id&&cur.createdBy===me.id&&st.editable!==false;
-  const head=bdftEl("p","tiny",cur.planDate+" · "+(cur.createdName||"")+(mine?" · you can edit":" · view only"));
+  const head=bdftEl("p","tiny",dmyShow(cur.planDate)+" · "+(cur.createdName||"")+(mine?" · you can edit":" · view only"));
   root.appendChild(head);
   const live=(st.beds||[]).filter(b=>b.occupied).map(b=>b.id).sort().join(",");
   const snap=(cur.rows||[]).map(r=>r.bedId).sort().join(",");
@@ -19307,11 +19328,15 @@ function bdftMountBoard(root,st){
     const exp=bdftEl("button","btn ghost sm","Export PNG"); exp.type="button"; exp.addEventListener("click",()=>bdftPng(cur,st));
     root.appendChild(exp);
   }
-  const orphans=(cur.rows||[]).filter(r=>!r.holderId);
-  if(orphans.length){
+  const uncovered=(cur.rows||[]).filter(r=>!bdftCovered(r,st.people));
+  if(uncovered.length){
     const box=bdftEl("div","bdft-card bdft-orphan");
-    box.appendChild(bdftEl("p","tiny","Unassigned"));
-    orphans.forEach(r=>box.appendChild(bdftChip(r,mine,st)));
+    box.appendChild(bdftEl("p","tiny","Uncovered"));
+    uncovered.forEach(r=>{
+      const who=r.disabled||((st.people||[]).find(p=>p.id===r.holderId)||{}).active===false?"Disabled owner":"No owner";
+      const line=bdftEl("span","bdft-chip bdft-orphan",(r.label||r.bedId)+" · "+who);
+      box.appendChild(line);
+    });
     root.appendChild(box);
   }
   const cols=bdftEl("div","bdft-cols");
@@ -19321,9 +19346,9 @@ function bdftMountBoard(root,st){
     const sec=bdftEl("section"); sec.appendChild(bdftEl("p","tiny",name));
     batches[name].forEach(p=>{
       const card=bdftEl("div","bdft-card");
-      const held=(cur.rows||[]).filter(r=>r.holderId===p.id);
+      const held=(cur.rows||[]).filter(r=>r.holderId===p.id&&bdftCovered(r,st.people));
       card.appendChild(bdftEl("b",null,(p.short||p.name||p.id)+" · "+held.length));
-      if(!p.active) card.appendChild(bdftEl("p","tiny","Disabled account. Coverage stays visible."));
+      if(!p.active) card.appendChild(bdftEl("p","tiny","Disabled account. Beds stay listed as uncovered."));
       card.addEventListener("dragover",e=>{if(mine)e.preventDefault()});
       card.addEventListener("drop",e=>{e.preventDefault(); const id=e.dataTransfer.getData("text/plain"); if(mine&&id) bdftMove(id,p.id,false)});
       held.forEach(r=>card.appendChild(bdftChip(r,mine,st)));
@@ -19342,7 +19367,7 @@ function bdftMountBoard(root,st){
   const arch=st.archives||[];
   if(arch.length){
     root.appendChild(bdftEl("p","tiny","Recent archives"));
-    arch.slice(0,7).forEach(a=>root.appendChild(bdftEl("p","sm",(a.planDate||"")+" · "+(a.createdName||""))));
+    arch.slice(0,7).forEach(a=>root.appendChild(bdftEl("p","sm",dmyShow(a.planDate||"")+" · "+(a.createdName||""))));
   }
 }
 function bdftChip(r,mine){
