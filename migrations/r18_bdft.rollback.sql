@@ -2,6 +2,9 @@
 -- Restores the production notification checks and inbox function captured for this release.
 -- Deletes bed-distribution notice rows so the restored checks can be applied.
 
+drop function if exists public.ward_bdft_service_apply(uuid, text, text);
+drop function if exists public.ward_bdft_service_claim(uuid);
+drop function if exists public.ward_bdft_dispatch_scope(uuid, uuid);
 drop function if exists public.ward_bdft_apply_provider(uuid, uuid, text, text);
 drop function if exists public.ward_bdft_claim_delivery(uuid, uuid);
 drop function if exists public.ward_bdft_open(uuid, text);

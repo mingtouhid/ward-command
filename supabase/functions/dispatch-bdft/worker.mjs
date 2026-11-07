@@ -91,29 +91,77 @@ function messageData(claim) {
   };
 }
 
-export async function runBdftDispatch(ctx) {
-  const body = ctx.body || {};
-  const notificationId = body.notification_id;
-  const sessionToken = body.session_token;
-  if (!notificationId || !sessionToken) {
-    return { status: 400, body: { ok: false, error: "notification_id and session_token are required" } };
+export function serviceKeyFromEnv(env) {
+  try {
+    const parsed = JSON.parse(String(env && env.SUPABASE_SECRET_KEYS || ""));
+    return String(parsed.default || "");
+  } catch (e) {
+    return "";
   }
+}
+
+function sameSecret(left, right) {
+  const a = String(left || "");
+  const b = String(right || "");
+  if (!a || !b || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+export function authorizeBdftRequest({ authorization, apikey, body, env }) {
+  const bearer = String(authorization || "").replace(/^Bearer\s+/i, "");
+  const key = serviceKeyFromEnv(env);
+  const isService = !!key && (sameSecret(bearer, key) || sameSecret(apikey, key));
+  const session = body && body.session_token ? String(body.session_token) : "";
+  if (body && body.event_type && body.event_type !== "bdft") {
+    return { ok: false, status: 403, error: "This worker only sends bed distribution" };
+  }
+  if (body && body.recipient_scope && body.recipient_scope !== "bdft_residents") {
+    return { ok: false, status: 403, error: "This worker only sends bed distribution" };
+  }
+  if (isService && session) {
+    return { ok: false, status: 400, error: "A service retry cannot carry a resident session" };
+  }
+  if (isService) {
+    return { ok: true, mode: "service" };
+  }
+  if (session) {
+    if (!body.notification_id) return { ok: false, status: 400, error: "notification_id is required" };
+    return { ok: true, mode: "resident", sessionToken: session, notificationId: String(body.notification_id) };
+  }
+  return { ok: false, status: 401, error: "authentication required" };
+}
+
+export async function runBdftDispatch(ctx) {
+  const auth = authorizeBdftRequest({
+    authorization: ctx.authorization, apikey: ctx.apikey, body: ctx.body || {}, env: ctx.env || {},
+  });
+  if (!auth.ok) return { status: auth.status, body: { ok: false, error: auth.error } };
   if (!ctx.providerConfigured()) {
-    return { status: 200, body: { ok: true, dispatch: "deferred", reason: "provider not configured", notification_id: notificationId } };
+    return { status: 200, body: { ok: true, dispatch: "deferred", reason: "provider not configured" } };
+  }
+  let notificationId = null;
+  if (auth.mode === "resident") {
+    const scope = await ctx.scope(auth.sessionToken, auth.notificationId);
+    if (!scope || scope.ok !== true) {
+      return { status: 403, body: { ok: false, error: (scope && scope.error) || "not allowed to dispatch this notice" } };
+    }
+    notificationId = auth.notificationId;
   }
   let sent = 0;
   let failed = 0;
   let stopped = 0;
   for (let n = 0; n < 50; n++) {
-    const claim = await ctx.claim(sessionToken, notificationId);
+    const claim = await ctx.claim(notificationId);
     if (claim && claim.error) return { status: 403, body: { ok: false, error: claim.error } };
     if (!claim || !claim.claimed) {
-      return { status: 200, body: { ok: true, dispatch: sent || failed || stopped ? "done" : "idle", notification_id: notificationId, sent, failed, stopped } };
+      return { status: 200, body: { ok: true, dispatch: sent || failed || stopped ? "done" : "idle", mode: auth.mode, sent, failed, stopped } };
     }
     const role = String(claim.role || "").toLowerCase();
     const data = messageData(claim);
-    if (!ELIGIBLE.has(role) || claim.clinicalAlerts === false || !data.tag.startsWith("bdft:") || !data.url.includes("/bdft/")) {
-      await ctx.apply(sessionToken, claim.deliveryId, "permanent", "recipient or link is not eligible for bed distribution");
+    if (!ELIGIBLE.has(role) || claim.clinicalAlerts === false || (claim.eventType && claim.eventType !== "bdft") || !data.tag.startsWith("bdft:") || !data.url.includes("/bdft/")) {
+      await ctx.apply(claim.deliveryId, "permanent", "recipient or link is not eligible for bed distribution");
       stopped++;
       continue;
     }
@@ -127,14 +175,14 @@ export async function runBdftDispatch(ctx) {
       if (target.kind === "webpush") await ctx.sendWebPush(target, data);
       else if (target.kind === "fcm") await ctx.sendFcm(target, data);
       else throw new Error("unknown device");
-      await ctx.apply(sessionToken, claim.deliveryId, "sent", null);
+      await ctx.apply(claim.deliveryId, "sent", null);
       sent++;
     } catch (err) {
       const kind = err && err.permanent ? "permanent" : providerFailureClass(err);
-      await ctx.apply(sessionToken, claim.deliveryId, kind, String(err && err.message || err));
+      await ctx.apply(claim.deliveryId, kind, String(err && err.message || err));
       if (kind === "permanent") stopped++;
       else failed++;
     }
   }
-  return { status: 200, body: { ok: true, dispatch: "partial", notification_id: notificationId, sent, failed, stopped } };
+  return { status: 200, body: { ok: true, dispatch: "partial", mode: auth.mode, sent, failed, stopped } };
 }

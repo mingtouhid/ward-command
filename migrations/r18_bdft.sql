@@ -670,19 +670,50 @@ begin
 end;
 $fn$;
 
-create or replace function public.ward_bdft_claim_delivery(p_token uuid, p_notification_id uuid)
+create or replace function public.ward_bdft_dispatch_scope(p_token uuid, p_notification_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path to pg_catalog, public
+as $fn$
+declare a record; e public.notification_events;
+begin
+  select * into a from public.bdft_actor(p_token);
+  select * into e from public.notification_events where id = p_notification_id;
+  if not found
+     or e.event_type is distinct from 'bdft'
+     or e.recipient_scope is distinct from 'bdft_residents'
+     or coalesce(e.dedupe_key, '') not like 'bdft:%' then
+    raise exception 'Not a bed-distribution notice';
+  end if;
+  return jsonb_build_object('ok', true, 'notificationId', e.id);
+end;
+$fn$;
+
+create or replace function public.ward_bdft_service_claim(p_notification_id uuid default null)
 returns jsonb
 language plpgsql
 security definer
 set search_path to pg_catalog, public
 as $fn$
 declare
-  a record; e public.notification_events; d public.notification_deliveries; v_id uuid;
+  e public.notification_events; d public.notification_deliveries; v_id uuid; v_ok boolean; i int;
 begin
-  select * into a from public.bdft_actor(p_token);
-  select * into e from public.notification_events where id = p_notification_id for update;
-  if not found or e.event_type is distinct from 'bdft' then
-    raise exception 'Not a bed-distribution notice';
+  if p_notification_id is null then
+    select * into e from public.notification_events
+    where event_type = 'bdft' and recipient_scope = 'bdft_residents' and coalesce(dedupe_key, '') like 'bdft:%' and dispatch_due is true
+    order by created_at
+    for update skip locked
+    limit 1;
+    if not found then return jsonb_build_object('ok', true, 'claimed', false); end if;
+  else
+    select * into e from public.notification_events where id = p_notification_id for update;
+    if not found
+       or e.event_type is distinct from 'bdft'
+       or e.recipient_scope is distinct from 'bdft_residents'
+       or coalesce(e.dedupe_key, '') not like 'bdft:%' then
+      raise exception 'Not a bed-distribution notice';
+    end if;
   end if;
   insert into public.notification_deliveries(id, notification_id, resident_id, subscription_id, fcm_token_id, status, attempts, created_at, updated_at)
   select gen_random_uuid(), e.id, r.id, null, null, 'skipped', 0, now(), now()
@@ -713,33 +744,51 @@ begin
       select 1 from public.notification_deliveries x
       where x.notification_id = e.id and x.fcm_token_id = t.id
     );
-  update public.notification_deliveries x
-    set status = 'sending', attempts = x.attempts + 1, updated_at = now()
-    where x.id = (
-      select y.id from public.notification_deliveries y
-      where y.notification_id = e.id
-        and (y.subscription_id is not null or y.fcm_token_id is not null)
-        and (
-          y.status = 'pending'
-          or (y.status = 'failed' and coalesce(y.last_error,'') not like 'permanent:%'
-              and y.updated_at < now() - make_interval(secs => least(3600, 30 * greatest(y.attempts, 1))))
-          or (y.status = 'sending' and y.updated_at < now() - interval '2 minutes')
-        )
-      order by y.created_at, y.id
-      for update skip locked
-      limit 1
-    )
-  returning id into v_id;
-  if v_id is null then
-    if not exists (
-      select 1 from public.notification_deliveries y
-      where y.notification_id = e.id
-        and (y.subscription_id is not null or y.fcm_token_id is not null)
-        and y.status in ('pending','sending','failed')
-        and coalesce(y.last_error,'') not like 'permanent:%'
-    ) then
-      update public.notification_events set dispatch_due = false where id = e.id;
+  for i in 1..30 loop
+    update public.notification_deliveries x
+      set status = 'sending', attempts = x.attempts + 1, updated_at = now()
+      where x.id = (
+        select y.id from public.notification_deliveries y
+        where y.notification_id = e.id
+          and (y.subscription_id is not null or y.fcm_token_id is not null)
+          and (
+            y.status = 'pending'
+            or (y.status = 'failed' and coalesce(y.last_error,'') not like 'permanent:%'
+                and y.updated_at < now() - make_interval(secs => least(3600, 30 * greatest(y.attempts, 1))))
+            or (y.status = 'sending' and y.updated_at < now() - interval '2 minutes')
+          )
+        order by y.created_at, y.id
+        for update skip locked
+        limit 1
+      )
+    returning id into v_id;
+    if v_id is null then
+      if not exists (
+        select 1 from public.notification_deliveries y
+        where y.notification_id = e.id
+          and (y.subscription_id is not null or y.fcm_token_id is not null)
+          and y.status in ('pending','sending','failed')
+          and coalesce(y.last_error,'') not like 'permanent:%'
+      ) then
+        update public.notification_events set dispatch_due = false where id = e.id;
+      end if;
+      return jsonb_build_object('ok', true, 'claimed', false, 'notificationId', e.id);
     end if;
+    select r.active is not false and lower(coalesce(r.role,'')) in ('resident','admin','sr') and coalesce(p.clinical_alerts, true)
+      into v_ok
+    from public.notification_deliveries y
+    join public.residents r on r.id = y.resident_id
+    left join public.notification_preferences p on p.resident_id = r.id
+    where y.id = v_id;
+    if coalesce(v_ok, false) then
+      exit;
+    end if;
+    update public.notification_deliveries
+      set status = 'failed', last_error = 'permanent: recipient is no longer eligible', updated_at = now()
+      where id = v_id;
+    v_id := null;
+  end loop;
+  if v_id is null then
     return jsonb_build_object('ok', true, 'claimed', false, 'notificationId', e.id);
   end if;
   update public.notification_events set dispatch_due = true where id = e.id and dispatch_due is not true;
@@ -755,19 +804,25 @@ begin
 end;
 $fn$;
 
-create or replace function public.ward_bdft_apply_provider(p_token uuid, p_delivery_id uuid, p_result text, p_error text)
+drop function if exists public.ward_bdft_claim_delivery(uuid, uuid);
+drop function if exists public.ward_bdft_apply_provider(uuid, uuid, text, text);
+
+create or replace function public.ward_bdft_service_apply(p_delivery_id uuid, p_result text, p_error text)
 returns jsonb
 language plpgsql
 security definer
 set search_path to pg_catalog, public
 as $fn$
-declare a record; d public.notification_deliveries; v_type text; v_due boolean;
+declare d public.notification_deliveries; v_due boolean;
 begin
-  select * into a from public.bdft_actor(p_token);
   select * into d from public.notification_deliveries where id = p_delivery_id for update;
   if not found then raise exception 'Delivery not found'; end if;
-  select event_type into v_type from public.notification_events where id = d.notification_id;
-  if v_type is distinct from 'bdft' then raise exception 'Not a bed-distribution delivery'; end if;
+  if not exists (
+    select 1 from public.notification_events e
+    where e.id = d.notification_id and e.event_type = 'bdft' and e.recipient_scope = 'bdft_residents' and coalesce(e.dedupe_key,'') like 'bdft:%'
+  ) then
+    raise exception 'Not a bed-distribution delivery';
+  end if;
   if p_result = 'sent' then
     update public.notification_deliveries
       set status = 'sent', sent_at = now(), last_error = null, updated_at = now()
@@ -796,8 +851,10 @@ end;
 $fn$;
 
 revoke all on function public.ward_bdft_open(uuid, text) from public;
-revoke all on function public.ward_bdft_claim_delivery(uuid, uuid) from public;
-revoke all on function public.ward_bdft_apply_provider(uuid, uuid, text, text) from public;
+revoke all on function public.ward_bdft_dispatch_scope(uuid, uuid) from public;
+revoke all on function public.ward_bdft_service_claim(uuid) from public, anon, authenticated;
+revoke all on function public.ward_bdft_service_apply(uuid, text, text) from public, anon, authenticated;
 grant execute on function public.ward_bdft_open(uuid, text) to anon, authenticated, service_role;
-grant execute on function public.ward_bdft_claim_delivery(uuid, uuid) to anon, authenticated, service_role;
-grant execute on function public.ward_bdft_apply_provider(uuid, uuid, text, text) to anon, authenticated, service_role;
+grant execute on function public.ward_bdft_dispatch_scope(uuid, uuid) to anon, authenticated, service_role;
+grant execute on function public.ward_bdft_service_claim(uuid) to service_role;
+grant execute on function public.ward_bdft_service_apply(uuid, text, text) to service_role;

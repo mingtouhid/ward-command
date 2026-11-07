@@ -1,15 +1,12 @@
 // Ward Sync R1.8 dispatch-bdft
-// Sends only bed-distribution device rows claimed by ward_bdft_claim_delivery.
-// A live ward session is required. A service bearer is not accepted.
+// Sends only rows from the bed-distribution outbox.
+// A scheduled caller authenticates with the platform service key already in
+// SUPABASE_SECRET_KEYS. A resident session is not required for that path.
+// A resident session may ask for immediate delivery of one bed-distribution
+// notice. The database claim still runs as the service role inside this
+// function. The session is never stored and is not a scheduler credential.
 // ward_dispatch_anon_key is not read or created.
-//
-// When VAPID or FCM environment is absent, this returns deferred and does not claim.
-// Those variables are the same ones already used by dispatch-notification.
-// This file does not create them.
-//
-// No pg_cron job calls this function. The publishing phone calls it with the
-// resident session. Unattended retry needs an operator-approved schedule that
-// can present an eligible resident session. Do not add a service-role cron.
+// The clinical dispatcher is a different function and is not changed here.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
@@ -41,6 +38,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const secretRing = Deno.env.get("SUPABASE_SECRET_KEYS") || "";
+  const env = { SUPABASE_SECRET_KEYS: secretRing };
   if (configured() && (!supabaseUrl || !secretRing)) {
     return json({ ok: true, dispatch: "deferred", reason: "database role is not configured" });
   }
@@ -49,15 +47,23 @@ Deno.serve(async (req) => {
     : null;
   const result = await runBdftDispatch({
     body,
+    env,
+    authorization: req.headers.get("authorization") || "",
+    apikey: req.headers.get("apikey") || "",
     providerConfigured: configured,
-    claim: async (token, id) => {
-      const res = await admin.rpc("ward_bdft_claim_delivery", { p_token: token, p_notification_id: id });
+    scope: async (token, id) => {
+      const res = await admin.rpc("ward_bdft_dispatch_scope", { p_token: token, p_notification_id: id });
+      if (res.error) return { ok: false, error: res.error.message };
+      return res.data || { ok: false };
+    },
+    claim: async (id) => {
+      const res = await admin.rpc("ward_bdft_service_claim", { p_notification_id: id });
       if (res.error) return { error: res.error.message };
       return res.data || { claimed: false };
     },
-    apply: async (token, deliveryId, resultName, errorText) => {
-      const res = await admin.rpc("ward_bdft_apply_provider", {
-        p_token: token, p_delivery_id: deliveryId, p_result: resultName, p_error: errorText,
+    apply: async (deliveryId, resultName, errorText) => {
+      const res = await admin.rpc("ward_bdft_service_apply", {
+        p_delivery_id: deliveryId, p_result: resultName, p_error: errorText,
       });
       if (res.error) throw new Error(res.error.message);
     },
