@@ -3058,6 +3058,17 @@ button.r16-tile:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .pt-qbar.r16-open{box-shadow:none!important;border-top-color:transparent!important;z-index:42}
 .r16-ir{display:flex;align-items:center;gap:12px}.r16-ir .bedno{flex:none}.r16-ir-n{min-width:0}.r16-ir h2{margin:0;font-size:var(--fs-lg,18px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.r16-ir .tiny{margin:2px 0 0}
 .r146-qb.r16-on{background:var(--panel2);color:var(--teal)}
+
+/* Unified resident setup: compact, original BDFT-style bed selector */
+.resident-setup-box{max-height:min(88dvh,820px);overflow:auto}
+.resident-setup-grid{display:grid;grid-template-columns:1fr;gap:8px}
+.resident-bed-field{border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--panel2)}
+.field-label{font-size:13px;font-weight:650;color:var(--ink)}
+.bdft-setup-bed-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-height:240px;overflow:auto;padding:2px}
+.bdft-setup-bed-grid .pill{min-width:0;min-height:48px;aspect-ratio:auto;align-items:center;justify-content:center;text-align:center;padding:7px 4px}
+.bdft-setup-bed-grid .pill small{font-size:9px}
+.bdft-resident-setup{margin-bottom:10px}.bdft-resident-setup>.resident-setup-grid{margin-top:8px}.bdft-resident-setup .bdft-setup-bed-grid{margin-top:2px}
+@media(min-width:520px){.resident-setup-grid{grid-template-columns:1fr 1fr}.resident-bed-field{grid-column:1/-1}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -11441,37 +11452,76 @@ function usersView(){
     ${sec("Consultants",cons,"consultant","Add consultant")}
     ${sec("Residents",res,"resident","Add resident")}
     ${sec("Interns",ints,"intern","Add intern")}
-    <section class="users-sec"><div class="users-sec-head"><h3>Bed distribution</h3></div>
-      <p class="tiny">Batch, short name, and the default bed owner are set here. This does not import a roster.</p>
-      <button class="btn" type="button" onclick="bdftOpenSetup()">Open roster setup</button>
+    <section class="users-sec"><div class="users-sec-head"><h3>BDFT settings</h3></div>
+      <p class="tiny">Manage the resident roster and default bed ownership. You can also configure this from the Bed Distribution page.</p>
+      <button class="btn" type="button" onclick="bdftOpenSetup()">Open BDFT settings</button>
     </section>`;
 }
 function openAddUser(role){
   if(!canAdmin()){toast("Admin only","bad");return}
   ui.fields=ui.fields||{};
-  ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.ndes="";ui.fields.nph="";ui.phoneErr={};ui.fields.nrole=role==="consultant"?"consultant":role==="intern"?"intern":"resident";
+  ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.ndes="";ui.fields.nph="";
+  ui.fields.nbatch="1st year";ui.fields.nshort="";ui.fields.nbeds=[];
+  ui.phoneErr={};ui.bedPickerOpen=false;
+  ui.fields.nrole=role==="consultant"?"consultant":role==="intern"?"intern":"resident";
   ui.addUser=ui.fields.nrole; render();
+  if(ui.addUser==="resident") Promise.resolve(bdftLoad(true)).catch(()=>{});
 }
 function addUserOverlay(){
   if(!ui.addUser) return "";
-  const cons=ui.addUser==="consultant";const intern=ui.addUser==="intern"; // R1.3.139
+  const cons=ui.addUser==="consultant";const intern=ui.addUser==="intern";
+  const resident=!cons&&!intern;
   const ROLES=[["resident","Resident"],["admin","Admin"]];
-  return `<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box" style="border-radius:24px;max-width:400px">
+  const BATCHES=[["1st year","1st year"],["2nd year","2nd year"],["3rd year","3rd year"]];
+  const beds=(ui.bdftState&&ui.bdftState.beds)||[];
+  const chosen=ui.fields&&Array.isArray(ui.fields.nbeds)?ui.fields.nbeds:[];
+  const bedGrid= beds.length ? `<div class="bdft-setup-bed-grid">${beds.map(b=>{const on=chosen.includes(b.id);return `<button type="button" class="pill ${on?"full":"empty"}" aria-pressed="${on}" onclick="bdftToggleNewUserBed('${esc(b.id)}')"><b>${esc(b.label||b.id)}</b>${b.occupied?`<small>Occupied</small>`:`<small>Available</small>`}</button>`}).join("")}</div>` : `<p class="tiny">${ui.bdftLoading?"Loading bed map…":"Bed map unavailable. Open BDFT settings after creating the account."}</p>`;
+  return `<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box resident-setup-box" style="border-radius:24px;max-width:460px">
     <h2 class="page-title" style="margin:0 0 4px">${cons?"Add consultant":intern?"Add intern":"Add resident"}</h2>
-    <p class="tiny" style="margin:0 0 12px">${cons?"Consultants have view-only access":intern?"Interns see admission cards only, and can add lab reports and vitals":"Residents can write notes and orders"}</p>
-    <label class="field"><span>Username</span><input id="nu" autocapitalize="none" value="${esc(val("nu"))}" oninput="ui.fields=ui.fields||{};ui.fields.nu=this.value"/></label>
-    <label class="field"><span>Display name</span><input id="nd" value="${esc(val("nd"))}" oninput="ui.fields=ui.fields||{};ui.fields.nd=this.value"/></label>
-    ${cons?`<label class="field"><span>Designation</span><input id="ndes" maxlength="80" placeholder="e.g. Assistant Professor" value="${esc(val("ndes"))}" oninput="ui.fields=ui.fields||{};ui.fields.ndes=this.value"/></label>`:""}
-    ${cons||intern?"":phoneField("nph","Mobile number (+91)","10-digit mobile, optional","Optional · only consultants see it, as a Call button")}
-    <label class="field"><span>Password</span><input id="np" type="password" value="${esc(val("np"))}" oninput="ui.fields=ui.fields||{};ui.fields.np=this.value"/></label>
-    ${cons||intern?"":`<label class="field"><span>Role</span>${picker("nrole",ROLES,val("nrole")||"resident","Role")}</label>`}
-    <button class="btn block" onclick="inviteUser()">Create account</button>
+    <p class="tiny" style="margin:0 0 12px">${cons?"View-only access":intern?"Can add reports and vitals":"One form for account details, batch and bed ownership."}</p>
+    <div class="resident-setup-grid">
+      <label class="field"><span>Username</span><input id="nu" autocapitalize="none" value="${esc(val("nu"))}" oninput="ui.fields=ui.fields||{};ui.fields.nu=this.value"/></label>
+      <label class="field"><span>Display name</span><input id="nd" value="${esc(val("nd"))}" oninput="ui.fields=ui.fields||{};ui.fields.nd=this.value"/></label>
+      ${resident?phoneField("nph","Mobile number (+91)","10-digit mobile, optional","Optional · visible to consultants as a Call button"):""}
+      <label class="field"><span>Password</span><input id="np" type="password" value="${esc(val("np"))}" oninput="ui.fields=ui.fields||{};ui.fields.np=this.value"/></label>
+      ${cons?`<label class="field"><span>Designation</span><input id="ndes" maxlength="80" placeholder="e.g. Assistant Professor" value="${esc(val("ndes"))}" oninput="ui.fields=ui.fields||{};ui.fields.ndes=this.value"/></label>`:""}
+      ${resident?`<label class="field"><span>Role</span>${picker("nrole",ROLES,val("nrole")||"resident","Role")}</label>
+      <label class="field"><span>Batch</span>${picker("nbatch",BATCHES,val("nbatch")||"1st year","Batch")}</label>
+      <label class="field"><span>Short name</span><input id="nshort" maxlength="16" placeholder="e.g. TA" value="${esc(val("nshort"))}" oninput="ui.fields=ui.fields||{};ui.fields.nshort=this.value"/></label>
+      <div class="resident-bed-field"><div class="row" style="justify-content:space-between;align-items:center"><span class="field-label">Beds owned</span><button type="button" class="btn ghost sm" onclick="ui.bedPickerOpen=!ui.bedPickerOpen;render({force:1})">${ui.bedPickerOpen?"Hide bed grid":"Choose beds"}</button></div>
+        <p class="tiny" style="margin:4px 0 8px">${chosen.length?chosen.length+" bed"+(chosen.length===1?"":"s")+" selected":"No beds selected"}</p>
+        ${ui.bedPickerOpen?bedGrid:""}
+      </div>`:""}
+    </div>
+    <button class="btn block" style="margin-top:12px" onclick="inviteUser()">Create account</button>
     <button class="btn ghost block" style="margin-top:8px" onclick="dismissOverlay()">Cancel</button>
   </div></div>`;
+}
+function bdftToggleNewUserBed(id){
+  if(!canAdmin())return;
+  ui.fields=ui.fields||{};const a=Array.isArray(ui.fields.nbeds)?ui.fields.nbeds.slice():[];
+  ui.fields.nbeds=a.includes(id)?a.filter(x=>x!==id):a.concat(id);
+  render({force:1});
+}
+async function bdftSaveNewResidentSetup(username,displayName,batch,shortName,bedIds){
+  const st=await bdftRpc("ward_bdft_state");
+  const people=(st.people||[]).slice();
+  const matches=people.filter(p=>String(p.username||"").toLowerCase()===String(username).toLowerCase());
+  const named=people.filter(p=>String(p.name||"").trim().toLowerCase()===String(displayName).trim().toLowerCase());
+  const target=matches[0]||(named.length===1?named[0]:null);
+  if(!target){ui.bdftState=st;ui.bdftLoaded=true;throw new Error("Account created, but its BDFT profile could not be matched safely. Open BDFT settings to finish batch and bed ownership.")}
+  const payloadPeople=people.map(p=>({id:p.id,batch:p.id===target.id?batch:(p.batch||""),short:p.id===target.id?shortName:(p.short||""),order:p.ord||1000000}));
+  const owners=new Map((st.owners||[]).map(o=>[o.bedId,o.residentId]));
+  (bedIds||[]).forEach(id=>{if((st.beds||[]).some(b=>b.id===id)) owners.set(id,target.id)});
+  const payloadOwners=Array.from(owners.entries()).filter(([,owner])=>!!owner).map(([bedId,residentId])=>({bedId,residentId}));
+  ui.bdftState=await bdftRpc("ward_bdft_save_setup",{p_people:payloadPeople,p_owners:payloadOwners});
+  ui.bdftLoaded=true;
 }
 async function inviteUser(){
   if(!canAdmin()){toast("Admin only","bad");return}
   const username=(val("nu")||"").trim(), name=(val("nd")||"").trim(), pw=val("np")||"", role=ui.addUser==="intern"?"intern":(val("nrole")||"resident");
+  const batch=String(val("nbatch")||"1st year"), shortName=String(val("nshort")||"").trim(), bedIds=ui.fields&&Array.isArray(ui.fields.nbeds)?ui.fields.nbeds.slice():[];
+  if(role!=="consultant"&&role!=="intern"&&(!["1st year","2nd year","3rd year"].includes(batch)||!shortName)){toast("Select a batch and enter a short name.","bad");return}
   if(!username||!name||!pw){toast("Username, display name and password are required.","bad");return}
   const phRaw=role==="consultant"||role==="intern"||ui.addUser==="consultant"?"":String(val("nph")||"").trim();
   const phNew=phRaw?phoneE164(phRaw):"";
@@ -11492,10 +11542,16 @@ async function inviteUser(){
     if(des){try{const {error:dErr}=await sb.rpc("ward_set_user_designation",{p_token:sessionTok,p_username:username.toLowerCase(),p_designation:des});if(dErr) throw dErr;const nr=S.residents[0];if(nr) nr.designation=des;}catch(e){toast("Account created; designation not saved: "+(e.message||e),"bad")}}
     let phFail=false;
     if(phNew){try{const d=await rpcSetPhone(username.toLowerCase(),phNew); if(d.changed) ev(null,"Phone number updated · "+name,true)}catch(e){phFail=true}}
+    let bdftFail="";
+    if(role!=="consultant"&&role!=="intern"){
+      try{await bdftSaveNewResidentSetup(username.toLowerCase(),name,batch,shortName,bedIds)}
+      catch(e){bdftFail=String(e.message||e)}
+    }
     ui.fields=ui.fields||{};
-    ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.ndes="";ui.fields.nph="";ui.fields.nrole="resident";
-    if(phFail) toast("Account created; phone not saved — add it in Settings.","bad");
-    else toast("Account created · "+username,"ok");
+    ui.fields.nu="";ui.fields.nd="";ui.fields.np="";ui.fields.ndes="";ui.fields.nph="";ui.fields.nrole="resident";ui.fields.nbatch="1st year";ui.fields.nshort="";ui.fields.nbeds=[];ui.bedPickerOpen=false;
+    if(bdftFail) toast("Account created; BDFT setup needs completion: "+bdftFail,"bad");
+    else if(phFail) toast("Account created; phone not saved — add it in Settings.","bad");
+    else toast("Account and resident setup saved · "+username,"ok");
     save();
     if(ui.addUser){dismissOverlay({after:()=>{render();Promise.resolve().then(()=>cloudPull()).catch(()=>{})}})}else render();
   }catch(e){toast(e.message||String(e),"bad")}finally{setBusy(false);}
@@ -19200,7 +19256,7 @@ function bdftHomeCard(){
 function bdftOpenSetup(){ui.bdftMode="setup";go("bdft")}
 function bdftView(){
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-    <h2 class="page-title">Bed distribution</h2><div id="bdft-root"></div>`;
+    <div class="row" style="align-items:center;justify-content:space-between"><h2 class="page-title" style="margin:0">Bed distribution</h2>${canAdmin()?`<button class="btn ghost sm" type="button" onclick="bdftOpenSetup()">BDFT settings</button>`:""}</div><div id="bdft-root"></div>`;
 }
 async function bdftRpc(name,args){
   if(!sb||!sessionTok) throw new Error("offline");
@@ -19221,7 +19277,7 @@ async function bdftLoad(quiet){
     ui.bdftLoaded=true; ui.bdftErr="";
   }catch(e){ ui.bdftErr=String(e.message||e); if(!quiet) toast("Bed distribution could not be loaded","bad"); }
   ui.bdftLoading=false;
-  if(route.page==="bdft"||route.page==="home") render();
+  if(route.page==="bdft"||route.page==="home"||ui.addUser) render();
 }
 function bdftStamp(iso){
   if(!iso) return "";
@@ -19432,37 +19488,45 @@ function bdftPng(cur,st){
   }catch(e){toast("PNG export is not available on this device","bad")}
 }
 function bdftMountSetup(root,st){
-  if(!(st.me&&st.me.role==="admin")){root.appendChild(bdftEl("p","sm","Roster setup is an admin setting."));return}
-  root.appendChild(bdftEl("p","tiny","No roster is imported. Add a batch and a short name, then choose one owner for each bed."));
-  const people=st.people||[];
-  if(!people.length){root.appendChild(bdftEl("p","sm","Add residents in Users before mapping beds."));return}
-  ui.bdftSetup=ui.bdftSetup||{people:{},owners:{}};
+  if(!(st.me&&st.me.role==="admin")){root.appendChild(bdftEl("p","sm","BDFT settings are available to administrators."));return}
+  root.appendChild(bdftEl("p","tiny","Set each resident’s batch, short name and owned beds. A bed can have only one default owner."));
+  const people=st.people||[], beds=st.beds||[];
+  if(!people.length){root.appendChild(bdftEl("p","sm","Add residents before configuring the BDFT roster."));return}
+  if(!ui.bdftSetup||ui.bdftSetup.sourceKey!==people.map(p=>p.id).join("|")){
+    ui.bdftSetup={sourceKey:people.map(p=>p.id).join("|"),people:{},owners:Object.fromEntries((st.owners||[]).map(o=>[o.bedId,o.residentId]))};
+  }
+  const setup=ui.bdftSetup;
   people.forEach(p=>{
-    const row=bdftEl("div","card");
-    row.appendChild(bdftEl("b",null,(p.name||p.id)+(p.active?"":" (disabled)")));
-    const batch=document.createElement("input"); batch.placeholder="Batch"; batch.value=(ui.bdftSetup.people[p.id]&&ui.bdftSetup.people[p.id].batch)||p.batch||"";
-    const short=document.createElement("input"); short.placeholder="Short name"; short.maxLength=16; short.value=(ui.bdftSetup.people[p.id]&&ui.bdftSetup.people[p.id].short)||p.short||"";
-    const keep=()=>{ui.bdftSetup.people[p.id]={batch:batch.value,short:short.value,order:p.ord||1000000}};
-    batch.addEventListener("input",keep); short.addEventListener("input",keep); keep();
-    row.append(batch,short); root.appendChild(row);
+    const row=bdftEl("div","card bdft-resident-setup");
+    row.appendChild(bdftEl("b",null,(p.name||p.id)+(p.active?"":" · disabled")));
+    const fields=bdftEl("div","resident-setup-grid");
+    const batch=document.createElement("select");
+    [["1st year","1st year"],["2nd year","2nd year"],["3rd year","3rd year"]].forEach(([v,l])=>{const o=document.createElement("option");o.value=v;o.textContent=l;batch.appendChild(o)});
+    batch.value=(setup.people[p.id]&&setup.people[p.id].batch)||p.batch||"1st year";
+    batch.setAttribute("aria-label","Batch for "+(p.name||p.id));
+    const short=document.createElement("input");short.placeholder="Short name";short.maxLength=16;short.value=(setup.people[p.id]&&setup.people[p.id].short)||p.short||"";short.setAttribute("aria-label","Short name for "+(p.name||p.id));
+    const keep=()=>{setup.people[p.id]={batch:batch.value,short:short.value,order:p.ord||1000000}};
+    batch.addEventListener("change",keep);short.addEventListener("input",keep);keep();
+    fields.append(batch,short);row.appendChild(fields);
+    const label=bdftEl("p","tiny","Beds owned");label.style.margin="10px 0 6px";row.appendChild(label);
+    const grid=bdftEl("div","bdft-setup-bed-grid");
+    beds.forEach(b=>{
+      const owned=setup.owners[b.id]===p.id;
+      const btn=bdftEl("button","pill "+(owned?"full":"empty"),null);btn.type="button";btn.setAttribute("aria-pressed",String(owned));
+      btn.appendChild(bdftEl("b",null,b.label||b.id));
+      btn.appendChild(bdftEl("small",null,owned?"Owned":(setup.owners[b.id]?"Assigned":"Unassigned")));
+      btn.addEventListener("click",()=>{setup.owners[b.id]=owned?"":p.id;bdftMountSetup(root,st)});
+      grid.appendChild(btn);
+    });
+    row.appendChild(grid);root.appendChild(row);
   });
-  (st.beds||[]).forEach(b=>{
-    const row=bdftEl("label","sm",(b.label||b.id)+" ");
-    const sel=document.createElement("select");
-    const blank=document.createElement("option"); blank.value=""; blank.textContent="No owner"; sel.appendChild(blank);
-    people.forEach(p=>{const o=document.createElement("option"); o.value=p.id; o.textContent=p.short||p.name||p.id; sel.appendChild(o)});
-    const existing=(st.owners||[]).find(o=>o.bedId===b.id);
-    sel.value=(ui.bdftSetup.owners[b.id]!=null?ui.bdftSetup.owners[b.id]:(existing&&existing.residentId)||"");
-    sel.addEventListener("change",()=>{ui.bdftSetup.owners[b.id]=sel.value});
-    ui.bdftSetup.owners[b.id]=sel.value;
-    row.appendChild(sel); root.appendChild(row);
-  });
-  const save=bdftEl("button","btn block","Save roster"); save.type="button";
+  const save=bdftEl("button","btn block","Save BDFT settings");save.type="button";
   save.addEventListener("click",async()=>{
-    const payloadPeople=people.map(p=>({id:p.id,batch:(ui.bdftSetup.people[p.id]||{}).batch||"",short:(ui.bdftSetup.people[p.id]||{}).short||"",order:p.ord||1000000}));
-    const payloadOwners=Object.keys(ui.bdftSetup.owners).filter(id=>ui.bdftSetup.owners[id]).map(id=>({bedId:id,residentId:ui.bdftSetup.owners[id]}));
-    try{ui.bdftState=await bdftRpc("ward_bdft_save_setup",{p_people:payloadPeople,p_owners:payloadOwners}); ui.bdftMode=""; toast("Roster saved"); render()}
-    catch(e){toast(String(e.message||e),"bad")}
+    const payloadPeople=people.map(p=>({id:p.id,batch:(setup.people[p.id]||{}).batch||p.batch||"1st year",short:(setup.people[p.id]||{}).short||p.short||"",order:p.ord||1000000}));
+    const payloadOwners=Object.entries(setup.owners).filter(([,owner])=>!!owner).map(([bedId,residentId])=>({bedId,residentId}));
+    save.disabled=true;save.textContent="Saving…";
+    try{ui.bdftState=await bdftRpc("ward_bdft_save_setup",{p_people:payloadPeople,p_owners:payloadOwners});ui.bdftMode="";ui.bdftSetup=null;toast("BDFT settings saved","ok");render()}
+    catch(e){save.disabled=false;save.textContent="Save BDFT settings";toast(String(e.message||e),"bad")}
   });
   root.appendChild(save);
 }
