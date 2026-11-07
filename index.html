@@ -1014,6 +1014,14 @@ html[data-theme="dark"] .bed-pick .pill.full small,
 html[data-theme="dark"] .bdft-panel .pill.full small{color:#99f6e4}
 .bed-pick .pill:active,
 .bdft-panel .pill:active{transform:scale(.97)}
+.bdft-cols{display:flex;flex-direction:column;gap:10px}
+@media(min-width:900px){.bdft-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}}
+.bdft-card{border:1px solid var(--line);border-radius:16px;padding:10px;background:var(--panel)}
+.bdft-chip{display:inline-flex;margin:3px;padding:6px 8px;border-radius:10px;border:1px solid var(--line);background:color-mix(in srgb,var(--ghost) 72%,transparent);font-weight:700;cursor:pointer}
+.bdft-orphan{border-color:#e11d48}
+.bdft-note{margin:8px 0;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--amber,#f59e0b) 16%,var(--panel))}
+.bdft-abs{display:flex;align-items:center;gap:8px;margin:4px 0}
+.bdft-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 
 
 /* R1.0 BDFT page language */
@@ -3664,7 +3672,82 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-const APP_VERSION="R1.7";
+/* BDFT_RULES_START */
+function bdftIstTomorrow(v){
+  const d=v==null?new Date():(v instanceof Date?v:new Date(v));
+  if(isNaN(d.getTime())) return "";
+  const t=new Date(d.getTime()+330*60000);
+  const day=new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()+1));
+  const z=n=>String(n).padStart(2,"0");
+  return day.getUTCFullYear()+"-"+z(day.getUTCMonth()+1)+"-"+z(day.getUTCDate());
+}
+function bdftLabelParts(label){
+  const s=String(label||"");
+  const m=s.match(/^(.*?)(\d+)$/);
+  if(!m) return {prefix:s, num:null};
+  return {prefix:m[1], num:Number(m[2])};
+}
+function bdftAdjacent(a,b){
+  if(!a||!b||a.num==null||b.num==null) return false;
+  return a.prefix===b.prefix && Math.abs(a.num-b.num)===1;
+}
+function bdftBuild(input){
+  const people=(input.people||[]).slice().sort((a,b)=>(a.order-b.order)||String(a.id).localeCompare(String(b.id)));
+  const byId=new Map(people.map(p=>[p.id,p]));
+  const ownerByBed=new Map((input.owners||[]).map(o=>[o.bedId,o.residentId]));
+  const absent=new Set(input.absent||[]);
+  const bedById=new Map((input.beds||[]).map(b=>[b.id,b]));
+  const held=new Map();
+  const count=new Map();
+  people.forEach(p=>{held.set(p.id,[]); count.set(p.id,0)});
+  const rows=[];
+  const pending=[];
+  (input.included||[]).forEach(id=>{
+    const bed=bedById.get(id);
+    if(!bed) return;
+    const parts=bdftLabelParts(bed.label);
+    const oid=ownerByBed.get(id)||null;
+    const owner=oid?byId.get(oid):null;
+    const base={bedId:id, label:bed.label, parts, ownerId:oid, disabled:!!(owner&&owner.active===false), manual:false};
+    if(!owner){rows.push(Object.assign({}, base, {holderId:null, reason:"unmapped"})); return}
+    if(!absent.has(oid)){
+      held.get(oid).push({id, parts});
+      count.set(oid,(count.get(oid)||0)+1);
+      rows.push(Object.assign({}, base, {holderId:oid, reason:"kept"}));
+    }else pending.push(base);
+  });
+  pending.sort((a,b)=>String(a.parts.prefix).localeCompare(String(b.parts.prefix))||((a.parts.num==null?0:a.parts.num)-(b.parts.num==null?0:b.parts.num))||String(a.bedId).localeCompare(String(b.bedId)));
+  pending.forEach(base=>{
+    const batch=base.ownerId&&byId.get(base.ownerId)?(byId.get(base.ownerId).batch||""):"";
+    const cands=people.filter(p=>p.active!==false && !absent.has(p.id) && (p.batch||"")===batch);
+    if(!cands.length){rows.push(Object.assign({}, base, {holderId:null, reason:"orphan"})); return}
+    let min=Infinity;
+    cands.forEach(p=>{const n=count.get(p.id)||0; if(n<min) min=n});
+    let pool=cands.filter(p=>(count.get(p.id)||0)===min);
+    const clean=pool.filter(p=>!(held.get(p.id)||[]).some(h=>bdftAdjacent(h.parts, base.parts)));
+    if(clean.length) pool=clean;
+    pool.sort((a,b)=>(a.order-b.order)||String(a.id).localeCompare(String(b.id)));
+    const pick=pool[0];
+    held.get(pick.id).push({id:base.bedId, parts:base.parts});
+    count.set(pick.id,(count.get(pick.id)||0)+1);
+    rows.push(Object.assign({}, base, {holderId:pick.id, reason:"redistributed"}));
+  });
+  return rows;
+}
+function bdftMove(rows, opts){
+  const row=(rows||[]).find(r=>r.bedId===opts.bedId);
+  if(!row) return {ok:false, code:"missing"};
+  const to=opts.to||null;
+  if(to){
+    const parts=row.parts||bdftLabelParts(row.label);
+    const adj=(rows||[]).some(r=>r.holderId===to && r.bedId!==row.bedId && bdftAdjacent(r.parts||bdftLabelParts(r.label), parts));
+    if(adj && !opts.allowAdjacent) return {ok:false, code:"adjacent"};
+  }
+  return {ok:true, rows:rows.map(r=>r.bedId===row.bedId?Object.assign({}, r, {holderId:to, manual:true}):r)};
+}
+/* BDFT_RULES_END */
+
+const APP_VERSION="R1.8";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -4281,7 +4364,7 @@ let navDir="fwd";
 let navAnim=false;
 let navScroll={};
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
-const PAGE_TAB={ivitals:"ivitals",ireports:"ireports",ireport:"ireports",home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",dedit:"patients",vchart:"patients",scale:"patients",srate:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more"};
+const PAGE_TAB={ivitals:"ivitals",ireports:"ireports",ireport:"ireports",home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",dedit:"patients",vchart:"patients",scale:"patients",srate:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more",bdft:"more"};
 function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more"||tab==="ivitals"||tab==="ireports")?tab:"home"} // R1.3.142: ivitals/ireports are intern-only tabs
 function syncRoute(){
   if(nav.stack.length){
@@ -5885,6 +5968,7 @@ function homeView(){
     ${r17AuditMissHtml()}
     <div class="r146-col">
     <div class="r146-title"><h2>Today</h2><span class="tiny">${esc(dutyDateLabel())}</span></div>
+    ${bdftHomeCard()}
     ${(()=>{ // R1.6 (t411u item 5): hero card with a subtle theme and an equal-tile grid; every tile keeps its tap action
       const nW=wards.length+1,short=nW%3,wideFrom=nW===1?0:short===1?nW-4:short===2?nW-2:nW; // last row: 2 wide tiles per row
       const wcls=i=>nW===1?" w6":i>=wideFrom?" w3":"";
@@ -11353,7 +11437,11 @@ function usersView(){
     <p class="tiny" style="margin:0 0 10px">Residents write · consultants view · interns add reports and vitals</p>
     ${sec("Consultants",cons,"consultant","Add consultant")}
     ${sec("Residents",res,"resident","Add resident")}
-    ${sec("Interns",ints,"intern","Add intern")}`;
+    ${sec("Interns",ints,"intern","Add intern")}
+    <section class="users-sec"><div class="users-sec-head"><h3>Bed distribution</h3></div>
+      <p class="tiny">Batch, short name, and the default bed owner are set here. This does not import a roster.</p>
+      <button class="btn" type="button" onclick="bdftOpenSetup()">Open roster setup</button>
+    </section>`;
 }
 function openAddUser(role){
   if(!canAdmin()){toast("Admin only","bad");return}
@@ -11737,6 +11825,7 @@ function moreView(){
     <p class="tiny" style="margin:-4px 0 14px;opacity:.55">Build ${esc(APP_VERSION)}</p>
     <p class="more-section">Ward</p>
     <div class="more-grid">
+    ${canWrite()?row("go('bdft')",ico("census"),"Bed distribution","teal"):""}
     ${canWrite()?row("ui.ctab='in';ui.disListOnly=false;go('census')",ico("census"),"Admit / Discharge","teal"):""}
     ${canWrite()?row("go('observe')",ico("observe"),"Under observation","amber"):""}
     ${row("go('ect')",ico("ect"),"ECT","violet")}
@@ -19089,6 +19178,233 @@ function scShell(inner){const T=scShellTitle();
     <main class="main vc-main sc-main">${inner}</main>${stampSheetEnter(scOverlays())}${busyVeil()}`;
 }
 
+
+function bdftHomeCard(){
+  const c=ui.bdftState&&ui.bdftState.current;
+  if(!c||isIntern()||isConsultant()||!canWrite()) return "";
+  const when=c.updatedAt?new Date(c.updatedAt).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour12:false}):"";
+  return `<button type="button" class="card" style="text-align:left;width:100%;margin:0 0 10px" onclick="go('bdft')">
+    <p class="tiny">BED DISTRIBUTION</p><b>${esc(c.planDate||"")}</b>
+    <p class="tiny">${esc(c.createdName||"Resident")} · ${esc(when)}</p></button>`;
+}
+function bdftOpenSetup(){ui.bdftMode="setup";go("bdft")}
+function bdftView(){
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
+    <h2 class="page-title">Bed distribution</h2><div id="bdft-root"></div>`;
+}
+async function bdftRpc(name,args){
+  if(!sb||!sessionTok) throw new Error("offline");
+  const res=await sb.rpc(name,Object.assign({p_token:sessionTok},args||{}));
+  if(res.error) throw new Error(res.error.message||"request failed");
+  return res.data;
+}
+async function bdftLoad(quiet){
+  if(ui.bdftSkipNet||ui.bdftLoading) return;
+  ui.bdftLoading=true;
+  try{
+    ui.bdftState=await bdftRpc("ward_bdft_state");
+    ui.bdftLoaded=true; ui.bdftErr="";
+  }catch(e){ ui.bdftErr=String(e.message||e); if(!quiet) toast("Bed distribution could not be loaded","bad"); }
+  ui.bdftLoading=false;
+  if(route.page==="bdft"||route.page==="home") render();
+}
+function bdftEl(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n}
+function bdftMount(){
+  const root=document.getElementById("bdft-root"); if(!root) return;
+  root.replaceChildren();
+  if(isIntern()||isConsultant()||!canWrite()){root.appendChild(bdftEl("p","sm","Bed distribution is for residents."));return}
+  const st=ui.bdftState;
+  if(!st){root.appendChild(bdftEl("p","sm",ui.bdftErr||"Loading bed distribution…")); if(!ui.bdftSkipNet&&!ui.bdftLoading) bdftLoad(); return}
+  if(ui.bdftMode==="setup"){bdftMountSetup(root,st);return}
+  if(!st.current){bdftMountGenerate(root,st);return}
+  bdftMountBoard(root,st);
+}
+function bdftMountGenerate(root,st){
+  const evening=!!(st.me&&st.me.evening);
+  root.appendChild(bdftEl("p","tiny",evening?"You are signed in for the evening shift.":"Read only. Generation is available while you are signed in for the evening shift."));
+  if(!evening) return;
+  const occ=(st.beds||[]).filter(b=>b.occupied);
+  ui.bdftInclude=ui.bdftInclude||Object.fromEntries(occ.map(b=>[b.id,true]));
+  ui.bdftAbsent=ui.bdftAbsent||{};
+  const date=bdftEl("input"); date.type="date"; date.value=ui.bdftDate||bdftIstTomorrow(); date.id="bdft-date";
+  date.addEventListener("input",()=>{ui.bdftDate=date.value});
+  const lab=bdftEl("label","field"); lab.appendChild(bdftEl("span",null,"Distribution date")); lab.appendChild(date);
+  root.appendChild(lab);
+  const census=occ.length? "live":"empty";
+  root.appendChild(bdftEl("p","tiny",census==="empty"?"No occupied beds. Generating publishes an empty board.":"Occupancy is a snapshot. Unticking a bed changes only this distribution."));
+  const pills=bdftEl("div","pills");
+  occ.forEach(b=>{
+    const btn=bdftEl("button","pill"+(ui.bdftInclude[b.id]!==false?" full":""),null);
+    btn.type="button"; btn.appendChild(bdftEl("b",null,b.label||b.id));
+    btn.addEventListener("click",()=>{ui.bdftInclude[b.id]=ui.bdftInclude[b.id]===false; render()});
+    pills.appendChild(btn);
+  });
+  root.appendChild(pills);
+  const batches={};
+  (st.people||[]).forEach(p=>{(batches[p.batch||"No batch"]=batches[p.batch||"No batch"]||[]).push(p)});
+  Object.keys(batches).forEach(name=>{
+    root.appendChild(bdftEl("p","tiny",name));
+    batches[name].forEach(p=>{
+      const row=bdftEl("label","bdft-abs"); const box=document.createElement("input"); box.type="checkbox"; box.checked=!!ui.bdftAbsent[p.id];
+      box.addEventListener("change",()=>{ui.bdftAbsent[p.id]=box.checked});
+      row.appendChild(box); row.appendChild(document.createTextNode(" Unavailable · "+(p.short||p.name||p.id)+(p.active?"":" (disabled)")));
+      root.appendChild(row);
+    });
+  });
+  const go=bdftEl("button","btn block","Generate"); go.type="button"; go.style.marginTop="12px";
+  go.addEventListener("click",()=>bdftGenerate(census));
+  root.appendChild(go);
+}
+async function bdftGenerate(census){
+  const st=ui.bdftState||{};
+  if(!(st.me&&st.me.evening)){toast("Evening shift sign-in is required","bad");return}
+  const included=Object.keys(ui.bdftInclude||{}).filter(id=>ui.bdftInclude[id]!==false);
+  const absent=Object.keys(ui.bdftAbsent||{}).filter(id=>ui.bdftAbsent[id]);
+  const useCensus=included.length? "live":"empty";
+  if(st.current && !window.confirm("Replace the current distribution? The previous one becomes a read-only archive.")) return;
+  const id="bdft-"+Date.now().toString(36);
+  try{
+    const data=await bdftRpc("ward_bdft_generate",{p_id:id,p_date:document.getElementById("bdft-date").value,p_included:useCensus==="empty"?[]:included,p_absent:absent,p_census:useCensus,p_replace:!!st.current});
+    if(data&&data.code==="confirm_replace"){toast("Confirm replacement first","bad");return}
+    ui.bdftState=data.state; ui.bdftLoaded=true;
+    toast(data.push==="queued"?"Distribution saved. A notice is queued.":"Distribution saved. The notice was not queued.");
+    render();
+  }catch(e){toast(String(e.message||e),"bad")}
+}
+function bdftMountBoard(root,st){
+  const cur=st.current, me=st.me||{}, mine=me.id&&cur.createdBy===me.id;
+  const head=bdftEl("p","tiny",cur.planDate+" · "+(cur.createdName||"")+(mine?" · you can edit":" · view only"));
+  root.appendChild(head);
+  const live=(st.beds||[]).filter(b=>b.occupied).map(b=>b.id).sort().join(",");
+  const snap=(cur.rows||[]).map(r=>r.bedId).sort().join(",");
+  if(st.censusNotice||live!==snap){
+    const note=bdftEl("div","bdft-note","Occupancy changed after this board was published. It stays as published until you regenerate it.");
+    root.appendChild(note);
+  }
+  if(mine){
+    const bar=bdftEl("div","bdft-actions");
+    const undo=bdftEl("button","btn ghost sm","Undo"); undo.type="button"; undo.addEventListener("click",()=>bdftUndo());
+    const exp=bdftEl("button","btn ghost sm","Export PNG"); exp.type="button"; exp.addEventListener("click",()=>bdftPng(cur,st));
+    const reg=bdftEl("button","btn ghost sm","Regenerate"); reg.type="button"; reg.addEventListener("click",()=>bdftRegen());
+    bar.append(undo,exp,reg); root.appendChild(bar);
+  }else{
+    const exp=bdftEl("button","btn ghost sm","Export PNG"); exp.type="button"; exp.addEventListener("click",()=>bdftPng(cur,st));
+    root.appendChild(exp);
+  }
+  const orphans=(cur.rows||[]).filter(r=>!r.holderId);
+  if(orphans.length){
+    const box=bdftEl("div","bdft-card bdft-orphan");
+    box.appendChild(bdftEl("p","tiny","Unassigned"));
+    orphans.forEach(r=>box.appendChild(bdftChip(r,mine,st)));
+    root.appendChild(box);
+  }
+  const cols=bdftEl("div","bdft-cols");
+  const batches={};
+  (st.people||[]).forEach(p=>{(batches[p.batch||"No batch"]=batches[p.batch||"No batch"]||[]).push(p)});
+  Object.keys(batches).forEach(name=>{
+    const sec=bdftEl("section"); sec.appendChild(bdftEl("p","tiny",name));
+    batches[name].forEach(p=>{
+      const card=bdftEl("div","bdft-card");
+      const held=(cur.rows||[]).filter(r=>r.holderId===p.id);
+      card.appendChild(bdftEl("b",null,(p.short||p.name||p.id)+" · "+held.length));
+      if(!p.active) card.appendChild(bdftEl("p","tiny","Disabled account. Coverage stays visible."));
+      card.addEventListener("dragover",e=>{if(mine)e.preventDefault()});
+      card.addEventListener("drop",e=>{e.preventDefault(); const id=e.dataTransfer.getData("text/plain"); if(mine&&id) bdftMove(id,p.id,false)});
+      held.forEach(r=>card.appendChild(bdftChip(r,mine,st)));
+      if(mine){
+        const sel=document.createElement("select"); sel.setAttribute("aria-label","Move a bed to "+(p.short||p.name||"resident"));
+        const opt=document.createElement("option"); opt.value=""; opt.textContent="Move a bed here"; sel.appendChild(opt);
+        (cur.rows||[]).filter(r=>r.holderId!==p.id).forEach(r=>{const o=document.createElement("option"); o.value=r.bedId; o.textContent=r.label; sel.appendChild(o)});
+        sel.addEventListener("change",()=>{if(sel.value) bdftMove(sel.value,p.id,false)});
+        card.appendChild(sel);
+      }
+      sec.appendChild(card);
+    });
+    cols.appendChild(sec);
+  });
+  root.appendChild(cols);
+  const arch=st.archives||[];
+  if(arch.length){
+    root.appendChild(bdftEl("p","tiny","Recent archives"));
+    arch.slice(0,7).forEach(a=>root.appendChild(bdftEl("p","sm",(a.planDate||"")+" · "+(a.createdName||""))));
+  }
+}
+function bdftChip(r,mine){
+  const chip=bdftEl("button","bdft-chip"+(r.disabled?" bdft-orphan":""),(r.label||r.bedId)+(r.manual?" *":""));
+  chip.type="button"; chip.draggable=!!mine;
+  chip.addEventListener("dragstart",e=>{if(mine)e.dataTransfer.setData("text/plain",r.bedId)});
+  return chip;
+}
+async function bdftMove(bed,to,allow){
+  const cur=ui.bdftState&&ui.bdftState.current; if(!cur) return;
+  try{
+    const data=await bdftRpc("ward_bdft_move",{p_version:cur.version,p_bed:bed,p_to:to,p_allow_adjacent:!!allow});
+    if(data&&data.code==="adjacent"){
+      if(window.confirm("These beds are next to each other. Move it anyway?")) return bdftMove(bed,to,true);
+      return;
+    }
+    ui.bdftState=data.state; render();
+  }catch(e){toast(String(e.message||e),"bad")}
+}
+async function bdftUndo(){
+  const cur=ui.bdftState&&ui.bdftState.current; if(!cur) return;
+  try{const data=await bdftRpc("ward_bdft_undo",{p_version:cur.version}); ui.bdftState=data.state; render()}
+  catch(e){toast(String(e.message||e),"bad")}
+}
+async function bdftRegen(){
+  const cur=ui.bdftState&&ui.bdftState.current; if(!cur) return;
+  if(!window.confirm("Rebuild from the default map? Manual moves and undo will be discarded.")) return;
+  try{const data=await bdftRpc("ward_bdft_regenerate",{p_version:cur.version,p_confirm:true}); ui.bdftState=data.state; render()}
+  catch(e){toast(String(e.message||e),"bad")}
+}
+function bdftPng(cur,st){
+  try{
+    const canvas=document.createElement("canvas"); const w=900, rows=(cur.rows||[]).length; canvas.width=w; canvas.height=Math.max(200,80+rows*28);
+    const g=canvas.getContext("2d"); if(!g) throw new Error("canvas");
+    g.fillStyle="#f8fafc"; g.fillRect(0,0,canvas.width,canvas.height); g.fillStyle="#0f172a"; g.font="16px sans-serif";
+    g.fillText("Bed distribution "+(cur.planDate||""),24,36);
+    const names={}; (st.people||[]).forEach(p=>{names[p.id]=p.short||p.name||p.id});
+    (cur.rows||[]).forEach((r,i)=>{g.fillText((r.label||r.bedId)+"  "+(r.holderId?names[r.holderId]||r.holderId:"Unassigned"),24,72+i*28)});
+    const a=document.createElement("a"); a.href=canvas.toDataURL("image/png"); a.download="bed-distribution.png"; a.click();
+  }catch(e){toast("PNG export is not available on this device","bad")}
+}
+function bdftMountSetup(root,st){
+  if(!(st.me&&st.me.role==="admin")){root.appendChild(bdftEl("p","sm","Roster setup is an admin setting."));return}
+  root.appendChild(bdftEl("p","tiny","No roster is imported. Add a batch and a short name, then choose one owner for each bed."));
+  const people=st.people||[];
+  if(!people.length){root.appendChild(bdftEl("p","sm","Add residents in Users before mapping beds."));return}
+  ui.bdftSetup=ui.bdftSetup||{people:{},owners:{}};
+  people.forEach(p=>{
+    const row=bdftEl("div","card");
+    row.appendChild(bdftEl("b",null,(p.name||p.id)+(p.active?"":" (disabled)")));
+    const batch=document.createElement("input"); batch.placeholder="Batch"; batch.value=(ui.bdftSetup.people[p.id]&&ui.bdftSetup.people[p.id].batch)||p.batch||"";
+    const short=document.createElement("input"); short.placeholder="Short name"; short.maxLength=16; short.value=(ui.bdftSetup.people[p.id]&&ui.bdftSetup.people[p.id].short)||p.short||"";
+    const keep=()=>{ui.bdftSetup.people[p.id]={batch:batch.value,short:short.value,order:p.ord||1000000}};
+    batch.addEventListener("input",keep); short.addEventListener("input",keep); keep();
+    row.append(batch,short); root.appendChild(row);
+  });
+  (st.beds||[]).forEach(b=>{
+    const row=bdftEl("label","sm",(b.label||b.id)+" ");
+    const sel=document.createElement("select");
+    const blank=document.createElement("option"); blank.value=""; blank.textContent="No owner"; sel.appendChild(blank);
+    people.forEach(p=>{const o=document.createElement("option"); o.value=p.id; o.textContent=p.short||p.name||p.id; sel.appendChild(o)});
+    const existing=(st.owners||[]).find(o=>o.bedId===b.id);
+    sel.value=(ui.bdftSetup.owners[b.id]!=null?ui.bdftSetup.owners[b.id]:(existing&&existing.residentId)||"");
+    sel.addEventListener("change",()=>{ui.bdftSetup.owners[b.id]=sel.value});
+    ui.bdftSetup.owners[b.id]=sel.value;
+    row.appendChild(sel); root.appendChild(row);
+  });
+  const save=bdftEl("button","btn block","Save roster"); save.type="button";
+  save.addEventListener("click",async()=>{
+    const payloadPeople=people.map(p=>({id:p.id,batch:(ui.bdftSetup.people[p.id]||{}).batch||"",short:(ui.bdftSetup.people[p.id]||{}).short||"",order:p.ord||1000000}));
+    const payloadOwners=Object.keys(ui.bdftSetup.owners).filter(id=>ui.bdftSetup.owners[id]).map(id=>({bedId:id,residentId:ui.bdftSetup.owners[id]}));
+    try{ui.bdftState=await bdftRpc("ward_bdft_save_setup",{p_people:payloadPeople,p_owners:payloadOwners}); ui.bdftMode=""; toast("Roster saved"); render()}
+    catch(e){toast(String(e.message||e),"bad")}
+  });
+  root.appendChild(save);
+}
+
+
 function dropEmptySections(h){ // R1.3.145: a section header with nothing under it is not shown (any role, any page)
   return h.replace(/<p class="(?:more-section|sec)">[^<]*<\/p>\s*<div class="more-grid">\s*<\/div>/g,"").replace(/<div class="more-grid">\s*<\/div>/g,"");
 }
@@ -19110,7 +19426,7 @@ function render(opts){
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
   if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){el.innerHTML=`<div class="login"><div class="login-card"><h1>Ward Sync</h1><p class="muted">Checking session…</p></div></div>`;return}
-  const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,dedit:dedEditView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView};
+  const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,dedit:dedEditView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView,bdft:bdftView};
   if(isIntern()){pages.home=internHomeView;pages.snap=internSnapView;Object.keys(pages).forEach(k=>{if(k!=="home"&&k!=="snap")delete pages[k]});pages.ivitals=internVitalsView;pages.ireports=internReportsView;pages.ireport=internReportPageView} // R1.3.139: interns see the patient page only · R1.3.142: + Vitals / Reports tabs
   pages.vchart=vchartView; // R1.3.140: full-screen vitals chart (all roles)
   pages.scale=scaleView;pages.srate=srateView; // R1.3.143: rating scales (interns: CIWA-Ar / COWS only)
@@ -19132,6 +19448,8 @@ function render(opts){
   // R1.3.117: patch the DOM in place instead of rebuilding it, so open modals keep their scroll, focus and typed values.
   _html=dropEmptySections(_html); // R1.3.145
   patchApp(el,_html,{full:!!(opts.nav||navAnim||!_sameRoute||!el.firstChild),bg:!!opts.bg});
+  try{ if(route.page==="bdft") bdftMount(); }catch(e){}
+  if(sessionTok&&canWrite()&&!isIntern()&&!isConsultant()&&!ui.bdftLoaded&&!ui.bdftLoading&&!ui.bdftSkipNet&&sb) bdftLoad(true);
   ui._sheetEnter=false;
   document.querySelectorAll(".ptag-row").forEach((r,i)=>{if(chipXs[i])r.scrollLeft=chipXs[i]});
   try{ if(ui.giveOpen) refreshGivePost(); }catch(e){}
