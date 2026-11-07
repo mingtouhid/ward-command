@@ -1,0 +1,3 @@
+# The scheduler has no user JWT. dispatch-bdft checks the dedicated Vault header itself.
+[functions.dispatch-bdft]
+verify_jwt = false
