@@ -868,7 +868,7 @@ set search_path to pg_catalog, public
 as $fn$
 declare v_schema text; v_bytes bytea;
 begin
-  if to_regclass('vault.secrets') is null or to_regprocedure('vault.create_secret(text,text,text)') is null then
+  if to_regclass('vault.secrets') is null or to_regprocedure('vault.create_secret(text,text,text,uuid)') is null then
     raise exception 'vault is required for the bed distribution scheduler';
   end if;
   if exists (select 1 from vault.secrets where name = 'ward_bdft_cron_secret') then
@@ -877,7 +877,7 @@ begin
   select n.nspname into v_schema
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where p.proname = 'gen_random_bytes'
+  where p.oid::regprocedure::text like '%gen_random_bytes(integer)'
   order by case n.nspname when 'extensions' then 0 when 'public' then 1 else 2 end
   limit 1;
   if v_schema is null then
@@ -922,7 +922,7 @@ security definer
 set search_path to pg_catalog, public
 as $fn$
 declare
-  v_secret text; v_schema text; v_req bigint; v_headers jsonb;
+  v_secret text; v_schema text; v_post regprocedure; v_req bigint; v_headers jsonb;
 begin
   if not exists (
     select 1 from public.notification_events e
@@ -940,16 +940,17 @@ begin
   if v_secret is null then
     return 'no cron secret';
   end if;
+  v_post := coalesce(
+    to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)'),
+    to_regprocedure('extensions.http_post(text,jsonb,jsonb,jsonb,integer)')
+  );
+  if v_post is null then
+    raise exception 'pg_net http_post was not found';
+  end if;
   select n.nspname into v_schema
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where p.proname = 'http_post'
-    and pg_get_function_identity_arguments(p.oid) like '%url text%body jsonb%headers jsonb%'
-  order by case n.nspname when 'net' then 0 when 'extensions' then 1 else 2 end
-  limit 1;
-  if v_schema is null then
-    raise exception 'pg_net http_post was not found';
-  end if;
+  where p.oid = v_post;
   v_headers := jsonb_build_object('Content-Type', 'application/json', 'x-ward-bdft-secret', v_secret);
   begin
     execute format(
