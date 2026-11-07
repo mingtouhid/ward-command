@@ -2396,7 +2396,7 @@ input.lab-date-ocr{border-color:var(--warn)!important;background:color-mix(in sr
 .vit-warn.shake{animation:vitShake .35s}
 @keyframes vitShake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
 @media (prefers-reduced-motion:reduce){.vit-warn.shake{animation:none}}
-.intern-main{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.intern-main{padding-bottom:calc(28px + var(--nav-h, 76px) + env(safe-area-inset-bottom,0px))}
 /* R1.3.142 intern-tabs */
 .intern-nav .nav-in{grid-template-columns:repeat(3,1fr)}
 .intern-nav button{position:relative}
@@ -2456,12 +2456,17 @@ input.lab-date-ocr{border-color:var(--warn)!important;background:color-mix(in sr
 .ih-row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
 .ih-bed{font-weight:800;min-width:48px}
 .ih-name{font-weight:700;flex:1;min-width:0}
-.ih-st{font-size:13px;color:var(--muted)}
-.ih-act{margin-left:auto}
+.ih-st{flex:1 1 100%;font-size:13px;color:var(--muted);white-space:normal}
+.ih-act{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
 .ih-act .btn{min-height:36px}
 .ih-tasks{margin-top:14px}
 .ih-task{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:10px 12px;margin:0 0 8px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
 .ih-task b{flex:1;min-width:140px}
+.ih-note{flex:1 1 100%;font-size:12px;color:var(--muted)}
+.ih-done-sec{margin-top:8px}
+.ih-done-sec summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);margin:0 0 8px}
+.r17-audit-miss{border-color:var(--danger);margin:0 0 10px}
+.r17-audit-miss p{margin:0 0 8px}
 .ih-empty{color:var(--muted)}
 .r17-warn p{margin:0 0 8px}
 .r17-warn-acts{display:flex;gap:8px;margin-top:8px}
@@ -2481,7 +2486,8 @@ input.lab-date-ocr{border-color:var(--warn)!important;background:color-mix(in sr
   .ih-list{display:block;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
   .ih-row{display:grid;grid-template-columns:88px minmax(180px,1.4fr) minmax(160px,.9fr) 148px;gap:8px 12px;align-items:center;border:0;border-radius:0;border-top:1px solid var(--line);padding:8px 12px}
   .ih-row:first-child{border-top:0}
-  .ih-name,.ih-st{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ih-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ih-st{white-space:normal;overflow:visible;text-overflow:clip;flex:none}
   .ih-act{margin-left:0;justify-self:end}
 }
 .intern-tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
@@ -5876,6 +5882,7 @@ function homeView(){
   else{F.splice(1,0,{k:"handover",n:inbox,l:"Handover",c:"amber",fn:"go('handover')"});F.push({k:"opinion",n:opinionCount(),l:"Opinion",c:"blue",fn:"ui.ptag='';ui.pcon='';ui.preason='opinion';ui.pf='';go('patients')"})}
   const on=F.filter(f=>f.n>0),off=F.filter(f=>!f.n);
   return `<div class="home-split r146-today">
+    ${r17AuditMissHtml()}
     <div class="r146-col">
     <div class="r146-title"><h2>Today</h2><span class="tiny">${esc(dutyDateLabel())}</span></div>
     ${(()=>{ // R1.6 (t411u item 5): hero card with a subtle theme and an equal-tile grid; every tile keeps its tap action
@@ -9175,6 +9182,7 @@ function observeView(){
       </div>`;
     }).filter(Boolean).join(""):`<div class="card"><p class="sm">${oq?"No matching previous observations.":"No previous observations."}</p></div>`;
     return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
+    ${r17AuditMissHtml()}
     <h2 class="page-title">Under observation</h2>
     ${seg}
     <input id="obsPrevQ" placeholder="Search name, hospital no., diagnosis or bed" value="${esc(ui.obsPrevQ||"")}" oninput="ui.obsPrevQ=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>
@@ -9218,6 +9226,7 @@ function observeView(){
     </div>`;
   const formCard=ui.obsForm?form:`<button class="btn block" onclick="obsDraft();ui.obsForm=true;render()">Keep someone under observation</button>`;
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
+    ${r17AuditMissHtml()}
     <h2 class="page-title">Under observation</h2>
     ${seg}
     <p class="tiny" style="margin:-4px 0 8px">NOW UNDER OBSERVATION · ${open.length}</p>
@@ -9939,7 +9948,7 @@ async function closeObservation(pid,outcome){
     if(!["improved","unchanged"].includes(dOut)){toast("Choose the outcome.","bad");return}
   }
   const dmeds=dmCollect(pid); // R1.3.116 optional meds on referral / disposal
-  if((outcome==="disposed"||outcome==="referred")&&!r17HoldForSubmit(pid,function(){closeObservation(pid,outcome)}))return;
+  if(outcome==="disposed"&&!r17HoldForSubmit(pid,function(){closeObservation(pid,outcome)}))return;
   if(workflowLocked("obs-close",pid))return;
   setBusy(true,"Closing observation\u2026");
   try{
@@ -9952,7 +9961,7 @@ async function closeObservation(pid,outcome){
       rpcArgs.p_discharge_outcome=dOut;
     }
     if(dmeds.length) rpcArgs.p_discharge_meds=dmeds; // omitted when empty → identical call to R1.3.115
-    const reviewOv=ui.r17Ov&&String(ui.r17Ov.pid)===String(pid)?{reason:ui.r17Ov.reason}:null;
+    const reviewOv=outcome==="disposed"&&ui.r17Ov&&String(ui.r17Ov.pid)===String(pid)?{reason:ui.r17Ov.reason}:null;
     let reviewUnstored=false;
     let data,error;
     if(reviewOv){
@@ -9992,9 +10001,20 @@ async function closeObservation(pid,outcome){
         metadata:{action:isRef?"referral":"dispose",outcome,discharge_meds_count:dmeds.length,bed_no:bedNo||null,department:isRef?(dept||null):null,reason:reason||null,discharge_mode:dMode||null,discharge_outcome:dOut||null}
       });
     }catch(ne){ evFail(pid,"Observation notification",ne); }
-    closePanel();ui.obsRefer=null;ui.obsDispose=null;ui.obsClose=null;ui.r17Ov=null;
+    closePanel();ui.obsRefer=null;ui.obsDispose=null;ui.obsClose=null;
+    if(reviewOv){
+      const echo=data&&data.review;
+      const stored=!!(echo&&echo.stored===true);
+      const repeated=!!(echo&&echo.repeated===true);
+      const missing=!!(echo&&(echo.missing_mse||echo.missing_report));
+      reviewUnstored=!repeated&&!stored&&(!echo||missing||reviewUnstored);
+    }
+    ui.r17Ov=null;
     toast(outcome==="referred"?"Referred"+(dept?" to "+dept:""):"Disposed","ok");
-    if(reviewUnstored)toast("Closed. The review note was not stored on the server (update pending).","bad");
+    if(reviewUnstored){
+      ui.r17AuditMiss={text:"This observation disposal was saved. The review reason was not stored on the server and is not an audit record."};
+      toast("Review reason was not stored. It is not an audit record.","bad");
+    }
     save();go("observe");
   }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
   finally{workflowUnlock("obs-close",pid);setBusy(false)}
@@ -10047,6 +10067,7 @@ function censusView(){
     }
     return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
       <h2 class="page-title">Discharge</h2>${seg}
+      ${r17AuditMissHtml()}
       ${disDoneHtml()}
       <div class="card">
         <label class="field"><span>Patient</span>
@@ -10409,15 +10430,27 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
         }
       }else{
         const me=mseCommitDischarge(p.id,p.dischargedAt);
-        if(me){ev(p.id,"MSE at discharge recorded"+(me.highRisk?" · high risk":""),true,"mse",msePreviewText(me.data||{}).slice(0,160));setTimeout(()=>{try{flushPending()}catch(x){}},0)}
+        if(me){ev(p.id,"MSE queued · not saved with the discharge yet"+(me.highRisk?" · high risk":""),true,"mse",msePreviewText(me.data||{}).slice(0,160));setTimeout(()=>{try{flushPending()}catch(x){}},0)}
       }
     }catch(me){console.warn("MSE at discharge",me)} // R1.3.124 · R1.7 atomic only when the discharge RPC saved it
-    if(reviewUnstored){try{toast("Discharged. The review note was not stored on the server (update pending).","bad")}catch(e){}}
+    const reviewEcho=atomic.used&&atomic.data&&atomic.data.review;
+    if(reviewOv){
+      const stored=!!(reviewEcho&&reviewEcho.stored===true);
+      const repeated=!!(reviewEcho&&reviewEcho.repeated===true);
+      const missing=!!(reviewEcho&&(reviewEcho.missing_mse||reviewEcho.missing_report));
+      if(stored||repeated||(reviewEcho&&!missing)) reviewUnstored=false;
+      else reviewUnstored=true;
+    }
     ui.r17Ov=null;
     if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dreview;delete ui.census.dmrd;delete ui.census.dect;delete ui.census.dreq;delete ui.census.dreqName;}
     if(ui.obsClose&&ui.obsClose.pid===p.id) ui.obsClose=null;
     ui.disDone=certEligible(p)?{pid:p.id,at:p.dischargedAt}:null; // R1.3.126: offer the certificate right away
-    flashBtn(".btn.danger.block","ok");toast("Discharged "+p.name,"ok");ui.disId="";ui.disForm=false;save();ui.ctab="out";render();
+    flashBtn(".btn.danger.block","ok");toast("Discharged "+p.name,"ok");
+    if(reviewUnstored){
+      ui.r17AuditMiss={text:"The discharge was saved. The review reason was not stored on the server and is not an audit record."};
+      toast("Review reason was not stored. It is not an audit record.","bad");
+    }
+    ui.disId="";ui.disForm=false;save();ui.ctab="out";render();
   }catch(e){
     if(oldDx!==undefined) p.diagnosis=oldDx;
     p.status="admitted"; p.dischargedAt=null; p.dischargeMode=null; p.dischargeOutcome=null; p.treatmentMode=null;
@@ -17296,7 +17329,7 @@ function patchApp(el,html,o){
 /* ===== R1.3.139: delete / restore saved MSE and lab reports · Intern role · Vitals ===== */
 function isIntern(){return !!S.userId&&roleOf()==="intern"}
 function canDeleteRecords(){const r=roleOf();return !!S.userId&&(r==="resident"||r==="admin")&&!isIntern()&&!(typeof isViewerLogin==="function"&&isViewerLogin())}
-const INTERN_RPCS=new Set(["ward_login","ward_intern_read_state","ward_intern_save_lab_report","ward_save_vitals","ward_intern_save_scale","ward_complete_intern_task","ward_undo_intern_task"]); // R1.3.143 scales · R1.7 intern tasks only
+const INTERN_RPCS=new Set(["ward_login","ward_intern_read_state","ward_intern_save_lab_report","ward_save_vitals","ward_intern_save_scale","ward_complete_intern_task","ward_undo_intern_task","ward_link_intern_report_task"]); // R1.3.143 scales · R1.7 intern tasks only
 // Client-side guard: while an intern is signed in, only the four intern RPCs leave the device. The server enforces the same
 // (an intern token exists only in ward_intern_sessions, which no other ward_* function accepts).
 function internGuardRpc(c){
@@ -17584,6 +17617,24 @@ async function r17AssignIntern(pid, title, kind, due){
   }catch(e){toast(e.message||"Task was not assigned","bad")}
   finally{setBusy(false)}
 }
+function r17TaskOpen(pid){const p=patient(pid);if(!p)return;if(isIntern())go("snap",pid);else if(typeof r146Open==="function")r146Open(pid);else go("snap",pid)}
+function r17TaskAddReport(pid){const p=patient(pid);if(!p)return;if(isIntern())go("ireport",pid);else labOpen(pid)}
+async function r17TaskLink(id){
+  const t=(S.internTasks||[]).map(r17TaskFromRow).find(function(x){return x.id===id});
+  if(!t||t.kind!=="report"){toast("That task is not a report task.","bad");return}
+  if(t.status==="done"){toast("Already linked to a saved report.","ok");return}
+  if(!sb||!sessionTok||navigator.onLine===false){toast("Not saved — you are offline. Nothing was linked.","bad");return}
+  try{
+    const res=await sb.rpc("ward_link_intern_report_task",{p_token:sessionTok,p_id:id});
+    if(!res||res.error||!res.data||res.data.ok===false)throw new Error((res&&res.error&&res.error.message)||"No saved report was linked");
+    const row=r17TaskFromRow(res.data.task||res.data);
+    const i=(S.internTasks||[]).findIndex(function(x){return x.id===id});
+    if(i>=0)S.internTasks[i]=row;else (S.internTasks=S.internTasks||[]).unshift(row);
+    toast(row.status==="done"?"Linked to a saved report on this admission":"No saved report was linked","ok");
+    save();
+  }catch(e){toast(e.message||"No saved report was linked","bad")}
+  render({force:1});
+}
 async function r17EctMark(planId){
   if(!needWrite())return;
   const plan=(S.ect||[]).find(function(e){return e.id===planId});
@@ -17808,16 +17859,34 @@ function r17InternVitalsHtml(board){
 function r17InternTasksHtml(tasks, mode){
   const list=tasks||[];
   if(!list.length)return '<section class="ih-tasks" aria-label="Assigned work"><p class="tiny">ASSIGNED WORK</p><p class="sm ih-empty">No intern tasks assigned.</p></section>';
-  return '<section class="ih-tasks" aria-label="Assigned work"><p class="tiny">ASSIGNED WORK</p>'+list.map(function(t){
-    const due=t.dueOn?'Due '+r17Esc(t.dueOn):"";
-    const done=t.status==="done";
-    if(t.kind==="report"){
-      return '<div class="ih-task" data-kind="report"><b>'+r17Esc(t.title||"Report")+'</b><span>'+due+'</span>'+(done?'<span class="ih-done">Completed · report saved'+(t.completedByName?' · '+r17Esc(t.completedByName):"")+'</span>':'<span>Completes when a saved report for this admission is linked.</span>')+'</div>';
+  const write=mode!=="read";
+  const row=function(t){
+    const due=t.dueOn?"Due "+r17Esc(t.dueOn):"";
+    const isDone=t.status==="done";
+    let act="";
+    if(!isDone&&t.kind==="report"){
+      act=write?'<button type="button" class="btn sm" onclick="r17TaskAddReport(\''+r17Esc(t.pid)+'\')">Add report</button><button type="button" class="btn sm ghost" onclick="r17TaskLink(\''+r17Esc(t.id)+'\')">Link saved report</button>':'<button type="button" class="btn sm ghost" onclick="r17TaskOpen(\''+r17Esc(t.pid)+'\')">Open task</button>';
+    }else if(!isDone){
+      const openBtn='<button type="button" class="btn sm ghost" onclick="r17TaskOpen(\''+r17Esc(t.pid)+'\')">Open task</button>';
+      const mark=(write&&mode!=="status")?'<button type="button" class="btn sm" onclick="r17InternTaskDone(\''+r17Esc(t.id)+'\')">Mark complete</button>':"";
+      act=openBtn+mark;
+    }else if(write&&t.kind==="general"){
+      act='<button type="button" class="btn sm ghost" onclick="r17InternTaskUndo(\''+r17Esc(t.id)+'\')">Undo</button>';
     }
-    const undo='<button type="button" class="btn sm ghost" onclick="r17InternTaskUndo(\''+r17Esc(t.id)+'\')">Undo</button>';
-    const btn=mode==="read"?"":mode==="status"?(done?undo:""):(done?undo:'<button type="button" class="btn sm" onclick="r17InternTaskDone(\''+r17Esc(t.id)+'\')">Mark complete</button>');
-    return '<div class="ih-task" data-kind="general"><b>'+r17Esc(t.title||"Task")+'</b><span>'+due+'</span>'+(done?'<span class="ih-done">Completed'+(t.completedByName?' · '+r17Esc(t.completedByName):"")+'</span>':"")+btn+'</div>';
-  }).join("")+'</section>';
+    const note=!isDone&&t.kind==="report"?'<span class="ih-note">Completes when a saved report for this admission is linked.</span>':"";
+    const doneLine=isDone?'<span class="ih-done">Completed'+(t.kind==="report"?" · report saved":"")+(t.completedByName?" · "+r17Esc(t.completedByName):"")+"</span>":"";
+    return '<div class="ih-task" data-kind="'+r17Esc(t.kind||"general")+'" data-status="'+(isDone?"done":"open")+'"><b>'+r17Esc(t.title||"Task")+'</b><span>'+due+'</span>'+note+doneLine+'<span class="ih-act">'+act+'</span></div>';
+  };
+  const open=list.filter(function(t){return t.status!=="done"});
+  const done=list.filter(function(t){return t.status==="done"});
+  return '<section class="ih-tasks" aria-label="Assigned work"><p class="tiny">ASSIGNED WORK</p>'
+    +(open.length?open.map(row).join(""):'<p class="sm ih-empty">No open intern tasks.</p>')
+    +(done.length?'<details class="ih-done-sec"><summary>Completed ('+done.length+')</summary>'+done.map(row).join("")+'</details>':"")
+    +'</section>';
+}
+function r17AuditMissHtml(){
+  const m=ui&&ui.r17AuditMiss;if(!m||!m.text)return "";
+  return '<div class="card r17-audit-miss" role="alert"><p><b>Review reason not stored</b></p><p class="sm">'+r17Esc(m.text)+'</p><button type="button" class="btn sm ghost" onclick="ui.r17AuditMiss=null;render()">Dismiss</button></div>';
 }
 function r17DischargeWarnHtml(review, reason){
   const lines=r17WarnLines(review).map(function(t){return "<p>"+r17Esc(t)+"</p>"}).join("");

@@ -60,8 +60,10 @@ Every ward-discharge entry asks the same question before the form or the commit:
 - the small discharge panel that continues into that form
 - Census → Discharge → Continue
 - the legacy immediate `dischargePatient` path
-- observation dispose and observation refer (`closeObservation`)
+- observation **disposal**, which is a discharge (mode of discharge is required)
 - Confirm discharge rechecks before the patient is marked discharged
+
+Observation referral, transfer, and admit-from-observation are not discharges and do not show this warning.
 
 The warning appears only when the **current admission** has no eligible MSE, or no eligible report, or neither.
 
@@ -91,7 +93,7 @@ Actions: **Update MSE**, **Review or add reports**, **Continue discharge**, **Ca
 
 Recheck at final submit. An override captured for an earlier evaluation is reused only when the fingerprint still matches (admission time, missing parts, eligible record ids, whether a prepared MSE will be sent). A changed evaluation asks again.
 
-The audit row is written only inside the successful discharge transaction, with the session resident, server `now()`, admission timestamp, missing flags, and record ids. It does not copy MSE text or report results. If the new RPC is absent, discharge still proceeds through the existing RPC and the client says the review note was not stored on the server. It does not invent a server audit.
+The audit row is written only inside the successful discharge transaction, with the session resident, server `now()`, admission timestamp, missing flags, and record ids. It does not copy MSE text or report results. If the new RPC is absent, discharge still proceeds through the existing RPC. A persistent on-screen notice says the review reason was not stored and is not an audit record. The success toast does not say the audit was saved.
 
 ## 4. Today's schedule — mark a scheduled ECT complete
 
@@ -131,9 +133,9 @@ Migrations are the usual forward file plus a rollback file. Nothing in this chan
 
 ## Testing
 
-Synthetic unit tests load only the `R17_RULES` block. They cover IST midnight, admission boundaries, queued versus saved versus failed vitals, single credit for any intern, discharge deletions and prior admissions, prepared versus atomic MSE, the "not every investigation" line, task permission and idempotency, report-link rules, and ECT completion that does not schedule the next session.
+Rule checks load only the `R17_RULES` block. They cover IST midnight, admission boundaries, queued versus saved versus failed vitals, single credit for any intern, discharge deletions and prior admissions, prepared versus atomic MSE, the "not every investigation" line, task permission and idempotency, report-link rules, and ECT completion that does not schedule the next session.
 
-No existing automated suite is in the repo. `node --check` covers the app script. Screenshots use invented patients only.
+This repository has no tracked test suite. Those checks are run from outside the repo and are not committed. `node --check` covers the app script. Screenshots use invented patients only. There is no in-repo regression suite to run.
 
 ## Self-review
 

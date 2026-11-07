@@ -90,16 +90,16 @@ language plpgsql
 security definer
 set search_path to pg_catalog, public
 as $fn$
-declare a record; v_id text; v_role text; v_name text;
+declare v_intern_id text; v_id text; v_role text; v_name text;
 begin
   begin
-    select * into a from public.ward_intern_actor(p_token);
+    select x.resident_id into v_intern_id from public.ward_intern_actor(p_token) x limit 1;
   exception when others then
-    a := null;
+    v_intern_id := null;
   end;
-  if a is not null and a.resident_id is not null then
-    select coalesce(display_name, username, '') into v_name from public.residents where id = a.resident_id;
-    actor_id := a.resident_id; actor_role := 'intern'; actor_name := coalesce(v_name, ''); actor_kind := 'intern';
+  if v_intern_id is not null then
+    select coalesce(display_name, username, '') into v_name from public.residents where id = v_intern_id;
+    actor_id := v_intern_id; actor_role := 'intern'; actor_name := coalesce(v_name, ''); actor_kind := 'intern';
     return next; return;
   end if;
   select s.resident_id, lower(coalesce(r.role, '')), coalesce(r.display_name, r.username, '')
@@ -209,6 +209,9 @@ begin
   select * into v_row from public.intern_assignments where id = p_id for update;
   if not found then raise exception 'Task not found'; end if;
   if v_row.kind <> 'general' then raise exception 'Report tasks complete only when a saved report is linked'; end if;
+  if exists (select 1 from public.patients where id = v_row.patient_id and coalesce(active_status,'admitted') = 'discharged') then
+    raise exception 'Patient is not on the ward';
+  end if;
   if v_row.status = 'done' then
     return jsonb_build_object('ok', true, 'idempotent', true, 'task', public.r17_task_json(v_row));
   end if;
@@ -397,17 +400,26 @@ security definer
 set search_path to pg_catalog, public
 as $fn$
 declare
-  a record; v_result jsonb; v_pid text; v_adm timestamptz; v_mse_id text; v_data jsonb; v_saved text; v_audit jsonb;
+  a record; v_result jsonb; v_pid text; v_adm timestamptz; v_status text; v_mse_id text; v_data jsonb; v_saved text; v_audit jsonb;
 begin
   select * into a from public.r17_actor(p_token);
   if a.actor_kind = 'intern' or a.actor_role in ('consultant','viewer') then
     raise exception 'This role cannot perform clinical writes';
   end if;
   v_pid := nullif(btrim(coalesce(p_patient->>'id','')), '');
-  select admitted_at into v_adm from public.patients where id = v_pid;
+  select admitted_at, coalesce(active_status,'admitted') into v_adm, v_status from public.patients where id = v_pid;
+  if v_status = 'discharged' then
+    v_result := public.ward_discharge_patient(p_token, p_patient, p_bed_id, p_assignment_ids, p_ect_plan,
+      p_discharge_advice, p_discharge_meds, p_mrd_no, p_discharge_review, p_discharge_ect_sessions,
+      p_discharge_requested_by, p_discharge_requester_name);
+    return coalesce(v_result, '{}'::jsonb) || jsonb_build_object('mse_id', null, 'review', jsonb_build_object('stored', false, 'repeated', true));
+  end if;
   v_result := public.ward_discharge_patient(p_token, p_patient, p_bed_id, p_assignment_ids, p_ect_plan,
     p_discharge_advice, p_discharge_meds, p_mrd_no, p_discharge_review, p_discharge_ect_sessions,
     p_discharge_requested_by, p_discharge_requester_name);
+  if coalesce((v_result->>'idempotent')::boolean, false) then
+    return v_result || jsonb_build_object('mse_id', null, 'review', jsonb_build_object('stored', false, 'repeated', true));
+  end if;
   v_saved := null;
   if p_discharge_mse is not null and jsonb_typeof(p_discharge_mse) = 'object' then
     v_mse_id := nullif(btrim(coalesce(p_discharge_mse->>'id','')), '');
@@ -443,11 +455,22 @@ language plpgsql
 security definer
 set search_path to pg_catalog, public
 as $fn$
-declare a record; v_result jsonb; v_audit jsonb;
+declare a record; v_result jsonb; v_audit jsonb; v_status text;
 begin
   select * into a from public.r17_actor(p_token);
   if a.actor_kind = 'intern' or a.actor_role in ('consultant','viewer') then
     raise exception 'This role cannot perform clinical writes';
+  end if;
+  if coalesce(p_outcome,'') <> 'disposed' then
+    v_result := public.ward_close_observation(p_token, p_patient_id, p_outcome, p_referral_to, p_reason,
+      p_discharge_mode, p_discharge_outcome, p_discharge_meds);
+    return coalesce(v_result, '{}'::jsonb) || jsonb_build_object('review', jsonb_build_object('stored', false, 'not_discharge', true));
+  end if;
+  select coalesce(active_status,'admitted') into v_status from public.patients where id = p_patient_id;
+  if v_status = 'discharged' then
+    v_result := public.ward_close_observation(p_token, p_patient_id, p_outcome, p_referral_to, p_reason,
+      p_discharge_mode, p_discharge_outcome, p_discharge_meds);
+    return coalesce(v_result, '{}'::jsonb) || jsonb_build_object('review', jsonb_build_object('stored', false, 'repeated', true));
   end if;
   v_result := public.ward_close_observation(p_token, p_patient_id, p_outcome, p_referral_to, p_reason,
     p_discharge_mode, p_discharge_outcome, p_discharge_meds);
@@ -497,6 +520,53 @@ begin
 end;
 $fn$;
 
+create or replace function public.ward_link_intern_report_task(p_token uuid, p_id text)
+returns jsonb
+language plpgsql
+security definer
+set search_path to pg_catalog, public
+as $fn$
+declare
+  a record; v_row public.intern_assignments; v_adm timestamptz; v_status text;
+  v_rep text; v_by text; v_name text;
+begin
+  select * into a from public.r17_actor(p_token);
+  if a.actor_role not in ('intern','resident','admin') then
+    raise exception 'This login cannot link a report';
+  end if;
+  select * into v_row from public.intern_assignments where id = p_id for update;
+  if not found then raise exception 'Task not found'; end if;
+  if v_row.kind <> 'report' then raise exception 'That task is not a report task'; end if;
+  if v_row.status = 'done' then
+    return jsonb_build_object('ok', true, 'idempotent', true, 'task', public.r17_task_json(v_row));
+  end if;
+  select admitted_at, coalesce(active_status,'admitted') into v_adm, v_status
+    from public.patients where id = v_row.patient_id;
+  if v_status is null or v_status = 'discharged' or v_adm is null then
+    raise exception 'Patient is not on the ward';
+  end if;
+  select r.id, r.created_by, coalesce(r.created_by_name, '')
+    into v_rep, v_by, v_name
+  from public.lab_reports r
+  where r.patient_id = v_row.patient_id
+    and r.deleted_at is null
+    and coalesce(r.reported_at, r.created_at) >= v_adm - interval '6 hours'
+    and not exists (
+      select 1 from public.intern_assignments ia
+      where ia.report_id = r.id and ia.status = 'done' and ia.id <> v_row.id
+    )
+  order by r.created_at desc, r.id
+  limit 1;
+  if v_rep is null then raise exception 'No saved report on this admission to link'; end if;
+  update public.intern_assignments
+    set status = 'done', report_id = v_rep, completed_by = v_by, completed_by_name = nullif(v_name,''),
+        completed_at = now(), updated_at = now()
+    where id = v_row.id and status = 'open'
+    returning * into v_row;
+  return jsonb_build_object('ok', true, 'idempotent', false, 'task', public.r17_task_json(v_row));
+end;
+$fn$;
+
 revoke all on function public.r17_task_json(public.intern_assignments) from public, anon, authenticated;
 revoke all on function public.r17_actor(uuid) from public, anon, authenticated;
 revoke all on function public.r17_write_review_override(text, text, text, text, text, text) from public, anon, authenticated;
@@ -509,6 +579,7 @@ grant execute on function public.intern_assignment_on_report() to postgres, serv
 revoke all on function public.ward_assign_intern_task(uuid, jsonb) from public;
 revoke all on function public.ward_complete_intern_task(uuid, text) from public;
 revoke all on function public.ward_undo_intern_task(uuid, text) from public;
+revoke all on function public.ward_link_intern_report_task(uuid, text) from public;
 revoke all on function public.ward_complete_scheduled_ect(uuid, text, timestamptz) from public;
 revoke all on function public.ward_undo_scheduled_ect(uuid, text) from public;
 revoke all on function public.ward_list_r17_status(uuid) from public;
@@ -517,6 +588,7 @@ revoke all on function public.ward_close_observation_with_review(uuid, text, tex
 grant execute on function public.ward_assign_intern_task(uuid, jsonb) to anon, authenticated, service_role;
 grant execute on function public.ward_complete_intern_task(uuid, text) to anon, authenticated, service_role;
 grant execute on function public.ward_undo_intern_task(uuid, text) to anon, authenticated, service_role;
+grant execute on function public.ward_link_intern_report_task(uuid, text) to anon, authenticated, service_role;
 grant execute on function public.ward_complete_scheduled_ect(uuid, text, timestamptz) to anon, authenticated, service_role;
 grant execute on function public.ward_undo_scheduled_ect(uuid, text) to anon, authenticated, service_role;
 grant execute on function public.ward_list_r17_status(uuid) to anon, authenticated, service_role;

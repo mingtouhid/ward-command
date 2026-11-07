@@ -9,6 +9,7 @@ drop function if exists public.ward_discharge_with_review(uuid, jsonb, text, tex
 drop function if exists public.ward_list_r17_status(uuid);
 drop function if exists public.ward_undo_scheduled_ect(uuid, text);
 drop function if exists public.ward_complete_scheduled_ect(uuid, text, timestamptz);
+drop function if exists public.ward_link_intern_report_task(uuid, text);
 drop function if exists public.ward_undo_intern_task(uuid, text);
 drop function if exists public.ward_complete_intern_task(uuid, text);
 drop function if exists public.ward_assign_intern_task(uuid, jsonb);
