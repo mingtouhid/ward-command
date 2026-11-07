@@ -8,7 +8,7 @@ Occupancy is a snapshot. Changing the chips does not move a patient. A published
 
 A generation stores one notice for active residents, admins, and SR accounts. The link opens that distribution, including after it is replaced. Interns and consultants do not receive it. Opting out of clinical alerts skips the push and still leaves the in-app notice. The phone or browser permission is unchanged.
 
-`dispatch-bdft` sends Web Push and FCM for bed-distribution rows only. A schedule authenticates with the platform service key already in `SUPABASE_SECRET_KEYS` and does not use a resident session. A resident session can request immediate delivery of one bed-distribution notice; the claim itself still runs as the service role. If the VAPID or FCM environment is absent, the function returns deferred and does not claim a row. This build does not deploy the function. No cron job calls it. Adding the schedule needs permission on the existing Supabase project. `ward_dispatch_anon_key` is not created. The clinical dispatcher is unchanged.
+`dispatch-bdft` sends Web Push and FCM for bed-distribution rows only. The migration stores a random scheduler credential in Vault under `ward_bdft_cron_secret` and schedules `ward_bdft_tick` every two minutes. The tick reads that credential inside the database. A wrong header is rejected before a claim. A resident session can still request immediate delivery of one bed-distribution notice. If the VAPID or FCM environment is absent, the function returns deferred and does not claim a row. This build does not apply the migration or deploy the function. The clinical dispatcher and the archive scheduler are unchanged.
 
 Service worker cache: `ward-sync-pwa-r1.8`.
 

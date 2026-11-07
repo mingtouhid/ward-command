@@ -858,3 +858,133 @@ grant execute on function public.ward_bdft_open(uuid, text) to anon, authenticat
 grant execute on function public.ward_bdft_dispatch_scope(uuid, uuid) to anon, authenticated, service_role;
 grant execute on function public.ward_bdft_service_claim(uuid) to service_role;
 grant execute on function public.ward_bdft_service_apply(uuid, text, text) to service_role;
+
+-- Dedicated scheduler credential. The plaintext stays in Vault and is never returned.
+create or replace function public.ward_bdft_provision_cron_secret()
+returns text
+language plpgsql
+security definer
+set search_path to pg_catalog, public
+as $fn$
+declare v_schema text; v_bytes bytea;
+begin
+  if to_regclass('vault.secrets') is null or to_regprocedure('vault.create_secret(text,text,text)') is null then
+    raise exception 'vault is required for the bed distribution scheduler';
+  end if;
+  if exists (select 1 from vault.secrets where name = 'ward_bdft_cron_secret') then
+    return 'present';
+  end if;
+  select n.nspname into v_schema
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where p.proname = 'gen_random_bytes'
+  order by case n.nspname when 'extensions' then 0 when 'public' then 1 else 2 end
+  limit 1;
+  if v_schema is null then
+    raise exception 'pgcrypto is required for the bed distribution scheduler';
+  end if;
+  execute format('select %I.gen_random_bytes(32)', v_schema) into v_bytes;
+  perform vault.create_secret(encode(v_bytes, 'hex'), 'ward_bdft_cron_secret', 'BDFT scheduler credential');
+  return 'created';
+end;
+$fn$;
+
+create or replace function public.ward_bdft_cron_ok(p_secret text)
+returns boolean
+language plpgsql
+security definer
+set search_path to pg_catalog, public
+as $fn$
+declare v_stored text; v_left text; v_right text;
+begin
+  if p_secret is null or length(p_secret) < 32 then
+    return false;
+  end if;
+  if to_regclass('vault.decrypted_secrets') is null then
+    return false;
+  end if;
+  select s.decrypted_secret into v_stored
+  from vault.decrypted_secrets s
+  where s.name = 'ward_bdft_cron_secret';
+  if v_stored is null or length(v_stored) <> length(p_secret) then
+    return false;
+  end if;
+  v_left := encode(sha256(convert_to(v_stored, 'UTF8')), 'hex');
+  v_right := encode(sha256(convert_to(p_secret, 'UTF8')), 'hex');
+  return v_left = v_right;
+end;
+$fn$;
+
+create or replace function public.ward_bdft_tick()
+returns text
+language plpgsql
+security definer
+set search_path to pg_catalog, public
+as $fn$
+declare
+  v_secret text; v_schema text; v_req bigint; v_headers jsonb;
+begin
+  if not exists (
+    select 1 from public.notification_events e
+    where e.event_type = 'bdft' and e.recipient_scope = 'bdft_residents'
+      and coalesce(e.dedupe_key, '') like 'bdft:%' and e.dispatch_due is true
+  ) then
+    return 'idle';
+  end if;
+  if to_regclass('vault.decrypted_secrets') is null then
+    return 'no cron secret';
+  end if;
+  select s.decrypted_secret into v_secret
+  from vault.decrypted_secrets s
+  where s.name = 'ward_bdft_cron_secret';
+  if v_secret is null then
+    return 'no cron secret';
+  end if;
+  select n.nspname into v_schema
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where p.proname = 'http_post'
+    and pg_get_function_identity_arguments(p.oid) like '%url text%body jsonb%headers jsonb%'
+  order by case n.nspname when 'net' then 0 when 'extensions' then 1 else 2 end
+  limit 1;
+  if v_schema is null then
+    raise exception 'pg_net http_post was not found';
+  end if;
+  v_headers := jsonb_build_object('Content-Type', 'application/json', 'x-ward-bdft-secret', v_secret);
+  begin
+    execute format(
+      'select %I.http_post(url := $1, body := $2, headers := $3, timeout_milliseconds := $4)',
+      v_schema
+    ) into v_req using
+      'https://ocgmhwetdpcthwbcnbqz.supabase.co/functions/v1/dispatch-bdft',
+      jsonb_build_object('source', 'cron'),
+      v_headers,
+      60000;
+  exception when others then
+    raise exception 'bed distribution dispatch request failed';
+  end;
+  return 'requested ' || v_req::text;
+end;
+$fn$;
+
+revoke all on function public.ward_bdft_provision_cron_secret() from public, anon, authenticated;
+revoke all on function public.ward_bdft_cron_ok(text) from public, anon, authenticated;
+revoke all on function public.ward_bdft_tick() from public, anon, authenticated;
+grant execute on function public.ward_bdft_cron_ok(text) to service_role;
+
+do $bdft_sched$
+declare v_state text;
+begin
+  v_state := public.ward_bdft_provision_cron_secret();
+  if v_state not in ('created', 'present') then
+    raise exception 'bed distribution scheduler credential was not stored';
+  end if;
+  if to_regprocedure('cron.schedule(text,text,text)') is null or to_regclass('cron.job') is null then
+    raise exception 'pg_cron is required for the bed distribution scheduler';
+  end if;
+  if exists (select 1 from cron.job where jobname = 'ward-bdft-dispatch') then
+    perform cron.unschedule('ward-bdft-dispatch');
+  end if;
+  perform cron.schedule('ward-bdft-dispatch', '*/2 * * * *', 'select public.ward_bdft_tick()');
+end;
+$bdft_sched$;

@@ -2,6 +2,22 @@
 -- Restores the production notification checks and inbox function captured for this release.
 -- Deletes bed-distribution notice rows so the restored checks can be applied.
 
+do $bdft_unsched$
+begin
+  if to_regclass('cron.job') is not null
+     and to_regprocedure('cron.unschedule(text)') is not null
+     and exists (select 1 from cron.job where jobname = 'ward-bdft-dispatch') then
+    perform cron.unschedule('ward-bdft-dispatch');
+  end if;
+  if to_regclass('vault.secrets') is not null then
+    delete from vault.secrets where name = 'ward_bdft_cron_secret';
+  end if;
+end;
+$bdft_unsched$;
+
+drop function if exists public.ward_bdft_tick();
+drop function if exists public.ward_bdft_cron_ok(text);
+drop function if exists public.ward_bdft_provision_cron_secret();
 drop function if exists public.ward_bdft_service_apply(uuid, text, text);
 drop function if exists public.ward_bdft_service_claim(uuid);
 drop function if exists public.ward_bdft_dispatch_scope(uuid, uuid);

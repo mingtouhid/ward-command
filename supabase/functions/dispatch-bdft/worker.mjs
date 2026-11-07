@@ -91,51 +91,31 @@ function messageData(claim) {
   };
 }
 
-export function serviceKeyFromEnv(env) {
-  try {
-    const parsed = JSON.parse(String(env && env.SUPABASE_SECRET_KEYS || ""));
-    return String(parsed.default || "");
-  } catch (e) {
-    return "";
+export function authorizeBdftRequest({ body, cronPresented, cronOk }) {
+  const request = body || {};
+  if (cronPresented === true) {
+    if (cronOk !== true) return { ok: false, status: 401, error: "authentication required" };
+    if (request.session_token || request.notification_id || request.event_type || request.recipient_scope) {
+      return { ok: false, status: 403, error: "This worker only sends bed distribution" };
+    }
+    return { ok: true, mode: "cron" };
   }
-}
-
-function sameSecret(left, right) {
-  const a = String(left || "");
-  const b = String(right || "");
-  if (!a || !b || a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
-export function authorizeBdftRequest({ authorization, apikey, body, env }) {
-  const bearer = String(authorization || "").replace(/^Bearer\s+/i, "");
-  const key = serviceKeyFromEnv(env);
-  const isService = !!key && (sameSecret(bearer, key) || sameSecret(apikey, key));
-  const session = body && body.session_token ? String(body.session_token) : "";
-  if (body && body.event_type && body.event_type !== "bdft") {
+  if (request.event_type && request.event_type !== "bdft") {
     return { ok: false, status: 403, error: "This worker only sends bed distribution" };
   }
-  if (body && body.recipient_scope && body.recipient_scope !== "bdft_residents") {
+  if (request.recipient_scope && request.recipient_scope !== "bdft_residents") {
     return { ok: false, status: 403, error: "This worker only sends bed distribution" };
   }
-  if (isService && session) {
-    return { ok: false, status: 400, error: "A service retry cannot carry a resident session" };
-  }
-  if (isService) {
-    return { ok: true, mode: "service" };
-  }
-  if (session) {
-    if (!body.notification_id) return { ok: false, status: 400, error: "notification_id is required" };
-    return { ok: true, mode: "resident", sessionToken: session, notificationId: String(body.notification_id) };
+  if (request.session_token) {
+    if (!request.notification_id) return { ok: false, status: 400, error: "notification_id is required" };
+    return { ok: true, mode: "resident", sessionToken: String(request.session_token), notificationId: String(request.notification_id) };
   }
   return { ok: false, status: 401, error: "authentication required" };
 }
 
 export async function runBdftDispatch(ctx) {
   const auth = authorizeBdftRequest({
-    authorization: ctx.authorization, apikey: ctx.apikey, body: ctx.body || {}, env: ctx.env || {},
+    body: ctx.body || {}, cronPresented: ctx.cronPresented === true, cronOk: ctx.cronOk === true,
   });
   if (!auth.ok) return { status: auth.status, body: { ok: false, error: auth.error } };
   if (!ctx.providerConfigured()) {

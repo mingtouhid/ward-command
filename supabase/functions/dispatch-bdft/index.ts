@@ -1,15 +1,13 @@
 // Ward Sync R1.8 dispatch-bdft
 // Sends only rows from the bed-distribution outbox.
-// A scheduled caller authenticates with the platform service key already in
-// SUPABASE_SECRET_KEYS. A resident session is not required for that path.
-// A resident session may ask for immediate delivery of one bed-distribution
-// notice. The database claim still runs as the service role inside this
-// function. The session is never stored and is not a scheduler credential.
-// ward_dispatch_anon_key is not read or created.
+// A schedule authenticates with the dedicated Vault credential. The header is
+// checked by ward_bdft_cron_ok and is not logged. A resident session may ask
+// for immediate delivery of one bed-distribution notice. The claim still runs
+// as the service role inside this function.
 // The clinical dispatcher is a different function and is not changed here.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import webpush from "npm:web-push@3.6.7";
+import { createClient } from "@supabase/supabase-js";
+import webpush from "npm:web-push";
 import { mintGoogleAccessToken, runBdftDispatch, sendFcmHttpV1, sendFcmLegacy } from "./worker.mjs";
 
 const corsHeaders = {
@@ -38,18 +36,22 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const secretRing = Deno.env.get("SUPABASE_SECRET_KEYS") || "";
-  const env = { SUPABASE_SECRET_KEYS: secretRing };
   if (configured() && (!supabaseUrl || !secretRing)) {
     return json({ ok: true, dispatch: "deferred", reason: "database role is not configured" });
   }
   const admin = configured()
     ? createClient(supabaseUrl, JSON.parse(secretRing).default, { auth: { persistSession: false, autoRefreshToken: false } })
     : null;
+  const cronPresented = Boolean(req.headers.get("x-ward-bdft-secret"));
+  let cronOk = false;
+  if (cronPresented && admin) {
+    const check = await admin.rpc("ward_bdft_cron_ok", { p_secret: req.headers.get("x-ward-bdft-secret") });
+    cronOk = check.data === true;
+  }
   const result = await runBdftDispatch({
     body,
-    env,
-    authorization: req.headers.get("authorization") || "",
-    apikey: req.headers.get("apikey") || "",
+    cronPresented,
+    cronOk,
     providerConfigured: configured,
     scope: async (token, id) => {
       const res = await admin.rpc("ward_bdft_dispatch_scope", { p_token: token, p_notification_id: id });

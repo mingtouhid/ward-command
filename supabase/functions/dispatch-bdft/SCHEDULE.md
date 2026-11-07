@@ -1,18 +1,7 @@
 # dispatch-bdft schedule
 
-Durable retries call this function with the Supabase project's existing service role. That value is the `default` key already present in the function environment as `SUPABASE_SECRET_KEYS`. Do not create `ward_dispatch_anon_key`. Do not put a resident session on the schedule.
+The migration creates a random Vault secret named `ward_bdft_cron_secret` and a pg_cron job named `ward-bdft-dispatch`. The job runs `select public.ward_bdft_tick()` every two minutes. The tick reads that secret inside the database and posts it only as the `x-ward-bdft-secret` header. The command text does not contain the secret. The function does not return it.
 
-```http
-POST /functions/v1/dispatch-bdft
-Authorization: Bearer <existing platform service role>
-apikey: <same existing platform service role>
-Content-Type: application/json
+`dispatch-bdft` is deployed with `verify_jwt = false` in `supabase/config.toml`. It asks `ward_bdft_cron_ok` whether the header matches, then drains only the bed-distribution outbox. A wrong or missing header is rejected before a claim. The clinical dispatcher and the archive scheduler credential are not used.
 
-{}
-```
-
-The function selects `dispatch_due` bed-distribution notices. It does not accept an event type, an audience, or a resident session on this path. A body that names another event type is rejected.
-
-Provision the schedule from the Supabase project that already hosts `dispatch-notification`, using that project's service role. This repository cannot create the schedule: the project credential and the permission to add a schedule are not available here. Until an operator adds it, unpublished retries stay queued. A resident who just published may still call the same URL with their own ward session and that notice's id. That call cannot edit the board and cannot drain any other notice.
-
-The clinical `dispatch-notification` function is unchanged. Its service credential remains limited to admin-scoped events.
+This repository does not run the migration against production. The parent release applies `migrations/r18_bdft.sql`. Rollback is `migrations/r18_bdft.rollback.sql`. Applying it removes the job and the Vault secret. No edge environment variable has to be set for this credential. The function still needs the platform database role it already receives at deploy time, and the existing VAPID or FCM environment, before a push can leave the worker.
