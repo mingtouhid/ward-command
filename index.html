@@ -3088,8 +3088,9 @@ button.r16-tile:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .remove-doctor-btn:hover,.remove-batch-btn:hover{color:var(--red,#ef4444);background:color-mix(in srgb,var(--red,#ef4444) 12%,transparent)}
 .orphan-pool{margin-top:20px;padding:16px;border:1px dashed var(--amber,#f59e0b);border-radius:16px;background:color-mix(in srgb,var(--amber,#f59e0b) 6%,transparent)}
 .orphan-owner-badge{font-size:10px;opacity:0.85;font-weight:700;margin-left:5px;padding:1px 5px;border-radius:5px;background:rgba(0,0,0,0.12)}
-.bottom-action-bar{position:sticky;bottom:calc(var(--nav-h,60px) + 8px);left:0;width:100%;margin-top:16px;z-index:40;display:flex;justify-content:center}
-.bottom-action-bar .btn-primary{width:100%;max-width:420px;padding:14px;font-size:15px;font-weight:700;border-radius:14px}
+#bdft-distribution-output{padding-bottom:84px}
+.bottom-action-bar{position:sticky;bottom:-28px;left:0;right:0;width:calc(100% + var(--gutter,12px) * 2);margin:16px calc(-1 * var(--gutter,12px)) -28px;padding:12px 16px max(14px,env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.12);z-index:35;display:flex;justify-content:center}
+.bottom-action-bar .btn-primary{width:100%;max-width:440px;padding:14px;font-size:15px;font-weight:700;border-radius:14px}
 .bdft-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:16px}
 .bdft-stat-card{background:var(--panel2);border:1px solid var(--line);padding:10px 14px;border-radius:14px;display:flex;flex-direction:column;gap:2px;text-align:center}
 .bdft-stat-val{font-size:20px;font-weight:800;color:var(--teal)}
@@ -19288,46 +19289,9 @@ const BDFT_DEFAULT_CONFIG = {
   schemaVersion: BDFT_SCHEMA_VERSION,
   lastModified: null,
   batches: [
-    {
-      id: "batch-0", name: "3rd Year", enabled: true, order: 0,
-      doctors: [
-        { id: "doc-ph", name: "Dr. Priyanka Hazarika", abbreviation: "PH", enabled: true, order: 0 },
-        { id: "doc-rn", name: "Dr. Ritika Newar", abbreviation: "RN", enabled: true, order: 1 },
-        { id: "doc-kk", name: "Dr. Kankana Kaveri Pathak", abbreviation: "KK", enabled: true, order: 2 },
-        { id: "doc-ak", name: "Dr. Akashdeep Datta", abbreviation: "AK", enabled: true, order: 3 },
-        { id: "doc-nk", name: "Dr. Niranjan Kumar", abbreviation: "NK", enabled: true, order: 4 },
-        { id: "doc-py", name: "Dr. Piyush Yadav", abbreviation: "PY", enabled: true, order: 5 },
-        { id: "doc-dj", name: "Dr. Dhrubajyoti Talukdar", abbreviation: "DJ", enabled: true, order: 6 },
-        { id: "doc-jd", name: "Dr. Jinti Das", abbreviation: "JD", enabled: true, order: 7 },
-        { id: "doc-pj", name: "Dr. Pranjyoti Hazarika", abbreviation: "PJ", enabled: true, order: 8 }
-      ]
-    },
-    {
-      id: "batch-1", name: "2nd Year", enabled: true, order: 1,
-      doctors: [
-        { id: "doc-pb", name: "Dr. Plabita Bora", abbreviation: "PB", enabled: true, order: 0 },
-        { id: "doc-gs", name: "Dr. Gurdeep Singh", abbreviation: "GS", enabled: true, order: 1 },
-        { id: "doc-aa", name: "Dr. Akash Agarwal", abbreviation: "AA", enabled: true, order: 2 },
-        { id: "doc-dd", name: "Dr. Debashree Das", abbreviation: "DD", enabled: true, order: 3 },
-        { id: "doc-sk", name: "Dr. Siddeeq Khan", abbreviation: "SK", enabled: true, order: 4 },
-        { id: "doc-sd", name: "Dr. Shabnam Debbarma", abbreviation: "SD", enabled: true, order: 5 },
-        { id: "doc-am", name: "Dr. Amatya Mishra", abbreviation: "AM", enabled: true, order: 6 },
-        { id: "doc-rs", name: "Dr. Rini Sharma", abbreviation: "RS", enabled: true, order: 7 },
-        { id: "doc-mm", name: "Dr. Mohim Mili", abbreviation: "MM", enabled: true, order: 8 }
-      ]
-    },
-    {
-      id: "batch-2", name: "1st Year", enabled: true, order: 2,
-      doctors: [
-        { id: "doc-pk", name: "Dr. Priyanshu Kumar", abbreviation: "PK", enabled: true, order: 0 },
-        { id: "doc-pr", name: "Dr. Pritishma Kashyap", abbreviation: "PR", enabled: true, order: 1 },
-        { id: "doc-pl", name: "Dr. Pallabi Barman", abbreviation: "PL", enabled: true, order: 2 },
-        { id: "doc-ta", name: "Dr. Touhidur Alom", abbreviation: "TA", enabled: true, order: 3 },
-        { id: "doc-as", name: "Dr. Abhineet Sarmah", abbreviation: "AS", enabled: true, order: 4 },
-        { id: "doc-ag", name: "Dr. Ankur Gogoi", abbreviation: "AG", enabled: true, order: 5 },
-        { id: "doc-sy", name: "Dr. Sheetal Yadav", abbreviation: "SY", enabled: true, order: 6 }
-      ]
-    }
+    { id: "batch-0", name: "3rd Year", enabled: true, order: 0, doctors: [] },
+    { id: "batch-1", name: "2nd Year", enabled: true, order: 1, doctors: [] },
+    { id: "batch-2", name: "1st Year", enabled: true, order: 2, doctors: [] }
   ],
   fixedBedMatrix: {},
   settings: {}
@@ -19356,22 +19320,45 @@ const AppState = {
 function deepClone(obj){return JSON.parse(JSON.stringify(obj))}
 function generateId(prefix){return prefix+"-"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 
+function bdftNormDoctorName(name){
+  if(!name) return "";
+  return String(name)
+    .trim()
+    .replace(/^dr[\.\s]+/i, "")
+    .replace(/[\s\-_]+/g, " ")
+    .toLowerCase();
+}
+
+function bdftDocInitials(name){
+  if(!name) return "DR";
+  const clean = String(name).replace(/^dr[\.\s]+/i, "").trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if(!parts.length) return "DR";
+  if(parts.length === 1) return parts[0].slice(0, 3).toUpperCase();
+  return parts.map(p => p[0]).join("").toUpperCase().slice(0, 4);
+}
+
 function buildRuntimeFromConfig(cfg){
   if(!cfg) cfg=configuration;
   if(!cfg) return;
   const rd={}; const abbr={}; const d2y={}; const order=[];
   const sortedBatches=(cfg.batches||[]).slice().sort((a,b)=>(a.order??0)-(b.order??0));
+  const seenDoctorNames = new Set();
+
   sortedBatches.forEach(batch=>{
     if(batch.enabled===false) return;
-    const docs=(batch.doctors||[]).filter(d=>d.enabled!==false).sort((a,b)=>(a.order??0)-(b.order??0)).map(d=>d.name);
-    rd[batch.name]=docs;
-    order.push(batch.name);
-    docs.forEach(name=>{
-      d2y[name]=batch.name;
-      const docObj=(batch.doctors||[]).find(d=>d.name===name);
-      if(docObj&&docObj.abbreviation) abbr[name]=docObj.abbreviation;
-      else abbr[name]=name.split(" ").pop().slice(0,2).toUpperCase();
+    const batchDocs = [];
+    (batch.doctors||[]).filter(d=>d.enabled!==false).sort((a,b)=>(a.order??0)-(b.order??0)).forEach(d=>{
+      const norm = bdftNormDoctorName(d.name);
+      if(!seenDoctorNames.has(norm)){
+        seenDoctorNames.add(norm);
+        batchDocs.push(d.name);
+        d2y[d.name] = batch.name;
+        abbr[d.name] = d.abbreviation || bdftDocInitials(d.name);
+      }
     });
+    rd[batch.name]=batchDocs;
+    order.push(batch.name);
   });
   residentData=rd; abbreviations=abbr; allResidents=Object.values(rd).flat(); YEAR_ORDER=order; doctorToYear=d2y;
   if(!cfg.fixedBedMatrix) cfg.fixedBedMatrix={};
@@ -19394,7 +19381,10 @@ function saveConfigurationToStorage(cfg){
 }
 
 function ensureConfiguration(){
-  if(configuration) return configuration;
+  if(configuration) {
+    syncWardResidentsWithBdft();
+    return configuration;
+  }
   let cfg=loadConfigurationFromStorage();
   if(!cfg){
     cfg=deepClone(BDFT_DEFAULT_CONFIG);
@@ -19411,34 +19401,103 @@ function ensureConfiguration(){
 
 function syncWardResidentsWithBdft(){
   if(!configuration) return;
-  const wardRes=(S.residents||[]).filter(r=>r.active!==false&&normRole(r.role)!=="intern"&&normRole(r.role)!=="consultant");
-  let changed=false;
-  const existingNames=new Set();
-  (configuration.batches||[]).forEach(b=>{
-    (b.doctors||[]).forEach(d=>existingNames.add(d.name.toLowerCase()));
+  if(!Array.isArray(configuration.batches)) {
+    configuration.batches = deepClone(BDFT_DEFAULT_CONFIG.batches);
+  }
+  const batchNames = ["3rd Year", "2nd Year", "1st Year"];
+  batchNames.forEach((bname, idx) => {
+    if(!configuration.batches.some(b => b.name === bname)){
+      configuration.batches.push({ id: "batch-" + idx, name: bname, enabled: true, order: idx, doctors: [] });
+    }
   });
 
-  wardRes.forEach(r=>{
-    const name=r.displayName||r.username;
-    if(!name||existingNames.has(name.toLowerCase())) return;
-    let targetBatch=configuration.batches.find(b=>b.name.includes("1st"))||configuration.batches[configuration.batches.length-1];
-    if(targetBatch){
-      const abbr=name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,3);
-      targetBatch.doctors.push({
-        id:generateId("doc"),
-        name:name,
-        abbreviation:abbr||"DR",
-        enabled:true,
-        order:(targetBatch.doctors||[]).length
-      });
-      existingNames.add(name.toLowerCase());
-      changed=true;
+  const wardRes = (S.residents || []).filter(r => r && r.active !== false && normRole(r.role) !== "intern" && normRole(r.role) !== "consultant");
+  if(wardRes.length === 0) return;
+
+  const wardResMap = new Map();
+  wardRes.forEach(r => {
+    const keyName = bdftNormDoctorName(r.displayName || r.username);
+    const keyUser = bdftNormDoctorName(r.username);
+    if(keyName) wardResMap.set(keyName, r);
+    if(keyUser) wardResMap.set(keyUser, r);
+  });
+
+  const assignedResIds = new Set();
+  let changed = false;
+
+  // Pass 1: Filter existing doctors in configuration.batches.
+  // ONLY keep doctors who match an active resident in Ward Sync AND have not yet been assigned!
+  configuration.batches.forEach(batch => {
+    const validDoctors = [];
+    (batch.doctors || []).forEach(doc => {
+      const docNorm = bdftNormDoctorName(doc.name);
+      const matchedRes = wardResMap.get(docNorm);
+      if(matchedRes && !assignedResIds.has(matchedRes.id)){
+        assignedResIds.add(matchedRes.id);
+        const canonicalName = matchedRes.displayName || matchedRes.username;
+        if(doc.name !== canonicalName){
+          doc.name = canonicalName;
+          changed = true;
+        }
+        if(!doc.abbreviation){
+          doc.abbreviation = bdftDocInitials(canonicalName);
+          changed = true;
+        }
+        validDoctors.push(doc);
+      } else {
+        // Not in Ward Sync OR duplicate entry! Drop it.
+        changed = true;
+      }
+    });
+    if(validDoctors.length !== (batch.doctors || []).length){
+      batch.doctors = validDoctors;
+      changed = true;
+    }
+  });
+
+  // Pass 2: For any resident in Ward Sync who was NOT in configuration, add them once!
+  wardRes.forEach(r => {
+    if(!assignedResIds.has(r.id)){
+      assignedResIds.add(r.id);
+      const canonicalName = r.displayName || r.username;
+      const rBatch = (r.batch || "").toLowerCase();
+      let targetBatch = null;
+      if(rBatch.includes("3")) targetBatch = configuration.batches.find(b => b.name.includes("3"));
+      else if(rBatch.includes("2")) targetBatch = configuration.batches.find(b => b.name.includes("2"));
+      else if(rBatch.includes("1")) targetBatch = configuration.batches.find(b => b.name.includes("1"));
+      
+      if(!targetBatch){
+        targetBatch = configuration.batches.find(b => b.name.includes("1")) || configuration.batches[configuration.batches.length - 1];
+      }
+      if(targetBatch){
+        const abbr = bdftDocInitials(canonicalName);
+        targetBatch.doctors.push({
+          id: generateId("doc"),
+          name: canonicalName,
+          abbreviation: abbr,
+          enabled: true,
+          order: (targetBatch.doctors || []).length
+        });
+        changed = true;
+      }
+    }
+  });
+
+  // Pass 3: Clean up fixedBedMatrix (remove keys for doctors who are no longer in Ward Sync)
+  if(!configuration.fixedBedMatrix) configuration.fixedBedMatrix = {};
+  const activeNames = new Set(wardRes.map(r => (r.displayName || r.username).toLowerCase()));
+  Object.keys(configuration.fixedBedMatrix).forEach(k => {
+    const kNorm = bdftNormDoctorName(k);
+    if(!wardResMap.has(kNorm) && !activeNames.has(k.toLowerCase())){
+      delete configuration.fixedBedMatrix[k];
+      changed = true;
     }
   });
 
   if(changed){
     saveConfigurationToStorage(configuration);
     buildRuntimeFromConfig(configuration);
+    pushConfigurationToCloud();
   }
 }
 
@@ -19534,7 +19593,7 @@ function bdftInit(){
   const snap=loadWorkingSnapshotFromLocal();
   if(snap&&snap.distribution){
     AppState.distribution=snap.distribution;
-    AppState.selectedUnavailable=snap.selectedUnavailable||[];
+    AppState.selectedUnavailable=(snap.selectedUnavailable||[]).filter(d=>allResidents.some(r=>r.toLowerCase()===d.toLowerCase()));
     AppState.selectedOccupiedBeds=snap.selectedOccupiedBeds||[];
     AppState.bedsAssigned=snap.bedsAssigned||0;
     AppState.isWorkingDayActive=true;
@@ -20448,17 +20507,20 @@ function bdftUnavailableModalOverlay(){
   let bodyHtml="";
   YEAR_ORDER.forEach(y=>{
     const docs=residentData[y]||[];
+    if(!docs.length) return;
     const allUnavail=docs.length>0 && docs.every(d=>unavailSet.has(d.toLowerCase()));
     bodyHtml+=`<div style="margin:14px 0 8px;display:flex;justify-content:space-between;align-items:center;">
-      <strong style="font-size:14px;color:var(--teal);">${esc(y)}</strong>
+      <strong style="font-size:14px;color:var(--teal);">${esc(y)} (${docs.length})</strong>
       <button type="button" class="btn ghost sm" style="font-size:11px;padding:3px 8px;" onclick="bdftToggleBatchUnavailable('${esc(y)}')">${allUnavail?'Unmark Batch':'Mark Batch'}</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;">`;
     docs.forEach(doc=>{
       const isU=unavailSet.has(doc.toLowerCase());
-      const short=abbreviations[doc]||doc.split(" ").pop();
-      bodyHtml+=`<button type="button" class="btn ${isU?'':'ghost'}" style="padding:8px 4px;font-size:12px;text-align:center;${isU?'background:color-mix(in srgb,var(--amber,#f59e0b) 20%,transparent);border-color:var(--amber,#f59e0b);color:var(--amber,#f59e0b);':''}" onclick="bdftToggleDoctorUnavailable('${esc(doc)}')">
-        ${esc(short)}
+      const short=abbreviations[doc]||bdftDocInitials(doc);
+      const cleanName=doc.replace(/^dr[\.\s]+/i, "");
+      bodyHtml+=`<button type="button" class="btn ${isU?'':'ghost'}" title="${esc(doc)}" style="padding:6px 4px;font-size:12px;text-align:center;min-height:46px;${isU?'background:color-mix(in srgb,var(--amber,#f59e0b) 20%,transparent);border-color:var(--amber,#f59e0b);color:var(--amber,#f59e0b);':''}" onclick="bdftToggleDoctorUnavailable('${esc(doc)}')">
+        <b style="display:block;font-size:13px;">${esc(short)}</b>
+        <span class="tiny text-muted" style="display:block;font-size:10px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px;">${esc(cleanName)}</span>
       </button>`;
     });
     bodyHtml+=`</div>`;
@@ -20467,7 +20529,7 @@ function bdftUnavailableModalOverlay(){
   return `<div class="sheet mid"><button class="mask" onclick="ui.bdftUnavailableModal=false;render()"></button>
     <div class="box" style="border-radius:24px;max-width:480px;max-height:85vh;overflow-y:auto;">
       <h3 style="margin:0 0 10px;">Unavailable Personnel (${AppState.selectedUnavailable.length})</h3>
-      ${bodyHtml}
+      ${bodyHtml || `<p class="tiny text-muted" style="text-align:center;padding:16px;">No residents found in Ward Sync.</p>`}
       <button class="btn block" style="margin-top:16px;" onclick="ui.bdftUnavailableModal=false;render()">Done</button>
     </div>
   </div>`;
