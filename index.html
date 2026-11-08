@@ -19975,6 +19975,10 @@ function bdftView(){
 function bdftMount(){
   const root=document.getElementById("bdft-root");
   if(!root) return;
+  // Skip rebuilding the content area while any BDFT overlay is open — the overlay
+  // is rendered in the shell layer above #bdft-root; rebuilding root here would
+  // reset scroll/focus and can swallow the next tap event.
+  if(ui.bdftResidentModal||ui.bdftBedPickerModal||ui.bdftAdminSheet||ui.bdftOccupiedModal||ui.bdftUnavailableModal) return;
   root.innerHTML="";
   const mode=ui.bdftMode||"generate";
   if(mode==="readonly") bdftMountReadOnly(root);
@@ -20668,19 +20672,29 @@ function bdftAdminSheetOverlay(){
   if(!ui.bdftAdminSheet) return "";
   const isAdmin=canAdmin();
   return `<div class="sheet mid"><button class="mask" type="button" onclick="bdftCloseAdminSheet()"></button>
-    <div class="box" style="border-radius:24px;max-width:380px;">
-      <h3 style="margin:0 0 16px;">BDFT Terminal</h3>
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <button type="button" class="btn block" style="padding:14px;font-size:15px;justify-content:flex-start;text-align:left;" onclick="ui.bdftAdminSheet=false;bdftOpenGenerate()">
-          📋 <b>Generate BDFT</b>
-          <span class="tiny muted" style="display:block;margin-top:2px;">Generate & adjust tomorrow's bed distribution</span>
+    <div class="box" style="border-radius:24px;max-width:400px;padding:22px 20px;">
+      <h3 style="margin:0 0 18px;font-size:18px;font-weight:700;letter-spacing:-0.3px;">BDFT</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button type="button" class="btn ghost" style="flex-direction:column;align-items:center;justify-content:flex-start;padding:18px 12px;height:auto;gap:10px;border-radius:16px;border:1.5px solid var(--line);" onclick="ui.bdftAdminSheet=false;render({force:true,forceLeave:true});setTimeout(()=>bdftOpenGenerate(),40)">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
+          <div style="text-align:center;">
+            <div style="font-size:13px;font-weight:650;line-height:1.3;">Generate BDFT</div>
+            <div class="tiny muted" style="margin-top:3px;line-height:1.3;">Build tomorrow's sheet</div>
+          </div>
         </button>
-        <button type="button" class="btn block" style="padding:14px;font-size:15px;justify-content:flex-start;text-align:left;" onclick="ui.bdftAdminSheet=false;bdftOpenSetup()">
-          ⚙️ <b>BDFT Settings</b>
-          <span class="tiny muted" style="display:block;margin-top:2px;">${isAdmin ? "Roster batches, initials & bed ownership" : "Update your short name, batch & owned beds"}</span>
+        <button type="button" class="btn ghost" style="flex-direction:column;align-items:center;justify-content:flex-start;padding:18px 12px;height:auto;gap:10px;border-radius:16px;border:1.5px solid var(--line);" onclick="ui.bdftAdminSheet=false;render({force:true,forceLeave:true});setTimeout(()=>bdftOpenSetup(),40)">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2.2" fill="var(--panel)"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2.2" fill="var(--panel)"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="10" cy="18" r="2.2" fill="var(--panel)"/>
+          </svg>
+          <div style="text-align:center;">
+            <div style="font-size:13px;font-weight:650;line-height:1.3;">BDFT Settings</div>
+            <div class="tiny muted" style="margin-top:3px;line-height:1.3;">${isAdmin?"Roster, initials & beds":"My name, batch & beds"}</div>
+          </div>
         </button>
       </div>
-      <button type="button" class="btn ghost block" style="margin-top:14px;" onclick="bdftCloseAdminSheet()">Cancel</button>
+      <button type="button" class="btn ghost block" style="margin-top:14px;border-radius:14px;" onclick="bdftCloseAdminSheet()">Cancel</button>
     </div>
   </div>`;
 }
@@ -20693,8 +20707,12 @@ function bdftResidentModalOverlay(){
   const batches=["3rd Year","2nd Year","1st Year"];
   return `<div class="sheet mid"><button class="mask" type="button" onclick="bdftCloseResidentModal()"></button>
     <div class="box" style="border-radius:24px;max-width:440px;">
-      <h3 class="sheet-title" style="margin:0 0 4px;">${isSelf ? "My BDFT Settings" : "Edit Resident BDFT"}</h3>
-      <p class="tiny muted" style="margin:0 0 14px;">${esc(m.name)}</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div>
+          <div style="font-weight:700;font-size:16px;">${esc(m.name)}${isSelf?` <span class="role-badge" style="font-size:10px;padding:2px 6px;">You</span>`:""}</div>
+          <div class="tiny muted" style="margin-top:2px;">${isSelf?"Your BDFT profile":"Editing BDFT profile"}</div>
+        </div>
+      </div>
       
       <div class="field"><span style="font-weight:600;">Batch</span>
         <div id="bdft-batch-btn-group" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px;">
