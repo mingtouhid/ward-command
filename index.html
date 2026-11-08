@@ -19929,6 +19929,25 @@ function bdftGetMyAssignedBeds(){
   return {isGeneric:true,totalBeds:AppState.bedsAssigned||0,dateStr:dist.dateStr||"Tomorrow"};
 }
 
+function bdftGetPatientForBed(bedCode){
+  if(!bedCode) return null;
+  const canon=bdftCanonBed(bedCode);
+  const wardBed=(S.beds||[]).find(b=>b.active!==false&&(bdftCanonBed(b.no||b.id)===canon));
+  if(wardBed&&wardBed.patientId){
+    return patient(wardBed.patientId)||null;
+  }
+  return null;
+}
+
+function bdftTapBedPatient(bedCode){
+  const p=bdftGetPatientForBed(bedCode);
+  if(p&&p.id){
+    go('snap', p.id);
+  }else{
+    toast(`Bed ${bedCode} is currently vacant`, "info");
+  }
+}
+
 function bdftHomeCard(){
   bdftInit();
   if(isIntern()||isConsultant()) return "";
@@ -19947,25 +19966,37 @@ function bdftHomeCard(){
   }
 
   const beds=info.beds||[];
+  const bedChipsHtml=beds.length ? beds.map(b=>{
+    const code=typeof b==="string"?b:(b.code||b.no||b);
+    const p=bdftGetPatientForBed(code);
+    const isOcc=!!p;
+    const pName=p?(p.name||""):"";
+    const shortName=pName.length>12?pName.slice(0,11)+"…":pName;
+    return `<button type="button" class="pill ${isOcc?'full':'empty'}" style="min-height:38px;padding:4px 6px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;text-align:center;cursor:pointer;width:100%;" onclick="bdftTapBedPatient('${esc(code)}')" title="${isOcc?`${esc(code)}: ${esc(pName)}`:`${esc(code)}: Vacant`}">
+      <b style="font-size:12px;font-weight:750;letter-spacing:.02em;line-height:1.1;">${esc(code)}</b>
+      <span style="font-size:9.5px;line-height:1.1;opacity:${isOcc?'.9':'.55'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${isOcc?esc(shortName):"Vacant"}</span>
+    </button>`;
+  }).join("") : `<div style="grid-column:1/-1;padding:4px 0;"><span class="happy-day-tag">🌴 Happy Day</span><span class="tiny muted" style="margin-left:6px;">No beds assigned tomorrow</span></div>`;
+
   return `<div class="card" style="margin:0 0 10px;padding:14px 16px;border-left:4px solid var(--teal);">
-    <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">
+    <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:8px;">
       <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.02em;">TOMORROW'S BEDS · ${dateLabel}</span>
       <span class="tiny muted">${beds.length} assigned</span>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;">
-      ${beds.length ? beds.map(b=>`<span class="pill full" style="font-size:13px;padding:4px 10px;border-radius:8px;"><b>${esc(b.code)}</b></span>`).join("") : `<span class="happy-day-tag">🌴 Happy Day</span><span class="tiny muted" style="margin-left:6px;">No beds assigned tomorrow</span>`}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px;margin:8px 0;">
+      ${bedChipsHtml}
     </div>
-    <button type="button" class="btn ghost sm block" style="margin-top:6px;width:100%;font-size:13px;" onclick="bdftOpenReadOnly()">View Full BDFT →</button>
+    <button type="button" class="btn ghost sm block" style="margin-top:8px;width:100%;font-size:13px;" onclick="bdftOpenReadOnly()">View Full BDFT →</button>
   </div>`;
 }
 
 function bdftView(){
   bdftInit();
   const mode=ui.bdftMode||"generate";
-  const title=mode==="readonly"?"Bed Distribution (Read Only)":mode==="setup"?"BDFT Settings":"BDFT Terminal";
+  const title=mode==="readonly"?"":mode==="setup"?"BDFT Settings":"BDFT Terminal";
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-    <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <h2 class="page-title" style="margin:0;">${title}</h2>
+    <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:${mode==="readonly"?"8px":"12px"};">
+      ${title?`<h2 class="page-title" style="margin:0;">${title}</h2>`:`<div></div>`}
       ${(canAdmin()||(!isConsultant()&&!isIntern()))&&mode==="generate"?`<button class="btn ghost sm" type="button" onclick="bdftOpenSetup()">⚙️ Settings</button>`:""}
       ${mode==="readonly"?`<button class="btn ghost sm" type="button" onclick="bdftExportPng(true)">Export PNG</button>`:""}
     </div>
@@ -19998,8 +20029,7 @@ function bdftMountReadOnly(root){
   const tiers=dist.tiers;
   const dateStr=dist.dateStr||"Tomorrow";
 
-  let html=`<div class="bdft-ro-banner">👁️ Viewing finalised distribution for ${esc(dateStr)} (Read Only)</div>
-  <div class="card read-only-board" id="distribution-card" style="padding:24px 18px;">
+  let html=`<div class="card read-only-board" id="distribution-card" style="padding:24px 18px;">
     <div style="text-align:center;margin-bottom:24px;">
       <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.5px;margin:0 0 4px;">BDFT — ${esc(dateStr)}</h2>
       <div class="tiny muted">Department of Psychiatry, AMCH</div>
