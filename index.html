@@ -3096,8 +3096,8 @@ button.r16-tile:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .bdft-stat-val{font-size:20px;font-weight:800;color:var(--teal)}
 .bdft-stat-lbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase}
 .bdft-qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.bdft-qa-btn{background:var(--panel2);border:1px solid var(--line);padding:14px;border-radius:14px;font-weight:650;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;text-align:center}
-.bdft-qa-btn:active{transform:scale(0.97)}
+.bdft-qa-btn{background:var(--panel2);border:1px solid var(--line);padding:14px;border-radius:14px;font-weight:650;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;text-align:center;transition:transform .1s ease}
+.bdft-qa-btn:active,.pill:active,.bed-tag:active{transform:scale(0.97)}
 .bdft-qa-primary{grid-column:1 / -1;background:var(--teal);color:var(--panel);border:none;font-size:15px;font-weight:700;padding:16px;flex-direction:row;justify-content:center}
 .distribution-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 @media(max-width:768px){.distribution-grid{grid-template-columns:1fr;gap:16px}}
@@ -3105,7 +3105,8 @@ button.r16-tile:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .year-header h3{font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:0}
 .bdft-search-box{position:relative;margin-bottom:10px}
 .bdft-search-box input{width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:14px}
-.bdft-bed-picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;max-height:240px;overflow-y:auto;padding:2px}
+.bdft-bed-picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;max-height:min(48vh,300px);overflow-y:auto;padding:2px;overscroll-behavior:contain}
+.bdft-bed-picker-grid .pill{min-height:44px;padding:6px 4px;font-size:13px;border-radius:10px;text-align:center;display:flex;align-items:center;justify-content:center}
 .bdft-ro-banner{padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--teal) 10%,transparent);color:var(--teal);font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;margin-bottom:12px}
 .read-only-board .bed-tag{cursor:default}
 .read-only-board .remove-doctor-btn,.read-only-board .remove-batch-btn{display:none!important}
@@ -3758,6 +3759,48 @@ function createsConsecutiveConflict(bedList, candidateBed) {
     const existing = parseBedCode(existingCode);
     return existing.prefix === cand.prefix && Math.abs(existing.num - cand.num) === 1;
   });
+}
+function bdftMatchBed(b, q, sections) {
+  if (!q) return true;
+  const rawQ = String(q).trim().toLowerCase();
+  if (!rawQ) return true;
+
+  const bedNo = String(b.no || b.id || "").toLowerCase();
+  const sec = (sections || []).find(s => s.id === b.sectionId);
+  const secName = (sec && sec.name ? sec.name : "").toLowerCase();
+
+  const pQ = parseBedCode(rawQ);
+  const pB = parseBedCode(bedNo);
+
+  // 1. Both prefix and number given (e.g. "M1", "M-01", "m 1", "PC-3")
+  if (pQ.prefix && pQ.num !== -999) {
+    const prefMatch = pB.prefix.toLowerCase() === pQ.prefix.toLowerCase() ||
+                      pB.prefix.toLowerCase().startsWith(pQ.prefix.toLowerCase());
+    if (prefMatch && pB.num === pQ.num) return true;
+    return false;
+  }
+
+  // 2. Only number given (e.g. "1", "01", "11")
+  if (/^\d+$/.test(rawQ)) {
+    const qNum = parseInt(rawQ, 10);
+    if (pB.num === qNum) return true;
+    if (bedNo.includes(rawQ)) return true;
+    return false;
+  }
+
+  // 3. Only letters given (e.g. "M", "D", "PC", "male", "deaddiction")
+  const textOnly = rawQ.replace(/[^a-z]/g, "");
+  if (textOnly) {
+    const prefLow = pB.prefix.toLowerCase();
+    if (prefLow === textOnly || prefLow.startsWith(textOnly)) return true;
+    const words = secName.split(/\s+/);
+    if (words.some(w => w.startsWith(textOnly))) return true;
+  }
+
+  // 4. Fallback literal substring on bed label
+  if (bedNo.includes(rawQ)) return true;
+
+  return false;
 }
 function bdftIstTomorrow(v){
   const d=v==null?new Date():(v instanceof Date?v:new Date(v));
@@ -19834,7 +19877,7 @@ function bdftHomeCard(){
     return `<div class="card" style="margin:0 0 10px;padding:14px 16px;border-left:4px solid var(--teal);">
       <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">
         <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.02em;">TOMORROW'S BED DISTRIBUTION · ${dateLabel}</span>
-        <span class="tiny text-muted">${info.totalBeds} beds allocated</span>
+        <span class="tiny muted">${info.totalBeds} beds allocated</span>
       </div>
       <button type="button" class="btn ghost sm block" style="margin-top:6px;width:100%;font-size:13px;" onclick="bdftOpenReadOnly()">View Full BDFT →</button>
     </div>`;
@@ -19844,10 +19887,10 @@ function bdftHomeCard(){
   return `<div class="card" style="margin:0 0 10px;padding:14px 16px;border-left:4px solid var(--teal);">
     <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">
       <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.02em;">TOMORROW'S BEDS · ${dateLabel}</span>
-      <span class="tiny text-muted">${beds.length} assigned</span>
+      <span class="tiny muted">${beds.length} assigned</span>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;">
-      ${beds.length ? beds.map(b=>`<span class="pill full" style="font-size:13px;padding:4px 10px;border-radius:8px;"><b>${esc(b.code)}</b></span>`).join("") : `<span class="happy-day-tag">🌴 Happy Day</span><span class="tiny text-muted" style="margin-left:6px;">No beds assigned tomorrow</span>`}
+      ${beds.length ? beds.map(b=>`<span class="pill full" style="font-size:13px;padding:4px 10px;border-radius:8px;"><b>${esc(b.code)}</b></span>`).join("") : `<span class="happy-day-tag">🌴 Happy Day</span><span class="tiny muted" style="margin-left:6px;">No beds assigned tomorrow</span>`}
     </div>
     <button type="button" class="btn ghost sm block" style="margin-top:6px;width:100%;font-size:13px;" onclick="bdftOpenReadOnly()">View Full BDFT →</button>
   </div>`;
@@ -19892,7 +19935,7 @@ function bdftMountReadOnly(root){
   <div class="card read-only-board" id="distribution-card" style="padding:24px 18px;">
     <div style="text-align:center;margin-bottom:24px;">
       <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.5px;margin:0 0 4px;">BDFT — ${esc(dateStr)}</h2>
-      <div class="tiny text-muted">Department of Psychiatry, AMCH</div>
+      <div class="tiny muted">Department of Psychiatry, AMCH</div>
     </div>
     <div class="distribution-grid">`;
 
@@ -20074,7 +20117,7 @@ function bdftRenderInteractiveDistribution(){
   let html=`<div class="card" id="distribution-card" style="padding:24px 18px;margin-top:16px;">
     <div style="text-align:center;margin-bottom:20px;">
       <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.5px;margin:0 0 4px;">BDFT — ${esc(dist.dateStr)}</h2>
-      <div class="tiny text-muted">Department of Psychiatry, AMCH</div>
+      <div class="tiny muted">Department of Psychiatry, AMCH</div>
     </div>
     <div class="distribution-grid">`;
 
@@ -20100,7 +20143,7 @@ function bdftRenderInteractiveDistribution(){
       }else{
         beds.forEach(b=>{
           const sel=AppState.selectedBed&&bdftBedsMatch(AppState.selectedBed.code,b.code)&&AppState.selectedBed.from&&AppState.selectedBed.from.name===doc;
-          html+=`<span class="bed-tag original${sel?' tapped-active':''}" draggable="true" data-bed="${esc(b.code)}" onclick="bdftClickBed('${esc(b.code)}','doctor','${esc(doc)}','${esc(y)}')">${esc(b.code)}</span>`;
+          html+=`<span class="bed-tag original${sel?' tapped-active':''}" draggable="true" data-bed="${esc(b.code)}" onclick="bdftClickBed('${esc(b.code)}','doctor','${esc(doc)}','${esc(y)}', this)">${esc(b.code)}</span>`;
         });
       }
       html+=`</div>
@@ -20117,7 +20160,7 @@ function bdftRenderInteractiveDistribution(){
     <div class="beds-container" id="orphan-beds">`;
   orphans.forEach(o=>{
     const sel=AppState.selectedBed&&bdftBedsMatch(AppState.selectedBed.code,o.code)&&AppState.selectedBed.from&&AppState.selectedBed.from.type==="orphan";
-    html+=`<span class="bed-tag original${sel?' tapped-active':''}" draggable="true" data-bed="${esc(o.code)}" onclick="bdftClickBed('${esc(o.code)}','orphan')">${esc(o.code)} <span class="orphan-owner-badge">${esc(o.originalOwner||"")}</span></span>`;
+    html+=`<span class="bed-tag original${sel?' tapped-active':''}" draggable="true" data-bed="${esc(o.code)}" onclick="bdftClickBed('${esc(o.code)}','orphan','','', this)">${esc(o.code)} <span class="orphan-owner-badge">${esc(o.originalOwner||"")}</span></span>`;
   });
   html+=`</div></div></div>`;
 
@@ -20129,15 +20172,26 @@ function bdftRenderInteractiveDistribution(){
   bdftSetupDragListeners();
 }
 
-function bdftClickBed(code,type,name,year){
+function bdftClickBed(code,type,name,year,el){
+  const card=document.getElementById("distribution-card");
   if(AppState.selectedBed && bdftBedsMatch(AppState.selectedBed.code, code)){
     AppState.selectedBed=null;
-    bdftRenderInteractiveDistribution();
+    if(card){
+      card.querySelectorAll(".bed-tag.tapped-active").forEach(t=>t.classList.remove("tapped-active"));
+    }
     return;
   }
   AppState.selectedBed={code,from:{type,name,year}};
-  toast("Bed selected: "+code+" (Tap destination doctor to move)");
-  bdftRenderInteractiveDistribution();
+  if(card){
+    card.querySelectorAll(".bed-tag.tapped-active").forEach(t=>t.classList.remove("tapped-active"));
+  }
+  if(el){
+    el.classList.add("tapped-active");
+  } else if(card){
+    const targetTag=card.querySelector(`.bed-tag[data-bed="${CSS.escape(code)}"]`);
+    if(targetTag) targetTag.classList.add("tapped-active");
+  }
+  toast("Selected "+code+" · Tap doctor row to move");
 }
 
 function bdftClickOrphanPool(e){
@@ -20372,7 +20426,7 @@ function bdftMountSetup(root){
       return b===bname;
     });
     if(!resInBatch.length){
-      html+=`<div class="card" style="padding:10px 14px;"><span class="tiny text-muted">No residents in ${esc(bname)}</span></div>`;
+      html+=`<div class="card" style="padding:10px 14px;"><span class="tiny muted">No residents in ${esc(bname)}</span></div>`;
     }else{
       resInBatch.forEach(r=>{
         const isSelf=(r.id===u.id)||(r.username&&r.username===u.username);
@@ -20384,10 +20438,10 @@ function bdftMountSetup(root){
             <div class="doctor-avatar avatar-${getAvatarClass(bname)}" style="width:36px;height:36px;font-size:13px;">${esc(short)}</div>
             <div>
               <div style="font-weight:650;font-size:14px;">${esc(r.displayName||r.username)}${isSelf?` <span class="role-badge" style="font-size:10px;padding:2px 6px;">You</span>`:""}</div>
-              <div class="tiny text-muted">${beds.length?beds.length+" bed(s): "+beds.slice(0,4).join(", ")+(beds.length>4?"…":""):"No beds owned"}</div>
+              <div class="tiny muted">${beds.length?beds.length+" bed(s): "+beds.slice(0,4).join(", ")+(beds.length>4?"…":""):"No beds owned"}</div>
             </div>
           </div>
-          ${canEdit?`<button type="button" class="btn ${isSelf?'':'ghost'} sm">Edit</button>`:`<span class="tiny text-muted" style="font-size:11px;">View only</span>`}
+          ${canEdit?`<button type="button" class="btn ${isSelf?'':'ghost'} sm">Edit</button>`:`<span class="tiny muted" style="font-size:11px;">View only</span>`}
         </div>`;
       });
     }
@@ -20524,11 +20578,11 @@ function bdftAdminSheetOverlay(){
       <div style="display:flex;flex-direction:column;gap:10px;">
         <button class="btn block" style="padding:14px;font-size:15px;justify-content:flex-start;text-align:left;" onclick="ui.bdftAdminSheet=false;bdftOpenGenerate()">
           📋 <b>Generate BDFT</b>
-          <span class="tiny text-muted" style="display:block;margin-top:2px;">Generate & adjust tomorrow's bed distribution</span>
+          <span class="tiny muted" style="display:block;margin-top:2px;">Generate & adjust tomorrow's bed distribution</span>
         </button>
         <button class="btn block" style="padding:14px;font-size:15px;justify-content:flex-start;text-align:left;" onclick="ui.bdftAdminSheet=false;bdftOpenSetup()">
           ⚙️ <b>BDFT Settings</b>
-          <span class="tiny text-muted" style="display:block;margin-top:2px;">${isAdmin ? "Roster batches, initials & bed ownership" : "Update your short name, batch & owned beds"}</span>
+          <span class="tiny muted" style="display:block;margin-top:2px;">${isAdmin ? "Roster batches, initials & bed ownership" : "Update your short name, batch & owned beds"}</span>
         </button>
       </div>
       <button class="btn ghost block" style="margin-top:14px;" onclick="ui.bdftAdminSheet=false;render()">Cancel</button>
@@ -20544,12 +20598,12 @@ function bdftResidentModalOverlay(){
   const batches=["3rd Year","2nd Year","1st Year"];
   return `<div class="sheet mid"><button class="mask" onclick="ui.bdftResidentModal=null;render()"></button>
     <div class="box" style="border-radius:24px;max-width:440px;">
-      <h3 style="margin:0 0 4px;">${isSelf ? "My BDFT Settings" : "Edit Resident BDFT"}</h3>
-      <p class="tiny text-muted" style="margin:0 0 14px;">${esc(m.name)}</p>
+      <h3 class="sheet-title" style="margin:0 0 4px;">${isSelf ? "My BDFT Settings" : "Edit Resident BDFT"}</h3>
+      <p class="tiny muted" style="margin:0 0 14px;">${esc(m.name)}</p>
       
       <label class="field"><span style="font-weight:600;">Batch</span>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px;">
-          ${batches.map(b=>`<button type="button" class="btn ${m.batch===b?'':'ghost'}" style="padding:8px 4px;font-size:13px;" onclick="ui.bdftResidentModal.batch='${b}';render()">${esc(b)}</button>`).join("")}
+        <div id="bdft-batch-btn-group" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px;">
+          ${batches.map(b=>`<button type="button" class="btn ${m.batch===b?'':'ghost'}" data-batch="${esc(b)}" style="padding:8px 4px;font-size:13px;" onclick="bdftSetModalBatch('${esc(b)}', this)">${esc(b)}</button>`).join("")}
         </div>
       </label>
 
@@ -20559,11 +20613,11 @@ function bdftResidentModalOverlay(){
 
       <div class="resident-bed-field" style="margin:12px 0;">
         <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <span class="field-label">Beds Owned (${m.beds.length})</span>
+          <span class="field-label" id="bdft-modal-res-beds-label">Beds Owned (${m.beds.length})</span>
           <button type="button" class="btn ghost sm" onclick="bdftOpenBedPicker()">Choose beds</button>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;">
-          ${m.beds.length ? m.beds.map(b=>`<span class="pill full" style="font-size:12px;padding:3px 8px;border-radius:6px;"><b>${esc(b)}</b></span>`).join("") : `<span class="tiny text-muted">No beds assigned</span>`}
+        <div id="bdft-modal-res-bed-pills" style="display:flex;flex-wrap:wrap;gap:4px;">
+          ${m.beds.length ? m.beds.map(b=>`<span class="pill full" style="font-size:12px;padding:3px 8px;border-radius:6px;"><b>${esc(b)}</b></span>`).join("") : `<span class="tiny muted">No beds assigned</span>`}
         </div>
       </div>
 
@@ -20575,68 +20629,109 @@ function bdftResidentModalOverlay(){
   </div>`;
 }
 
+function bdftSetModalBatch(b, btn){
+  if(!ui.bdftResidentModal) return;
+  ui.bdftResidentModal.batch=b;
+  const group=document.getElementById("bdft-batch-btn-group");
+  if(group){
+    group.querySelectorAll("button").forEach(el=>{
+      if(el.getAttribute("data-batch")===b) el.classList.remove("ghost");
+      else el.classList.add("ghost");
+    });
+  }
+}
+
 function bdftOpenBedPicker(){
   ui.bdftBedPickerQuery="";
   ui.bdftBedPickerModal=true;
   render();
 }
 
+function bdftRenderPickerGridHtml(beds, selectedCodes){
+  if(!beds.length) {
+    return `<div class="tiny muted" style="grid-column:1/-1;text-align:center;padding:16px;">No matching beds found.</div>`;
+  }
+  return beds.map(b=>{
+    const key=bdftCanonBed(b.no||b.id);
+    const isSel=selectedCodes.has(key);
+    const wardNo=b.no||b.id;
+    return `<button type="button" class="pill ${isSel?'full':'empty'}" data-bed="${esc(wardNo)}" style="min-height:44px;padding:4px 6px;text-align:center;" onclick="bdftToggleModalBed('${esc(wardNo)}', this)">
+      <b>${esc(wardNo)}</b>
+    </button>`;
+  }).join("");
+}
+
 function bdftBedPickerOverlay(){
   if(!ui.bdftBedPickerModal||!ui.bdftResidentModal) return "";
   const m=ui.bdftResidentModal;
-  const q=(ui.bdftBedPickerQuery||"").trim().toLowerCase();
-  const canonQ=bdftCanonBed(q).toLowerCase();
+  const q=(ui.bdftBedPickerQuery||"").trim();
 
   const allWardBeds=(S.beds||[]).filter(b=>b&&b.active!==false);
-  const filteredBeds=allWardBeds.filter(b=>{
-    if(!q) return true;
-    const no=String(b.no||"").toLowerCase();
-    const canon=bdftCanonBed(b.no||b.id).toLowerCase();
-    return no.includes(q) || canon.includes(canonQ);
-  });
-
+  const filteredBeds=allWardBeds.filter(b=>bdftMatchBed(b,q,S.sections));
   const selectedCodes=new Set(m.beds.map(bdftCanonBed));
 
-  return `<div class="sheet mid"><button class="mask" onclick="ui.bdftBedPickerModal=false;render()"></button>
+  return `<div class="sheet mid"><button class="mask" onclick="bdftCloseBedPicker()"></button>
     <div class="box" style="border-radius:24px;max-width:480px;max-height:85vh;overflow-y:auto;">
-      <h3 style="margin:0 0 10px;">Select Owned Beds</h3>
-      <div class="bdft-search-box">
-        <input type="text" placeholder="Search beds (e.g. M1, 04, PC)..." value="${esc(ui.bdftBedPickerQuery||"")}" oninput="ui.bdftBedPickerQuery=this.value;render()">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <h3 class="sheet-title" style="margin:0;">Select Owned Beds</h3>
+        <span class="tiny muted" id="bdft-bed-picker-count">${m.beds.length} selected</span>
       </div>
-      <p class="tiny text-muted" style="margin:0 0 8px;">${m.beds.length} bed(s) selected for ${esc(m.name)}</p>
+      <p class="tiny muted" style="margin:0 0 10px;">Assign beds owned by ${esc(m.name)}</p>
+
+      <label class="field" style="margin:0 0 10px;">
+        <input id="bdft-picker-search" type="search" placeholder="Search bed or ward (e.g. M1, 04, PC, male)..." value="${esc(ui.bdftBedPickerQuery||"")}" oninput="bdftFilterBedPicker(this.value)" autocomplete="off">
+      </label>
       
-      <div class="bdft-bed-picker-grid">
-        ${filteredBeds.map(b=>{
-          const key=bdftCanonBed(b.no||b.id);
-          const isSel=selectedCodes.has(key);
-          const wardNo=b.no||b.id;
-          return `<button type="button" class="pill ${isSel?'full':'empty'}" style="min-height:44px;padding:4px 6px;text-align:center;" onclick="bdftToggleModalBed('${esc(wardNo)}')">
-            <b>${esc(wardNo)}</b>
-          </button>`;
-        }).join("")}
+      <div id="bdft-picker-grid" class="bdft-bed-picker-grid">
+        ${bdftRenderPickerGridHtml(filteredBeds, selectedCodes)}
       </div>
 
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);">
         <label class="field" style="margin:0;"><span class="tiny">Add custom bed code</span>
           <div style="display:flex;gap:6px;margin-top:4px;">
-            <input type="text" id="bdft-custom-bed" placeholder="e.g. PC3, D13" style="text-transform:uppercase;">
+            <input type="text" id="bdft-custom-bed" placeholder="e.g. PC-03, D-13" style="text-transform:uppercase;">
             <button type="button" class="btn sm" onclick="bdftAddCustomModalBed()">Add</button>
           </div>
         </label>
       </div>
 
-      <button class="btn block" style="margin-top:16px;" onclick="ui.bdftBedPickerModal=false;render()">Done</button>
+      <button class="btn block" style="margin-top:16px;" onclick="bdftCloseBedPicker()">Done</button>
     </div>
   </div>`;
 }
 
-function bdftToggleModalBed(bedNo){
+function bdftFilterBedPicker(q){
+  ui.bdftBedPickerQuery=q;
+  const grid=document.getElementById("bdft-picker-grid");
+  if(!grid||!ui.bdftResidentModal) return;
+  const m=ui.bdftResidentModal;
+  const allWardBeds=(S.beds||[]).filter(b=>b&&b.active!==false);
+  const filteredBeds=allWardBeds.filter(b=>bdftMatchBed(b,q,S.sections));
+  const selectedCodes=new Set(m.beds.map(bdftCanonBed));
+  grid.innerHTML=bdftRenderPickerGridHtml(filteredBeds, selectedCodes);
+}
+
+function bdftToggleModalBed(bedNo, btn){
   if(!ui.bdftResidentModal) return;
   const m=ui.bdftResidentModal;
   const key=bdftCanonBed(bedNo);
   const idx=m.beds.findIndex(b=>bdftCanonBed(b)===key);
-  if(idx!==-1) m.beds.splice(idx,1);
+  const wasSelected=idx!==-1;
+
+  if(wasSelected) m.beds.splice(idx,1);
   else m.beds.push(bedNo);
+
+  if(btn){
+    btn.classList.toggle("full", !wasSelected);
+    btn.classList.toggle("empty", wasSelected);
+  }
+
+  const cnt=document.getElementById("bdft-bed-picker-count");
+  if(cnt) cnt.textContent=`${m.beds.length} selected`;
+}
+
+function bdftCloseBedPicker(){
+  ui.bdftBedPickerModal=false;
   render();
 }
 
@@ -20645,8 +20740,17 @@ function bdftAddCustomModalBed(){
   if(!inp||!ui.bdftResidentModal) return;
   const val=inp.value.trim().toUpperCase();
   if(!val) return;
-  bdftToggleModalBed(val);
+  const m=ui.bdftResidentModal;
+  const key=bdftCanonBed(val);
+  if(!m.beds.some(b=>bdftCanonBed(b)===key)){
+    m.beds.push(val);
+  }
   inp.value="";
+  const searchInp=document.getElementById("bdft-picker-search");
+  bdftFilterBedPicker(searchInp?searchInp.value:"");
+  const cnt=document.getElementById("bdft-bed-picker-count");
+  if(cnt) cnt.textContent=`${m.beds.length} selected`;
+  toast("Added bed "+val);
 }
 
 function bdftOpenOccupiedModal(){
@@ -20660,47 +20764,95 @@ function bdftOpenUnavailableModal(){
   render();
 }
 
+function bdftRenderOccupiedGridHtml(beds, occSet){
+  if(!beds.length) {
+    return `<div class="tiny muted" style="grid-column:1/-1;text-align:center;padding:16px;">No matching beds found.</div>`;
+  }
+  return beds.map(b=>{
+    const key=bdftCanonBed(b.no||b.id);
+    const isOcc=occSet.has(key);
+    const wardNo=b.no||b.id;
+    return `<button type="button" class="pill ${isOcc?'full':'empty'}" data-bed="${esc(wardNo)}" style="min-height:44px;padding:4px 6px;text-align:center;" onclick="bdftToggleOccupiedBed('${esc(wardNo)}', this)">
+      <b>${esc(wardNo)}</b>
+    </button>`;
+  }).join("");
+}
+
 function bdftOccupiedModalOverlay(){
   if(!ui.bdftOccupiedModal) return "";
   const allBeds=(S.beds||[]).filter(b=>b&&b.active!==false);
-  const q=(ui.bdftBedSearchQuery||"").trim().toLowerCase();
-  const canonQ=bdftCanonBed(q).toLowerCase();
-
-  const filteredBeds=allBeds.filter(b=>{
-    if(!q) return true;
-    const no=String(b.no||"").toLowerCase();
-    const canon=bdftCanonBed(b.no||b.id).toLowerCase();
-    return no.includes(q) || canon.includes(canonQ);
-  });
-
+  const q=(ui.bdftBedSearchQuery||"").trim();
+  const filteredBeds=allBeds.filter(b=>bdftMatchBed(b,q,S.sections));
   const occSet=new Set(AppState.selectedOccupiedBeds.map(bdftCanonBed));
 
-  return `<div class="sheet mid"><button class="mask" onclick="ui.bdftOccupiedModal=false;render()"></button>
+  return `<div class="sheet mid"><button class="mask" onclick="bdftCloseOccupiedModal()"></button>
     <div class="box" style="border-radius:24px;max-width:500px;max-height:85vh;overflow-y:auto;">
-      <h3 style="margin:0 0 10px;">Mark Occupied Beds (${AppState.selectedOccupiedBeds.length})</h3>
-      <div class="bdft-search-box">
-        <input type="text" placeholder="Filter beds (e.g. M1, 04, PC)..." value="${esc(ui.bdftBedSearchQuery||"")}" oninput="ui.bdftBedSearchQuery=this.value;render()">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <h3 class="sheet-title" style="margin:0;">Mark Occupied Beds</h3>
+        <span class="tiny muted" id="bdft-occupied-count">${AppState.selectedOccupiedBeds.length} marked</span>
       </div>
-      <div class="bdft-bed-picker-grid">
-        ${filteredBeds.map(b=>{
-          const key=bdftCanonBed(b.no||b.id);
-          const isOcc=occSet.has(key);
-          const wardNo=b.no||b.id;
-          return `<button type="button" class="pill ${isOcc?'full':'empty'}" style="min-height:44px;padding:4px 6px;text-align:center;" onclick="bdftToggleOccupiedBed('${esc(wardNo)}')">
-            <b>${esc(wardNo)}</b>
-          </button>`;
-        }).join("")}
+      <p class="tiny muted" style="margin:0 0 10px;">Select beds that will have patients tomorrow</p>
+
+      <label class="field" style="margin:0 0 8px;">
+        <input id="bdft-occupied-search" type="search" placeholder="Filter beds (e.g. M1, 04, PC, male)..." value="${esc(ui.bdftBedSearchQuery||"")}" oninput="bdftFilterOccupiedBeds(this.value)" autocomplete="off">
+      </label>
+
+      <div class="row" style="justify-content:flex-end;gap:8px;margin-bottom:8px;">
+        <button type="button" class="btn ghost sm" style="font-size:11px;padding:3px 8px;" onclick="bdftSelectAllOccupied(true)">Mark All</button>
+        <button type="button" class="btn ghost sm" style="font-size:11px;padding:3px 8px;" onclick="bdftSelectAllOccupied(false)">Clear All</button>
       </div>
-      <button class="btn block" style="margin-top:16px;" onclick="ui.bdftOccupiedModal=false;render()">Done</button>
+
+      <div id="bdft-occupied-grid" class="bdft-bed-picker-grid">
+        ${bdftRenderOccupiedGridHtml(filteredBeds, occSet)}
+      </div>
+
+      <button class="btn block" style="margin-top:16px;" onclick="bdftCloseOccupiedModal()">Done</button>
     </div>
   </div>`;
 }
 
-function bdftToggleOccupiedBed(bedNo){
+function bdftFilterOccupiedBeds(q){
+  ui.bdftBedSearchQuery=q;
+  const grid=document.getElementById("bdft-occupied-grid");
+  if(!grid) return;
+  const allBeds=(S.beds||[]).filter(b=>b&&b.active!==false);
+  const filteredBeds=allBeds.filter(b=>bdftMatchBed(b,q,S.sections));
+  const occSet=new Set(AppState.selectedOccupiedBeds.map(bdftCanonBed));
+  grid.innerHTML=bdftRenderOccupiedGridHtml(filteredBeds, occSet);
+}
+
+function bdftToggleOccupiedBed(bedNo, btn){
   const key=bdftCanonBed(bedNo);
   const idx=AppState.selectedOccupiedBeds.findIndex(b=>bdftCanonBed(b)===key);
-  if(idx!==-1) AppState.selectedOccupiedBeds.splice(idx,1);
+  const wasOcc=idx!==-1;
+
+  if(wasOcc) AppState.selectedOccupiedBeds.splice(idx,1);
   else AppState.selectedOccupiedBeds.push(bedNo);
+
+  if(btn){
+    btn.classList.toggle("full", !wasOcc);
+    btn.classList.toggle("empty", wasOcc);
+  }
+
+  const cnt=document.getElementById("bdft-occupied-count");
+  if(cnt) cnt.textContent=`${AppState.selectedOccupiedBeds.length} marked`;
+}
+
+function bdftSelectAllOccupied(all){
+  const allBeds=(S.beds||[]).filter(b=>b&&b.active!==false);
+  if(all){
+    AppState.selectedOccupiedBeds=allBeds.map(b=>b.no||b.id);
+  } else {
+    AppState.selectedOccupiedBeds=[];
+  }
+  const q=(ui.bdftBedSearchQuery||"").trim();
+  bdftFilterOccupiedBeds(q);
+  const cnt=document.getElementById("bdft-occupied-count");
+  if(cnt) cnt.textContent=`${AppState.selectedOccupiedBeds.length} marked`;
+}
+
+function bdftCloseOccupiedModal(){
+  ui.bdftOccupiedModal=false;
   render();
 }
 
@@ -20715,42 +20867,77 @@ function bdftUnavailableModalOverlay(){
     if(!docs.length) return;
     const allUnavail=docs.length>0 && docs.every(d=>unavailSet.has(d.toLowerCase()));
     bodyHtml+=`<div style="margin:14px 0 8px;display:flex;justify-content:space-between;align-items:center;">
-      <strong style="font-size:14px;color:var(--teal);">${esc(y)} (${docs.length})</strong>
-      <button type="button" class="btn ghost sm" style="font-size:11px;padding:3px 8px;" onclick="bdftToggleBatchUnavailable('${esc(y)}')">${allUnavail?'Unmark Batch':'Mark Batch'}</button>
+      <strong style="font-size:13px;color:var(--teal);text-transform:uppercase;letter-spacing:.05em;">${esc(y)} (${docs.length})</strong>
+      <button type="button" class="btn ghost sm" id="bdft-batch-unavail-btn-${esc(y.replace(/\s+/g,'_'))}" style="font-size:11px;padding:3px 8px;" onclick="bdftToggleBatchUnavailable('${esc(y)}', this)">${allUnavail?'Unmark Batch':'Mark Batch'}</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;">`;
+    <div id="bdft-unavail-group-${esc(y.replace(/\s+/g,'_'))}" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;">`;
     docs.forEach(doc=>{
       const isU=unavailSet.has(doc.toLowerCase());
       const short=abbreviations[doc]||bdftDocInitials(doc);
       const cleanName=doc.replace(/^dr[\.\s]+/i, "");
-      bodyHtml+=`<button type="button" class="btn ${isU?'':'ghost'}" title="${esc(doc)}" style="padding:6px 4px;font-size:12px;text-align:center;min-height:46px;${isU?'background:color-mix(in srgb,var(--amber,#f59e0b) 20%,transparent);border-color:var(--amber,#f59e0b);color:var(--amber,#f59e0b);':''}" onclick="bdftToggleDoctorUnavailable('${esc(doc)}')">
+      bodyHtml+=`<button type="button" class="btn ${isU?'':'ghost'} bdft-unavail-btn" data-doc="${esc(doc)}" title="${esc(doc)}" style="padding:6px 4px;font-size:12px;text-align:center;min-height:46px;${isU?'background:color-mix(in srgb,var(--amber,#f59e0b) 20%,transparent);border-color:var(--amber,#f59e0b);color:var(--amber,#f59e0b);':''}" onclick="bdftToggleDoctorUnavailable('${esc(doc)}', this)">
         <b style="display:block;font-size:13px;">${esc(short)}</b>
-        <span class="tiny text-muted" style="display:block;font-size:10px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px;">${esc(cleanName)}</span>
+        <span class="tiny muted" style="display:block;font-size:10px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px;">${esc(cleanName)}</span>
       </button>`;
     });
     bodyHtml+=`</div>`;
   });
 
-  return `<div class="sheet mid"><button class="mask" onclick="ui.bdftUnavailableModal=false;render()"></button>
+  return `<div class="sheet mid"><button class="mask" onclick="bdftCloseUnavailableModal()"></button>
     <div class="box" style="border-radius:24px;max-width:480px;max-height:85vh;overflow-y:auto;">
-      <h3 style="margin:0 0 10px;">Unavailable Personnel (${AppState.selectedUnavailable.length})</h3>
-      ${bodyHtml || `<p class="tiny text-muted" style="text-align:center;padding:16px;">No residents found in Ward Sync.</p>`}
-      <button class="btn block" style="margin-top:16px;" onclick="ui.bdftUnavailableModal=false;render()">Done</button>
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <h3 class="sheet-title" style="margin:0;">Unavailable Personnel</h3>
+        <span class="tiny muted" id="bdft-unavail-count">${AppState.selectedUnavailable.length} unavailable</span>
+      </div>
+      <p class="tiny muted" style="margin:0 0 10px;">Mark residents on leave/post-duty so their beds get redistributed</p>
+
+      ${bodyHtml || `<p class="tiny muted" style="text-align:center;padding:16px;">No residents found in Ward Sync.</p>`}
+      <button class="btn block" style="margin-top:16px;" onclick="bdftCloseUnavailableModal()">Done</button>
     </div>
   </div>`;
 }
 
-function bdftToggleDoctorUnavailable(docName){
+function bdftToggleDoctorUnavailable(docName, btn){
   const lower=docName.toLowerCase();
   const idx=AppState.selectedUnavailable.findIndex(d=>d.toLowerCase()===lower);
-  if(idx!==-1) AppState.selectedUnavailable.splice(idx,1);
+  const wasUnavail=idx!==-1;
+
+  if(wasUnavail) AppState.selectedUnavailable.splice(idx,1);
   else AppState.selectedUnavailable.push(docName);
-  render();
+
+  if(btn){
+    if(!wasUnavail){
+      btn.classList.remove("ghost");
+      btn.style.background="color-mix(in srgb,var(--amber,#f59e0b) 20%,transparent)";
+      btn.style.borderColor="var(--amber,#f59e0b)";
+      btn.style.color="var(--amber,#f59e0b)";
+    } else {
+      btn.classList.add("ghost");
+      btn.style.background="";
+      btn.style.borderColor="";
+      btn.style.color="";
+    }
+  }
+
+  const cnt=document.getElementById("bdft-unavail-count");
+  if(cnt) cnt.textContent=`${AppState.selectedUnavailable.length} unavailable`;
+
+  ensureConfiguration();
+  YEAR_ORDER.forEach(y=>{
+    const docs=residentData[y]||[];
+    if(docs.some(d=>d.toLowerCase()===lower)){
+      const allUnavail=docs.length>0 && docs.every(d=>AppState.selectedUnavailable.some(x=>x.toLowerCase()===d.toLowerCase()));
+      const batchBtn=document.getElementById("bdft-batch-unavail-btn-"+y.replace(/\s+/g,'_'));
+      if(batchBtn) batchBtn.textContent=allUnavail?'Unmark Batch':'Mark Batch';
+    }
+  });
 }
 
-function bdftToggleBatchUnavailable(year){
+function bdftToggleBatchUnavailable(year, btn){
+  ensureConfiguration();
   const docs=residentData[year]||[];
   const allUnavail=docs.length>0 && docs.every(d=>AppState.selectedUnavailable.some(x=>x.toLowerCase()===d.toLowerCase()));
+
   if(allUnavail){
     AppState.selectedUnavailable=AppState.selectedUnavailable.filter(d=>!docs.some(x=>x.toLowerCase()===d.toLowerCase()));
   }else{
@@ -20758,6 +20945,32 @@ function bdftToggleBatchUnavailable(year){
       if(!AppState.selectedUnavailable.some(x=>x.toLowerCase()===d.toLowerCase())) AppState.selectedUnavailable.push(d);
     });
   }
+
+  const group=document.getElementById("bdft-unavail-group-"+year.replace(/\s+/g,'_'));
+  if(group){
+    group.querySelectorAll(".bdft-unavail-btn").forEach(docBtn=>{
+      const isU=!allUnavail;
+      if(isU){
+        docBtn.classList.remove("ghost");
+        docBtn.style.background="color-mix(in srgb,var(--amber,#f59e0b) 20%,transparent)";
+        docBtn.style.borderColor="var(--amber,#f59e0b)";
+        docBtn.style.color="var(--amber,#f59e0b)";
+      } else {
+        docBtn.classList.add("ghost");
+        docBtn.style.background="";
+        docBtn.style.borderColor="";
+        docBtn.style.color="";
+      }
+    });
+  }
+
+  if(btn) btn.textContent=allUnavail?'Mark Batch':'Unmark Batch';
+  const cnt=document.getElementById("bdft-unavail-count");
+  if(cnt) cnt.textContent=`${AppState.selectedUnavailable.length} unavailable`;
+}
+
+function bdftCloseUnavailableModal(){
+  ui.bdftUnavailableModal=false;
   render();
 }
 
