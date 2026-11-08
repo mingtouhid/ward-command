@@ -19956,12 +19956,11 @@ function bdftHomeCard(){
 
   const dateLabel=esc(info.dateStr||"Tomorrow");
   if(info.isGeneric){
-    return `<div class="card" style="margin:0 0 10px;padding:14px 16px;border-left:4px solid var(--teal);">
-      <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.02em;">TOMORROW'S BED DISTRIBUTION · ${dateLabel}</span>
-        <span class="tiny muted">${info.totalBeds} beds allocated</span>
+    return `<div class="card" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--teal);">
+      <div class="row" style="align-items:center;justify-content:space-between;">
+        <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">Tomorrow's Beds · ${dateLabel}</span>
+        <button type="button" class="btn ghost sm" style="padding:2px 8px;font-size:11px;min-height:24px;height:24px;border-radius:6px;" onclick="bdftOpenReadOnly()">Full BDFT (${info.totalBeds}) ›</button>
       </div>
-      <button type="button" class="btn ghost sm block" style="margin-top:6px;width:100%;font-size:13px;" onclick="bdftOpenReadOnly()">View Full BDFT →</button>
     </div>`;
   }
 
@@ -19971,22 +19970,19 @@ function bdftHomeCard(){
     const p=bdftGetPatientForBed(code);
     const isOcc=!!p;
     const pName=p?(p.name||""):"";
-    const shortName=pName.length>12?pName.slice(0,11)+"…":pName;
-    return `<button type="button" class="pill ${isOcc?'full':'empty'}" style="min-height:38px;padding:4px 6px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;text-align:center;cursor:pointer;width:100%;" onclick="bdftTapBedPatient('${esc(code)}')" title="${isOcc?`${esc(code)}: ${esc(pName)}`:`${esc(code)}: Vacant`}">
-      <b style="font-size:12px;font-weight:750;letter-spacing:.02em;line-height:1.1;">${esc(code)}</b>
-      <span style="font-size:9.5px;line-height:1.1;opacity:${isOcc?'.9':'.55'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${isOcc?esc(shortName):"Vacant"}</span>
+    return `<button type="button" class="pill ${isOcc?'full':'empty'}" style="min-height:28px;height:28px;padding:2px 6px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;width:100%;" onclick="bdftTapBedPatient('${esc(code)}')" title="${isOcc?`${esc(code)}: ${esc(pName)}`:`${esc(code)}: Vacant`}">
+      <b style="font-size:11.5px;font-weight:750;letter-spacing:.02em;">${esc(code)}</b>
     </button>`;
-  }).join("") : `<div style="grid-column:1/-1;padding:4px 0;"><span class="happy-day-tag">🌴 Happy Day</span><span class="tiny muted" style="margin-left:6px;">No beds assigned tomorrow</span></div>`;
+  }).join("") : `<div style="grid-column:1/-1;padding:2px 0;"><span class="happy-day-tag" style="font-size:11px;padding:2px 6px;">🌴 Happy Day</span><span class="tiny muted" style="margin-left:6px;font-size:11px;">No beds assigned tomorrow</span></div>`;
 
-  return `<div class="card" style="margin:0 0 10px;padding:14px 16px;border-left:4px solid var(--teal);">
-    <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.02em;">TOMORROW'S BEDS · ${dateLabel}</span>
-      <span class="tiny muted">${beds.length} assigned</span>
+  return `<div class="card" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--teal);">
+    <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">Tomorrow's Beds · ${dateLabel} (${beds.length})</span>
+      <button type="button" class="btn ghost sm" style="padding:2px 8px;font-size:11px;min-height:24px;height:24px;border-radius:6px;" onclick="bdftOpenReadOnly()">Full BDFT ›</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px;margin:8px 0;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:5px;">
       ${bedChipsHtml}
     </div>
-    <button type="button" class="btn ghost sm block" style="margin-top:8px;width:100%;font-size:13px;" onclick="bdftOpenReadOnly()">View Full BDFT →</button>
   </div>`;
 }
 
