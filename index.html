@@ -5357,6 +5357,7 @@ function ico(name){
     cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M8 17h8.5a3.2 3.2 0 0 0 .2-6.4 4.8 4.8 0 0 0-9.1-1.3A3.3 3.3 0 0 0 8 17z"/> <g stroke-width="1.1"> <path d="M12 17v2"/> <rect x="10.2" y="19" width="3.6" height="2.4" rx="0.7"/> <path d="M11 21.4v.8M13 21.4v.8"/> </g> </g> </svg>',
     phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(12 12) scale(0.75) translate(-12 -12)"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></g></svg>',
     users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/> <circle cx="9" cy="7" r="4"/> <path d="M22 21v-2a4 4 0 0 0-3-3.87"/> <path d="M16 3.13a4 4 0 0 1 0 7.75"/> </g> </svg>',
+    bdft:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/> </g> </svg>',
     logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/> <polyline points="16 17 21 12 16 7"/> <line x1="21" y1="12" x2="9" y2="12"/> </g> </svg>'
   };
   return `<span class="ico">${s[name]||""}</span>`;
@@ -11469,11 +11470,7 @@ function usersView(){
     <p class="tiny" style="margin:0 0 10px">Residents write · consultants view · interns add reports and vitals</p>
     ${sec("Consultants",cons,"consultant","Add consultant")}
     ${sec("Residents",res,"resident","Add resident")}
-    ${sec("Interns",ints,"intern","Add intern")}
-    <section class="users-sec"><div class="users-sec-head"><h3>BDFT settings</h3></div>
-      <p class="tiny">Manage the resident roster and default bed ownership. You can also configure this from the Bed Distribution page.</p>
-      <button class="btn" type="button" onclick="bdftOpenSetup()">Open BDFT settings</button>
-    </section>`;
+    ${sec("Interns",ints,"intern","Add intern")}`;
 }
 function openAddUser(role){
   if(!canAdmin()){toast("Admin only","bad");return}
@@ -11913,7 +11910,7 @@ function moreView(){
     <p class="tiny" style="margin:-4px 0 14px;opacity:.55">Build ${esc(APP_VERSION)}</p>
     <p class="more-section">Ward</p>
     <div class="more-grid">
-    ${canAccessBdft()?row(canAdmin()?"bdftAdminPick()":"bdftOpenGenerate()",ico("census"),"Bed distribution","teal"):""}
+    ${canAccessBdft()?row("bdftTileClick()",ico("bdft"),"BDFT","teal"):""}
     ${canWrite()?row("ui.ctab='in';ui.disListOnly=false;go('census')",ico("census"),"Admit / Discharge","teal"):""}
     ${canWrite()?row("go('observe')",ico("observe"),"Under observation","amber"):""}
     ${row("go('ect')",ico("ect"),"ECT","violet")}
@@ -19553,7 +19550,15 @@ function isEveningDuty(){
 }
 
 function canAccessBdft(){
-  return canAdmin() || (canWrite() && isEveningDuty());
+  return canAdmin() || (canWrite() && !isIntern() && !isConsultant());
+}
+
+function bdftTileClick(){
+  if(canAdmin() || isEveningDuty()){
+    bdftAdminPick();
+  } else {
+    bdftOpenSetup();
+  }
 }
 
 function bdftAdminPick(){
@@ -19666,7 +19671,7 @@ function bdftView(){
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
     <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:12px;">
       <h2 class="page-title" style="margin:0;">${title}</h2>
-      ${canAdmin()&&mode==="generate"?`<button class="btn ghost sm" type="button" onclick="bdftOpenSetup()">⚙️ Settings</button>`:""}
+      ${(canAdmin()||(!isConsultant()&&!isIntern()))&&mode==="generate"?`<button class="btn ghost sm" type="button" onclick="bdftOpenSetup()">⚙️ Settings</button>`:""}
       ${mode==="readonly"?`<button class="btn ghost sm" type="button" onclick="bdftExportPng(true)">Export PNG</button>`:""}
     </div>
     <div id="bdft-root"></div>`;
@@ -20101,11 +20106,15 @@ async function bdftExportPng(explicit){
 // ==================== BDFT SETTINGS VIEW ====================
 function bdftMountSetup(root){
   ensureConfiguration();
+  const u=user()||{};
+  const isAdmin=canAdmin();
   const wardRes=(S.residents||[]).filter(r=>r.active!==false&&normRole(r.role)!=="intern"&&normRole(r.role)!=="consultant");
   const matrix=configuration.fixedBedMatrix||{};
 
-  let html=`<p class="tiny" style="margin-bottom:14px;">Manage resident batches, short initials, and owned beds. Tapping any resident opens their profile editor.</p>
-  <div style="display:flex;flex-direction:column;gap:10px;">`;
+  let html=isAdmin
+    ? `<p class="tiny" style="margin-bottom:14px;">Manage resident batches, short initials, and owned beds. Tapping any resident opens their profile editor.</p>`
+    : `<p class="tiny" style="margin-bottom:14px;">Update your short name (initials), batch, and owned beds below.</p>`;
+  html+=`<div style="display:flex;flex-direction:column;gap:10px;">`;
 
   const batches=["3rd Year","2nd Year","1st Year"];
   batches.forEach(bname=>{
@@ -20118,24 +20127,26 @@ function bdftMountSetup(root){
       html+=`<div class="card" style="padding:10px 14px;"><span class="tiny text-muted">No residents in ${esc(bname)}</span></div>`;
     }else{
       resInBatch.forEach(r=>{
+        const isSelf=(r.id===u.id)||(r.username&&r.username===u.username);
+        const canEdit=isAdmin || isSelf;
         const short=bdftGetResidentShort(r);
         const beds=bdftGetResidentBeds(r);
-        html+=`<div class="card" style="padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="bdftOpenResidentModal('${esc(r.id)}')">
+        html+=`<div class="card" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;${isSelf?'border:1.5px solid var(--teal);':''}${canEdit?'cursor:pointer;':''}" ${canEdit?`onclick="bdftOpenResidentModal('${esc(r.id)}')"`:''}>
           <div style="display:flex;align-items:center;gap:10px;">
             <div class="doctor-avatar avatar-${getAvatarClass(bname)}" style="width:36px;height:36px;font-size:13px;">${esc(short)}</div>
             <div>
-              <div style="font-weight:650;font-size:14px;">${esc(r.displayName||r.username)}</div>
+              <div style="font-weight:650;font-size:14px;">${esc(r.displayName||r.username)}${isSelf?` <span class="role-badge" style="font-size:10px;padding:2px 6px;">You</span>`:""}</div>
               <div class="tiny text-muted">${beds.length?beds.length+" bed(s): "+beds.slice(0,4).join(", ")+(beds.length>4?"…":""):"No beds owned"}</div>
             </div>
           </div>
-          <button type="button" class="btn ghost sm">Edit</button>
+          ${canEdit?`<button type="button" class="btn ${isSelf?'':'ghost'} sm">Edit</button>`:`<span class="tiny text-muted" style="font-size:11px;">View only</span>`}
         </div>`;
       });
     }
   });
 
   html+=`</div>
-  <button type="button" class="btn block" style="margin-top:18px;" onclick="bdftOpenGenerate()">Go to BDFT Terminal</button>`;
+  ${(isAdmin||isEveningDuty())?`<button type="button" class="btn block" style="margin-top:18px;" onclick="bdftOpenGenerate()">Go to BDFT Terminal</button>`:`<button type="button" class="btn ghost block" style="margin-top:18px;" onclick="back()">Done</button>`}`;
   root.innerHTML=html;
 }
 
@@ -20168,6 +20179,13 @@ function bdftGetResidentBeds(r){
 function bdftOpenResidentModal(resId){
   const r=(S.residents||[]).find(x=>x.id===resId);
   if(!r) return;
+  const u=user()||{};
+  const isAdmin=canAdmin();
+  const isSelf=(r.id===u.id)||(r.username&&r.username===u.username);
+  if(!isAdmin && !isSelf){
+    toast("You can only edit your own BDFT profile","bad");
+    return;
+  }
   const currentBatch=bdftGetResidentBatch(r);
   const currentShort=bdftGetResidentShort(r);
   const currentBeds=bdftGetResidentBeds(r);
@@ -20184,6 +20202,13 @@ function bdftOpenResidentModal(resId){
 function bdftSaveResidentModal(){
   const m=ui.bdftResidentModal;
   if(!m) return;
+  const u=user()||{};
+  const isAdmin=canAdmin();
+  const isSelf=(m.resId===u.id)||(m.name&&m.name.toLowerCase()===(u.displayName||u.username||"").toLowerCase());
+  if(!isAdmin && !isSelf){
+    toast("You can only edit your own BDFT profile","bad");
+    return;
+  }
   ensureConfiguration();
   const name=m.name;
   const batchName=m.batch||"1st Year";
@@ -20228,17 +20253,18 @@ function bdftSaveResidentModal(){
 // ==================== OVERLAYS & MODALS ====================
 function bdftAdminSheetOverlay(){
   if(!ui.bdftAdminSheet) return "";
+  const isAdmin=canAdmin();
   return `<div class="sheet mid"><button class="mask" onclick="ui.bdftAdminSheet=false;render()"></button>
     <div class="box" style="border-radius:24px;max-width:380px;">
-      <h3 style="margin:0 0 16px;">Bed Distribution (BDFT)</h3>
+      <h3 style="margin:0 0 16px;">BDFT Terminal</h3>
       <div style="display:flex;flex-direction:column;gap:10px;">
-        <button class="btn block" style="padding:14px;font-size:15px;justify-content:flex-start;text-align:left;" onclick="ui.bdftAdminSheet=false;bdftOpenSetup()">
-          ⚙️ <b>BDFT Settings</b>
-          <span class="tiny text-muted" style="display:block;margin-top:2px;">Roster batches, initials & bed ownership</span>
-        </button>
         <button class="btn block" style="padding:14px;font-size:15px;justify-content:flex-start;text-align:left;" onclick="ui.bdftAdminSheet=false;bdftOpenGenerate()">
           📋 <b>Generate BDFT</b>
           <span class="tiny text-muted" style="display:block;margin-top:2px;">Generate & adjust tomorrow's bed distribution</span>
+        </button>
+        <button class="btn block" style="padding:14px;font-size:15px;justify-content:flex-start;text-align:left;" onclick="ui.bdftAdminSheet=false;bdftOpenSetup()">
+          ⚙️ <b>BDFT Settings</b>
+          <span class="tiny text-muted" style="display:block;margin-top:2px;">${isAdmin ? "Roster batches, initials & bed ownership" : "Update your short name, batch & owned beds"}</span>
         </button>
       </div>
       <button class="btn ghost block" style="margin-top:14px;" onclick="ui.bdftAdminSheet=false;render()">Cancel</button>
@@ -20249,10 +20275,12 @@ function bdftAdminSheetOverlay(){
 function bdftResidentModalOverlay(){
   if(!ui.bdftResidentModal) return "";
   const m=ui.bdftResidentModal;
+  const u=user()||{};
+  const isSelf=(m.resId===u.id)||(m.name&&m.name.toLowerCase()===(u.displayName||u.username||"").toLowerCase());
   const batches=["3rd Year","2nd Year","1st Year"];
   return `<div class="sheet mid"><button class="mask" onclick="ui.bdftResidentModal=null;render()"></button>
     <div class="box" style="border-radius:24px;max-width:440px;">
-      <h3 style="margin:0 0 4px;">Edit Resident BDFT</h3>
+      <h3 style="margin:0 0 4px;">${isSelf ? "My BDFT Settings" : "Edit Resident BDFT"}</h3>
       <p class="tiny text-muted" style="margin:0 0 14px;">${esc(m.name)}</p>
       
       <label class="field"><span style="font-weight:600;">Batch</span>
