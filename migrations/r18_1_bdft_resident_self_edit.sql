@@ -118,6 +118,7 @@ set search_path to pg_catalog, public
 as $fn$
 declare
   a record; v_id text; v_current text; v_item jsonb; v_date date;
+  v_push jsonb; v_state jsonb;
 begin
   select * into a from public.bdft_actor(p_token);
   if a.actor_role not in ('admin', 'resident') then
@@ -134,13 +135,16 @@ begin
     set status = 'archived', replaced_by = v_id, replaced_at = now()
     where status = 'current';
 
+  -- Queue notification for all residents
+  v_push := public.bdft_queue_notice(v_id, a.actor_id, v_date);
+
   -- Insert new distribution
   insert into public.bdft_distributions(
     id, plan_date, status, created_by, created_at, updated_at, updated_by, version,
-    occupancy_at, census, push_status
+    occupancy_at, census, push_status, notification_id
   ) values (
     v_id, v_date, 'current', a.actor_id, now(), now(), a.actor_id, 1,
-    now(), 'live', 'not_queued'
+    now(), 'live', coalesce(v_push->>'status', 'queued'), (v_push->>'notificationId')::uuid
   );
 
   -- Insert rows
@@ -163,7 +167,8 @@ begin
     end loop;
   end if;
 
-  return public.ward_bdft_state(p_token);
+  v_state := public.ward_bdft_state(p_token);
+  return jsonb_set(v_state, '{notification_id}', to_jsonb(v_push->>'notificationId'));
 end;
 $fn$;
 

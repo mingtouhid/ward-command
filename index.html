@@ -20465,8 +20465,27 @@ async function bdftFinaliseAndSave(){
         p_plan_date: planDateIso,
         p_rows: rows
       });
-      if(!error) toast("Distribution finalised & synced to Supabase!","ok");
-      else toast("Distribution finalised locally!","ok");
+      if(!error){
+        toast("Distribution finalised & push notice sent!","ok");
+        const nid = data && (data.notification_id || data.notificationId);
+        if(nid){
+          try {
+            await fetch(S.supabaseUrl.replace(/\/$/,"")+"/functions/v1/dispatch-bdft", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "apikey": S.supabaseAnonKey
+              },
+              body: JSON.stringify({
+                session_token: sessionTok,
+                notification_id: nid
+              })
+            });
+          } catch(e){}
+        }
+      } else {
+        toast("Distribution finalised locally!","ok");
+      }
     } catch(e) {
       toast("Distribution finalised locally!","ok");
     }
@@ -20474,7 +20493,7 @@ async function bdftFinaliseAndSave(){
     toast("Distribution finalised and saved!","ok");
   }
 
-  bdftExportPng();
+  // PNG export remains optional via the "Export PNG" button in the view page
   render({force: true});
 }
 
