@@ -4782,6 +4782,9 @@ async function doCloudPull(opts){
   S.events=evCollapse(Object.values(byId));
   try{await r17PullStatus()}catch(e){}
   localStorage.setItem(KEY,JSON.stringify(S));
+  if(sessionTok&&canWrite()&&!isIntern()&&!isConsultant()){
+    Promise.resolve(bdftLoadFromSupabase(true)).catch(()=>{});
+  }
   if(stillUnsent.length){
     reconciliationNeeded=true;
     Sync.note("partial pull; holding "+Object.keys(dirtySnaps).length+" local snapshot patches");
@@ -19274,10 +19277,6 @@ function scShell(inner){const T=scShellTitle();
 
 
 // ==================== BDFT v7.0 NATIVE INTEGRATION ====================
-const BDFT_HARDCODED_BIN_ID = "6a75e0f9f5f4af5e29f7c2e6";
-const BDFT_HARDCODED_MASTER_KEY = "$2a$10$tZTDtwsXbGBHU9xo2V0Ag.Z.vo648GlKxG2WZ08pdtfuCZ4yag8uW";
-const BDFT_HARDCODED_ARCHIVE_BIN_ID = "6a75e0fdda38895dfec64b85";
-const BDFT_HARDCODED_PIN = "1234";
 const BDFT_CONFIG_STORAGE_KEY = "bdft_configuration_v1";
 const BDFT_ARCHIVE_STORAGE_KEY = "bdft_archives_v7";
 const BDFT_WORKING_SNAPSHOT_KEY = "bdft_working_snapshot_v7";
@@ -19497,40 +19496,191 @@ function syncWardResidentsWithBdft(){
   if(changed){
     saveConfigurationToStorage(configuration);
     buildRuntimeFromConfig(configuration);
-    pushConfigurationToCloud();
-  }
-}
-
-async function loadConfigurationFromCloud(force){
-  try{
-    const res=await fetch(`https://api.jsonbin.io/v3/b/${BDFT_HARDCODED_BIN_ID}/latest`,{headers:{'X-Master-Key':BDFT_HARDCODED_MASTER_KEY}});
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data=await res.json();
-    const payload=data.record||data;
-    if(payload&&payload.batches&&Array.isArray(payload.batches)){
-      configuration=payload;
-      saveConfigurationToStorage(configuration);
-      syncWardResidentsWithBdft();
-      buildRuntimeFromConfig(configuration);
-      if(force) toast("Configuration loaded from cloud","ok");
-      return {ok:true};
+    if(sb && sessionTok && canAdmin()) {
+      bdftSyncSetupToSupabase().catch(()=>{});
     }
-  }catch(e){
-    if(force) toast("Cloud config fetch failed","bad");
   }
-  return {ok:false};
 }
 
-async function pushConfigurationToCloud(){
-  if(!configuration) return;
-  try{
-    configuration.lastModified=new Date().toISOString();
-    await fetch(`https://api.jsonbin.io/v3/b/${BDFT_HARDCODED_BIN_ID}`,{
-      method:"PUT",
-      headers:{"Content-Type":"application/json","X-Master-Key":BDFT_HARDCODED_MASTER_KEY},
-      body:JSON.stringify(configuration)
+async function bdftRpc(name, args){
+  if(!sb||!sessionTok) throw new Error("offline");
+  const res=await sb.rpc(name, Object.assign({p_token:sessionTok}, args||{}));
+  if(res.error) throw new Error(res.error.message||"request failed");
+  return res.data;
+}
+
+let bdftSupabasePullPromise = null;
+async function bdftLoadFromSupabase(quiet){
+  if(!sb || !sessionTok) return { ok: false, reason: "offline" };
+  if(bdftSupabasePullPromise) return bdftSupabasePullPromise;
+  bdftSupabasePullPromise = (async () => {
+    try {
+      const data = await bdftRpc("ward_bdft_state");
+      if(!data || !data.ok) return { ok: false };
+      ui.bdftState = data;
+      
+      ensureConfiguration();
+
+      if(Array.isArray(data.people) && data.people.length > 0){
+        const bMap = new Map();
+        bMap.set("3rd year", { id: "batch-0", name: "3rd Year", enabled: true, order: 0, doctors: [] });
+        bMap.set("2nd year", { id: "batch-1", name: "2nd Year", enabled: true, order: 1, doctors: [] });
+        bMap.set("1st year", { id: "batch-2", name: "1st Year", enabled: true, order: 2, doctors: [] });
+
+        const bedIdToLabel = new Map();
+        (data.beds || S.beds || []).forEach(b => {
+          bedIdToLabel.set(b.id, b.label || b.no || b.id);
+        });
+
+        const docBedsMap = new Map();
+        (data.owners || []).forEach(o => {
+          if(!o.residentId) return;
+          const label = bedIdToLabel.get(o.bedId) || o.bedId;
+          if(!docBedsMap.has(o.residentId)) docBedsMap.set(o.residentId, []);
+          docBedsMap.get(o.residentId).push(label);
+        });
+
+        const newMatrix = {};
+
+        data.people.forEach(p => {
+          const docName = p.name || p.username;
+          let pBatch = (p.batch || "1st Year").trim().toLowerCase();
+          let targetBatchObj = null;
+          if(pBatch.includes("3")) targetBatchObj = bMap.get("3rd year");
+          else if(pBatch.includes("2")) targetBatchObj = bMap.get("2nd year");
+          else targetBatchObj = bMap.get("1st year");
+
+          const abbr = p.short || bdftDocInitials(docName);
+          targetBatchObj.doctors.push({
+            id: p.id || generateId("doc"),
+            name: docName,
+            abbreviation: abbr,
+            enabled: p.active !== false,
+            order: p.ord ?? targetBatchObj.doctors.length
+          });
+
+          const ownedBeds = docBedsMap.get(p.id) || [];
+          if(ownedBeds.length > 0){
+            newMatrix[docName] = ownedBeds.join(",");
+          }
+        });
+
+        configuration.batches = Array.from(bMap.values());
+        configuration.fixedBedMatrix = Object.assign({}, configuration.fixedBedMatrix || {}, newMatrix);
+        saveConfigurationToStorage(configuration);
+        buildRuntimeFromConfig(configuration);
+      }
+
+      if(data.current && Array.isArray(data.current.rows) && data.current.rows.length > 0){
+        const cur = data.current;
+        const curDate = cur.planDate ? dmyShow(cur.planDate) : "Tomorrow";
+        const tiers = { "3rd Year": {}, "2nd Year": {}, "1st Year": {} };
+        const orphans = [];
+
+        const resLookup = new Map();
+        (data.people || []).forEach(p => {
+          const dName = p.name || p.username;
+          let bName = (p.batch || "1st Year").trim();
+          if(bName.includes("3")) bName = "3rd Year";
+          else if(bName.includes("2")) bName = "2nd Year";
+          else bName = "1st Year";
+          resLookup.set(p.id, { name: dName, batch: bName, short: p.short || bdftDocInitials(dName) });
+        });
+
+        cur.rows.forEach(r => {
+          if(!r.occupied) return;
+          const ownerInfo = resLookup.get(r.ownerId);
+          const ownerShort = ownerInfo ? ownerInfo.short : (abbreviations[r.ownerId] || "Unassigned");
+          const holderInfo = resLookup.get(r.holderId);
+
+          if(holderInfo && tiers[holderInfo.batch]){
+            if(!tiers[holderInfo.batch][holderInfo.name]) tiers[holderInfo.batch][holderInfo.name] = [];
+            tiers[holderInfo.batch][holderInfo.name].push({
+              code: r.label,
+              originalOwner: ownerShort
+            });
+          } else {
+            orphans.push({
+              code: r.label,
+              originalOwner: ownerShort
+            });
+          }
+        });
+
+        AppState.distribution = {
+          dateStr: curDate,
+          tiers: tiers,
+          orphans: orphans
+        };
+        AppState.isWorkingDayActive = true;
+        saveWorkingSnapshotToLocal({
+          id: cur.id,
+          dateStr: curDate,
+          distribution: AppState.distribution
+        });
+      }
+
+      if(!quiet) toast("BDFT synchronized with Supabase", "ok");
+      render();
+      return { ok: true };
+    } catch(e) {
+      if(!quiet) console.warn("Supabase BDFT sync error:", e);
+      return { ok: false, error: e.message };
+    } finally {
+      bdftSupabasePullPromise = null;
+    }
+  })();
+  return bdftSupabasePullPromise;
+}
+
+async function bdftSyncSetupToSupabase(){
+  if(!sb || !sessionTok) return { ok: false, error: "offline" };
+  ensureConfiguration();
+
+  const wardRes = (S.residents || []).filter(r => r && r.active !== false && normRole(r.role) !== "intern" && normRole(r.role) !== "consultant");
+  const payloadPeople = wardRes.map(r => {
+    const bName = bdftGetResidentBatch(r);
+    const sName = bdftGetResidentShort(r);
+    return {
+      id: r.id,
+      batch: bName,
+      short: sName,
+      order: 0
+    };
+  });
+
+  const payloadOwners = [];
+  const bedLookup = new Map();
+  (S.beds || []).forEach(b => {
+    bedLookup.set(bdftCanonBed(b.no || b.id), b.id);
+    bedLookup.set(String(b.id).toLowerCase(), b.id);
+  });
+
+  Object.entries(configuration.fixedBedMatrix || {}).forEach(([docName, bedStr]) => {
+    const r = wardRes.find(x => (x.displayName || x.username || "").toLowerCase() === docName.toLowerCase());
+    if(!r) return;
+    const beds = String(bedStr || "").split(",").map(s => s.trim()).filter(Boolean);
+    beds.forEach(bedCode => {
+      const bId = bedLookup.get(bdftCanonBed(bedCode));
+      if(bId) payloadOwners.push({ bedId: bId, residentId: r.id });
     });
-  }catch(e){}
+  });
+
+  try {
+    const { data, error } = await sb.rpc("ward_bdft_save_setup", {
+      p_token: sessionTok,
+      p_people: payloadPeople,
+      p_owners: payloadOwners
+    });
+    if(error) return { ok: false, error: error.message };
+    if(data && data.ok) {
+      ui.bdftState = data;
+      return { ok: true };
+    }
+    return { ok: false, error: "Save returned false" };
+  } catch(e) {
+    return { ok: false, error: e.message || String(e) };
+  }
 }
 
 function loadWorkingSnapshotFromLocal(){
@@ -19560,31 +19710,6 @@ function saveArchivesToLocal(){
   }catch(e){}
 }
 
-async function loadArchivesFromCloud(){
-  loadArchivesFromLocal();
-  try{
-    const res=await fetch(`https://api.jsonbin.io/v3/b/${BDFT_HARDCODED_ARCHIVE_BIN_ID}/latest`,{headers:{'X-Master-Key':BDFT_HARDCODED_MASTER_KEY}});
-    if(res.ok){
-      const data=await res.json();
-      const list=(data.record&&data.record.archives)||data.record||data;
-      if(Array.isArray(list)&&list.length){
-        AppState.archives=list.slice(0, BDFT_MAX_ARCHIVES);
-        saveArchivesToLocal();
-      }
-    }
-  }catch(e){}
-}
-
-async function pushArchiveToCloud(archives){
-  try{
-    await fetch(`https://api.jsonbin.io/v3/b/${BDFT_HARDCODED_ARCHIVE_BIN_ID}`,{
-      method:"PUT",
-      headers:{"Content-Type":"application/json","X-Master-Key":BDFT_HARDCODED_MASTER_KEY},
-      body:JSON.stringify({archives:archives.slice(0,BDFT_MAX_ARCHIVES),updatedAt:new Date().toISOString(),appVersion:BDFT_APP_VERSION})
-    });
-  }catch(e){}
-}
-
 function bdftInit(){
   if(ui.bdftInitDone) return;
   ui.bdftInitDone=true;
@@ -19598,8 +19723,9 @@ function bdftInit(){
     AppState.bedsAssigned=snap.bedsAssigned||0;
     AppState.isWorkingDayActive=true;
   }
-  Promise.resolve(loadConfigurationFromCloud(false)).catch(()=>{});
-  Promise.resolve(loadArchivesFromCloud()).catch(()=>{});
+  if(sb && sessionTok){
+    Promise.resolve(bdftLoadFromSupabase(true)).catch(()=>{});
+  }
 }
 
 function isEveningDuty(){
@@ -19613,6 +19739,7 @@ function canAccessBdft(){
 }
 
 function bdftTileClick(){
+  if(sb && sessionTok) Promise.resolve(bdftLoadFromSupabase(true)).catch(()=>{});
   if(canAdmin() || isEveningDuty()){
     bdftAdminPick();
   } else {
@@ -19627,6 +19754,7 @@ function bdftAdminPick(){
 
 function bdftOpenGenerate(){
   bdftInit();
+  if(sb && sessionTok) Promise.resolve(bdftLoadFromSupabase(true)).catch(()=>{});
   ui.bdftMode="generate";
   const live=occupied().map(b=>b.no);
   AppState.selectedOccupiedBeds=live.slice();
@@ -19635,12 +19763,14 @@ function bdftOpenGenerate(){
 
 function bdftOpenSetup(){
   bdftInit();
+  if(sb && sessionTok) Promise.resolve(bdftLoadFromSupabase(true)).catch(()=>{});
   ui.bdftMode="setup";
   go("bdft");
 }
 
 function bdftOpenReadOnly(){
   bdftInit();
+  if(sb && sessionTok) Promise.resolve(bdftLoadFromSupabase(true)).catch(()=>{});
   ui.bdftMode="readonly";
   go("bdft");
 }
@@ -20135,9 +20265,68 @@ async function bdftFinaliseAndSave(){
   AppState.archives.unshift(snap);
   if(AppState.archives.length>BDFT_MAX_ARCHIVES) AppState.archives=AppState.archives.slice(0,BDFT_MAX_ARCHIVES);
   saveArchivesToLocal();
-  pushArchiveToCloud(AppState.archives);
 
-  toast("Distribution finalised and saved!","ok");
+  if(sb && sessionTok){
+    try {
+      const planDateIso = bdftIstTomorrow();
+      const rows = [];
+      const bedLookup = new Map();
+      (S.beds || []).forEach(b => {
+        bedLookup.set(bdftCanonBed(b.no || b.id), b.id);
+        bedLookup.set(String(b.id).toLowerCase(), b.id);
+      });
+      const wardRes = (S.residents || []).filter(r => r && r.active !== false);
+
+      Object.entries(dist.tiers || {}).forEach(([yr, docs]) => {
+        Object.entries(docs || {}).forEach(([docName, beds]) => {
+          const holderRes = wardRes.find(r => (r.displayName || r.username || "").toLowerCase() === docName.toLowerCase());
+          const holderId = holderRes ? holderRes.id : null;
+          (beds || []).forEach(b => {
+            const ownerRes = wardRes.find(r => (abbreviations[r.displayName || r.username] || "").toLowerCase() === (b.originalOwner || "").toLowerCase());
+            const ownerId = ownerRes ? ownerRes.id : holderId;
+            const bId = bedLookup.get(bdftCanonBed(b.code)) || b.code;
+            rows.push({
+              bedId: bId,
+              label: b.code,
+              ownerId: ownerId,
+              holderId: holderId,
+              occupied: true,
+              manual: false,
+              reason: (ownerId === holderId) ? "owner" : "redistributed",
+              disabled: false
+            });
+          });
+        });
+      });
+
+      (dist.orphans || []).forEach(b => {
+        const bId = bedLookup.get(bdftCanonBed(b.code)) || b.code;
+        rows.push({
+          bedId: bId,
+          label: b.code,
+          ownerId: null,
+          holderId: null,
+          occupied: true,
+          manual: false,
+          reason: "unassigned",
+          disabled: false
+        });
+      });
+
+      const { data, error } = await sb.rpc("ward_bdft_save_distribution", {
+        p_token: sessionTok,
+        p_plan_date: planDateIso,
+        p_rows: rows
+      });
+      if(!error) toast("Distribution finalised & synced to Supabase!","ok");
+      else toast("Distribution finalised locally!","ok");
+    } catch(e) {
+      toast("Distribution finalised locally!","ok");
+    }
+  } else {
+    toast("Distribution finalised and saved!","ok");
+  }
+
   bdftExportPng();
   render();
 }
@@ -20302,11 +20491,27 @@ function bdftSaveResidentModal(){
 
   saveConfigurationToStorage(configuration);
   buildRuntimeFromConfig(configuration);
-  pushConfigurationToCloud();
 
   ui.bdftResidentModal=null;
-  toast("Settings saved for "+name,"ok");
   render();
+
+  if(sb && sessionTok){
+    bdftSyncSetupToSupabase().then(res => {
+      if(res.ok){
+        toast("Saved & synced to Supabase for " + name, "ok");
+      } else {
+        if(/admin/i.test(res.error)){
+          toast("Saved locally. (Run r18_1 SQL in Supabase for resident self-edit)", "warn");
+        } else {
+          toast("Saved locally (Supabase: " + res.error + ")", "warn");
+        }
+      }
+    }).catch(e => {
+      toast("Saved locally for " + name, "ok");
+    });
+  } else {
+    toast("Saved locally for " + name, "ok");
+  }
 }
 
 // ==================== OVERLAYS & MODALS ====================
