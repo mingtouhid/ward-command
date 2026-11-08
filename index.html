@@ -19332,10 +19332,62 @@ const BDFT_DEFAULT_CONFIG = {
   lastModified: null,
   batches: [
     { id: "batch-0", name: "3rd Year", enabled: true, order: 0, doctors: [] },
-    { id: "batch-1", name: "2nd Year", enabled: true, order: 1, doctors: [] },
-    { id: "batch-2", name: "1st Year", enabled: true, order: 2, doctors: [] }
+    {
+      id: "batch-1",
+      name: "2nd Year",
+      enabled: true,
+      order: 1,
+      doctors: [
+        { id: "r-6ac7feb36154", name: "Dr. Plabita Bora", abbreviation: "PB", enabled: true, order: 0 },
+        { id: "r-6b8e52d2eb17", name: "Dr. Gurdeep Sami", abbreviation: "GS", enabled: true, order: 1 },
+        { id: "r-f4312caee0ca", name: "Dr. Debashree Das", abbreviation: "DD", enabled: true, order: 2 },
+        { id: "r-4f8774d4a2a1", name: "Dr. Amatya", abbreviation: "AM", enabled: true, order: 3 },
+        { id: "r-62f9f0cecee9", name: "Dr. Rini Sarmah", abbreviation: "RS", enabled: true, order: 4 },
+        { id: "r-fac2743070b7", name: "Dr. Mohim Ch. Mili", abbreviation: "MM", enabled: true, order: 5 }
+      ]
+    },
+    {
+      id: "batch-2",
+      name: "1st Year",
+      enabled: true,
+      order: 2,
+      doctors: [
+        { id: "r-f5c645f1469b", name: "Dr Priyanshu", abbreviation: "PK", enabled: true, order: 0 },
+        { id: "r-024a62204419", name: "Dr Pritishma", abbreviation: "PR", enabled: true, order: 1 },
+        { id: "r-b7ed0e6df2e8", name: "Dr Pallabi", abbreviation: "PL", enabled: true, order: 2 },
+        { id: "r1", name: "Dr Touhid", abbreviation: "TA", enabled: true, order: 3 },
+        { id: "r-1578ffb5e657", name: "Dr Abhineet", abbreviation: "AS", enabled: true, order: 4 },
+        { id: "r-8e442995170a", name: "Dr Ankur", abbreviation: "AG", enabled: true, order: 5 },
+        { id: "r-b30d35166d8a", name: "Dr Sheetal", abbreviation: "SY", enabled: true, order: 6 }
+      ]
+    }
   ],
-  fixedBedMatrix: {},
+  fixedBedMatrix: {
+    "Dr. Plabita Bora": "M-06,D-01,F-22,MX-04",
+    "Dr. Gurdeep Sami": "M-07,D-02,E-29,FX-01",
+    "Dr. Gurdeep Singh": "M-07,D-02,E-29,FX-01",
+    "Dr. Debashree Das": "M-09,D-04,E-30,FX-03",
+    "Dr. Amatya": "M-08,D-03,F-23,FX-02",
+    "Dr. Amatya Mishra": "M-08,D-03,F-23,FX-02",
+    "Dr. Rini Sarmah": "M-10,PC-01,F-24,FX-04",
+    "Dr. Rini Sharma": "M-10,PC-01,F-24,FX-04",
+    "Dr. Mohim Ch. Mili": "D-05,PC-02,F-25",
+    "Dr. Mohim Mili": "D-05,PC-02,F-25",
+    "Dr Priyanshu": "F-18,D-08,E-28,M-02",
+    "Dr. Priyanshu Kumar": "F-18,D-08,E-28,M-02",
+    "Dr Pritishma": "F-17,D-06,Iso-26,M-03",
+    "Dr. Pritishma Kashyap": "F-17,D-06,Iso-26,M-03",
+    "Dr Pallabi": "F-16,D-07,Iso-27,M-04",
+    "Dr. Pallabi Barman": "F-16,D-07,Iso-27,M-04",
+    "Dr Touhid": "F-15,D-12,M-11,MX-02",
+    "Dr. Touhidur Alom": "F-15,D-12,M-11,MX-02",
+    "Dr Abhineet": "F-21,M-12,D-09,MX-01",
+    "Dr. Abhineet Sarmah": "F-21,M-12,D-09,MX-01",
+    "Dr Ankur": "F-20,M-13,D-10,M-05",
+    "Dr. Ankur Gogoi": "F-20,M-13,D-10,M-05",
+    "Dr Sheetal": "F-19,M-14,D-11,M-01",
+    "Dr. Sheetal Yadav": "F-19,M-14,D-11,M-01"
+  },
   settings: {}
 };
 
@@ -19434,7 +19486,10 @@ function ensureConfiguration(){
   }
   if(!cfg.schemaVersion) cfg.schemaVersion=BDFT_SCHEMA_VERSION;
   if(!Array.isArray(cfg.batches)) cfg.batches=deepClone(BDFT_DEFAULT_CONFIG.batches);
-  if(!cfg.fixedBedMatrix) cfg.fixedBedMatrix={};
+  if(!cfg.fixedBedMatrix || Object.keys(cfg.fixedBedMatrix).length === 0){
+    cfg.fixedBedMatrix=Object.assign({}, BDFT_DEFAULT_CONFIG.fixedBedMatrix);
+    saveConfigurationToStorage(cfg);
+  }
   configuration=cfg;
   syncWardResidentsWithBdft();
   buildRuntimeFromConfig(configuration);
@@ -20491,10 +20546,22 @@ function bdftGetResidentShort(r){
 }
 
 function bdftGetResidentBeds(r){
-  if(!configuration) return [];
-  const name=r.displayName||r.username;
-  const raw=configuration.fixedBedMatrix[name]||"";
-  return raw.split(",").map(b=>b.trim()).filter(Boolean);
+  if(!configuration || !configuration.fixedBedMatrix) return [];
+  const name=r.displayName||r.username||"";
+  if(configuration.fixedBedMatrix[name]) {
+    return configuration.fixedBedMatrix[name].split(",").map(b=>b.trim()).filter(Boolean);
+  }
+  if(r.username && configuration.fixedBedMatrix[r.username]) {
+    return configuration.fixedBedMatrix[r.username].split(",").map(b=>b.trim()).filter(Boolean);
+  }
+  const norm = name.toLowerCase().replace(/^dr[\.\s]+/i, "").trim();
+  for(const k of Object.keys(configuration.fixedBedMatrix)){
+    const kNorm = k.toLowerCase().replace(/^dr[\.\s]+/i, "").trim();
+    if(kNorm === norm || (norm && kNorm.startsWith(norm)) || (norm && norm.startsWith(kNorm))){
+      return (configuration.fixedBedMatrix[k]||"").split(",").map(b=>b.trim()).filter(Boolean);
+    }
+  }
+  return [];
 }
 
 function bdftOpenResidentModal(resId){
