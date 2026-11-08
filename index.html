@@ -3069,9 +3069,49 @@ button.r16-tile:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .bdft-setup-bed-grid .pill small{font-size:9px}
 .bdft-resident-setup{margin-bottom:10px}.bdft-resident-setup>.resident-setup-grid{margin-top:8px}.bdft-resident-setup .bdft-setup-bed-grid{margin-top:2px}
 @media(min-width:520px){.resident-setup-grid{grid-template-columns:1fr 1fr}.resident-bed-field{grid-column:1/-1}}
+
+/* BDFT v7.0 Styles */
+.doctor-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);position:relative;transition:background .2s}
+.doctor-row:last-child{border-bottom:none}
+.doctor-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;margin-right:12px}
+.avatar-3{background:rgba(59,130,246,0.15);color:#60a5fa}
+.avatar-2{background:rgba(168,85,247,0.15);color:#c084fc}
+.avatar-1{background:rgba(34,197,94,0.15);color:#4ade80}
+.beds-container{flex-grow:1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:40px}
+.bed-tag{display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:grab;user-select:none;padding:5px 12px;border-radius:10px;margin:0;transition:all .15s ease}
+.bed-tag.original{background:color-mix(in srgb,var(--teal) 15%,transparent);color:var(--teal);border:1px solid color-mix(in srgb,var(--teal) 30%,transparent)}
+.bed-tag.reassigned{background:color-mix(in srgb,var(--amber,#f59e0b) 15%,transparent);color:var(--amber,#f59e0b);border:1px solid color-mix(in srgb,var(--amber,#f59e0b) 30%,transparent)}
+.bed-tag.consecutive-conflict,.bed-tag.invalid{background:color-mix(in srgb,var(--red,#ef4444) 15%,transparent);color:var(--red,#ef4444);border:1px solid color-mix(in srgb,var(--red,#ef4444) 30%,transparent)}
+.bed-tag.tapped-active{border:2px solid var(--teal);transform:scale(1.08);z-index:10;box-shadow:0 0 0 4px color-mix(in srgb,var(--teal) 25%,transparent)}
+.happy-day-tag{background:color-mix(in srgb,var(--teal) 12%,transparent);color:var(--teal);border:1px solid color-mix(in srgb,var(--teal) 25%,transparent);padding:5px 12px;border-radius:10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.remove-doctor-btn,.remove-batch-btn{background:transparent;color:var(--muted);border:none;width:32px;height:32px;font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.remove-doctor-btn:hover,.remove-batch-btn:hover{color:var(--red,#ef4444);background:color-mix(in srgb,var(--red,#ef4444) 12%,transparent)}
+.orphan-pool{margin-top:20px;padding:16px;border:1px dashed var(--amber,#f59e0b);border-radius:16px;background:color-mix(in srgb,var(--amber,#f59e0b) 6%,transparent)}
+.orphan-owner-badge{font-size:10px;opacity:0.85;font-weight:700;margin-left:5px;padding:1px 5px;border-radius:5px;background:rgba(0,0,0,0.12)}
+.bottom-action-bar{position:sticky;bottom:calc(var(--nav-h,60px) + 8px);left:0;width:100%;margin-top:16px;z-index:40;display:flex;justify-content:center}
+.bottom-action-bar .btn-primary{width:100%;max-width:420px;padding:14px;font-size:15px;font-weight:700;border-radius:14px}
+.bdft-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:16px}
+.bdft-stat-card{background:var(--panel2);border:1px solid var(--line);padding:10px 14px;border-radius:14px;display:flex;flex-direction:column;gap:2px;text-align:center}
+.bdft-stat-val{font-size:20px;font-weight:800;color:var(--teal)}
+.bdft-stat-lbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase}
+.bdft-qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.bdft-qa-btn{background:var(--panel2);border:1px solid var(--line);padding:14px;border-radius:14px;font-weight:650;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;text-align:center}
+.bdft-qa-btn:active{transform:scale(0.97)}
+.bdft-qa-primary{grid-column:1 / -1;background:var(--teal);color:var(--panel);border:none;font-size:15px;font-weight:700;padding:16px;flex-direction:row;justify-content:center}
+.distribution-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media(max-width:768px){.distribution-grid{grid-template-columns:1fr;gap:16px}}
+.year-header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--line);padding-bottom:6px;margin-bottom:12px}
+.year-header h3{font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:0}
+.bdft-search-box{position:relative;margin-bottom:10px}
+.bdft-search-box input{width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:14px}
+.bdft-bed-picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;max-height:240px;overflow-y:auto;padding:2px}
+.bdft-ro-banner{padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--teal) 10%,transparent);color:var(--teal);font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;margin-bottom:12px}
+.read-only-board .bed-tag{cursor:default}
+.read-only-board .remove-doctor-btn,.read-only-board .remove-batch-btn{display:none!important}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.11/dist/html2canvas-pro.min.js"></script>
 <!-- WARD COMMAND RELEASE: v87.5.2 drop-qsnap -->
 </head>
 <body>
@@ -3686,7 +3726,38 @@ function seed(){
 
 const DEFAULT_SB_URL="https://ocgmhwetdpcthwbcnbqz.supabase.co";
 const DEFAULT_SB_KEY="sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ";
-/* BDFT_RULES_START */
+/* BDFT_RULES_START - Bed Canonicalization & Adjacency Helpers */
+function bdftCanonBed(code) {
+  if (!code) return "";
+  const s = String(code).trim().toUpperCase();
+  const m = s.match(/^([A-Z]+)\s*[-_]?\s*0*(\d+)$/i);
+  if (m) return `${m[1]}${parseInt(m[2], 10)}`;
+  return s.replace(/[\s\-_]+/g, "");
+}
+function bdftBedsMatch(a, b) {
+  if (!a || !b) return false;
+  return bdftCanonBed(a) === bdftCanonBed(b);
+}
+function bdftToWardBedNo(code) {
+  const canon = bdftCanonBed(code);
+  const wardBed = (S.beds || []).find(b => bdftCanonBed(b.no || b.id) === canon);
+  return wardBed ? wardBed.no : code;
+}
+function parseBedCode(code) {
+  const clean = String(code).trim().toUpperCase().replace(/\s+/g, "");
+  const match = clean.match(/^([A-Z]+)\s*[-_]?\s*0*(\d+)$/i);
+  if (!match) return { prefix: clean, num: -999 };
+  return { prefix: match[1], num: parseInt(match[2], 10) };
+}
+function createsConsecutiveConflict(bedList, candidateBed) {
+  const cand = parseBedCode(candidateBed);
+  if (cand.num === -999) return false;
+  return (bedList || []).some(b => {
+    const existingCode = typeof b === "string" ? b : (b.code || b);
+    const existing = parseBedCode(existingCode);
+    return existing.prefix === cand.prefix && Math.abs(existing.num - cand.num) === 1;
+  });
+}
 function bdftIstTomorrow(v){
   const d=v==null?new Date():(v instanceof Date?v:new Date(v));
   if(isNaN(d.getTime())) return "";
@@ -3694,70 +3765,6 @@ function bdftIstTomorrow(v){
   const day=new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()+1));
   const z=n=>String(n).padStart(2,"0");
   return day.getUTCFullYear()+"-"+z(day.getUTCMonth()+1)+"-"+z(day.getUTCDate());
-}
-function bdftLabelParts(label){
-  const s=String(label||"");
-  const m=s.match(/^(.*?)(\d+)$/);
-  if(!m) return {prefix:s, num:null};
-  return {prefix:m[1], num:Number(m[2])};
-}
-function bdftAdjacent(a,b){
-  if(!a||!b||a.num==null||b.num==null) return false;
-  return a.prefix===b.prefix && Math.abs(a.num-b.num)===1;
-}
-function bdftBuild(input){
-  const people=(input.people||[]).slice().sort((a,b)=>(a.order-b.order)||String(a.id).localeCompare(String(b.id)));
-  const byId=new Map(people.map(p=>[p.id,p]));
-  const ownerByBed=new Map((input.owners||[]).map(o=>[o.bedId,o.residentId]));
-  const absent=new Set(input.absent||[]);
-  const bedById=new Map((input.beds||[]).map(b=>[b.id,b]));
-  const held=new Map();
-  const count=new Map();
-  people.forEach(p=>{held.set(p.id,[]); count.set(p.id,0)});
-  const rows=[];
-  const pending=[];
-  (input.included||[]).forEach(id=>{
-    const bed=bedById.get(id);
-    if(!bed) return;
-    const parts=bdftLabelParts(bed.label);
-    const oid=ownerByBed.get(id)||null;
-    const owner=oid?byId.get(oid):null;
-    const base={bedId:id, label:bed.label, parts, ownerId:oid, disabled:!!(owner&&owner.active===false), manual:false};
-    if(!owner){rows.push(Object.assign({}, base, {holderId:null, reason:"unmapped"})); return}
-    if(!absent.has(oid)){
-      held.get(oid).push({id, parts});
-      count.set(oid,(count.get(oid)||0)+1);
-      rows.push(Object.assign({}, base, {holderId:oid, reason:"kept"}));
-    }else pending.push(base);
-  });
-  pending.sort((a,b)=>String(a.parts.prefix).localeCompare(String(b.parts.prefix))||((a.parts.num==null?0:a.parts.num)-(b.parts.num==null?0:b.parts.num))||String(a.bedId).localeCompare(String(b.bedId)));
-  pending.forEach(base=>{
-    const batch=base.ownerId&&byId.get(base.ownerId)?(byId.get(base.ownerId).batch||""):"";
-    const cands=people.filter(p=>p.active!==false && !absent.has(p.id) && (p.batch||"")===batch);
-    if(!cands.length){rows.push(Object.assign({}, base, {holderId:null, reason:"orphan"})); return}
-    let min=Infinity;
-    cands.forEach(p=>{const n=count.get(p.id)||0; if(n<min) min=n});
-    let pool=cands.filter(p=>(count.get(p.id)||0)===min);
-    const clean=pool.filter(p=>!(held.get(p.id)||[]).some(h=>bdftAdjacent(h.parts, base.parts)));
-    if(clean.length) pool=clean;
-    pool.sort((a,b)=>(a.order-b.order)||String(a.id).localeCompare(String(b.id)));
-    const pick=pool[0];
-    held.get(pick.id).push({id:base.bedId, parts:base.parts});
-    count.set(pick.id,(count.get(pick.id)||0)+1);
-    rows.push(Object.assign({}, base, {holderId:pick.id, reason:"redistributed"}));
-  });
-  return rows;
-}
-function bdftMove(rows, opts){
-  const row=(rows||[]).find(r=>r.bedId===opts.bedId);
-  if(!row) return {ok:false, code:"missing"};
-  const to=opts.to||null;
-  if(to){
-    const parts=row.parts||bdftLabelParts(row.label);
-    const adj=(rows||[]).some(r=>r.holderId===to && r.bedId!==row.bedId && bdftAdjacent(r.parts||bdftLabelParts(r.label), parts));
-    if(adj && !opts.allowAdjacent) return {ok:false, code:"adjacent"};
-  }
-  return {ok:true, rows:rows.map(r=>r.bedId===row.bedId?Object.assign({}, r, {holderId:to, manual:true}):r)};
 }
 /* BDFT_RULES_END */
 
@@ -5356,7 +5363,7 @@ function ico(name){
 }
 
 function overlayOpen(){
-  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser || ui.myPhone || ui.r17Gate);
+  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser || ui.myPhone || ui.r17Gate || ui.bdftAdminSheet || ui.bdftResidentModal || ui.bdftBedPickerModal || ui.bdftOccupiedModal || ui.bdftUnavailableModal);
 }
 function overlayDepth(){
   let n=0;
@@ -5368,6 +5375,11 @@ function overlayDepth(){
   if(ui.notifySet) n++;
   if(ui.pick) n++;
   if(ui.confirm) n++;
+  if(ui.bdftAdminSheet) n++;
+  if(ui.bdftResidentModal) n++;
+  if(ui.bdftBedPickerModal) n++;
+  if(ui.bdftOccupiedModal) n++;
+  if(ui.bdftUnavailableModal) n++;
   return n;
 }
 function prefersReduceMotion(){
@@ -5376,6 +5388,7 @@ function prefersReduceMotion(){
 function clearOverlayState(extra){
   extra=extra||{};
   ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null; ui.medEditId=null; ui.r17Gate=null; ui.r17Next=null; ui.r17Reason="";
+  ui.bdftAdminSheet=false; ui.bdftResidentModal=null; ui.bdftBedPickerModal=null; ui.bdftOccupiedModal=false; ui.bdftUnavailableModal=false;
   ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null; ui.addUser=null; ui.myPhone=null; phoneFieldsWipe();
   if(extra.med){
     ui.medPid=null;
@@ -5394,6 +5407,11 @@ function popTopOverlay(extra){
   if(ui.consEdit){ ui.consEdit=null; return "consEdit"; }
   if(ui.panel){ ui.panel=null; return "panel"; }
   if(ui.giveOpen){ ui.giveOpen=false; return "give"; }
+  if(ui.bdftUnavailableModal){ ui.bdftUnavailableModal=false; return "bdftUnavailableModal"; }
+  if(ui.bdftOccupiedModal){ ui.bdftOccupiedModal=false; return "bdftOccupiedModal"; }
+  if(ui.bdftBedPickerModal){ ui.bdftBedPickerModal=false; return "bdftBedPickerModal"; }
+  if(ui.bdftResidentModal){ ui.bdftResidentModal=null; return "bdftResidentModal"; }
+  if(ui.bdftAdminSheet){ ui.bdftAdminSheet=false; return "bdftAdminSheet"; }
   if(ui.sheet){
     ui.sheet=null;
     ui.medEditId=null; // R1.3.89
@@ -5454,7 +5472,7 @@ function stampSheetEnter(html){
 }
 function shell(inner){
   const u=user();
-  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders"].includes(route.page))?"on":"";
+  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft"].includes(route.page))?"on":"";
   return `<header class="top"><div><p class="kicker">${greet()}${canWrite()?` <span class="who-inline">${esc(u.displayName)}</span>`:""}</p><h1>${esc(S.unit.name)}</h1></div>
     <div class="who-tools">${statusChip()}<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button></div></header>
     <main class="main">${inner}</main>${r151Dock()}
@@ -5463,7 +5481,7 @@ function shell(inner){
       <button class="${on("patients")}" onclick="go('patients')">${ico('patients')}<span class="lbl">Patients</span></button>
       <button class="${on("handover")}" onclick="go('handover')" ${ui.busy?"disabled":""}>${ico('handover')}<span class="lbl">Handovers</span></button>
       <button class="${on("more")}" onclick="go('more')">${ico('more')}<span class="lbl">More</span></button>
-    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review, ui.r17Reason||"")}</div></div>`:""))}${busyVeil()}`;
+    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(bdftAdminSheetOverlay()||"")+(bdftResidentModalOverlay()||"")+(bdftBedPickerOverlay()||"")+(bdftOccupiedModalOverlay()||"")+(bdftUnavailableModalOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review, ui.r17Reason||"")}</div></div>`:""))}${busyVeil()}`;
 }
 
 /* HOME: occupied beds only, current status */
@@ -11465,7 +11483,7 @@ function openAddUser(role){
   ui.phoneErr={};ui.bedPickerOpen=false;
   ui.fields.nrole=role==="consultant"?"consultant":role==="intern"?"intern":"resident";
   ui.addUser=ui.fields.nrole; render();
-  if(ui.addUser==="resident") Promise.resolve(bdftLoad(true)).catch(()=>{});
+  if(ui.addUser==="resident") bdftInit();
 }
 function addUserOverlay(){
   if(!ui.addUser) return "";
@@ -11473,9 +11491,9 @@ function addUserOverlay(){
   const resident=!cons&&!intern;
   const ROLES=[["resident","Resident"],["admin","Admin"]];
   const BATCHES=[["1st year","1st year"],["2nd year","2nd year"],["3rd year","3rd year"]];
-  const beds=(ui.bdftState&&ui.bdftState.beds)||[];
+  const beds=(S.beds||[]).filter(b=>b&&b.active!==false);
   const chosen=ui.fields&&Array.isArray(ui.fields.nbeds)?ui.fields.nbeds:[];
-  const bedGrid= beds.length ? `<div class="bdft-setup-bed-grid">${beds.map(b=>{const on=chosen.includes(b.id);return `<button type="button" class="pill ${on?"full":"empty"}" aria-pressed="${on}" onclick="bdftToggleNewUserBed('${esc(b.id)}')"><b>${esc(b.label||b.id)}</b>${b.occupied?`<small>Occupied</small>`:`<small>Available</small>`}</button>`}).join("")}</div>` : `<p class="tiny">${ui.bdftLoading?"Loading bed map…":"Bed map unavailable. Open BDFT settings after creating the account."}</p>`;
+  const bedGrid= beds.length ? `<div class="bdft-setup-bed-grid">${beds.map(b=>{const on=chosen.includes(b.id);return `<button type="button" class="pill ${on?"full":"empty"}" aria-pressed="${on}" onclick="bdftToggleNewUserBed('${esc(b.id)}')"><b>${esc(b.no||b.id)}</b>${b.patientId?`<small>Occupied</small>`:`<small>Available</small>`}</button>`}).join("")}</div>` : `<p class="tiny">No beds in ward map.</p>`;
   return `<div class="sheet mid"><button class="mask" onclick="dismissOverlay()"></button><div class="box resident-setup-box" style="border-radius:24px;max-width:460px">
     <h2 class="page-title" style="margin:0 0 4px">${cons?"Add consultant":intern?"Add intern":"Add resident"}</h2>
     <p class="tiny" style="margin:0 0 12px">${cons?"View-only access":intern?"Can add reports and vitals":"One form for account details, batch and bed ownership."}</p>
@@ -11503,19 +11521,30 @@ function bdftToggleNewUserBed(id){
   ui.fields.nbeds=a.includes(id)?a.filter(x=>x!==id):a.concat(id);
   render({force:1});
 }
-async function bdftSaveNewResidentSetup(username,displayName,batch,shortName,bedIds){
-  const st=await bdftRpc("ward_bdft_state");
-  const people=(st.people||[]).slice();
-  const matches=people.filter(p=>String(p.username||"").toLowerCase()===String(username).toLowerCase());
-  const named=people.filter(p=>String(p.name||"").trim().toLowerCase()===String(displayName).trim().toLowerCase());
-  const target=matches[0]||(named.length===1?named[0]:null);
-  if(!target){ui.bdftState=st;ui.bdftLoaded=true;throw new Error("Account created, but its BDFT profile could not be matched safely. Open BDFT settings to finish batch and bed ownership.")}
-  const payloadPeople=people.map(p=>({id:p.id,batch:p.id===target.id?batch:(p.batch||""),short:p.id===target.id?shortName:(p.short||""),order:p.ord||1000000}));
-  const owners=new Map((st.owners||[]).map(o=>[o.bedId,o.residentId]));
-  (bedIds||[]).forEach(id=>{if((st.beds||[]).some(b=>b.id===id)) owners.set(id,target.id)});
-  const payloadOwners=Array.from(owners.entries()).filter(([,owner])=>!!owner).map(([bedId,residentId])=>({bedId,residentId}));
-  ui.bdftState=await bdftRpc("ward_bdft_save_setup",{p_people:payloadPeople,p_owners:payloadOwners});
-  ui.bdftLoaded=true;
+function bdftSaveNewResidentSetup(username,displayName,batch,shortName,bedIds){
+  try{
+    ensureConfiguration();
+    let foundDoc=null;
+    for(const b of (configuration.batches||[])){
+      const d=(b.doctors||[]).find(x=>x.name.toLowerCase()===displayName.toLowerCase()||(x.abbreviation||"").toLowerCase()===shortName.toLowerCase());
+      if(d){foundDoc=d;d.name=displayName;d.abbreviation=shortName;break}
+    }
+    if(!foundDoc){
+      let targetBatch=(configuration.batches||[]).find(b=>b.name.toLowerCase()===batch.toLowerCase());
+      if(!targetBatch && configuration.batches&&configuration.batches.length) targetBatch=configuration.batches[0];
+      if(targetBatch){
+        foundDoc={id:generateId("doc"),name:displayName,abbreviation:shortName,enabled:true,order:(targetBatch.doctors||[]).length};
+        targetBatch.doctors=targetBatch.doctors||[];
+        targetBatch.doctors.push(foundDoc);
+      }
+    }
+    if(bedIds&&bedIds.length){
+      const bedCodes=bedIds.map(id=>{const b=(S.beds||[]).find(x=>x.id===id);return b?b.no:id});
+      configuration.fixedBedMatrix[displayName]=bedCodes.join(",");
+    }
+    saveConfigurationToStorage(configuration);
+    buildRuntimeFromConfig(configuration);
+  }catch(e){console.warn("bdftSaveNewResidentSetup",e)}
 }
 async function inviteUser(){
   if(!canAdmin()){toast("Admin only","bad");return}
@@ -11884,7 +11913,7 @@ function moreView(){
     <p class="tiny" style="margin:-4px 0 14px;opacity:.55">Build ${esc(APP_VERSION)}</p>
     <p class="more-section">Ward</p>
     <div class="more-grid">
-    ${canWrite()?row("go('bdft')",ico("census"),"Bed distribution","teal"):""}
+    ${canAccessBdft()?row(canAdmin()?"bdftAdminPick()":"bdftOpenGenerate()",ico("census"),"Bed distribution","teal"):""}
     ${canWrite()?row("ui.ctab='in';ui.disListOnly=false;go('census')",ico("census"),"Admit / Discharge","teal"):""}
     ${canWrite()?row("go('observe')",ico("observe"),"Under observation","amber"):""}
     ${row("go('ect')",ico("ect"),"ECT","violet")}
@@ -19245,291 +19274,1199 @@ function scShell(inner){const T=scShellTitle();
 }
 
 
-function bdftHomeCard(){
-  const c=ui.bdftState&&ui.bdftState.current;
-  if(!c||isIntern()||isConsultant()||!canWrite()) return "";
-  const when=bdftStamp(c.updatedAt);
-  return `<button type="button" class="card" style="text-align:left;width:100%;margin:0 0 10px" onclick="go('bdft')">
-    <p class="tiny">BED DISTRIBUTION</p><b>${esc(dmyShow(c.planDate||""))}</b>
-    <p class="tiny">${esc(c.createdName||"Resident")} · ${esc(when)}</p></button>`;
-}
-function bdftOpenSetup(){ui.bdftMode="setup";go("bdft")}
-function bdftView(){
-  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-    <div class="row" style="align-items:center;justify-content:space-between"><h2 class="page-title" style="margin:0">Bed distribution</h2>${canAdmin()?`<button class="btn ghost sm" type="button" onclick="bdftOpenSetup()">BDFT settings</button>`:""}</div><div id="bdft-root"></div>`;
-}
-async function bdftRpc(name,args){
-  if(!sb||!sessionTok) throw new Error("offline");
-  const res=await sb.rpc(name,Object.assign({p_token:sessionTok},args||{}));
-  if(res.error) throw new Error(res.error.message||"request failed");
-  return res.data;
-}
-async function bdftLoad(quiet){
-  if(ui.bdftSkipNet||ui.bdftLoading) return;
-  ui.bdftLoading=true;
-  try{
-    ui.bdftState=await bdftRpc("ward_bdft_state");
-    if(ui.bdftOpenId){
-      const opened=await bdftRpc("ward_bdft_open",{p_id:ui.bdftOpenId});
-      ui.bdftState.opened=opened&&opened.distribution;
-      ui.bdftState.editable=!!(opened&&opened.editable);
+
+// ==================== BDFT v7.0 NATIVE INTEGRATION ====================
+const BDFT_HARDCODED_BIN_ID = "6a75e0f9f5f4af5e29f7c2e6";
+const BDFT_HARDCODED_MASTER_KEY = "$2a$10$tZTDtwsXbGBHU9xo2V0Ag.Z.vo648GlKxG2WZ08pdtfuCZ4yag8uW";
+const BDFT_HARDCODED_ARCHIVE_BIN_ID = "6a75e0fdda38895dfec64b85";
+const BDFT_HARDCODED_PIN = "1234";
+const BDFT_CONFIG_STORAGE_KEY = "bdft_configuration_v1";
+const BDFT_ARCHIVE_STORAGE_KEY = "bdft_archives_v7";
+const BDFT_WORKING_SNAPSHOT_KEY = "bdft_working_snapshot_v7";
+const BDFT_SCHEMA_VERSION = 1;
+const BDFT_APP_VERSION = "7.0";
+const BDFT_MAX_ARCHIVES = 7;
+
+const BDFT_DEFAULT_CONFIG = {
+  schemaVersion: BDFT_SCHEMA_VERSION,
+  lastModified: null,
+  batches: [
+    {
+      id: "batch-0", name: "3rd Year", enabled: true, order: 0,
+      doctors: [
+        { id: "doc-ph", name: "Dr. Priyanka Hazarika", abbreviation: "PH", enabled: true, order: 0 },
+        { id: "doc-rn", name: "Dr. Ritika Newar", abbreviation: "RN", enabled: true, order: 1 },
+        { id: "doc-kk", name: "Dr. Kankana Kaveri Pathak", abbreviation: "KK", enabled: true, order: 2 },
+        { id: "doc-ak", name: "Dr. Akashdeep Datta", abbreviation: "AK", enabled: true, order: 3 },
+        { id: "doc-nk", name: "Dr. Niranjan Kumar", abbreviation: "NK", enabled: true, order: 4 },
+        { id: "doc-py", name: "Dr. Piyush Yadav", abbreviation: "PY", enabled: true, order: 5 },
+        { id: "doc-dj", name: "Dr. Dhrubajyoti Talukdar", abbreviation: "DJ", enabled: true, order: 6 },
+        { id: "doc-jd", name: "Dr. Jinti Das", abbreviation: "JD", enabled: true, order: 7 },
+        { id: "doc-pj", name: "Dr. Pranjyoti Hazarika", abbreviation: "PJ", enabled: true, order: 8 }
+      ]
+    },
+    {
+      id: "batch-1", name: "2nd Year", enabled: true, order: 1,
+      doctors: [
+        { id: "doc-pb", name: "Dr. Plabita Bora", abbreviation: "PB", enabled: true, order: 0 },
+        { id: "doc-gs", name: "Dr. Gurdeep Singh", abbreviation: "GS", enabled: true, order: 1 },
+        { id: "doc-aa", name: "Dr. Akash Agarwal", abbreviation: "AA", enabled: true, order: 2 },
+        { id: "doc-dd", name: "Dr. Debashree Das", abbreviation: "DD", enabled: true, order: 3 },
+        { id: "doc-sk", name: "Dr. Siddeeq Khan", abbreviation: "SK", enabled: true, order: 4 },
+        { id: "doc-sd", name: "Dr. Shabnam Debbarma", abbreviation: "SD", enabled: true, order: 5 },
+        { id: "doc-am", name: "Dr. Amatya Mishra", abbreviation: "AM", enabled: true, order: 6 },
+        { id: "doc-rs", name: "Dr. Rini Sharma", abbreviation: "RS", enabled: true, order: 7 },
+        { id: "doc-mm", name: "Dr. Mohim Mili", abbreviation: "MM", enabled: true, order: 8 }
+      ]
+    },
+    {
+      id: "batch-2", name: "1st Year", enabled: true, order: 2,
+      doctors: [
+        { id: "doc-pk", name: "Dr. Priyanshu Kumar", abbreviation: "PK", enabled: true, order: 0 },
+        { id: "doc-pr", name: "Dr. Pritishma Kashyap", abbreviation: "PR", enabled: true, order: 1 },
+        { id: "doc-pl", name: "Dr. Pallabi Barman", abbreviation: "PL", enabled: true, order: 2 },
+        { id: "doc-ta", name: "Dr. Touhidur Alom", abbreviation: "TA", enabled: true, order: 3 },
+        { id: "doc-as", name: "Dr. Abhineet Sarmah", abbreviation: "AS", enabled: true, order: 4 },
+        { id: "doc-ag", name: "Dr. Ankur Gogoi", abbreviation: "AG", enabled: true, order: 5 },
+        { id: "doc-sy", name: "Dr. Sheetal Yadav", abbreviation: "SY", enabled: true, order: 6 }
+      ]
     }
-    ui.bdftLoaded=true; ui.bdftErr="";
-  }catch(e){ ui.bdftErr=String(e.message||e); if(!quiet) toast("Bed distribution could not be loaded","bad"); }
-  ui.bdftLoading=false;
-  if(route.page==="bdft"||route.page==="home"||ui.addUser) render();
-}
-function bdftStamp(iso){
-  if(!iso) return "";
-  const day=dmyShow(String(iso).slice(0,10));
-  const d=new Date(iso);
-  if(String(iso).length<=10||isNaN(d.getTime())) return day;
-  const t=new Date(d.getTime()+330*60000);
-  const z=n=>String(n).padStart(2,"0");
-  return z(t.getUTCDate())+"/"+z(t.getUTCMonth()+1)+"/"+t.getUTCFullYear()+", "+z(t.getUTCHours())+":"+z(t.getUTCMinutes());
-}
-function bdftCovered(r,people){
-  if(!r||!r.holderId||r.disabled) return false;
-  const p=(people||[]).find(x=>x.id===r.holderId);
-  return !(p&&p.active===false);
-}
-function bdftEl(tag,cls,text){const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n}
-function bdftMount(){
-  const root=document.getElementById("bdft-root"); if(!root) return;
-  root.replaceChildren();
-  if(isIntern()||isConsultant()||!canWrite()){root.appendChild(bdftEl("p","sm","Bed distribution is for residents."));return}
-  const st=ui.bdftState;
-  if(!st){root.appendChild(bdftEl("p","sm",ui.bdftErr||"Loading bed distribution…")); if(!ui.bdftSkipNet&&!ui.bdftLoading) bdftLoad(); return}
-  if(ui.bdftMode==="setup"){bdftMountSetup(root,st);return}
-  if(st.opened){bdftMountBoard(root,st);return}
-  if(!st.current){bdftMountGenerate(root,st);return}
-  bdftMountBoard(root,st);
-}
-function bdftMountGenerate(root,st){
-  const evening=!!(st.me&&st.me.evening);
-  root.appendChild(bdftEl("p","tiny",evening?"You are signed in for the evening shift.":"Read only. Generation is available while you are signed in for the evening shift."));
-  if(!evening) return;
-  const occ=(st.beds||[]).filter(b=>b.occupied);
-  ui.bdftInclude=ui.bdftInclude||Object.fromEntries(occ.map(b=>[b.id,true]));
-  ui.bdftAbsent=ui.bdftAbsent||{};
-  const iso=ui.bdftDate||bdftIstTomorrow();
-  const date=bdftEl("input"); date.type="text"; date.inputMode="numeric"; date.maxLength=10; date.placeholder="dd/mm/yyyy"; date.className="dmy-d"; date.value=dmyShow(iso); date.setAttribute("aria-label","Distribution date, dd/mm/yyyy");
-  const hidden=bdftEl("input"); hidden.type="hidden"; hidden.id="bdft-date"; hidden.value=iso;
-  date.addEventListener("input",()=>{const p=dmyParse(date.value); if(p.iso){hidden.value=p.iso; ui.bdftDate=p.iso;}});
-  const lab=bdftEl("label","field"); lab.appendChild(bdftEl("span",null,"Distribution date")); lab.appendChild(date); lab.appendChild(hidden);
-  root.appendChild(lab);
-  const census=occ.length? "live":"empty";
-  root.appendChild(bdftEl("p","tiny",census==="empty"?"No occupied beds. Generating publishes an empty board.":"Occupancy is a snapshot. Unticking a bed changes only this distribution."));
-  const pills=bdftEl("div","pills");
-  occ.forEach(b=>{
-    const btn=bdftEl("button","pill"+(ui.bdftInclude[b.id]!==false?" full":""),null);
-    btn.type="button"; btn.appendChild(bdftEl("b",null,b.label||b.id));
-    btn.addEventListener("click",()=>{ui.bdftInclude[b.id]=ui.bdftInclude[b.id]===false; render()});
-    pills.appendChild(btn);
-  });
-  root.appendChild(pills);
-  const batches={};
-  (st.people||[]).forEach(p=>{(batches[p.batch||"No batch"]=batches[p.batch||"No batch"]||[]).push(p)});
-  Object.keys(batches).forEach(name=>{
-    root.appendChild(bdftEl("p","tiny",name));
-    batches[name].forEach(p=>{
-      const row=bdftEl("label","bdft-abs"+(ui.bdftAbsent[p.id]?" on":""));
-      const box=document.createElement("input"); box.type="checkbox"; box.checked=!!ui.bdftAbsent[p.id];
-      box.setAttribute("aria-label",(p.short||p.name||p.id)+" unavailable");
-      box.addEventListener("change",()=>{ui.bdftAbsent[p.id]=box.checked; render()});
-      const name=bdftEl("span",null,(p.short||p.name||p.id)+(p.active?"":" · disabled")+(ui.bdftAbsent[p.id]?" · Unavailable":""));
-      row.appendChild(box); row.appendChild(name); root.appendChild(row);
+  ],
+  fixedBedMatrix: {},
+  settings: {}
+};
+
+let configuration = null;
+let residentData = {};
+let abbreviations = {};
+let allResidents = [];
+let YEAR_ORDER = [];
+let doctorToYear = {};
+
+const AppState = {
+  selectedUnavailable: [],
+  selectedOccupiedBeds: [],
+  undoStack: [],
+  archives: [],
+  bedsAssigned: 0,
+  appReady: false,
+  distribution: null,
+  selectedBed: null,
+  draggedBed: null,
+  isWorkingDayActive: false
+};
+
+function deepClone(obj){return JSON.parse(JSON.stringify(obj))}
+function generateId(prefix){return prefix+"-"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+
+function buildRuntimeFromConfig(cfg){
+  if(!cfg) cfg=configuration;
+  if(!cfg) return;
+  const rd={}; const abbr={}; const d2y={}; const order=[];
+  const sortedBatches=(cfg.batches||[]).slice().sort((a,b)=>(a.order??0)-(b.order??0));
+  sortedBatches.forEach(batch=>{
+    if(batch.enabled===false) return;
+    const docs=(batch.doctors||[]).filter(d=>d.enabled!==false).sort((a,b)=>(a.order??0)-(b.order??0)).map(d=>d.name);
+    rd[batch.name]=docs;
+    order.push(batch.name);
+    docs.forEach(name=>{
+      d2y[name]=batch.name;
+      const docObj=(batch.doctors||[]).find(d=>d.name===name);
+      if(docObj&&docObj.abbreviation) abbr[name]=docObj.abbreviation;
+      else abbr[name]=name.split(" ").pop().slice(0,2).toUpperCase();
     });
   });
-  const go=bdftEl("button","btn block","Generate"); go.type="button"; go.style.marginTop="12px";
-  go.addEventListener("click",()=>bdftGenerate(census));
-  root.appendChild(go);
+  residentData=rd; abbreviations=abbr; allResidents=Object.values(rd).flat(); YEAR_ORDER=order; doctorToYear=d2y;
+  if(!cfg.fixedBedMatrix) cfg.fixedBedMatrix={};
 }
-async function bdftGenerate(census){
-  const st=ui.bdftState||{};
-  if(!(st.me&&st.me.evening)){toast("Evening shift sign-in is required","bad");return}
-  const included=Object.keys(ui.bdftInclude||{}).filter(id=>ui.bdftInclude[id]!==false);
-  const absent=Object.keys(ui.bdftAbsent||{}).filter(id=>ui.bdftAbsent[id]);
-  const useCensus=included.length? "live":"empty";
-  if(st.current && !window.confirm("Replace the current distribution? The previous one becomes a read-only archive.")) return;
-  const id="bdft-"+Date.now().toString(36);
+
+function loadConfigurationFromStorage(){
   try{
-    const data=await bdftRpc("ward_bdft_generate",{p_id:id,p_date:document.getElementById("bdft-date").value,p_included:useCensus==="empty"?[]:included,p_absent:absent,p_census:useCensus,p_replace:!!st.current});
-    if(data&&data.code==="confirm_replace"){toast("Confirm replacement first","bad");return}
-    ui.bdftState=data.state; ui.bdftLoaded=true;
-    toast("Distribution saved. The notice is queued.");
-    bdftAskDispatch(data.notificationId);
-    render();
-  }catch(e){toast(String(e.message||e),"bad")}
+    const raw=localStorage.getItem(BDFT_CONFIG_STORAGE_KEY);
+    if(raw){const parsed=JSON.parse(raw);if(parsed&&parsed.schemaVersion) return parsed;}
+  }catch(e){console.warn("BDFT config storage load error",e)}
+  return null;
 }
-function bdftMountBoard(root,st){
-  const cur=st.opened||st.current, me=st.me||{};
-  const archived=cur.status==="archived"||(ui.bdftOpenId&&cur.id===ui.bdftOpenId&&cur.id!==(st.current&&st.current.id));
-  const mine=!archived&&me.id&&cur.createdBy===me.id&&st.editable!==false;
-  const head=bdftEl("p","tiny",dmyShow(cur.planDate)+" · "+(cur.createdName||"")+(mine?" · you can edit":" · view only"));
-  root.appendChild(head);
-  const live=(st.beds||[]).filter(b=>b.occupied).map(b=>b.id).sort().join(",");
-  const snap=(cur.rows||[]).map(r=>r.bedId).sort().join(",");
-  if(st.censusNotice||live!==snap){
-    const note=bdftEl("div","bdft-note","Occupancy changed after this board was published. It stays as published until you regenerate it.");
-    root.appendChild(note);
-  }
-  if(mine){
-    const bar=bdftEl("div","bdft-actions");
-    const undo=bdftEl("button","btn ghost sm","Undo"); undo.type="button"; undo.addEventListener("click",()=>bdftUndo());
-    const exp=bdftEl("button","btn ghost sm","Export PNG"); exp.type="button"; exp.addEventListener("click",()=>bdftPng(cur,st));
-    const reg=bdftEl("button","btn ghost sm","Regenerate"); reg.type="button"; reg.addEventListener("click",()=>bdftRegen());
-    bar.append(undo,exp,reg); root.appendChild(bar);
-  }else{
-    const exp=bdftEl("button","btn ghost sm","Export PNG"); exp.type="button"; exp.addEventListener("click",()=>bdftPng(cur,st));
-    root.appendChild(exp);
-  }
-  const uncovered=(cur.rows||[]).filter(r=>!bdftCovered(r,st.people));
-  if(uncovered.length){
-    const box=bdftEl("div","bdft-card bdft-orphan");
-    box.appendChild(bdftEl("p","tiny","Uncovered"));
-    uncovered.forEach(r=>{
-      const who=r.disabled||((st.people||[]).find(p=>p.id===r.holderId)||{}).active===false?"Disabled owner":"No owner";
-      const line=bdftEl("span","bdft-chip bdft-orphan",(r.label||r.bedId)+" · "+who);
-      box.appendChild(line);
-    });
-    root.appendChild(box);
-  }
-  const cols=bdftEl("div","bdft-cols");
-  const batches={};
-  (st.people||[]).forEach(p=>{(batches[p.batch||"No batch"]=batches[p.batch||"No batch"]||[]).push(p)});
-  Object.keys(batches).forEach(name=>{
-    const sec=bdftEl("section"); sec.appendChild(bdftEl("p","tiny",name));
-    batches[name].forEach(p=>{
-      const card=bdftEl("div","bdft-card");
-      const held=(cur.rows||[]).filter(r=>r.holderId===p.id&&bdftCovered(r,st.people));
-      card.appendChild(bdftEl("b",null,(p.short||p.name||p.id)+" · "+held.length));
-      if(!p.active) card.appendChild(bdftEl("p","tiny","Disabled account. Beds stay listed as uncovered."));
-      card.addEventListener("dragover",e=>{if(mine)e.preventDefault()});
-      card.addEventListener("drop",e=>{e.preventDefault(); const id=e.dataTransfer.getData("text/plain"); if(mine&&id) bdftMove(id,p.id,false)});
-      held.forEach(r=>card.appendChild(bdftChip(r,mine,st)));
-      if(mine){
-        const sel=document.createElement("select"); sel.setAttribute("aria-label","Move a bed to "+(p.short||p.name||"resident"));
-        const opt=document.createElement("option"); opt.value=""; opt.textContent="Move a bed here"; sel.appendChild(opt);
-        (cur.rows||[]).filter(r=>r.holderId!==p.id).forEach(r=>{const o=document.createElement("option"); o.value=r.bedId; o.textContent=r.label; sel.appendChild(o)});
-        sel.addEventListener("change",()=>{if(sel.value) bdftMove(sel.value,p.id,false)});
-        card.appendChild(sel);
-      }
-      sec.appendChild(card);
-    });
-    cols.appendChild(sec);
-  });
-  root.appendChild(cols);
-  const arch=st.archives||[];
-  if(arch.length){
-    root.appendChild(bdftEl("p","tiny","Recent archives"));
-    arch.slice(0,7).forEach(a=>root.appendChild(bdftEl("p","sm",dmyShow(a.planDate||"")+" · "+(a.createdName||""))));
-  }
-}
-function bdftChip(r,mine){
-  const chip=bdftEl("button","bdft-chip"+(r.disabled?" bdft-orphan":""),(r.label||r.bedId)+(r.manual?" *":""));
-  chip.type="button"; chip.draggable=!!mine;
-  chip.addEventListener("dragstart",e=>{if(mine)e.dataTransfer.setData("text/plain",r.bedId)});
-  return chip;
-}
-async function bdftMove(bed,to,allow){
-  const cur=ui.bdftState&&(ui.bdftState.opened||ui.bdftState.current); if(!cur||ui.bdftBusy) return;
-  if(cur.status==="archived"||cur.createdBy!==(ui.bdftState.me&&ui.bdftState.me.id)){toast("Only the creator can edit this distribution","bad");return}
-  ui.bdftBusy=true;
+
+function saveConfigurationToStorage(cfg){
   try{
-    const data=await bdftRpc("ward_bdft_move",{p_version:cur.version,p_bed:bed,p_to:to,p_allow_adjacent:!!allow});
-    if(data&&data.code==="adjacent"){
-      if(window.confirm("These beds are next to each other. Move it anyway?")) return bdftMove(bed,to,true);
-      return;
+    cfg.lastModified=new Date().toISOString();
+    localStorage.setItem(BDFT_CONFIG_STORAGE_KEY, JSON.stringify(cfg));
+    return true;
+  }catch(e){console.warn("BDFT config storage save error",e);return false}
+}
+
+function ensureConfiguration(){
+  if(configuration) return configuration;
+  let cfg=loadConfigurationFromStorage();
+  if(!cfg){
+    cfg=deepClone(BDFT_DEFAULT_CONFIG);
+    saveConfigurationToStorage(cfg);
+  }
+  if(!cfg.schemaVersion) cfg.schemaVersion=BDFT_SCHEMA_VERSION;
+  if(!Array.isArray(cfg.batches)) cfg.batches=deepClone(BDFT_DEFAULT_CONFIG.batches);
+  if(!cfg.fixedBedMatrix) cfg.fixedBedMatrix={};
+  configuration=cfg;
+  syncWardResidentsWithBdft();
+  buildRuntimeFromConfig(configuration);
+  return configuration;
+}
+
+function syncWardResidentsWithBdft(){
+  if(!configuration) return;
+  const wardRes=(S.residents||[]).filter(r=>r.active!==false&&normRole(r.role)!=="intern"&&normRole(r.role)!=="consultant");
+  let changed=false;
+  const existingNames=new Set();
+  (configuration.batches||[]).forEach(b=>{
+    (b.doctors||[]).forEach(d=>existingNames.add(d.name.toLowerCase()));
+  });
+
+  wardRes.forEach(r=>{
+    const name=r.displayName||r.username;
+    if(!name||existingNames.has(name.toLowerCase())) return;
+    let targetBatch=configuration.batches.find(b=>b.name.includes("1st"))||configuration.batches[configuration.batches.length-1];
+    if(targetBatch){
+      const abbr=name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,3);
+      targetBatch.doctors.push({
+        id:generateId("doc"),
+        name:name,
+        abbreviation:abbr||"DR",
+        enabled:true,
+        order:(targetBatch.doctors||[]).length
+      });
+      existingNames.add(name.toLowerCase());
+      changed=true;
     }
-    ui.bdftState=data.state; render();
+  });
+
+  if(changed){
+    saveConfigurationToStorage(configuration);
+    buildRuntimeFromConfig(configuration);
+  }
+}
+
+async function loadConfigurationFromCloud(force){
+  try{
+    const res=await fetch(`https://api.jsonbin.io/v3/b/${BDFT_HARDCODED_BIN_ID}/latest`,{headers:{'X-Master-Key':BDFT_HARDCODED_MASTER_KEY}});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    const payload=data.record||data;
+    if(payload&&payload.batches&&Array.isArray(payload.batches)){
+      configuration=payload;
+      saveConfigurationToStorage(configuration);
+      syncWardResidentsWithBdft();
+      buildRuntimeFromConfig(configuration);
+      if(force) toast("Configuration loaded from cloud","ok");
+      return {ok:true};
+    }
   }catch(e){
-    const msg=String(e.message||e);
-    if(/changed|creator|Distribution/i.test(msg)&&!ui.bdftSkipNet) bdftLoad(true);
-    toast(msg,"bad");
-  }finally{ui.bdftBusy=false}
+    if(force) toast("Cloud config fetch failed","bad");
+  }
+  return {ok:false};
 }
-async function bdftUndo(){
-  const cur=ui.bdftState&&ui.bdftState.current; if(!cur||ui.bdftBusy) return;
-  if(cur.createdBy!==(ui.bdftState.me&&ui.bdftState.me.id)){toast("Only the creator can edit this distribution","bad");return}
-  ui.bdftBusy=true;
-  try{const data=await bdftRpc("ward_bdft_undo",{p_version:cur.version}); ui.bdftState=data.state; render()}
-  catch(e){toast(String(e.message||e),"bad")}
-  finally{ui.bdftBusy=false}
-}
-async function bdftAskDispatch(id){
-  if(!id||ui.bdftSkipNet||!sb||!sessionTok||!navigator.onLine||!S.supabaseUrl) return;
+
+async function pushConfigurationToCloud(){
+  if(!configuration) return;
   try{
-    await fetch(String(S.supabaseUrl).replace(/\/$/,"")+"/functions/v1/dispatch-bdft",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","apikey":S.supabaseAnonKey,"Authorization":"Bearer "+S.supabaseAnonKey},
-      body:JSON.stringify({notification_id:id,session_token:sessionTok})
+    configuration.lastModified=new Date().toISOString();
+    await fetch(`https://api.jsonbin.io/v3/b/${BDFT_HARDCODED_BIN_ID}`,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json","X-Master-Key":BDFT_HARDCODED_MASTER_KEY},
+      body:JSON.stringify(configuration)
     });
   }catch(e){}
 }
-async function bdftRegen(){
-  const cur=ui.bdftState&&ui.bdftState.current; if(!cur||ui.bdftBusy) return;
-  if(cur.createdBy!==(ui.bdftState.me&&ui.bdftState.me.id)){toast("Only the creator can edit this distribution","bad");return}
-  if(!window.confirm("Rebuild from the default map? Manual moves and undo will be discarded.")) return;
-  ui.bdftBusy=true;
-  try{const data=await bdftRpc("ward_bdft_regenerate",{p_version:cur.version,p_confirm:true}); ui.bdftState=data.state; render()}
-  catch(e){toast(String(e.message||e),"bad")}
-  finally{ui.bdftBusy=false}
-}
-function bdftPng(cur,st){
+
+function loadWorkingSnapshotFromLocal(){
   try{
-    const canvas=document.createElement("canvas"); const w=900, rows=(cur.rows||[]).length; canvas.width=w; canvas.height=Math.max(200,80+rows*28);
-    const g=canvas.getContext("2d"); if(!g) throw new Error("canvas");
-    g.fillStyle="#f8fafc"; g.fillRect(0,0,canvas.width,canvas.height); g.fillStyle="#0f172a"; g.font="16px sans-serif";
-    g.fillText("Bed distribution "+(cur.planDate||""),24,36);
-    const names={}; (st.people||[]).forEach(p=>{names[p.id]=p.short||p.name||p.id});
-    (cur.rows||[]).forEach((r,i)=>{g.fillText((r.label||r.bedId)+"  "+(r.holderId?names[r.holderId]||r.holderId:"Unassigned"),24,72+i*28)});
-    const a=document.createElement("a"); a.href=canvas.toDataURL("image/png"); a.download="bed-distribution.png"; a.click();
-  }catch(e){toast("PNG export is not available on this device","bad")}
+    const raw=localStorage.getItem(BDFT_WORKING_SNAPSHOT_KEY);
+    return raw?JSON.parse(raw):null;
+  }catch(e){return null}
 }
-function bdftMountSetup(root,st){
-  if(!(st.me&&st.me.role==="admin")){root.appendChild(bdftEl("p","sm","BDFT settings are available to administrators."));return}
-  root.appendChild(bdftEl("p","tiny","Set each resident’s batch, short name and owned beds. A bed can have only one default owner."));
-  const people=st.people||[], beds=st.beds||[];
-  if(!people.length){root.appendChild(bdftEl("p","sm","Add residents before configuring the BDFT roster."));return}
-  if(!ui.bdftSetup||ui.bdftSetup.sourceKey!==people.map(p=>p.id).join("|")){
-    ui.bdftSetup={sourceKey:people.map(p=>p.id).join("|"),people:{},owners:Object.fromEntries((st.owners||[]).map(o=>[o.bedId,o.residentId]))};
-  }
-  const setup=ui.bdftSetup;
-  people.forEach(p=>{
-    const row=bdftEl("div","card bdft-resident-setup");
-    row.appendChild(bdftEl("b",null,(p.name||p.id)+(p.active?"":" · disabled")));
-    const fields=bdftEl("div","resident-setup-grid");
-    const batch=document.createElement("select");
-    [["1st year","1st year"],["2nd year","2nd year"],["3rd year","3rd year"]].forEach(([v,l])=>{const o=document.createElement("option");o.value=v;o.textContent=l;batch.appendChild(o)});
-    batch.value=(setup.people[p.id]&&setup.people[p.id].batch)||p.batch||"1st year";
-    batch.setAttribute("aria-label","Batch for "+(p.name||p.id));
-    const short=document.createElement("input");short.placeholder="Short name";short.maxLength=16;short.value=(setup.people[p.id]&&setup.people[p.id].short)||p.short||"";short.setAttribute("aria-label","Short name for "+(p.name||p.id));
-    const keep=()=>{setup.people[p.id]={batch:batch.value,short:short.value,order:p.ord||1000000}};
-    batch.addEventListener("change",keep);short.addEventListener("input",keep);keep();
-    fields.append(batch,short);row.appendChild(fields);
-    const label=bdftEl("p","tiny","Beds owned");label.style.margin="10px 0 6px";row.appendChild(label);
-    const grid=bdftEl("div","bdft-setup-bed-grid");
-    beds.forEach(b=>{
-      const owned=setup.owners[b.id]===p.id;
-      const btn=bdftEl("button","pill "+(owned?"full":"empty"),null);btn.type="button";btn.setAttribute("aria-pressed",String(owned));
-      btn.appendChild(bdftEl("b",null,b.label||b.id));
-      btn.appendChild(bdftEl("small",null,owned?"Owned":(setup.owners[b.id]?"Assigned":"Unassigned")));
-      btn.addEventListener("click",()=>{setup.owners[b.id]=owned?"":p.id;bdftMountSetup(root,st)});
-      grid.appendChild(btn);
+
+function saveWorkingSnapshotToLocal(snap){
+  try{
+    localStorage.setItem(BDFT_WORKING_SNAPSHOT_KEY, JSON.stringify(snap));
+  }catch(e){}
+}
+
+function loadArchivesFromLocal(){
+  try{
+    const raw=localStorage.getItem(BDFT_ARCHIVE_STORAGE_KEY);
+    AppState.archives=raw?JSON.parse(raw):[];
+    if(!Array.isArray(AppState.archives)) AppState.archives=[];
+  }catch(e){AppState.archives=[]}
+}
+
+function saveArchivesToLocal(){
+  try{
+    localStorage.setItem(BDFT_ARCHIVE_STORAGE_KEY, JSON.stringify(AppState.archives.slice(0, BDFT_MAX_ARCHIVES)));
+  }catch(e){}
+}
+
+async function loadArchivesFromCloud(){
+  loadArchivesFromLocal();
+  try{
+    const res=await fetch(`https://api.jsonbin.io/v3/b/${BDFT_HARDCODED_ARCHIVE_BIN_ID}/latest`,{headers:{'X-Master-Key':BDFT_HARDCODED_MASTER_KEY}});
+    if(res.ok){
+      const data=await res.json();
+      const list=(data.record&&data.record.archives)||data.record||data;
+      if(Array.isArray(list)&&list.length){
+        AppState.archives=list.slice(0, BDFT_MAX_ARCHIVES);
+        saveArchivesToLocal();
+      }
+    }
+  }catch(e){}
+}
+
+async function pushArchiveToCloud(archives){
+  try{
+    await fetch(`https://api.jsonbin.io/v3/b/${BDFT_HARDCODED_ARCHIVE_BIN_ID}`,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json","X-Master-Key":BDFT_HARDCODED_MASTER_KEY},
+      body:JSON.stringify({archives:archives.slice(0,BDFT_MAX_ARCHIVES),updatedAt:new Date().toISOString(),appVersion:BDFT_APP_VERSION})
     });
-    row.appendChild(grid);root.appendChild(row);
-  });
-  const save=bdftEl("button","btn block","Save BDFT settings");save.type="button";
-  save.addEventListener("click",async()=>{
-    const payloadPeople=people.map(p=>({id:p.id,batch:(setup.people[p.id]||{}).batch||p.batch||"1st year",short:(setup.people[p.id]||{}).short||p.short||"",order:p.ord||1000000}));
-    const payloadOwners=Object.entries(setup.owners).filter(([,owner])=>!!owner).map(([bedId,residentId])=>({bedId,residentId}));
-    save.disabled=true;save.textContent="Saving…";
-    try{ui.bdftState=await bdftRpc("ward_bdft_save_setup",{p_people:payloadPeople,p_owners:payloadOwners});ui.bdftMode="";ui.bdftSetup=null;toast("BDFT settings saved","ok");render()}
-    catch(e){save.disabled=false;save.textContent="Save BDFT settings";toast(String(e.message||e),"bad")}
-  });
-  root.appendChild(save);
+  }catch(e){}
 }
+
+function bdftInit(){
+  if(ui.bdftInitDone) return;
+  ui.bdftInitDone=true;
+  ensureConfiguration();
+  loadArchivesFromLocal();
+  const snap=loadWorkingSnapshotFromLocal();
+  if(snap&&snap.distribution){
+    AppState.distribution=snap.distribution;
+    AppState.selectedUnavailable=snap.selectedUnavailable||[];
+    AppState.selectedOccupiedBeds=snap.selectedOccupiedBeds||[];
+    AppState.bedsAssigned=snap.bedsAssigned||0;
+    AppState.isWorkingDayActive=true;
+  }
+  Promise.resolve(loadConfigurationFromCloud(false)).catch(()=>{});
+  Promise.resolve(loadArchivesFromCloud()).catch(()=>{});
+}
+
+function isEveningDuty(){
+  const d=dutyRecord();
+  if(d && (d.shift==="evening" || (currentShift()==="evening" && !d.endedAt))) return true;
+  return false;
+}
+
+function canAccessBdft(){
+  return canAdmin() || (canWrite() && isEveningDuty());
+}
+
+function bdftAdminPick(){
+  ui.bdftAdminSheet=true;
+  render();
+}
+
+function bdftOpenGenerate(){
+  bdftInit();
+  ui.bdftMode="generate";
+  const live=occupied().map(b=>b.no);
+  AppState.selectedOccupiedBeds=live.slice();
+  go("bdft");
+}
+
+function bdftOpenSetup(){
+  bdftInit();
+  ui.bdftMode="setup";
+  go("bdft");
+}
+
+function bdftOpenReadOnly(){
+  bdftInit();
+  ui.bdftMode="readonly";
+  go("bdft");
+}
+
+function bdftGetActiveDistribution(){
+  if(AppState.distribution&&AppState.distribution.tiers) return AppState.distribution;
+  const snap=loadWorkingSnapshotFromLocal();
+  if(snap&&snap.distribution&&snap.distribution.tiers) return snap.distribution;
+  return null;
+}
+
+function bdftGetMyAssignedBeds(){
+  const dist=bdftGetActiveDistribution();
+  if(!dist||!dist.tiers) return null;
+  const u=user();
+  if(!u) return null;
+  const myName=(u.displayName||u.username||"").trim().toLowerCase();
+  const myUser=(u.username||"").trim().toLowerCase();
+
+  let targetDocName=null;
+  let targetShort=null;
+
+  for(const year of (YEAR_ORDER.length?YEAR_ORDER:Object.keys(dist.tiers))){
+    const docs=dist.tiers[year]||{};
+    for(const docName of Object.keys(docs)){
+      const short=(abbreviations[docName]||"").toLowerCase();
+      const dn=docName.toLowerCase();
+      if(dn.includes(myName)||myName.includes(dn)||dn.includes(myUser)||short===myUser||short===myName){
+        targetDocName=docName;
+        targetShort=abbreviations[docName]||docName;
+        break;
+      }
+    }
+    if(targetDocName) break;
+  }
+
+  if(!targetDocName) return {isGeneric:true,totalBeds:AppState.bedsAssigned||0,dateStr:dist.dateStr||"Tomorrow"};
+
+  for(const year of Object.keys(dist.tiers)){
+    if(dist.tiers[year]&&dist.tiers[year][targetDocName]){
+      return {
+        isGeneric:false,
+        doctorName:targetDocName,
+        short:targetShort,
+        beds:dist.tiers[year][targetDocName]||[],
+        dateStr:dist.dateStr||"Tomorrow"
+      };
+    }
+  }
+  return {isGeneric:true,totalBeds:AppState.bedsAssigned||0,dateStr:dist.dateStr||"Tomorrow"};
+}
+
+function bdftHomeCard(){
+  bdftInit();
+  if(isIntern()||isConsultant()) return "";
+  const info=bdftGetMyAssignedBeds();
+  if(!info) return "";
+
+  const dateLabel=esc(info.dateStr||"Tomorrow");
+  if(info.isGeneric){
+    return `<div class="card" style="margin:0 0 10px;padding:14px 16px;border-left:4px solid var(--teal);">
+      <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.02em;">TOMORROW'S BED DISTRIBUTION · ${dateLabel}</span>
+        <span class="tiny text-muted">${info.totalBeds} beds allocated</span>
+      </div>
+      <button type="button" class="btn ghost sm block" style="margin-top:6px;width:100%;font-size:13px;" onclick="bdftOpenReadOnly()">View Full BDFT →</button>
+    </div>`;
+  }
+
+  const beds=info.beds||[];
+  return `<div class="card" style="margin:0 0 10px;padding:14px 16px;border-left:4px solid var(--teal);">
+    <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.02em;">TOMORROW'S BEDS · ${dateLabel}</span>
+      <span class="tiny text-muted">${beds.length} assigned</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;">
+      ${beds.length ? beds.map(b=>`<span class="pill full" style="font-size:13px;padding:4px 10px;border-radius:8px;"><b>${esc(b.code)}</b></span>`).join("") : `<span class="happy-day-tag">🌴 Happy Day</span><span class="tiny text-muted" style="margin-left:6px;">No beds assigned tomorrow</span>`}
+    </div>
+    <button type="button" class="btn ghost sm block" style="margin-top:6px;width:100%;font-size:13px;" onclick="bdftOpenReadOnly()">View Full BDFT →</button>
+  </div>`;
+}
+
+function bdftView(){
+  bdftInit();
+  const mode=ui.bdftMode||"generate";
+  const title=mode==="readonly"?"Bed Distribution (Read Only)":mode==="setup"?"BDFT Settings":"BDFT Terminal";
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
+    <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <h2 class="page-title" style="margin:0;">${title}</h2>
+      ${canAdmin()&&mode==="generate"?`<button class="btn ghost sm" type="button" onclick="bdftOpenSetup()">⚙️ Settings</button>`:""}
+      ${mode==="readonly"?`<button class="btn ghost sm" type="button" onclick="bdftExportPng(true)">Export PNG</button>`:""}
+    </div>
+    <div id="bdft-root"></div>`;
+}
+
+function bdftMount(){
+  const root=document.getElementById("bdft-root");
+  if(!root) return;
+  root.innerHTML="";
+  const mode=ui.bdftMode||"generate";
+  if(mode==="readonly") bdftMountReadOnly(root);
+  else if(mode==="setup") bdftMountSetup(root);
+  else bdftMountGenerate(root);
+}
+
+// ==================== BDFT READ-ONLY VIEW ====================
+function bdftMountReadOnly(root){
+  const dist=bdftGetActiveDistribution();
+  if(!dist||!dist.tiers){
+    root.innerHTML=`<div class="card" style="text-align:center;padding:24px;"><p class="muted">No bed distribution has been finalised for tomorrow yet.</p><button class="btn" onclick="back()">Back to Home</button></div>`;
+    return;
+  }
+
+  let totalAssigned=0;
+  const tiers=dist.tiers;
+  const dateStr=dist.dateStr||"Tomorrow";
+
+  let html=`<div class="bdft-ro-banner">👁️ Viewing finalised distribution for ${esc(dateStr)} (Read Only)</div>
+  <div class="card read-only-board" id="distribution-card" style="padding:24px 18px;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.5px;margin:0 0 4px;">BDFT — ${esc(dateStr)}</h2>
+      <div class="tiny text-muted">Department of Psychiatry, AMCH</div>
+    </div>
+    <div class="distribution-grid">`;
+
+  const years=YEAR_ORDER.length?YEAR_ORDER:Object.keys(tiers);
+  years.forEach(y=>{
+    const docs=tiers[y]||{};
+    const doctorNames=Object.keys(docs);
+    if(!doctorNames.length) return;
+    html+=`<div class="year-column"><div class="year-header"><h3>${esc(y)} <span class="count-badge">${doctorNames.length}</span></h3></div>`;
+    doctorNames.forEach(doc=>{
+      const beds=docs[doc]||[];
+      const short=abbreviations[doc]||doc.split(" ").map(w=>w[0]).join("");
+      totalAssigned+=beds.length;
+      html+=`<div class="doctor-row">
+        <div class="doctor-avatar avatar-${getAvatarClass(y)}">${esc(short)}</div>
+        <div class="beds-container">`;
+      if(!beds.length){
+        html+=`<span class="happy-day-tag">🌴 Happy Day</span>`;
+      }else{
+        beds.forEach(b=>{
+          html+=`<span class="bed-tag original" data-bed="${esc(b.code)}">${esc(b.code)}</span>`;
+        });
+      }
+      html+=`</div></div>`;
+    });
+    html+=`</div>`;
+  });
+
+  const orphans=dist.orphans||[];
+  html+=`</div>`;
+  if(orphans.length){
+    html+=`<div class="orphan-pool"><h4 style="margin:0 0 10px;color:var(--amber,#f59e0b);">Orphan Beds</h4><div class="beds-container">`;
+    orphans.forEach(o=>{
+      html+=`<span class="bed-tag original" data-bed="${esc(o.code)}">${esc(o.code)} <span class="orphan-owner-badge">${esc(o.originalOwner||"")}</span></span>`;
+    });
+    html+=`</div></div>`;
+  }
+  html+=`</div>`;
+  root.innerHTML=html;
+}
+
+// ==================== BDFT GENERATION VIEW ====================
+function bdftMountGenerate(root){
+  ensureConfiguration();
+  const tomorrow=new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+  const dateStr=tomorrow.toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"});
+  const unavailCount=AppState.selectedUnavailable.length;
+  const onDutyCount=allResidents.length-unavailCount;
+
+  let html=`<div class="bdft-stats-grid">
+    <div class="bdft-stat-card"><span class="bdft-stat-lbl">Date</span><span class="bdft-stat-val" style="font-size:15px;">${esc(tomorrow.toLocaleDateString("en-GB",{day:"numeric",month:"short"}))}</span></div>
+    <div class="bdft-stat-card"><span class="bdft-stat-lbl">On Duty</span><span class="bdft-stat-val">${onDutyCount}</span></div>
+    <div class="bdft-stat-card"><span class="bdft-stat-lbl">Unavailable</span><span class="bdft-stat-val">${unavailCount}</span></div>
+    <div class="bdft-stat-card"><span class="bdft-stat-lbl">Assigned</span><span class="bdft-stat-val">${AppState.bedsAssigned||"-"}</span></div>
+  </div>
+  <div class="bdft-qa-grid">
+    <button type="button" class="bdft-qa-btn" onclick="bdftOpenOccupiedModal()">
+      <svg class="icon" viewBox="0 0 24 24" style="width:22px;height:22px;stroke:var(--teal);fill:none;stroke-width:2;"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>
+      <span>Adjust Occupied (${AppState.selectedOccupiedBeds.length})</span>
+    </button>
+    <button type="button" class="bdft-qa-btn" onclick="bdftOpenUnavailableModal()">
+      <svg class="icon" viewBox="0 0 24 24" style="width:22px;height:22px;stroke:var(--teal);fill:none;stroke-width:2;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+      <span>Unavailable (${unavailCount})</span>
+    </button>
+    <button type="button" class="bdft-qa-btn bdft-qa-primary" onclick="bdftCalculateDistribution()">
+      <span>⚡ Generate for Tomorrow</span>
+    </button>
+  </div>
+  <div id="bdft-distribution-output"></div>
+  <div id="bdft-bottom-bar" class="bottom-action-bar ${AppState.distribution?'':'hidden'}">
+    <button class="btn btn-primary" type="button" onclick="bdftFinaliseAndSave()">
+      ✓ Finalise & Save
+    </button>
+  </div>`;
+
+  root.innerHTML=html;
+  if(AppState.distribution) bdftRenderInteractiveDistribution();
+}
+
+function getAvatarClass(yearName){
+  if(!yearName) return "1";
+  if(yearName.includes("3rd")||yearName.startsWith("3")) return "3";
+  if(yearName.includes("2nd")||yearName.startsWith("2")) return "2";
+  return "1";
+}
+
+function bdftCalculateDistribution(){
+  ensureConfiguration();
+  AppState.undoStack=[];
+  AppState.selectedBed=null;
+  AppState.draggedBed=null;
+
+  const filterOcc=AppState.selectedOccupiedBeds.length>0;
+  const occNorm=new Set(AppState.selectedOccupiedBeds.map(bdftCanonBed));
+  const unavail=new Set(AppState.selectedUnavailable.map(r=>r.toLowerCase()));
+
+  const ownership={};
+  const matrix=configuration.fixedBedMatrix||{};
+
+  YEAR_ORDER.forEach(yr=>{
+    (residentData[yr]||[]).forEach(doc=>{
+      const short=abbreviations[doc]||doc;
+      const bedsStr=matrix[doc]||"";
+      bedsStr.split(",").map(b=>b.trim()).filter(Boolean).forEach(raw=>{
+        const key=bdftCanonBed(raw);
+        if(!key) return;
+        if(!ownership[key]){
+          ownership[key]={fullName:doc,short:short,year:yr,rawCode:bdftToWardBedNo(raw)};
+        }
+      });
+    });
+  });
+
+  const tiers={};
+  const globalOrphans=[];
+
+  YEAR_ORDER.forEach(yr=>{
+    tiers[yr]={};
+    const avail=[];
+    const orphans=[];
+
+    (residentData[yr]||[]).forEach(doc=>{
+      const isU=unavail.has(doc.toLowerCase());
+      const short=abbreviations[doc]||doc;
+      const beds=[];
+      Object.keys(ownership).forEach(k=>{
+        if(ownership[k].fullName!==doc) return;
+        if(filterOcc && !occNorm.has(k)) return;
+        beds.push({code:ownership[k].rawCode,originalOwner:short});
+      });
+
+      if(isU){
+        beds.forEach(b=>orphans.push({code:b.code,originalOwner:short}));
+      }else{
+        avail.push(doc);
+        tiers[yr][doc]=beds;
+      }
+    });
+
+    if(avail.length===0){
+      orphans.forEach(b=>globalOrphans.push(b));
+    }else{
+      orphans.forEach(ob=>{
+        const loads=avail.map(d=>tiers[yr][d].length);
+        const min=Math.min(...loads);
+        let tied=avail.filter(d=>tiers[yr][d].length===min);
+        let chosen=tied.find(d=>!createsConsecutiveConflict(tiers[yr][d],ob.code))||tied[0];
+        tiers[yr][chosen].push({code:ob.code,originalOwner:ob.originalOwner});
+      });
+    }
+  });
+
+  if(filterOcc){
+    AppState.selectedOccupiedBeds.forEach(b=>{
+      const key=bdftCanonBed(b);
+      const present=YEAR_ORDER.some(y=>
+        Object.values(tiers[y]).some(arr=>arr.some(i=>bdftCanonBed(i.code)===key))
+      )||globalOrphans.some(i=>bdftCanonBed(i.code)===key);
+      if(!present){
+        const rawCode=bdftToWardBedNo(b);
+        globalOrphans.push({code:rawCode,originalOwner:ownership[key]?ownership[key].short:"Unassigned"});
+      }
+    });
+  }
+
+  const tomorrow=new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+  const dateStr=tomorrow.toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"});
+  AppState.distribution={dateStr,tiers,orphans:globalOrphans};
+  bdftRenderInteractiveDistribution();
+  toast("Distribution generated","ok");
+}
+
+function bdftRenderInteractiveDistribution(){
+  const out=document.getElementById("bdft-distribution-output");
+  if(!out||!AppState.distribution) return;
+  const dist=AppState.distribution;
+  let totalAssigned=0;
+
+  let html=`<div class="card" id="distribution-card" style="padding:24px 18px;margin-top:16px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.5px;margin:0 0 4px;">BDFT — ${esc(dist.dateStr)}</h2>
+      <div class="tiny text-muted">Department of Psychiatry, AMCH</div>
+    </div>
+    <div class="distribution-grid">`;
+
+  YEAR_ORDER.forEach(y=>{
+    const docs=dist.tiers[y]||{};
+    const doctorNames=Object.keys(docs);
+    if(!doctorNames.length) return;
+    html+=`<div class="year-column" data-year="${esc(y)}">
+      <div class="year-header">
+        <h3>${esc(y)} <span class="count-badge">${doctorNames.length}</span></h3>
+        <button type="button" class="remove-batch-btn" onclick="bdftRemoveBatch('${esc(y)}')">× Batch</button>
+      </div>`;
+
+    doctorNames.forEach(doc=>{
+      const beds=docs[doc]||[];
+      const short=abbreviations[doc]||doc.split(" ").map(w=>w[0]).join("");
+      totalAssigned+=beds.length;
+      html+=`<div class="doctor-row" data-doctor="${esc(doc)}" data-year="${esc(y)}">
+        <div class="doctor-avatar avatar-${getAvatarClass(y)}">${esc(short)}</div>
+        <div class="beds-container">`;
+      if(!beds.length){
+        html+=`<span class="happy-day-tag">🌴 Happy Day</span>`;
+      }else{
+        beds.forEach(b=>{
+          const sel=AppState.selectedBed&&bdftBedsMatch(AppState.selectedBed.code,b.code)&&AppState.selectedBed.from&&AppState.selectedBed.from.name===doc;
+          html+=`<span class="bed-tag original${sel?' tapped-active':''}" draggable="true" data-bed="${esc(b.code)}" onclick="bdftClickBed('${esc(b.code)}','doctor','${esc(doc)}','${esc(y)}')">${esc(b.code)}</span>`;
+        });
+      }
+      html+=`</div>
+        <button type="button" class="remove-doctor-btn" onclick="bdftRemoveDoctor('${esc(doc)}','${esc(y)}')">×</button>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+
+  const orphans=dist.orphans||[];
+  html+=`</div>`;
+  html+=`<div class="orphan-pool" style="display:${orphans.length?'block':'none'};" onclick="bdftClickOrphanPool(event)">
+    <h4 style="margin:0 0 10px;color:var(--amber,#f59e0b);">Orphan Beds (Tap bed, then tap destination)</h4>
+    <div class="beds-container" id="orphan-beds">`;
+  orphans.forEach(o=>{
+    const sel=AppState.selectedBed&&bdftBedsMatch(AppState.selectedBed.code,o.code)&&AppState.selectedBed.from&&AppState.selectedBed.from.type==="orphan";
+    html+=`<span class="bed-tag original${sel?' tapped-active':''}" draggable="true" data-bed="${esc(o.code)}" onclick="bdftClickBed('${esc(o.code)}','orphan')">${esc(o.code)} <span class="orphan-owner-badge">${esc(o.originalOwner||"")}</span></span>`;
+  });
+  html+=`</div></div></div>`;
+
+  out.innerHTML=html;
+  AppState.bedsAssigned=totalAssigned;
+  const bar=document.getElementById("bdft-bottom-bar");
+  if(bar) bar.classList.remove("hidden");
+
+  bdftSetupDragListeners();
+}
+
+function bdftClickBed(code,type,name,year){
+  if(AppState.selectedBed && bdftBedsMatch(AppState.selectedBed.code, code)){
+    AppState.selectedBed=null;
+    bdftRenderInteractiveDistribution();
+    return;
+  }
+  AppState.selectedBed={code,from:{type,name,year}};
+  toast("Bed selected: "+code+" (Tap destination doctor to move)");
+  bdftRenderInteractiveDistribution();
+}
+
+function bdftClickOrphanPool(e){
+  if(!AppState.selectedBed) return;
+  if(AppState.selectedBed.from.type==="orphan") return;
+  bdftTransferBed(AppState.selectedBed.code,{type:"orphan"});
+}
+
+function bdftTransferBed(code,target){
+  const dist=AppState.distribution;
+  if(!dist) return;
+  let foundBed=null;
+  for(const y of YEAR_ORDER){
+    const docs=dist.tiers[y]||{};
+    for(const name of Object.keys(docs)){
+      const idx=docs[name].findIndex(b=>bdftBedsMatch(b.code,code));
+      if(idx!==-1){
+        foundBed=docs[name][idx];
+        docs[name].splice(idx,1);
+        break;
+      }
+    }
+    if(foundBed) break;
+  }
+  if(!foundBed){
+    const oi=(dist.orphans||[]).findIndex(b=>bdftBedsMatch(b.code,code));
+    if(oi!==-1){
+      foundBed=dist.orphans[oi];
+      dist.orphans.splice(oi,1);
+    }
+  }
+
+  if(!foundBed){toast("Bed not found","bad");return;}
+
+  if(target.type==="orphan"){
+    dist.orphans.push(foundBed);
+    toast("Moved "+code+" to Orphan Pool");
+  }else if(target.type==="doctor"){
+    dist.tiers[target.year][target.name].push(foundBed);
+    toast("Assigned "+code+" to "+(abbreviations[target.name]||target.name));
+  }
+  AppState.selectedBed=null;
+  bdftRenderInteractiveDistribution();
+}
+
+function bdftSetupDragListeners(){
+  const card=document.getElementById("distribution-card");
+  if(!card) return;
+  card.querySelectorAll(".doctor-row").forEach(row=>{
+    row.onclick=(e)=>{
+      if(e.target.closest(".bed-tag")||e.target.closest("button")) return;
+      if(AppState.selectedBed){
+        bdftTransferBed(AppState.selectedBed.code,{
+          type:"doctor",
+          name:row.getAttribute("data-doctor"),
+          year:row.getAttribute("data-year")
+        });
+      }
+    };
+    row.ondragover=(e)=>{e.preventDefault()};
+    row.ondrop=(e)=>{
+      e.preventDefault();
+      const code=e.dataTransfer.getData("text/plain");
+      if(code){
+        bdftTransferBed(code,{
+          type:"doctor",
+          name:row.getAttribute("data-doctor"),
+          year:row.getAttribute("data-year")
+        });
+      }
+    };
+  });
+
+  card.querySelectorAll(".bed-tag").forEach(tag=>{
+    tag.ondragstart=(e)=>{
+      e.dataTransfer.setData("text/plain",tag.getAttribute("data-bed"));
+    };
+  });
+}
+
+function bdftRemoveDoctor(name,year){
+  if(!window.confirm("Remove "+name+"? Their beds will move to Orphan Pool.")) return;
+  const dist=AppState.distribution;
+  if(!dist||!dist.tiers[year]||!dist.tiers[year][name]) return;
+  const beds=dist.tiers[year][name];
+  delete dist.tiers[year][name];
+  beds.forEach(b=>dist.orphans.push(b));
+  AppState.selectedBed=null;
+  bdftRenderInteractiveDistribution();
+  toast("Removed "+name);
+}
+
+function bdftRemoveBatch(year){
+  if(!window.confirm("Remove entire "+year+" batch?")) return;
+  const dist=AppState.distribution;
+  if(!dist||!dist.tiers[year]) return;
+  Object.keys(dist.tiers[year]).forEach(name=>{
+    dist.tiers[year][name].forEach(b=>dist.orphans.push(b));
+  });
+  dist.tiers[year]={};
+  AppState.selectedBed=null;
+  bdftRenderInteractiveDistribution();
+  toast("Removed "+year+" batch");
+}
+
+async function bdftFinaliseAndSave(){
+  if(!AppState.distribution) return;
+  AppState.selectedBed=null;
+  bdftRenderInteractiveDistribution();
+
+  const dist=deepClone(AppState.distribution);
+  const snap={
+    id:Date.now(),
+    dateStr:dist.dateStr,
+    timestamp:new Date().toISOString(),
+    distribution:dist,
+    selectedUnavailable:[...AppState.selectedUnavailable],
+    selectedOccupiedBeds:[...AppState.selectedOccupiedBeds],
+    bedsAssigned:AppState.bedsAssigned
+  };
+
+  saveWorkingSnapshotToLocal(snap);
+  AppState.isWorkingDayActive=true;
+
+  AppState.archives.unshift(snap);
+  if(AppState.archives.length>BDFT_MAX_ARCHIVES) AppState.archives=AppState.archives.slice(0,BDFT_MAX_ARCHIVES);
+  saveArchivesToLocal();
+  pushArchiveToCloud(AppState.archives);
+
+  toast("Distribution finalised and saved!","ok");
+  bdftExportPng();
+  render();
+}
+
+async function bdftExportPng(explicit){
+  const card=document.getElementById("distribution-card");
+  if(!card){ if(explicit) toast("No distribution card to export","bad"); return; }
+  toast("Generating PNG image…");
+  try{
+    if(window.html2canvas){
+      const canvas=await window.html2canvas(card,{scale:2,backgroundColor:"#0f172a"});
+      const url=canvas.toDataURL("image/png");
+      const a=document.createElement("a");
+      a.href=url; a.download="BDFT_"+(AppState.distribution?.dateStr||"export")+".png";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      toast("PNG downloaded!","ok");
+    }else{
+      toast("html2canvas library loading… try again in a moment","bad");
+    }
+  }catch(e){
+    toast("Image export failed: "+(e.message||e),"bad");
+  }
+}
+
+// ==================== BDFT SETTINGS VIEW ====================
+function bdftMountSetup(root){
+  ensureConfiguration();
+  const wardRes=(S.residents||[]).filter(r=>r.active!==false&&normRole(r.role)!=="intern"&&normRole(r.role)!=="consultant");
+  const matrix=configuration.fixedBedMatrix||{};
+
+  let html=`<p class="tiny" style="margin-bottom:14px;">Manage resident batches, short initials, and owned beds. Tapping any resident opens their profile editor.</p>
+  <div style="display:flex;flex-direction:column;gap:10px;">`;
+
+  const batches=["3rd Year","2nd Year","1st Year"];
+  batches.forEach(bname=>{
+    html+=`<div style="font-weight:700;font-size:13px;color:var(--teal);margin-top:8px;">${esc(bname)}</div>`;
+    const resInBatch=wardRes.filter(r=>{
+      const b=bdftGetResidentBatch(r);
+      return b===bname;
+    });
+    if(!resInBatch.length){
+      html+=`<div class="card" style="padding:10px 14px;"><span class="tiny text-muted">No residents in ${esc(bname)}</span></div>`;
+    }else{
+      resInBatch.forEach(r=>{
+        const short=bdftGetResidentShort(r);
+        const beds=bdftGetResidentBeds(r);
+        html+=`<div class="card" style="padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="bdftOpenResidentModal('${esc(r.id)}')">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="doctor-avatar avatar-${getAvatarClass(bname)}" style="width:36px;height:36px;font-size:13px;">${esc(short)}</div>
+            <div>
+              <div style="font-weight:650;font-size:14px;">${esc(r.displayName||r.username)}</div>
+              <div class="tiny text-muted">${beds.length?beds.length+" bed(s): "+beds.slice(0,4).join(", ")+(beds.length>4?"…":""):"No beds owned"}</div>
+            </div>
+          </div>
+          <button type="button" class="btn ghost sm">Edit</button>
+        </div>`;
+      });
+    }
+  });
+
+  html+=`</div>
+  <button type="button" class="btn block" style="margin-top:18px;" onclick="bdftOpenGenerate()">Go to BDFT Terminal</button>`;
+  root.innerHTML=html;
+}
+
+function bdftGetResidentBatch(r){
+  if(!configuration) return "1st Year";
+  const name=(r.displayName||r.username||"").toLowerCase();
+  for(const b of configuration.batches){
+    if((b.doctors||[]).some(d=>d.name.toLowerCase()===name)) return b.name;
+  }
+  return "1st Year";
+}
+
+function bdftGetResidentShort(r){
+  if(!configuration) return "DR";
+  const name=(r.displayName||r.username||"").toLowerCase();
+  for(const b of configuration.batches){
+    const d=(b.doctors||[]).find(x=>x.name.toLowerCase()===name);
+    if(d&&d.abbreviation) return d.abbreviation;
+  }
+  return (r.displayName||r.username||"DR").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,3);
+}
+
+function bdftGetResidentBeds(r){
+  if(!configuration) return [];
+  const name=r.displayName||r.username;
+  const raw=configuration.fixedBedMatrix[name]||"";
+  return raw.split(",").map(b=>b.trim()).filter(Boolean);
+}
+
+function bdftOpenResidentModal(resId){
+  const r=(S.residents||[]).find(x=>x.id===resId);
+  if(!r) return;
+  const currentBatch=bdftGetResidentBatch(r);
+  const currentShort=bdftGetResidentShort(r);
+  const currentBeds=bdftGetResidentBeds(r);
+  ui.bdftResidentModal={
+    resId,
+    name:r.displayName||r.username,
+    batch:currentBatch,
+    short:currentShort,
+    beds:currentBeds.slice()
+  };
+  render();
+}
+
+function bdftSaveResidentModal(){
+  const m=ui.bdftResidentModal;
+  if(!m) return;
+  ensureConfiguration();
+  const name=m.name;
+  const batchName=m.batch||"1st Year";
+  const short=m.short.toUpperCase().trim()||"DR";
+  const bedList=m.beds||[];
+
+  // Update batch & doctor
+  configuration.batches.forEach(b=>{
+    b.doctors=(b.doctors||[]).filter(d=>d.name.toLowerCase()!==name.toLowerCase());
+  });
+  let targetBatch=configuration.batches.find(b=>b.name.toLowerCase()===batchName.toLowerCase());
+  if(!targetBatch&&configuration.batches.length) targetBatch=configuration.batches[0];
+  if(targetBatch){
+    targetBatch.doctors.push({
+      id:generateId("doc"),
+      name:name,
+      abbreviation:short,
+      enabled:true,
+      order:(targetBatch.doctors||[]).length
+    });
+  }
+
+  // Update fixed bed matrix (ensuring single ownership)
+  const canonAssigned=new Set(bedList.map(bdftCanonBed));
+  Object.keys(configuration.fixedBedMatrix).forEach(otherDoc=>{
+    if(otherDoc.toLowerCase()===name.toLowerCase()) return;
+    const otherBeds=(configuration.fixedBedMatrix[otherDoc]||"").split(",").map(b=>b.trim()).filter(Boolean);
+    const cleaned=otherBeds.filter(b=>!canonAssigned.has(bdftCanonBed(b)));
+    configuration.fixedBedMatrix[otherDoc]=cleaned.join(",");
+  });
+  configuration.fixedBedMatrix[name]=bedList.join(",");
+
+  saveConfigurationToStorage(configuration);
+  buildRuntimeFromConfig(configuration);
+  pushConfigurationToCloud();
+
+  ui.bdftResidentModal=null;
+  toast("Settings saved for "+name,"ok");
+  render();
+}
+
+// ==================== OVERLAYS & MODALS ====================
+function bdftAdminSheetOverlay(){
+  if(!ui.bdftAdminSheet) return "";
+  return `<div class="sheet mid"><button class="mask" onclick="ui.bdftAdminSheet=false;render()"></button>
+    <div class="box" style="border-radius:24px;max-width:380px;">
+      <h3 style="margin:0 0 16px;">Bed Distribution (BDFT)</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn block" style="padding:14px;font-size:15px;justify-content:flex-start;text-align:left;" onclick="ui.bdftAdminSheet=false;bdftOpenSetup()">
+          ⚙️ <b>BDFT Settings</b>
+          <span class="tiny text-muted" style="display:block;margin-top:2px;">Roster batches, initials & bed ownership</span>
+        </button>
+        <button class="btn block" style="padding:14px;font-size:15px;justify-content:flex-start;text-align:left;" onclick="ui.bdftAdminSheet=false;bdftOpenGenerate()">
+          📋 <b>Generate BDFT</b>
+          <span class="tiny text-muted" style="display:block;margin-top:2px;">Generate & adjust tomorrow's bed distribution</span>
+        </button>
+      </div>
+      <button class="btn ghost block" style="margin-top:14px;" onclick="ui.bdftAdminSheet=false;render()">Cancel</button>
+    </div>
+  </div>`;
+}
+
+function bdftResidentModalOverlay(){
+  if(!ui.bdftResidentModal) return "";
+  const m=ui.bdftResidentModal;
+  const batches=["3rd Year","2nd Year","1st Year"];
+  return `<div class="sheet mid"><button class="mask" onclick="ui.bdftResidentModal=null;render()"></button>
+    <div class="box" style="border-radius:24px;max-width:440px;">
+      <h3 style="margin:0 0 4px;">Edit Resident BDFT</h3>
+      <p class="tiny text-muted" style="margin:0 0 14px;">${esc(m.name)}</p>
+      
+      <label class="field"><span style="font-weight:600;">Batch</span>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px;">
+          ${batches.map(b=>`<button type="button" class="btn ${m.batch===b?'':'ghost'}" style="padding:8px 4px;font-size:13px;" onclick="ui.bdftResidentModal.batch='${b}';render()">${esc(b)}</button>`).join("")}
+        </div>
+      </label>
+
+      <label class="field"><span style="font-weight:600;">Short Name (Initials)</span>
+        <input type="text" maxlength="4" value="${esc(m.short)}" oninput="ui.bdftResidentModal.short=this.value.toUpperCase()" style="text-transform:uppercase;">
+      </label>
+
+      <div class="resident-bed-field" style="margin:12px 0;">
+        <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span class="field-label">Beds Owned (${m.beds.length})</span>
+          <button type="button" class="btn ghost sm" onclick="bdftOpenBedPicker()">Choose beds</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+          ${m.beds.length ? m.beds.map(b=>`<span class="pill full" style="font-size:12px;padding:3px 8px;border-radius:6px;"><b>${esc(b)}</b></span>`).join("") : `<span class="tiny text-muted">No beds assigned</span>`}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button class="btn block" style="flex:1;" onclick="bdftSaveResidentModal()">Save</button>
+        <button class="btn ghost block" style="flex:1;" onclick="ui.bdftResidentModal=null;render()">Cancel</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function bdftOpenBedPicker(){
+  ui.bdftBedPickerQuery="";
+  ui.bdftBedPickerModal=true;
+  render();
+}
+
+function bdftBedPickerOverlay(){
+  if(!ui.bdftBedPickerModal||!ui.bdftResidentModal) return "";
+  const m=ui.bdftResidentModal;
+  const q=(ui.bdftBedPickerQuery||"").trim().toLowerCase();
+  const canonQ=bdftCanonBed(q).toLowerCase();
+
+  const allWardBeds=(S.beds||[]).filter(b=>b&&b.active!==false);
+  const filteredBeds=allWardBeds.filter(b=>{
+    if(!q) return true;
+    const no=String(b.no||"").toLowerCase();
+    const canon=bdftCanonBed(b.no||b.id).toLowerCase();
+    return no.includes(q) || canon.includes(canonQ);
+  });
+
+  const selectedCodes=new Set(m.beds.map(bdftCanonBed));
+
+  return `<div class="sheet mid"><button class="mask" onclick="ui.bdftBedPickerModal=false;render()"></button>
+    <div class="box" style="border-radius:24px;max-width:480px;max-height:85vh;overflow-y:auto;">
+      <h3 style="margin:0 0 10px;">Select Owned Beds</h3>
+      <div class="bdft-search-box">
+        <input type="text" placeholder="Search beds (e.g. M1, 04, PC)..." value="${esc(ui.bdftBedPickerQuery||"")}" oninput="ui.bdftBedPickerQuery=this.value;render()">
+      </div>
+      <p class="tiny text-muted" style="margin:0 0 8px;">${m.beds.length} bed(s) selected for ${esc(m.name)}</p>
+      
+      <div class="bdft-bed-picker-grid">
+        ${filteredBeds.map(b=>{
+          const key=bdftCanonBed(b.no||b.id);
+          const isSel=selectedCodes.has(key);
+          const wardNo=b.no||b.id;
+          return `<button type="button" class="pill ${isSel?'full':'empty'}" style="min-height:44px;padding:4px 6px;text-align:center;" onclick="bdftToggleModalBed('${esc(wardNo)}')">
+            <b>${esc(wardNo)}</b>
+          </button>`;
+        }).join("")}
+      </div>
+
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);">
+        <label class="field" style="margin:0;"><span class="tiny">Add custom bed code</span>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            <input type="text" id="bdft-custom-bed" placeholder="e.g. PC3, D13" style="text-transform:uppercase;">
+            <button type="button" class="btn sm" onclick="bdftAddCustomModalBed()">Add</button>
+          </div>
+        </label>
+      </div>
+
+      <button class="btn block" style="margin-top:16px;" onclick="ui.bdftBedPickerModal=false;render()">Done</button>
+    </div>
+  </div>`;
+}
+
+function bdftToggleModalBed(bedNo){
+  if(!ui.bdftResidentModal) return;
+  const m=ui.bdftResidentModal;
+  const key=bdftCanonBed(bedNo);
+  const idx=m.beds.findIndex(b=>bdftCanonBed(b)===key);
+  if(idx!==-1) m.beds.splice(idx,1);
+  else m.beds.push(bedNo);
+  render();
+}
+
+function bdftAddCustomModalBed(){
+  const inp=document.getElementById("bdft-custom-bed");
+  if(!inp||!ui.bdftResidentModal) return;
+  const val=inp.value.trim().toUpperCase();
+  if(!val) return;
+  bdftToggleModalBed(val);
+  inp.value="";
+}
+
+function bdftOpenOccupiedModal(){
+  ui.bdftOccupiedModal=true;
+  ui.bdftBedSearchQuery="";
+  render();
+}
+
+function bdftOpenUnavailableModal(){
+  ui.bdftUnavailableModal=true;
+  render();
+}
+
+function bdftOccupiedModalOverlay(){
+  if(!ui.bdftOccupiedModal) return "";
+  const allBeds=(S.beds||[]).filter(b=>b&&b.active!==false);
+  const q=(ui.bdftBedSearchQuery||"").trim().toLowerCase();
+  const canonQ=bdftCanonBed(q).toLowerCase();
+
+  const filteredBeds=allBeds.filter(b=>{
+    if(!q) return true;
+    const no=String(b.no||"").toLowerCase();
+    const canon=bdftCanonBed(b.no||b.id).toLowerCase();
+    return no.includes(q) || canon.includes(canonQ);
+  });
+
+  const occSet=new Set(AppState.selectedOccupiedBeds.map(bdftCanonBed));
+
+  return `<div class="sheet mid"><button class="mask" onclick="ui.bdftOccupiedModal=false;render()"></button>
+    <div class="box" style="border-radius:24px;max-width:500px;max-height:85vh;overflow-y:auto;">
+      <h3 style="margin:0 0 10px;">Mark Occupied Beds (${AppState.selectedOccupiedBeds.length})</h3>
+      <div class="bdft-search-box">
+        <input type="text" placeholder="Filter beds (e.g. M1, 04, PC)..." value="${esc(ui.bdftBedSearchQuery||"")}" oninput="ui.bdftBedSearchQuery=this.value;render()">
+      </div>
+      <div class="bdft-bed-picker-grid">
+        ${filteredBeds.map(b=>{
+          const key=bdftCanonBed(b.no||b.id);
+          const isOcc=occSet.has(key);
+          const wardNo=b.no||b.id;
+          return `<button type="button" class="pill ${isOcc?'full':'empty'}" style="min-height:44px;padding:4px 6px;text-align:center;" onclick="bdftToggleOccupiedBed('${esc(wardNo)}')">
+            <b>${esc(wardNo)}</b>
+          </button>`;
+        }).join("")}
+      </div>
+      <button class="btn block" style="margin-top:16px;" onclick="ui.bdftOccupiedModal=false;render()">Done</button>
+    </div>
+  </div>`;
+}
+
+function bdftToggleOccupiedBed(bedNo){
+  const key=bdftCanonBed(bedNo);
+  const idx=AppState.selectedOccupiedBeds.findIndex(b=>bdftCanonBed(b)===key);
+  if(idx!==-1) AppState.selectedOccupiedBeds.splice(idx,1);
+  else AppState.selectedOccupiedBeds.push(bedNo);
+  render();
+}
+
+function bdftUnavailableModalOverlay(){
+  if(!ui.bdftUnavailableModal) return "";
+  ensureConfiguration();
+  const unavailSet=new Set(AppState.selectedUnavailable.map(r=>r.toLowerCase()));
+
+  let bodyHtml="";
+  YEAR_ORDER.forEach(y=>{
+    const docs=residentData[y]||[];
+    const allUnavail=docs.length>0 && docs.every(d=>unavailSet.has(d.toLowerCase()));
+    bodyHtml+=`<div style="margin:14px 0 8px;display:flex;justify-content:space-between;align-items:center;">
+      <strong style="font-size:14px;color:var(--teal);">${esc(y)}</strong>
+      <button type="button" class="btn ghost sm" style="font-size:11px;padding:3px 8px;" onclick="bdftToggleBatchUnavailable('${esc(y)}')">${allUnavail?'Unmark Batch':'Mark Batch'}</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;">`;
+    docs.forEach(doc=>{
+      const isU=unavailSet.has(doc.toLowerCase());
+      const short=abbreviations[doc]||doc.split(" ").pop();
+      bodyHtml+=`<button type="button" class="btn ${isU?'':'ghost'}" style="padding:8px 4px;font-size:12px;text-align:center;${isU?'background:color-mix(in srgb,var(--amber,#f59e0b) 20%,transparent);border-color:var(--amber,#f59e0b);color:var(--amber,#f59e0b);':''}" onclick="bdftToggleDoctorUnavailable('${esc(doc)}')">
+        ${esc(short)}
+      </button>`;
+    });
+    bodyHtml+=`</div>`;
+  });
+
+  return `<div class="sheet mid"><button class="mask" onclick="ui.bdftUnavailableModal=false;render()"></button>
+    <div class="box" style="border-radius:24px;max-width:480px;max-height:85vh;overflow-y:auto;">
+      <h3 style="margin:0 0 10px;">Unavailable Personnel (${AppState.selectedUnavailable.length})</h3>
+      ${bodyHtml}
+      <button class="btn block" style="margin-top:16px;" onclick="ui.bdftUnavailableModal=false;render()">Done</button>
+    </div>
+  </div>`;
+}
+
+function bdftToggleDoctorUnavailable(docName){
+  const lower=docName.toLowerCase();
+  const idx=AppState.selectedUnavailable.findIndex(d=>d.toLowerCase()===lower);
+  if(idx!==-1) AppState.selectedUnavailable.splice(idx,1);
+  else AppState.selectedUnavailable.push(docName);
+  render();
+}
+
+function bdftToggleBatchUnavailable(year){
+  const docs=residentData[year]||[];
+  const allUnavail=docs.length>0 && docs.every(d=>AppState.selectedUnavailable.some(x=>x.toLowerCase()===d.toLowerCase()));
+  if(allUnavail){
+    AppState.selectedUnavailable=AppState.selectedUnavailable.filter(d=>!docs.some(x=>x.toLowerCase()===d.toLowerCase()));
+  }else{
+    docs.forEach(d=>{
+      if(!AppState.selectedUnavailable.some(x=>x.toLowerCase()===d.toLowerCase())) AppState.selectedUnavailable.push(d);
+    });
+  }
+  render();
+}
+
+
 
 
 function dropEmptySections(h){ // R1.3.145: a section header with nothing under it is not shown (any role, any page)
@@ -19576,7 +20513,7 @@ function render(opts){
   _html=dropEmptySections(_html); // R1.3.145
   patchApp(el,_html,{full:!!(opts.nav||navAnim||!_sameRoute||!el.firstChild),bg:!!opts.bg});
   try{ if(route.page==="bdft") bdftMount(); }catch(e){}
-  if(sessionTok&&canWrite()&&!isIntern()&&!isConsultant()&&!ui.bdftLoaded&&!ui.bdftLoading&&!ui.bdftSkipNet&&sb) bdftLoad(true);
+  if(sessionTok&&canWrite()&&!isIntern()&&!isConsultant()&&!ui.bdftInitDone) bdftInit();
   ui._sheetEnter=false;
   document.querySelectorAll(".ptag-row").forEach((r,i)=>{if(chipXs[i])r.scrollLeft=chipXs[i]});
   try{ if(ui.giveOpen) refreshGivePost(); }catch(e){}
