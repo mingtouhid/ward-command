@@ -2483,16 +2483,11 @@ input.lab-date-ocr{border-color:var(--warn)!important;background:color-mix(in sr
 .r17-warn-acts{display:flex;gap:8px;margin-top:8px}
 .r17-warn-acts .btn{flex:1}
 .r17-warn-box{max-width:460px;border-radius:18px}
-.r146-sched li.r17-ect,.r146-sched li.r17-other{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding:6px 0}
-.r146-sched li.r17-ect:first-child,.r146-sched li.r17-other:first-child{border-top:0}
-.r146-sched li.r17-ect .r17-ect-main,.r146-sched li.r17-other button{flex:1;min-width:0;display:flex;gap:12px;align-items:baseline;width:auto;border:0;background:none;padding:4px 0;text-align:left;color:var(--ink);font:inherit}
-.r146-sched li.r17-ect .btn{flex:none;width:auto}
-.r17-ect-side{display:flex;align-items:center;gap:8px;margin-left:auto}
-.r17-ect-done{font-size:12px;color:var(--muted)}
-@media (max-width:720px){
-  .r146-sched li.r17-ect .r17-ect-main{flex:1 1 100%}
-  .r17-ect-side{width:100%;margin-left:0;justify-content:space-between}
-}
+.r146-sched li.r17-ect,.r146-sched li.r17-other,.r17-sched-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:8px 0}
+.r146-sched li.r17-ect:first-child,.r146-sched li.r17-other:first-child,.r17-sched-row:first-child{border-top:0}
+.r146-sched li.r17-ect .r17-ect-main,.r146-sched li.r17-other button,.r17-sched-main{flex:1;min-width:0;display:flex;align-items:center;gap:10px;width:auto;border:0;background:none;padding:0;text-align:left;color:var(--ink);font:inherit;cursor:pointer}
+.r17-sched-time{min-width:44px;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+.r17-sched-side{display:flex;align-items:center;gap:6px;margin-left:auto;flex:none}
 @media (min-width:1024px){
   .ih-list{display:block;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
   .ih-row{display:grid;grid-template-columns:88px minmax(180px,1.4fr) minmax(160px,.9fr) 148px;gap:8px 12px;align-items:center;border:0;border-radius:0;border-top:1px solid var(--line);padding:8px 12px}
@@ -6012,12 +6007,26 @@ function r146TodayHtml(){
   </section>`;
 }
 function r146ScheduleHtml(){
-  // R1.7: scheduled ECT completion is an occurrence mark. It does not call markEctDone and does not move the next session.
   const today=r17IstDay(new Date());
-  const patients=(S.patients||[]).map(p=>({id:p.id,status:p.status,admittedAt:p.admittedAt,bed:(bedObj(p.id)||{}).no||""}));
+  const patients=(S.patients||[]).map(p=>({id:p.id,name:p.name,status:p.status,admittedAt:p.admittedAt,bed:(bedObj(p.id)||{}).no||""}));
   const completions=(S.ectDone||[]).map(r17EctDoneFrom);
-  const ect=r17ScheduleItems(S.ect||[],patients,completions,today).slice(0,8).map(x=>({kind:"ect",planId:x.planId,time:vcTime(r146T(x.at)),txt:`ECT${x.sessionsDone!=null?" #"+(Number(x.sessionsDone)+1):""} · ${x.bed||"No bed"}${x.npo?" · NPO":""}`,done:x.done,by:x.by,when:x.doneAt?r17IstWhen(x.doneAt):""}));
-  return `<section class="card r146-sched" aria-label="Today's schedule"><p class="tiny">TODAY'S SCHEDULE</p>
+  const ect=r17ScheduleItems(S.ect||[],patients,completions,today).slice(0,8).map(x=>{
+    const p=(S.patients||[]).find(pt=>pt.id===x.pid);
+    const pName=p?p.name:"Patient";
+    const sNum=x.sessionsDone!=null?(Number(x.sessionsDone)+1):1;
+    return {
+      kind:"ect",
+      planId:x.planId,
+      pid:x.pid,
+      time:vcTime(r146T(x.at)),
+      txt:`${x.bed?x.bed+" · ":""}${pName}`,
+      sub:`ECT #${sNum}${x.npo?" · NPO":""}`,
+      done:x.done,
+      by:x.by,
+      when:x.doneAt?r17IstWhen(x.doneAt):""
+    };
+  });
+  return `<section class="card r146-sched" aria-label="Scheduled for today"><p class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.04em;text-transform:uppercase;margin:0 0 8px;">Scheduled for Today</p>
     ${r17ScheduleHtml(ect, typeof canWrite==="function"?canWrite():true)}
   </section>`;
 }
@@ -10803,8 +10812,14 @@ function saveEct(pid){
 }
 async function markEctDone(id){
   if(!needWrite())return;
-  if(!isEctDay()){toast("Sessions can only be recorded on ECT days ("+ectDayNames()+").","bad");return;}
   const e=(S.ect||[]).find(x=>x.id===id);if(!e)return;
+  if(!isEctDay()){
+    const scheduledDay = e.nextAt ? new Date(e.nextAt).getDay() : null;
+    const isScheduledEctDay = scheduledDay !== null && ectDays().includes(scheduledDay);
+    if(!isScheduledEctDay && !window.confirm("Today is not a routine ECT day ("+ectDayNames()+"). Record this session anyway?")){
+      return;
+    }
+  }
   const sessionNumber=(e.sessionsDone||0)+1;
   const session={id:uid("ects"),planId:e.id,pid:e.pid,sessionNumber,at:now(),by:S.userId};
   const oldSessions=e.sessionsDone||0, oldNext=e.nextAt||null;
@@ -17865,23 +17880,9 @@ async function r17TaskLink(id){
 }
 async function r17EctMark(planId){
   if(!needWrite())return;
-  const plan=(S.ect||[]).find(function(e){return e.id===planId});
-  const p=plan&&patient(plan.pid);
-  const actor={id:S.userId,role:roleOf()};
-  const d=r17EctDecide(plan,p?{id:p.id,status:p.status,admittedAt:p.admittedAt}:null,actor,S.ectDone||[]);
-  if(!d.ok){toast(d.reason,"bad");return}
-  if(d.idempotent){toast("Already completed","ok");render();return}
-  if(!sb||!sessionTok||navigator.onLine===false){toast("Not saved — you are offline","bad");return}
-  const nextBefore=plan.nextAt,countBefore=plan.sessionsDone;
-  try{
-    const res=await sb.rpc("ward_complete_scheduled_ect",{p_token:sessionTok,p_plan_id:plan.id,p_occurrence_at:plan.nextAt});
-    if(!res||res.error||!res.data||res.data.ok===false)throw new Error((res&&res.error&&res.error.message)||"ECT was not marked complete");
-    plan.nextAt=nextBefore;plan.sessionsDone=countBefore;
-    const row=r17EctDoneFrom(res.data.completion||res.data);
-    S.ectDone=(S.ectDone||[]).filter(function(c){return c.id!==row.id});S.ectDone.push(row);
-    toast("ECT marked complete","ok");save();
-  }catch(e){toast(e.message||"ECT was not marked complete","bad")}
-  render();
+  // Mark the real ECT session via markEctDone so it records to backend ect_sessions,
+  // increments sessionsDone, advances next_session_at, and notifies team!
+  await markEctDone(planId);
 }
 async function r17EctUndo(planId){
   if(!needWrite())return;
@@ -18124,15 +18125,16 @@ function r17DischargeWarnHtml(review, reason){
     '<div class="r17-warn-acts"><button type="button" class="btn ghost" onclick="r17WarnCancel()">Cancel</button><button type="button" class="btn danger" onclick="r17WarnContinue()">Continue discharge</button></div></div>';
 }
 function r17ScheduleHtml(items, writable){
-  if(!items||!items.length)return '<p class="sm r146-empty">Nothing scheduled for today.</p>';
+  if(!items||!items.length)return '<p class="sm r146-empty" style="margin:4px 0 0;color:var(--muted);">Nothing scheduled for today.</p>';
   const write=writable!==false;
-  return "<ul>"+items.map(function(x){
-    if(x.kind!=="ect")return '<li class="r17-other"><button type="button" onclick="'+(x.fn||"")+'"><b>'+r17Esc(x.time||"")+'</b><span>'+r17Esc(x.txt||"")+'</span></button></li>';
-    const main='<button type="button" class="r17-ect-main" onclick="go(\'ect\')"><b>'+r17Esc(x.time||"")+'</b><span>'+r17Esc(x.txt||"")+'</span></button>';
-    const doneTxt='<span class="r17-ect-done">Completed'+(x.by?" · "+r17Esc(x.by):"")+(x.when?" · "+r17Esc(x.when)+" IST":"")+"</span>";
-    const side=x.done?doneTxt+(write?'<button type="button" class="btn sm ghost" onclick="r17EctUndo(\''+r17Esc(x.planId)+'\')">Undo</button>':""):(write?'<button type="button" class="btn sm r17-ect-go" onclick="r17EctMark(\''+r17Esc(x.planId)+'\')">Mark complete</button>':"");
-    return '<li class="r17-ect">'+main+'<span class="r17-ect-side">'+side+"</span></li>";
-  }).join("")+"</ul>";
+  return '<ul class="r146-sched-list" style="list-style:none;margin:8px 0 0;padding:0;">'+items.map(function(x){
+    if(x.kind!=="ect")return '<li class="r17-sched-row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);"><button type="button" class="r17-sched-main" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;background:none;border:none;padding:0;text-align:left;cursor:pointer;color:var(--ink);font:inherit;" onclick="'+(x.fn||"")+'"><b class="r17-sched-time" style="min-width:44px;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;flex:none;">'+r17Esc(x.time||"")+'</b><span style="font-size:13px;font-weight:650;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r17Esc(x.txt||"")+'</span></button></li>';
+    const main='<button type="button" class="r17-sched-main" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;background:none;border:none;padding:0;text-align:left;cursor:pointer;color:var(--ink);font:inherit;" onclick="go(\'ect\')"><b class="r17-sched-time" style="min-width:44px;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;flex:none;">'+r17Esc(x.time||"")+'</b><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:650;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r17Esc(x.txt||"")+'</div>'+(x.sub?'<div class="tiny muted" style="font-size:11px;color:var(--muted);margin-top:2px;">'+r17Esc(x.sub)+'</div>':'')+'</div></button>';
+    const doneTxt='<span class="pill ok" style="min-height:26px;height:26px;padding:2px 8px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">✓ Done'+(x.by?" · "+r17Esc(x.by):"")+'</span>';
+    const actBtn=write?'<button type="button" class="btn sm ghost" style="min-height:28px;height:28px;padding:2px 10px;font-size:11.5px;font-weight:600;border-radius:8px;white-space:nowrap;border:1.5px solid var(--teal);color:var(--teal);" onclick="r17EctMark(\''+r17Esc(x.planId)+'\')">Mark complete</button>':"";
+    const side=x.done?doneTxt+(write?'<button type="button" class="btn sm ghost" style="min-height:24px;height:24px;padding:2px 6px;font-size:10.5px;border-radius:6px;margin-left:6px;" onclick="r17EctUndo(\''+r17Esc(x.planId)+'\')">Undo</button>':""):actBtn;
+    return '<li class="r17-sched-row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);">'+main+'<div class="r17-sched-side" style="flex:none;display:flex;align-items:center;gap:6px;">'+side+'</div></li>';
+  }).join("")+'</ul>';
 }
 /* R17_RULES_END */
 
