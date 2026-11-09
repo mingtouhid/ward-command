@@ -19608,6 +19608,31 @@ async function bdftRpc(name, args){
 }
 
 let bdftSupabasePullPromise = null;
+function bdftFindResident(wardRes, nameOrShort){
+  if(!nameOrShort) return null;
+  const list = wardRes || (S.residents || []);
+  const targetNorm = bdftNormDoctorName(nameOrShort);
+  const targetLower = String(nameOrShort).trim().toLowerCase();
+  // 1. Direct ID match
+  let found = list.find(r => r && (r.id === nameOrShort || String(r.id) === String(nameOrShort)));
+  if(found) return found;
+  // 2. Normalized display name / username match
+  found = list.find(r => {
+    if(!r) return false;
+    const rNameNorm = bdftNormDoctorName(r.displayName || r.username);
+    const rUserNorm = bdftNormDoctorName(r.username);
+    return rNameNorm === targetNorm || rUserNorm === targetNorm;
+  });
+  if(found) return found;
+  // 3. Short initials match
+  found = list.find(r => {
+    if(!r) return false;
+    const s = (r.bdft_short || r.short || abbreviations[r.displayName || r.username] || "").trim().toLowerCase();
+    return s && s === targetLower;
+  });
+  return found || null;
+}
+
 async function bdftLoadFromSupabase(quiet){
   if(!sb || !sessionTok) return { ok: false, reason: "offline" };
   if(bdftSupabasePullPromise) return bdftSupabasePullPromise;
@@ -19682,14 +19707,29 @@ async function bdftLoadFromSupabase(quiet){
           if(bName.includes("3")) bName = "3rd Year";
           else if(bName.includes("2")) bName = "2nd Year";
           else bName = "1st Year";
-          resLookup.set(p.id, { name: dName, batch: bName, short: p.short || bdftDocInitials(dName) });
+          const info = { id: p.id, name: dName, batch: bName, short: p.short || bdftDocInitials(dName) };
+          if(p.id) resLookup.set(p.id, info);
+          resLookup.set(dName.toLowerCase(), info);
+          resLookup.set(bdftNormDoctorName(dName), info);
+          if(info.short) resLookup.set(info.short.toLowerCase(), info);
+        });
+
+        // Also index ward residents
+        (S.residents || []).forEach(r => {
+          const rName = r.displayName || r.username;
+          const rBatch = bdftGetResidentBatch(r);
+          const rShort = bdftGetResidentShort(r);
+          const info = { id: r.id, name: rName, batch: rBatch, short: rShort };
+          if(r.id && !resLookup.has(r.id)) resLookup.set(r.id, info);
+          if(!resLookup.has(rName.toLowerCase())) resLookup.set(rName.toLowerCase(), info);
+          if(!resLookup.has(bdftNormDoctorName(rName))) resLookup.set(bdftNormDoctorName(rName), info);
         });
 
         cur.rows.forEach(r => {
           if(!r.occupied) return;
-          const ownerInfo = resLookup.get(r.ownerId);
+          const ownerInfo = resLookup.get(r.ownerId) || resLookup.get(bdftNormDoctorName(r.ownerId)) || resLookup.get(String(r.ownerId||"").toLowerCase());
           const ownerShort = ownerInfo ? ownerInfo.short : (abbreviations[r.ownerId] || "Unassigned");
-          const holderInfo = resLookup.get(r.holderId);
+          const holderInfo = resLookup.get(r.holderId) || resLookup.get(bdftNormDoctorName(r.holderId)) || resLookup.get(String(r.holderId||"").toLowerCase());
 
           if(holderInfo && tiers[holderInfo.batch]){
             if(!tiers[holderInfo.batch][holderInfo.name]) tiers[holderInfo.batch][holderInfo.name] = [];
@@ -19948,6 +19988,30 @@ function bdftTapBedPatient(bedCode){
   }
 }
 
+function bdftParseDate(str){
+  if(!str || typeof str !== "string") return null;
+  const iso = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(iso) return new Date(+iso[1], +iso[2]-1, +iso[3]);
+  const dmy = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(dmy) return new Date(+dmy[3], +dmy[2]-1, +dmy[1]);
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function bdftDateLabel(dateStr){
+  if(!dateStr || String(dateStr).trim().toLowerCase() === "tomorrow") return "TOMORROW'S BEDS";
+  const distDate = bdftParseDate(dateStr);
+  if(!distDate) return "BEDS · " + esc(dateStr).toUpperCase();
+  const nowIst = new Date(Date.now() + 330*60000);
+  const todayIst = new Date(Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate()));
+  const distUtc = new Date(Date.UTC(distDate.getFullYear(), distDate.getMonth(), distDate.getDate()));
+  const diffDays = Math.round((distUtc.getTime() - todayIst.getTime()) / 86400000);
+
+  if(diffDays === 0) return "TODAY'S BEDS · " + dateStr;
+  if(diffDays === 1) return "TOMORROW'S BEDS · " + dateStr;
+  if(diffDays < 0) return "BEDS (" + dateStr + ")";
+  return "BEDS FOR " + dateStr.toUpperCase();
+}
 function bdftHomeCard(){
   bdftInit();
   if(isIntern()||isConsultant()) return "";
@@ -19958,7 +20022,7 @@ function bdftHomeCard(){
   if(info.isGeneric){
     return `<div class="card" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--teal);">
       <div class="row" style="align-items:center;justify-content:space-between;">
-        <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">Tomorrow's Beds · ${dateLabel}</span>
+        <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">${bdftDateLabel(info.dateStr)}</span>
         <button type="button" class="btn ghost sm" style="padding:2px 8px;font-size:11px;min-height:24px;height:24px;border-radius:6px;" onclick="bdftOpenReadOnly()">Full BDFT (${info.totalBeds}) ›</button>
       </div>
     </div>`;
@@ -19977,7 +20041,7 @@ function bdftHomeCard(){
 
   return `<div class="card" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--teal);">
     <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">
-      <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">Tomorrow's Beds · ${dateLabel} (${beds.length})</span>
+      <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">${bdftDateLabel(info.dateStr)} (${beds.length})</span>
       <button type="button" class="btn ghost sm" style="padding:2px 8px;font-size:11px;min-height:24px;height:24px;border-radius:6px;" onclick="bdftOpenReadOnly()">Full BDFT ›</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:5px;">
@@ -20426,11 +20490,11 @@ async function bdftFinaliseAndSave(){
 
       Object.entries(dist.tiers || {}).forEach(([yr, docs]) => {
         Object.entries(docs || {}).forEach(([docName, beds]) => {
-          const holderRes = wardRes.find(r => (r.displayName || r.username || "").toLowerCase() === docName.toLowerCase());
-          const holderId = holderRes ? holderRes.id : null;
+          const holderRes = bdftFindResident(wardRes, docName);
+          const holderId = holderRes ? holderRes.id : docName;
           (beds || []).forEach(b => {
-            const ownerRes = wardRes.find(r => (abbreviations[r.displayName || r.username] || "").toLowerCase() === (b.originalOwner || "").toLowerCase());
-            const ownerId = ownerRes ? ownerRes.id : holderId;
+            const ownerRes = bdftFindResident(wardRes, b.originalOwner || docName);
+            const ownerId = ownerRes ? ownerRes.id : (holderRes ? holderRes.id : docName);
             const bId = bedLookup.get(bdftCanonBed(b.code)) || b.code;
             rows.push({
               bedId: bId,
@@ -20493,8 +20557,10 @@ async function bdftFinaliseAndSave(){
     toast("Distribution finalised and saved!","ok");
   }
 
-  // PNG export remains optional via the "Export PNG" button in the view page
-  render({force: true});
+  // After finalise, switch to readonly view so the user confirms the saved distribution.
+  // PNG export remains optional via the "Export PNG" button in the readonly view.
+  ui.bdftMode = "readonly";
+  render({force: true, forceLeave: true});
 }
 
 async function bdftExportPng(explicit){
@@ -20537,8 +20603,7 @@ function bdftMountSetup(root){
   const matrix=configuration.fixedBedMatrix||{};
 
   let html=isAdmin
-    ? `<p class="tiny" style="margin-bottom:14px;">Manage resident batches, short initials, and owned beds. Tapping any resident opens their profile editor.</p>`
-    : `<p class="tiny" style="margin-bottom:14px;">Update your short name (initials), batch, and owned beds below.</p>`;
+    ? "" : "";
   html+=`<div style="display:flex;flex-direction:column;gap:10px;">`;
 
   const batches=["3rd Year","2nd Year","1st Year"];
@@ -20553,10 +20618,10 @@ function bdftMountSetup(root){
     }else{
       resInBatch.forEach(r=>{
         const isSelf=bdftIsSelf(r, u);
-        const canEdit=isAdmin || isSelf;
+        const canEdit=isAdmin || isSelf || isEveningDuty();
         const short=bdftGetResidentShort(r);
         const beds=bdftGetResidentBeds(r);
-        html+=`<div class="card" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;${isSelf?'border:1.5px solid var(--teal);':''}${canEdit?'cursor:pointer;':''}" ${canEdit?`onclick="bdftOpenResidentModal('${esc(r.id)}')"`:''}>
+        html+=`<div class="card" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;${isSelf?'border:1.5px solid var(--teal);':''}${canEdit?'cursor:pointer;touch-action:manipulation;':''}" ${canEdit?`onclick="bdftOpenResidentModal('${esc(r.id)}')"`:''}>
           <div style="display:flex;align-items:center;gap:10px;">
             <div class="doctor-avatar avatar-${getAvatarClass(bname)}" style="width:36px;height:36px;font-size:13px;">${esc(short)}</div>
             <div>
@@ -20621,10 +20686,7 @@ function bdftOpenResidentModal(resId){
   const u=user()||{};
   const isAdmin=canAdmin();
   const isSelf=bdftIsSelf(r, u);
-  if(!isAdmin && !isSelf){
-    toast("You can only edit your own BDFT profile","bad");
-    return;
-  }
+  const canEdit=isAdmin || isSelf || isEveningDuty();
   const currentBatch=bdftGetResidentBatch(r);
   const currentShort=bdftGetResidentShort(r);
   const currentBeds=bdftGetResidentBeds(r);
@@ -20633,7 +20695,8 @@ function bdftOpenResidentModal(resId){
     name: r.displayName||r.username,
     batch: currentBatch,
     short: currentShort,
-    beds: currentBeds.slice()
+    beds: currentBeds.slice(),
+    canEdit: canEdit
   };
   render({force: true, forceLeave: true});
 }
@@ -20716,11 +20779,11 @@ function bdftSaveResidentModal(){
 function bdftAdminSheetOverlay(){
   if(!ui.bdftAdminSheet) return "";
   const isAdmin=canAdmin();
-  return `<div class="sheet mid"><button class="mask" type="button" onclick="bdftCloseAdminSheet()"></button>
-    <div class="box" style="border-radius:24px;max-width:400px;padding:22px 20px;">
+  return `<div class="sheet mid" id="bdftAdminSheet"><button class="mask" type="button" onclick="bdftCloseAdminSheet()" style="z-index:1;"></button>
+    <div class="box" style="position:relative;z-index:2;border-radius:24px;max-width:400px;padding:22px 20px;">
       <h3 style="margin:0 0 18px;font-size:18px;font-weight:700;letter-spacing:-0.3px;">BDFT</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <button type="button" class="btn ghost" style="flex-direction:column;align-items:center;justify-content:flex-start;padding:18px 12px;height:auto;gap:10px;border-radius:16px;border:1.5px solid var(--line);" onclick="ui.bdftAdminSheet=false;render({force:true,forceLeave:true});setTimeout(()=>bdftOpenGenerate(),40)">
+        <button type="button" class="btn ghost" style="flex-direction:column;align-items:center;justify-content:flex-start;padding:18px 12px;height:auto;gap:10px;border-radius:16px;border:1.5px solid var(--line);" onclick="ui.bdftAdminSheet=false;bdftOpenGenerate();">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
           </svg>
@@ -20729,7 +20792,7 @@ function bdftAdminSheetOverlay(){
             <div class="tiny muted" style="margin-top:3px;line-height:1.3;">Build tomorrow's sheet</div>
           </div>
         </button>
-        <button type="button" class="btn ghost" style="flex-direction:column;align-items:center;justify-content:flex-start;padding:18px 12px;height:auto;gap:10px;border-radius:16px;border:1.5px solid var(--line);" onclick="ui.bdftAdminSheet=false;render({force:true,forceLeave:true});setTimeout(()=>bdftOpenSetup(),40)">
+        <button type="button" class="btn ghost" style="flex-direction:column;align-items:center;justify-content:flex-start;padding:18px 12px;height:auto;gap:10px;border-radius:16px;border:1.5px solid var(--line);" onclick="ui.bdftAdminSheet=false;bdftOpenSetup();">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
             <line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2.2" fill="var(--panel)"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2.2" fill="var(--panel)"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="10" cy="18" r="2.2" fill="var(--panel)"/>
           </svg>
@@ -20750,8 +20813,8 @@ function bdftResidentModalOverlay(){
   const u=user()||{};
   const isSelf=bdftIsSelf(m, u);
   const batches=["3rd Year","2nd Year","1st Year"];
-  return `<div class="sheet mid"><button class="mask" type="button" onclick="bdftCloseResidentModal()"></button>
-    <div class="box" style="border-radius:24px;max-width:440px;">
+  return `<div class="sheet mid" id="bdftResidentSheet"><button class="mask" type="button" onclick="bdftCloseResidentModal()" style="z-index:1;"></button>
+    <div class="box" style="position:relative;z-index:2;border-radius:24px;max-width:440px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
         <div>
           <div style="font-weight:700;font-size:16px;">${esc(m.name)}${isSelf?` <span class="role-badge" style="font-size:10px;padding:2px 6px;">You</span>`:""}</div>
@@ -20780,8 +20843,9 @@ function bdftResidentModalOverlay(){
       </div>
 
       <div style="display:flex;gap:8px;margin-top:16px;">
-        <button type="button" class="btn block" style="flex:1;" onclick="bdftSaveResidentModal()">Save</button>
-        <button type="button" class="btn ghost block" style="flex:1;" onclick="bdftCloseResidentModal()">Cancel</button>
+        ${canEdit ? `<button type="button" class="btn block" style="flex:1;" onclick="bdftSaveResidentModal()">Save</button>
+        <button type="button" class="btn ghost block" style="flex:1;" onclick="bdftCloseResidentModal()">Cancel</button>`
+        : `<button type="button" class="btn ghost block" style="flex:1;" onclick="bdftCloseResidentModal()">Close</button>`}
       </div>
     </div>
   </div>`;
@@ -20830,13 +20894,15 @@ function bdftBedPickerOverlay(){
   const filteredBeds=allWardBeds.filter(b=>bdftMatchBed(b,q,S.sections));
   const selectedCodes=new Set(m.beds.map(bdftCanonBed));
 
-  return `<div class="sheet mid"><button class="mask" type="button" onclick="bdftCloseBedPicker()"></button>
-    <div class="box" style="border-radius:24px;max-width:480px;max-height:85vh;overflow-y:auto;">
-      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <h3 class="sheet-title" style="margin:0;">Select Owned Beds</h3>
-        <span class="tiny muted" id="bdft-bed-picker-count">${m.beds.length} selected</span>
+  return `<div class="sheet mid pick-layer" id="bdftBedPickerSheet"><button class="mask" type="button" onclick="bdftCloseBedPicker()" style="z-index:1;"></button>
+    <div class="box" style="position:relative;z-index:2;border-radius:24px;max-width:480px;max-height:85vh;overflow-y:auto;">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div>
+          <div style="font-weight:700;font-size:16px;">Select Owned Beds</div>
+          <div class="tiny muted" style="margin-top:2px;">For ${esc(m.name)}</div>
+        </div>
+        <span class="pill empty" id="bdft-bed-picker-count" style="font-size:12px;padding:3px 10px;">${m.beds.length} selected</span>
       </div>
-      <p class="tiny muted" style="margin:0 0 10px;">Assign beds owned by ${esc(m.name)}</p>
 
       <label class="field" style="margin:0 0 10px;">
         <input id="bdft-picker-search" type="search" placeholder="Search bed or ward (e.g. M1, 04, PC, male)..." value="${esc(ui.bdftBedPickerQuery||"")}" oninput="bdftFilterBedPicker(this.value)" autocomplete="off">
@@ -20950,8 +21016,8 @@ function bdftOccupiedModalOverlay(){
   const filteredBeds=allBeds.filter(b=>bdftMatchBed(b,q,S.sections));
   const occSet=new Set(AppState.selectedOccupiedBeds.map(bdftCanonBed));
 
-  return `<div class="sheet mid"><button class="mask" type="button" onclick="bdftCloseOccupiedModal()"></button>
-    <div class="box" style="border-radius:24px;max-width:500px;max-height:85vh;overflow-y:auto;">
+  return `<div class="sheet mid" id="bdftOccupiedSheet"><button class="mask" type="button" onclick="bdftCloseOccupiedModal()" style="z-index:1;"></button>
+    <div class="box" style="position:relative;z-index:2;border-radius:24px;max-width:500px;max-height:85vh;overflow-y:auto;">
       <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px;">
         <div>
           <div style="font-weight:700;font-size:16px;">Occupied Beds</div>
@@ -21051,8 +21117,8 @@ function bdftUnavailableModalOverlay(){
     bodyHtml+=`</div>`;
   });
 
-  return `<div class="sheet mid"><button class="mask" type="button" onclick="bdftCloseUnavailableModal()"></button>
-    <div class="box" style="border-radius:24px;max-width:480px;max-height:85vh;overflow-y:auto;">
+  return `<div class="sheet mid" id="bdftUnavailableSheet"><button class="mask" type="button" onclick="bdftCloseUnavailableModal()" style="z-index:1;"></button>
+    <div class="box" style="position:relative;z-index:2;border-radius:24px;max-width:480px;max-height:85vh;overflow-y:auto;">
       <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px;">
         <div>
           <div style="font-weight:700;font-size:16px;">Unavailable Residents</div>
