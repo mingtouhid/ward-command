@@ -6167,8 +6167,12 @@ function r146IsFlagged(p){return r146Reasons(p).some(r=>r.kind==="flag"&&r.lvl<=
 function r146IsDue(p){return r146Reasons(p).some(r=>r.kind==="due")}
 function r146IsMine(p){
   if(isConsultant())return isMyPatient(p);
-  const me=String(S.userId||"");if(!me)return false;
-  return openTasks(p.id).some(t=>String(t.to||"")===me)||r146MyHItems(p.id).length>0;
+  const info=bdftGetMyAssignedBeds();
+  if(!info||info.isGeneric||!info.beds||!p) return false;
+  const bed=bedObj(p.id);
+  if(!bed) return false;
+  const key=bdftCanonBed(bed.no||bed.id);
+  return info.beds.some(b=>bdftCanonBed(typeof b==="string"?b:(b&&(b.code||b.no)||""))===key);
 }
 function r146PF(p,f){if(f==="mine")return r146IsMine(p);if(f==="flagged")return r146IsFlagged(p);if(f==="due")return r146IsDue(p);return true}
 function r146Open(pid,tab){if(!patient(pid))return;ui.ptab=tab||"summary";ui.ptabPid=pid;go("snap",pid)}
@@ -20161,10 +20165,15 @@ function bdftGetActiveDistribution(){
 }
 
 function bdftGetMyAssignedBeds(){
+  try{bdftInit()}catch(e){}
   const dist=bdftGetActiveDistribution();
-  if(!dist||!dist.tiers) return null;
   const u=user();
   if(!u) return null;
+  if(!dist||!dist.tiers){
+    const owned=bdftGetResidentBeds(u);
+    if(!owned.length) return null;
+    return {isGeneric:false,ownedFallback:true,doctorName:u.displayName||u.username||"",short:"",beds:owned.slice(),dateStr:""};
+  }
   const myName=(u.displayName||u.username||"").trim().toLowerCase();
   const myUser=(u.username||"").trim().toLowerCase();
 
@@ -20282,7 +20291,7 @@ function bdftHomeCard(){
 
   return `<div class="card" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--teal);">
     <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">
-      <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">${bdftDateLabel(info.dateStr)} (${beds.length})</span>
+      <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">${info.ownedFallback?"OWNED BEDS":bdftDateLabel(info.dateStr)} (${beds.length})</span>
       <button type="button" class="btn ghost sm" style="padding:2px 8px;font-size:11px;min-height:24px;height:24px;border-radius:6px;" onclick="bdftOpenReadOnly()">See BDFT</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:5px;">

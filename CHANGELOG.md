@@ -17,6 +17,7 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 - Resident Home header is one row: avatar, left-aligned greeting and name, bell above the sync chip on the right.
 - Client version `R1.8.3`. Admins see the same Home header and unit-name title as residents.
 - Client version `R1.8.4`. The avatar header is 10% shorter, the sync chip sits above the bell, and admins and residents see that header on every page. The chip keeps a fixed width so a sync update does not move the avatar, name, or bell.
+- Patients Mine for a resident is that resident's beds on the current BDFT distribution (the same list as the Home beds card), including beds redistributed to them. With no distribution, Mine is their owned beds.
 - Residents no longer have a BDFT tile on More. That slot is My profile (username, display name, own phone from `ward_get_my_phone`, BDFT short name, owned beds, photo placeholder). Edit is self-only. The My phone tile is removed. If `ward_update_my_profile` is missing, phone and BDFT still save.
 - Evening-duty residents see a Make BDFT card at the top of Home. It opens the existing generation terminal. Admins keep the BDFT tile and gain a BDFT settings tile that opens setup directly.
 - BDFT distribution chips use the accent for owned beds and a separate colour for redistributed beds. The home card button is See BDFT.
