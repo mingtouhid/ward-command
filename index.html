@@ -4007,7 +4007,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R1.8.2";
+const APP_VERSION="R1.8.3";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -5716,7 +5716,7 @@ function stampSheetEnter(html){
 }
 function shell(inner){
   const u=user()||{};
-  const residentHome=route.page==="home"&&canWrite()&&!canAdmin()&&!isConsultant()&&!isIntern();
+  const residentHome=route.page==="home"&&canWrite()&&!isConsultant()&&!isIntern();
   const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile"].includes(route.page))?"on":"";
   const bell=`<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button>`;
   const left=residentHome
@@ -6260,7 +6260,7 @@ function homeView(){
   if(isConsultant()){F.push({k:"mine",n:myPatientCount(),l:"My patients",c:"blue",fn:"ui.ptag='mine';ui.preason='';ui.pcon='';ui.pf='';go('patients')"});F.push(opinionChip)}
   else{F.splice(1,0,{k:"handover",n:inbox,l:"Handover",c:"amber",fn:"go('handover')"});F.push(opinionChip)}
   const on=F.filter(f=>f.n>0),off=F.filter(f=>!f.n);
-  const residentHome=canWrite()&&!canAdmin()&&!isConsultant()&&!isIntern();
+  const residentHome=canWrite()&&!isConsultant()&&!isIntern();
   return `<div class="home-split r146-today">
     ${r17AuditMissHtml()}
     <div class="r146-col">
