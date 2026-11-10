@@ -13,6 +13,7 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 ### Changed
 
 - Client version `R1.8.1` (`APP_VERSION` and service worker cache `ward-sync-pwa-r1.8.1`).
+- Client version `R1.8.2`. More tiles are a smaller 3-column grid (names wrap to two lines; icon and name size unchanged). Admins open BDFT from the BDFT settings tile with the bed icon. The generation terminal has no Settings button. Resident Home shows a photo and two-line greeting, with the bell above the sync chip, and the unit name in place of Today. BDFT bed picking is grouped by section.
 - Residents no longer have a BDFT tile on More. That slot is My profile (username, display name, own phone from `ward_get_my_phone`, BDFT short name, owned beds, photo placeholder). Edit is self-only. The My phone tile is removed. If `ward_update_my_profile` is missing, phone and BDFT still save.
 - Evening-duty residents see a Make BDFT card at the top of Home. It opens the existing generation terminal. Admins keep the BDFT tile and gain a BDFT settings tile that opens setup directly.
 - BDFT distribution chips use the accent for owned beds and a separate colour for redistributed beds. The home card button is See BDFT.
