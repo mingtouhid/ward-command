@@ -25,4 +25,5 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 ### Fixed
 
+- Client version `R1.8.6`. The header sync dot stays a circle when the label is long (`Synced 59 min ago`, offline, or needs attention). The text ellipsizes inside the same chip. Service worker cache `ward-sync-pwa-r1.8.6`.
 - Consultants see the Home Opinion count chip. It uses the same `opinionCount()` chip as residents and opens the patients list filtered to admission reason Opinion. That list stays view-only for consultants.

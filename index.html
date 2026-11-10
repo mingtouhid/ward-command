@@ -2882,7 +2882,8 @@ html[data-theme="dark"]{--info:#93c5fd}
 .pf-row .pf-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;min-width:0;width:100%;padding:6px 2px;min-height:46px;font-size:var(--fs-sm);font-weight:650;line-height:1.15;text-align:center}
 .pf-row .pf-chip span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pf-row .pf-chip small{font-size:var(--fs-xs);opacity:.75;font-weight:700}
-.status-chip .sync-ago{white-space:nowrap}
+.status-chip>.dot{width:8px;height:8px;min-width:8px;min-height:8px;flex-shrink:0}
+.status-chip .home-sync-txt,.status-chip .sync-ago{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* R1.5 (t401u): Jail / Opinion chips — always shown, never truncated */
 .r146-chip.r146-jail,.r146-need .r146-need-main span.r146-chip.r146-jail{background:color-mix(in srgb,#ea580c 16%,transparent);color:#c2410c}
 .r146-chip.r146-opinion,.r146-need .r146-need-main span.r146-chip.r146-opinion{background:color-mix(in srgb,#0d9488 16%,transparent);color:#0f766e}
@@ -4224,7 +4225,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R1.8.5";
+const APP_VERSION="R1.8.6";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
