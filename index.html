@@ -1196,13 +1196,14 @@ html[data-theme="light"] .about-kicker{color:#0f766e}
 
 
 .who-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px}
-.top.resident-home{align-items:flex-start;padding-top:max(6px,env(safe-area-inset-top,0px))}
-.home-id{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
-.home-photo{width:44px;height:44px;font-size:15px}
-.home-greet{display:flex;flex-direction:column;align-items:flex-end;text-align:right;min-width:0;margin-left:auto;line-height:1.15}
-.home-greet span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:650}
-.home-greet b{font-size:14px;font-weight:750;letter-spacing:-.02em;max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.home-tools{flex-direction:column;align-items:flex-end;gap:4px;margin-top:-6px}
+.top.resident-home{align-items:center;gap:10px;margin:max(8px,env(safe-area-inset-top,0px)) 12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:18px;background:var(--panel)}
+.home-id{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 auto;overflow:hidden}
+.home-photo{width:48px;height:48px;font-size:18px;flex:none}
+.home-greet{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-width:0;flex:1 1 auto;margin:0;line-height:1.2;overflow:hidden}
+.home-greet span{font-size:15px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink)}
+.home-greet b{display:block;font-size:18px;font-weight:750;letter-spacing:-.02em;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who-tools.home-tools{flex:0 0 auto;flex-direction:column;align-items:flex-end;justify-content:center;gap:6px;margin:0 0 0 8px}
+.who-tools.home-tools .status-chip{max-width:none;text-transform:none;letter-spacing:0;white-space:nowrap;overflow:visible}
 .top-bell{position:relative;width:36px;height:36px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0}
 .top-bell svg{width:20px;height:20px;display:block}
 .top-bell-n{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px}
