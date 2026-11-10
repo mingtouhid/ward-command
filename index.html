@@ -1196,14 +1196,16 @@ html[data-theme="light"] .about-kicker{color:#0f766e}
 
 
 .who-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px}
-.top.resident-home{align-items:center;gap:10px;margin:max(8px,env(safe-area-inset-top,0px)) 12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:18px;background:var(--panel)}
-.home-id{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 auto;overflow:hidden}
-.home-photo{width:48px;height:48px;font-size:18px;flex:none}
+.top.resident-home{--hs:.9;align-items:center;gap:calc(10px * var(--hs));margin:max(8px,env(safe-area-inset-top,0px)) 12px 0;padding:calc(10px * var(--hs)) calc(12px * var(--hs));border:1px solid var(--line);border-radius:calc(18px * var(--hs));background:var(--panel)}
+.home-id{display:flex;align-items:center;gap:calc(12px * .9);min-width:0;flex:1 1 auto;overflow:hidden}
+.profile-photo.home-photo{box-sizing:border-box;width:calc(72px * .9);height:calc(72px * .9);font-size:calc(22px * .9);flex:none}
 .home-greet{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-width:0;flex:1 1 auto;margin:0;line-height:1.2;overflow:hidden}
-.home-greet span{font-size:15px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink)}
-.home-greet b{display:block;font-size:18px;font-weight:750;letter-spacing:-.02em;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.who-tools.home-tools{flex:0 0 auto;flex-direction:column;align-items:flex-end;justify-content:center;gap:6px;margin:0 0 0 8px}
-.who-tools.home-tools .status-chip{max-width:none;text-transform:none;letter-spacing:0;white-space:nowrap;overflow:visible}
+.home-greet span{font-size:calc(15px * .9);font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink)}
+.home-greet b{display:block;font-size:calc(18px * .9);font-weight:750;letter-spacing:-.02em;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who-tools.home-tools{flex:0 0 108px;width:108px;min-width:108px;max-width:108px;flex-direction:column;align-items:flex-end;justify-content:center;gap:calc(6px * .9);margin:0 0 0 calc(8px * .9)}
+.who-tools.home-tools .top-bell{width:calc(34px * .9);height:calc(34px * .9);border-radius:calc(11px * .9)}
+.who-tools.home-tools .top-bell svg{width:calc(20px * .9);height:calc(20px * .9)}
+.who-tools.home-tools .status-chip{display:inline-flex;align-items:center;justify-content:flex-end;box-sizing:border-box;width:108px;min-width:108px;max-width:108px;height:18px;min-height:18px;max-height:18px;padding:0 7px;font-size:calc(10px * .9);line-height:18px;text-transform:none;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top-bell{position:relative;width:36px;height:36px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0}
 .top-bell svg{width:20px;height:20px;display:block}
 .top-bell-n{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px}
@@ -4007,7 +4009,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R1.8.3";
+const APP_VERSION="R1.8.4";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -4761,6 +4763,25 @@ function statusChip(){
   const l=statusLabel(); // R1.5: "Synced N min ago" when live; text filled by r146SyncTick so identical renders stay identical
   if(l==="Live"&&r146SyncedAt())return `<span class="status-chip ${statusClass()}" data-synced="1">${statusDot()} <span class="sync-ago">Synced</span></span>`;
   return `<span class="status-chip ${statusClass()}">${statusDot()} ${esc(l)}</span>`;
+}
+function homeSyncSlot(){
+  return `<span class="status-chip home-sync" id="home-sync"><span class="dot"></span><span class="home-sync-txt"></span></span>`;
+}
+function homeSyncText(){
+  const l=statusLabel();
+  return (l==="Live"&&r146SyncedAt())?r146SyncText():l;
+}
+function paintHomeSync(){
+  const el=document.getElementById("home-sync");
+  if(!el) return;
+  const cls="status-chip home-sync "+statusClass();
+  if(el.className!==cls) el.className=cls;
+  const dot=el.querySelector(".dot");
+  const dcls="dot "+statusClass();
+  if(dot&&dot.className!==dcls) dot.className=dcls;
+  const t=el.querySelector(".home-sync-txt");
+  const text=homeSyncText();
+  if(t&&t.textContent!==text) t.textContent=text;
 }
 function liveOrbFace(){
   const c=statusClass();
@@ -5716,14 +5737,14 @@ function stampSheetEnter(html){
 }
 function shell(inner){
   const u=user()||{};
-  const residentHome=route.page==="home"&&canWrite()&&!isConsultant()&&!isIntern();
+  const appHeader=canWrite()&&!isConsultant()&&!isIntern();
   const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile"].includes(route.page))?"on":"";
   const bell=`<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button>`;
-  const left=residentHome
+  const left=appHeader
     ? `<div class="home-id"><div class="profile-photo home-photo" aria-hidden="true">${esc(profileInitials(u.displayName||u.username||""))}</div><div class="home-greet"><span>${esc(greet())}</span><b>${esc(u.displayName||u.username||"")}</b></div></div>`
     : `<div><p class="kicker">${greet()}${canWrite()?` <span class="who-inline">${esc(u.displayName||"")}</span>`:""}</p><h1>${esc((S.unit&&S.unit.name)||"")}</h1></div>`;
-  const tools=residentHome?`<div class="who-tools home-tools">${bell}${statusChip()}</div>`:`<div class="who-tools">${statusChip()}${bell}</div>`;
-  return `<header class="top${residentHome?" resident-home":""}">${left}${tools}</header>
+  const tools=appHeader?`<div class="who-tools home-tools">${homeSyncSlot()}${bell}</div>`:`<div class="who-tools">${statusChip()}${bell}</div>`;
+  return `<header class="top${appHeader?" resident-home":""}">${left}${tools}</header>
     <main class="main">${inner}</main>${r151Dock()}
     <nav class="nav"><div class="nav-in">
       <button class="${on("home")}" onclick="go('home')">${ico('home')}<span class="lbl">Home</span></button>
@@ -6085,7 +6106,7 @@ function r146T(x){if(typeof x==="number")return x;const t=Date.parse(x||"");retu
 function r146Ago(t){const s=Math.max(0,Math.round((Date.now()-t)/1000));if(s<60)return "just now";const m=Math.floor(s/60);if(m<60)return m+" min ago";return Math.floor(m/60)+" h ago"}
 function r146SyncedAt(){let rt=0;try{rt=r146T(Sync&&Sync.lastRealtime)}catch(e){}return Math.max(r146LastSync||0,rt||0)}
 function r146SyncText(){const t=r146SyncedAt();return t?"Synced "+r146Ago(t):"Live"}
-function r146SyncTick(){document.querySelectorAll(".sync-ago").forEach(el=>{const v=r146SyncText();if(el.textContent!==v)el.textContent=v})}
+function r146SyncTick(){document.querySelectorAll(".sync-ago").forEach(el=>{const v=r146SyncText();if(el.textContent!==v)el.textContent=v});try{paintHomeSync()}catch(e){}}
 try{setInterval(r146SyncTick,15000);new MutationObserver(()=>{if(document.querySelector(".sync-ago"))r146SyncTick()}).observe(document.getElementById("app")||document.body,{childList:true,subtree:true})}catch(e){}
 function r146Q(s){return "'"+esc(String(s==null?"":s))+"'"}
 function r146Cut(s,n){s=String(s||"").replace(/\s+/g," ").trim();return s.length>n?s.slice(0,n-1)+"…":s}
@@ -6146,8 +6167,12 @@ function r146IsFlagged(p){return r146Reasons(p).some(r=>r.kind==="flag"&&r.lvl<=
 function r146IsDue(p){return r146Reasons(p).some(r=>r.kind==="due")}
 function r146IsMine(p){
   if(isConsultant())return isMyPatient(p);
-  const me=String(S.userId||"");if(!me)return false;
-  return openTasks(p.id).some(t=>String(t.to||"")===me)||r146MyHItems(p.id).length>0;
+  const info=bdftGetMyAssignedBeds();
+  if(!info||info.isGeneric||!info.beds||!p) return false;
+  const bed=bedObj(p.id);
+  if(!bed) return false;
+  const key=bdftCanonBed(bed.no||bed.id);
+  return info.beds.some(b=>bdftCanonBed(typeof b==="string"?b:(b&&(b.code||b.no)||""))===key);
 }
 function r146PF(p,f){if(f==="mine")return r146IsMine(p);if(f==="flagged")return r146IsFlagged(p);if(f==="due")return r146IsDue(p);return true}
 function r146Open(pid,tab){if(!patient(pid))return;ui.ptab=tab||"summary";ui.ptabPid=pid;go("snap",pid)}
@@ -21484,7 +21509,7 @@ function render(opts){
   if(ui._sheetEnter) _html=stampSheetEnter(_html);
   // R1.3.74: skip identical re-renders (realtime pulls, inbox refresh) so the page doesn't flash or replay animations.
   const _rk=routeKey(route.page,route.id);
-  if(!opts.nav && !opts.force && !navAnim && _html===lastRenderHtml && el.firstChild){ui._sheetEnter=false;renderHeld=false;renderSkips++;try{ if(route.page==="bdft") bdftMount(); }catch(e){}return}
+  if(!opts.nav && !opts.force && !navAnim && _html===lastRenderHtml && el.firstChild){ui._sheetEnter=false;renderHeld=false;renderSkips++;try{paintHomeSync()}catch(e){}try{ if(route.page==="bdft") bdftMount(); }catch(e){}return}
   el.classList.toggle("rerender", !opts.nav && !navAnim && _rk===lastRenderRoute);
   const _sameRoute=(_rk===lastRenderRoute);
   lastRenderHtml=_html; lastRenderRoute=_rk; renderCount++;
@@ -21528,6 +21553,7 @@ function render(opts){
   try{if(!history.state||history.state.tab!==nav.tab) history.replaceState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(e){}
   if(opts.fromInput) restoreTyping(keep);
   try{r151After()}catch(e){} // R1.5.1
+  try{paintHomeSync()}catch(e){}
   renderHeld=false;
 }
 let focusFlush=null;
