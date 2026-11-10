@@ -20165,15 +20165,10 @@ function bdftGetActiveDistribution(){
 }
 
 function bdftGetMyAssignedBeds(){
-  try{bdftInit()}catch(e){}
   const dist=bdftGetActiveDistribution();
+  if(!dist||!dist.tiers) return null;
   const u=user();
   if(!u) return null;
-  if(!dist||!dist.tiers){
-    const owned=bdftGetResidentBeds(u);
-    if(!owned.length) return null;
-    return {isGeneric:false,ownedFallback:true,doctorName:u.displayName||u.username||"",short:"",beds:owned.slice(),dateStr:""};
-  }
   const myName=(u.displayName||u.username||"").trim().toLowerCase();
   const myUser=(u.username||"").trim().toLowerCase();
 
@@ -20291,7 +20286,7 @@ function bdftHomeCard(){
 
   return `<div class="card" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--teal);">
     <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">
-      <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">${info.ownedFallback?"OWNED BEDS":bdftDateLabel(info.dateStr)} (${beds.length})</span>
+      <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">${bdftDateLabel(info.dateStr)} (${beds.length})</span>
       <button type="button" class="btn ghost sm" style="padding:2px 8px;font-size:11px;min-height:24px;height:24px;border-radius:6px;" onclick="bdftOpenReadOnly()">See BDFT</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:5px;">
