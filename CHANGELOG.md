@@ -25,4 +25,5 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 ### Fixed
 
+- Client version `R1.8.6`. The header sync dot stays an 8×8 circle. The pill sizes to its label and stays right-aligned in a 118px column, so the bell and greeting do not move. Text ellipsizes only past that max. Service worker cache `ward-sync-pwa-r1.8.6`.
 - Consultants see the Home Opinion count chip. It uses the same `opinionCount()` chip as residents and opens the patients list filtered to admission reason Opinion. That list stays view-only for consultants.
