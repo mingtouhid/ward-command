@@ -1198,7 +1198,15 @@ html[data-theme="light"] .about-kicker{color:#0f766e}
 .who-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px}
 .top.resident-home{--hs:.9;align-items:center;gap:calc(10px * var(--hs));margin:max(8px,env(safe-area-inset-top,0px)) 12px 0;padding:calc(10px * var(--hs)) calc(12px * var(--hs));border:1px solid var(--line);border-radius:calc(18px * var(--hs));background:var(--panel)}
 .home-id{display:flex;align-items:center;gap:calc(12px * .9);min-width:0;flex:1 1 auto;overflow:hidden}
-.profile-photo.home-photo{box-sizing:border-box;width:calc(72px * .9);height:calc(72px * .9);font-size:calc(22px * .9);flex:none}
+.profile-photo.home-photo,.photo-img.home-photo{box-sizing:border-box;width:calc(72px * .9);height:calc(72px * .9);font-size:calc(22px * .9);flex:none}
+.photo-img{border-radius:50%;object-fit:cover;display:block;background:color-mix(in srgb,var(--teal) 16%,var(--panel));border:1px solid color-mix(in srgb,var(--teal) 35%,var(--line))}
+.profile-photo-wrap{position:relative;width:72px;height:72px;flex:none}
+.photo-edit{position:absolute;right:-4px;bottom:-4px;width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0;box-shadow:var(--shadow)}
+.photo-edit svg{width:14px;height:14px;display:block}
+.photo-crop{position:fixed;inset:0;z-index:80;background:#0b1220;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px}
+.photo-crop-stage{width:min(86vw,360px);aspect-ratio:1;position:relative;overflow:hidden;touch-action:none;background:#111;border-radius:12px}
+.photo-crop-stage img{position:absolute;max-width:none;user-select:none;-webkit-user-drag:none}
+.photo-crop-guide{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.5);border:2px solid #fff;pointer-events:none}
 .home-greet{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-width:0;flex:1 1 auto;margin:0;line-height:1.2;overflow:hidden}
 .home-greet span{font-size:calc(15px * .9);font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink)}
 .home-greet b{display:block;font-size:calc(18px * .9);font-weight:750;letter-spacing:-.02em;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -3742,6 +3750,210 @@ async function profileClearPhone(){
   }catch(e){toast(phoneErrCopy(e),"bad")}
   render({force:1});
 }
+const PHOTO_PEND_KEY="ws_photo_pending";
+function photoKey(id){return "ws_my_photo_"+String(id||"")}
+function myPhotoData(){
+  const id=S.userId; if(!id) return "";
+  try{return localStorage.getItem(photoKey(id))||""}catch(e){return ""}
+}
+function myPhotoSaveLocal(data){
+  const id=S.userId; if(!id) return;
+  // One key per resident. setItem replaces the previous photo; nothing else is kept.
+  try{if(data) localStorage.setItem(photoKey(id),data); else localStorage.removeItem(photoKey(id))}catch(e){}
+}
+function photoPendingGet(){try{return JSON.parse(localStorage.getItem(PHOTO_PEND_KEY)||"null")}catch(e){return null}}
+function photoPendingSet(op,photo){
+  try{
+    if(!op) localStorage.removeItem(PHOTO_PEND_KEY);
+    else localStorage.setItem(PHOTO_PEND_KEY,JSON.stringify({id:String(S.userId||""),op,photo:photo||""}));
+  }catch(e){}
+}
+function photoFace(initials,cls){
+  const src=myPhotoData();
+  if(src&&src.indexOf("data:image/jpeg;base64,")===0) return `<img class="${cls} photo-img" alt="" src="${esc(src)}">`;
+  return `<div class="${cls}" aria-hidden="true">${esc(initials)}</div>`;
+}
+function photoCropRect(natW,natH,view,zoom,panX,panY){
+  const z=Math.max(1,Math.min(4,Number(zoom)||1));
+  const cover=Math.max(view/natW,view/natH);
+  const scale=cover*z;
+  const srcW=view/scale, srcH=view/scale;
+  let srcX=(-view/2-(Number(panX)||0))/scale+natW/2;
+  let srcY=(-view/2-(Number(panY)||0))/scale+natH/2;
+  srcX=Math.max(0,Math.min(natW-srcW,srcX));
+  srcY=Math.max(0,Math.min(natH-srcH,srcY));
+  return {srcX,srcY,srcW,srcH,scale,out:256};
+}
+function photoJpegBytes(dataUrl){
+  const i=String(dataUrl||"").indexOf(",");
+  if(i<0) return 0;
+  return Math.floor(String(dataUrl).slice(i+1).length*3/4);
+}
+function photoOpenPick(){
+  if(!canOpenProfile()) return;
+  ui.photoPick=true; ui.photoCrop=null; render();
+}
+function photoClosePick(){ui.photoPick=false; render()}
+function photoFilePicked(input){
+  const f=input&&input.files&&input.files[0];
+  if(!f) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const src=String(reader.result||"");
+    const img=new Image();
+    img.onload=()=>{
+      const view=Math.max(220,Math.min(360,(window.innerWidth||360)-32));
+      ui.photoPick=false;
+      ui.photoCrop={src,natW:img.naturalWidth,natH:img.naturalHeight,view,zoom:1,panX:0,panY:0};
+      render();
+    };
+    img.onerror=()=>toast("Could not read that photo.","bad");
+    img.src=src;
+  };
+  reader.readAsDataURL(f);
+  input.value="";
+}
+let photoPts={};
+function photoCropClamp(st){
+  const r=photoCropRect(st.natW,st.natH,st.view,st.zoom,st.panX,st.panY);
+  st.zoom=Math.max(1,Math.min(4,st.zoom));
+  st.panX=-st.view/2+(st.natW/2-r.srcX)*r.scale;
+  st.panY=-st.view/2+(st.natH/2-r.srcY)*r.scale;
+}
+function photoCropApply(){
+  const st=ui.photoCrop; if(!st) return;
+  const img=document.getElementById("photoCropImg"); if(!img) return;
+  photoCropClamp(st);
+  const scale=Math.max(st.view/st.natW,st.view/st.natH)*st.zoom;
+  img.style.width=(st.natW*scale)+"px";
+  img.style.height=(st.natH*scale)+"px";
+  img.style.left=(st.view/2-st.natW*scale/2+st.panX)+"px";
+  img.style.top=(st.view/2-st.natH*scale/2+st.panY)+"px";
+}
+function photoCropDown(e){
+  const st=ui.photoCrop; if(!st) return;
+  try{e.preventDefault()}catch(err){}
+  photoPts[e.pointerId]={x:e.clientX,y:e.clientY};
+  try{e.currentTarget.setPointerCapture(e.pointerId)}catch(err){}
+  const ids=Object.keys(photoPts);
+  if(ids.length>=2){
+    const a=photoPts[ids[0]], b=photoPts[ids[1]];
+    st.pinch=Math.hypot(a.x-b.x,a.y-b.y)||1;
+    st.pinchZoom=st.zoom;
+  }else{
+    st.dragX=e.clientX; st.dragY=e.clientY; st.dragPanX=st.panX; st.dragPanY=st.panY;
+  }
+}
+function photoCropMove(e){
+  const st=ui.photoCrop; if(!st||!photoPts[e.pointerId]) return;
+  photoPts[e.pointerId]={x:e.clientX,y:e.clientY};
+  const ids=Object.keys(photoPts);
+  if(ids.length>=2&&st.pinch){
+    const a=photoPts[ids[0]], b=photoPts[ids[1]];
+    const d=Math.hypot(a.x-b.x,a.y-b.y)||1;
+    st.zoom=Math.min(4,Math.max(1,st.pinchZoom*(d/st.pinch)));
+  }else if(ids.length===1){
+    st.panX=st.dragPanX+(e.clientX-st.dragX);
+    st.panY=st.dragPanY+(e.clientY-st.dragY);
+  }
+  photoCropApply();
+}
+function photoCropUp(e){delete photoPts[e.pointerId]}
+function photoCropWheel(e){
+  const st=ui.photoCrop; if(!st) return;
+  try{e.preventDefault()}catch(err){}
+  st.zoom=Math.min(4,Math.max(1,st.zoom*(e.deltaY<0?1.08:0.92)));
+  photoCropApply();
+}
+function photoExportCrop(){
+  const st=ui.photoCrop; if(!st) return "";
+  const img=document.getElementById("photoCropImg");
+  const r=photoCropRect(st.natW,st.natH,st.view,st.zoom,st.panX,st.panY);
+  const canvas=document.createElement("canvas");
+  canvas.width=256; canvas.height=256;
+  const ctx=canvas.getContext("2d");
+  ctx.fillStyle="#fff"; ctx.fillRect(0,0,256,256);
+  try{ctx.drawImage(img,r.srcX,r.srcY,r.srcW,r.srcH,0,0,256,256)}catch(e){return ""}
+  let q=0.85, url="";
+  for(let i=0;i<6;i++){
+    url=canvas.toDataURL("image/jpeg",q);
+    if(photoJpegBytes(url)<=40000||q<=0.5) break;
+    q=Math.round((q-0.08)*100)/100;
+  }
+  return url;
+}
+async function photoPushPending(){
+  const p=photoPendingGet();
+  if(!p||!sb||!sessionTok||String(p.id)!==String(S.userId)||navigator.onLine===false) return;
+  try{
+    if(p.op==="clear"){
+      const {error}=await sb.rpc("ward_clear_my_photo",{p_token:sessionTok});
+      if(error){if(rpcMissing(error)) return; throw error}
+    }else{
+      const {error}=await sb.rpc("ward_set_my_photo",{p_token:sessionTok,p_photo:p.photo});
+      if(error){if(rpcMissing(error)) return; throw error}
+    }
+    photoPendingSet(null);
+  }catch(e){}
+}
+async function photoFetchMine(){
+  if(!canOpenProfile()||!sb||!sessionTok||photoPendingGet()) return;
+  try{
+    const {data,error}=await sb.rpc("ward_get_my_photo",{p_token:sessionTok});
+    if(error||!data) return;
+    const ph=typeof data.photo==="string"?data.photo:"";
+    myPhotoSaveLocal(ph);
+    try{render()}catch(e){}
+  }catch(e){}
+}
+async function photoCommitCrop(){
+  if(!canOpenProfile()) return;
+  const data=photoExportCrop();
+  if(!data||data.indexOf("data:image/jpeg;base64,")!==0||data.length>200000){toast("Could not save that photo.","bad");return}
+  myPhotoSaveLocal(data);
+  photoPendingSet("set",data);
+  ui.photoCrop=null; photoPts={};
+  render();
+  toast(navigator.onLine===false?"Photo saved on this phone. It will sync when you are online.":"Photo saved","ok");
+  photoPushPending();
+}
+function photoCancelCrop(){ui.photoCrop=null; photoPts={}; render()}
+function photoRemove(){
+  if(!canOpenProfile()) return;
+  myPhotoSaveLocal("");
+  photoPendingSet("clear");
+  ui.photoPick=false;
+  render();
+  toast("Photo removed","ok");
+  photoPushPending();
+}
+function photoOverlays(){
+  let h="";
+  if(ui.photoPick){
+    const has=!!myPhotoData();
+    h+=`<div class="sheet mid"><button class="mask" type="button" onclick="photoClosePick()"></button><div class="box" role="dialog" aria-modal="true" aria-label="Profile photo" style="border-radius:24px;max-width:400px">
+      <h2 class="page-title" style="margin:0 0 12px">Profile photo</h2>
+      <input id="photoFile" type="file" accept="image/*" hidden onchange="photoFilePicked(this)">
+      <button type="button" class="btn block" onclick="document.getElementById('photoFile').click()">Choose from gallery</button>
+      ${has?`<button type="button" class="btn ghost block" style="margin-top:8px;color:var(--danger)" onclick="photoRemove()">Remove photo</button>`:""}
+      <button type="button" class="btn ghost block" style="margin-top:8px" onclick="photoClosePick()">Cancel</button>
+    </div></div>`;
+  }
+  if(ui.photoCrop){
+    const st=ui.photoCrop;
+    h+=`<div class="photo-crop" role="dialog" aria-modal="true" aria-label="Crop photo">
+      <div class="photo-crop-stage" style="width:${st.view}px;height:${st.view}px" onpointerdown="photoCropDown(event)" onpointermove="photoCropMove(event)" onpointerup="photoCropUp(event)" onpointercancel="photoCropUp(event)" onwheel="photoCropWheel(event)">
+        <img id="photoCropImg" alt="" src="${esc(st.src)}" draggable="false">
+        <div class="photo-crop-guide"></div>
+      </div>
+      <div class="row" style="width:min(86vw,360px);gap:8px">
+        <button type="button" class="btn ghost block" onclick="photoCancelCrop()">Cancel</button>
+        <button type="button" class="btn block" onclick="photoCommitCrop()">Save</button>
+      </div>
+    </div>`;
+  }
+  return h;
+}
 function profileView(){
   try{bdftInit()}catch(e){}
   profileEnsurePhone();
@@ -3765,8 +3977,11 @@ function profileView(){
     </div>
     <div class="card profile-card" data-page="profile">
       <div class="profile-head">
-        <div class="profile-photo" aria-hidden="true">${esc(profileInitials(editing?(val("pd")||me.displayName):me.displayName))}</div>
-        <div><b>${esc(editing?(val("pd")||me.displayName): (me.displayName||me.username||""))}</b><p class="tiny" style="margin:2px 0 0">Photo placeholder</p></div>
+        <div class="profile-photo-wrap">
+          ${photoFace(profileInitials(editing?(val("pd")||me.displayName):me.displayName),"profile-photo")}
+          <button type="button" class="photo-edit" aria-label="Edit photo" onclick="photoOpenPick()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"/></svg></button>
+        </div>
+        <div><b>${esc(editing?(val("pd")||me.displayName): (me.displayName||me.username||""))}</b><p class="tiny" style="margin:2px 0 0">${myPhotoData()?"Profile photo":"Photo placeholder"}</p></div>
       </div>
       <dl class="profile-rows">
       ${editing?`${row("Username",`<input id="pu" autocapitalize="none" autocomplete="username" value="${esc(val("pu"))}" oninput="ui.fields.pu=this.value"/>`)}
@@ -4009,7 +4224,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R1.8.4";
+const APP_VERSION="R1.8.5";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -5171,7 +5386,7 @@ async function flushPending(){
   flushPromise=(async()=>{
     let n=0;
     try{do{flushAgain=false;await doFlushPending()}while(flushAgain&&++n<4)}
-    finally{flushPromise=null;outboxUiRefresh()}
+    finally{flushPromise=null;try{photoPushPending()}catch(e){}outboxUiRefresh()}
   })();
   return flushPromise;
 }
@@ -5510,6 +5725,8 @@ async function doCloudBoot(){
     cloudStatus=liveReady?(outboxCounts().failed?"error":"live"):"syncing";
     sessionVerified=true;
     Sync.reconnects=0; // R1.3.141 SYNC
+    photoPushPending().catch(()=>{});
+    photoFetchMine().catch(()=>{});
     return true;
   }catch(e){
     cloudLastError=e.message||String(e);
@@ -5584,6 +5801,8 @@ async function doLogin(e){
           save();
           cloudListen();
           flushPending().catch(()=>{}); // R1.3.141 SYNC
+          photoPushPending().catch(()=>{});
+          photoFetchMine().catch(()=>{});
           ui.loginBusy=false; ui.loginErr="";
           go("home");
           return;
@@ -5628,7 +5847,7 @@ function ico(name){
 }
 
 function overlayOpen(){
-  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser || ui.myPhone || ui.r17Gate || ui.bdftAdminSheet || ui.bdftResidentModal || ui.bdftBedPickerModal || ui.bdftOccupiedModal || ui.bdftUnavailableModal);
+  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser || ui.myPhone || ui.photoPick || ui.photoCrop || ui.r17Gate || ui.bdftAdminSheet || ui.bdftResidentModal || ui.bdftBedPickerModal || ui.bdftOccupiedModal || ui.bdftUnavailableModal);
 }
 function overlayDepth(){
   let n=0;
@@ -5636,6 +5855,8 @@ function overlayDepth(){
   if(ui.userEdit) n++;
   if(ui.addUser) n++;
   if(ui.myPhone) n++;
+  if(ui.photoPick) n++;
+  if(ui.photoCrop) n++;
   if(ui.consEdit) n++;
   if(ui.notifySet) n++;
   if(ui.pick) n++;
@@ -5654,7 +5875,7 @@ function clearOverlayState(extra){
   extra=extra||{};
   ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null; ui.medEditId=null; ui.r17Gate=null; ui.r17Next=null; ui.r17Reason="";
   ui.bdftAdminSheet=false; ui.bdftResidentModal=null; ui.bdftBedPickerModal=null; ui.bdftOccupiedModal=false; ui.bdftUnavailableModal=false;
-  ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null; ui.addUser=null; ui.myPhone=null; phoneFieldsWipe();
+  ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null; ui.addUser=null; ui.myPhone=null; ui.photoPick=false; ui.photoCrop=null; phoneFieldsWipe();
   if(extra.med){
     ui.medPid=null;
     if(ui.fields){try{delete ui.fields.md;delete ui.fields.mds}catch(e){}}
@@ -5666,6 +5887,8 @@ function popTopOverlay(extra){
   if(ui.confirm){ ui.confirm=null; return "confirm"; }
   if(ui.pick){ ui.pick=null; return "pick"; }
   if(ui.notifySet){ ui.notifySet=false; return "notifySet"; }
+  if(ui.photoCrop){ ui.photoCrop=null; return "photoCrop"; }
+  if(ui.photoPick){ ui.photoPick=false; return "photoPick"; }
   if(ui.myPhone){ ui.myPhone=null; phoneFieldsWipe(); return "myPhone"; }
   if(ui.addUser){ ui.addUser=null; phoneFieldsWipe(); return "addUser"; }
   if(ui.userEdit){ ui.userEdit=null; phoneFieldsWipe(); return "userEdit"; }
@@ -5741,7 +5964,7 @@ function shell(inner){
   const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile"].includes(route.page))?"on":"";
   const bell=`<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button>`;
   const left=appHeader
-    ? `<div class="home-id"><div class="profile-photo home-photo" aria-hidden="true">${esc(profileInitials(u.displayName||u.username||""))}</div><div class="home-greet"><span>${esc(greet())}</span><b>${esc(u.displayName||u.username||"")}</b></div></div>`
+    ? `<div class="home-id">${photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")}<div class="home-greet"><span>${esc(greet())}</span><b>${esc(u.displayName||u.username||"")}</b></div></div>`
     : `<div><p class="kicker">${greet()}${canWrite()?` <span class="who-inline">${esc(u.displayName||"")}</span>`:""}</p><h1>${esc((S.unit&&S.unit.name)||"")}</h1></div>`;
   const tools=appHeader?`<div class="who-tools home-tools">${homeSyncSlot()}${bell}</div>`:`<div class="who-tools">${statusChip()}${bell}</div>`;
   return `<header class="top${appHeader?" resident-home":""}">${left}${tools}</header>
@@ -5751,7 +5974,7 @@ function shell(inner){
       <button class="${on("patients")}" onclick="go('patients')">${ico('patients')}<span class="lbl">Patients</span></button>
       <button class="${on("handover")}" onclick="go('handover')" ${ui.busy?"disabled":""}>${ico('handover')}<span class="lbl">Handovers</span></button>
       <button class="${on("more")}" onclick="go('more')">${ico('more')}<span class="lbl">More</span></button>
-    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(bdftAdminSheetOverlay()||"")+(bdftResidentModalOverlay()||"")+(bdftBedPickerOverlay()||"")+(bdftOccupiedModalOverlay()||"")+(bdftUnavailableModalOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review, ui.r17Reason||"")}</div></div>`:""))}${busyVeil()}`;
+    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(photoOverlays()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(bdftAdminSheetOverlay()||"")+(bdftResidentModalOverlay()||"")+(bdftBedPickerOverlay()||"")+(bdftOccupiedModalOverlay()||"")+(bdftUnavailableModalOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review, ui.r17Reason||"")}</div></div>`:""))}${busyVeil()}`;
 }
 
 /* HOME: occupied beds only, current status */
@@ -21554,6 +21777,7 @@ function render(opts){
   if(opts.fromInput) restoreTyping(keep);
   try{r151After()}catch(e){} // R1.5.1
   try{paintHomeSync()}catch(e){}
+  try{photoCropApply()}catch(e){}
   renderHeld=false;
 }
 let focusFlush=null;
