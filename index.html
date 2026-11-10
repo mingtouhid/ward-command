@@ -3807,7 +3807,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R1.8";
+const APP_VERSION="R1.8.1";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -6050,8 +6050,9 @@ function homeView(){
     {k:"jail",n:jailN,l:"Jail",c:"grey",fn:"ui.ptag='jail';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
     {k:"ect",n:ect,l:"ECT",c:"blue",fn:"go('ect')"}
   ];
-  if(isConsultant())F.push({k:"mine",n:myPatientCount(),l:"My patients",c:"blue",fn:"ui.ptag='mine';ui.preason='';ui.pcon='';ui.pf='';go('patients')"});
-  else{F.splice(1,0,{k:"handover",n:inbox,l:"Handover",c:"amber",fn:"go('handover')"});F.push({k:"opinion",n:opinionCount(),l:"Opinion",c:"blue",fn:"ui.ptag='';ui.pcon='';ui.preason='opinion';ui.pf='';go('patients')"})}
+  const opinionChip={k:"opinion",n:opinionCount(),l:"Opinion",c:"blue",fn:"ui.ptag='';ui.pcon='';ui.preason='opinion';ui.pf='';go('patients')"};
+  if(isConsultant()){F.push({k:"mine",n:myPatientCount(),l:"My patients",c:"blue",fn:"ui.ptag='mine';ui.preason='';ui.pcon='';ui.pf='';go('patients')"});F.push(opinionChip)}
+  else{F.splice(1,0,{k:"handover",n:inbox,l:"Handover",c:"amber",fn:"go('handover')"});F.push(opinionChip)}
   const on=F.filter(f=>f.n>0),off=F.filter(f=>!f.n);
   return `<div class="home-split r146-today">
     ${r17AuditMissHtml()}
@@ -6346,7 +6347,6 @@ function patientsView(){
     if(isConsultant()){
       if(tag==="mine") return isMyPatient(p);
       if(tag==="opinion_mine") return isMyPatient(p)&&patientHasReason(p,"opinion");
-      if(!tag) return true;
     }
     if(ui.preason && !patientHasReason(p,ui.preason)) return false;
     if(ui.pcon && !patientHasConsultant(p,ui.pcon)) return false;
@@ -13214,7 +13214,7 @@ const MSE_PAGES=[
   {k:"jd_social",lb:"Social",s:1,row:1,n:"intact",o:[["intact","Intact"],["impaired","Impaired"]]},
   {k:"jd_personal",lb:"Personal",s:1,row:1,n:"intact",o:[["intact","Intact"],["impaired","Impaired"]]}]},
  {k:"insight",t:"Insight",g:[
-  {k:"insight",lb:"Insight",s:1,o:[["g1","Grade I"],["g2","Grade II"],["g3","Grade III"],["g4","Grade IV"]]}]}
+  {k:"insight",lb:"Insight",s:1,o:[["g1","Grade I"],["g2","Grade II"],["g3","Grade III"],["g4","Grade IV"],["g5","Grade V"]]}]}
 ];
 const MSE_G={};MSE_PAGES.forEach((pg,i)=>pg.g.forEach(g=>{g.page=i;MSE_G[g.k]=g;if(g.sub)Object.keys(g.sub).forEach(pk=>{const sg=g.sub[pk];sg.parent=g.k;sg.when=pk;sg.page=i;MSE_G[sg.k]=sg})}));
 const MSE_REVIEW=MSE_PAGES.length;
