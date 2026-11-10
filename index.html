@@ -3075,7 +3075,14 @@ button.r16-tile:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .beds-container{flex-grow:1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:40px}
 .bed-tag{display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:grab;user-select:none;padding:5px 12px;border-radius:10px;margin:0;transition:all .15s ease}
 .bed-tag.original{background:color-mix(in srgb,var(--teal) 15%,transparent);color:var(--teal);border:1px solid color-mix(in srgb,var(--teal) 30%,transparent)}
-.bed-tag.reassigned{background:color-mix(in srgb,var(--amber,#f59e0b) 15%,transparent);color:var(--amber,#f59e0b);border:1px solid color-mix(in srgb,var(--amber,#f59e0b) 30%,transparent)}
+/* Redistributed beds stay off the accent. Violet is distinct from teal, blue, rose, amber and green; purple accent swaps it for sky. Text is violet-800 / violet-200 (or sky-800 / sky-100) so it stays above WCAG AA on light and dark panels. */
+.bed-tag.reassigned{background:color-mix(in srgb,#6d28d9 16%,transparent);color:#5b21b6;border:1px solid color-mix(in srgb,#6d28d9 45%,transparent)}
+html[data-theme="dark"] .bed-tag.reassigned,html[data-theme="night"] .bed-tag.reassigned,html[data-theme="ot"] .bed-tag.reassigned{background:color-mix(in srgb,#c4b5fd 20%,transparent);color:#ddd6fe;border-color:color-mix(in srgb,#c4b5fd 55%,transparent)}
+html[data-accent="purple"] .bed-tag.reassigned{background:color-mix(in srgb,#0369a1 16%,transparent);color:#075985;border-color:color-mix(in srgb,#0369a1 45%,transparent)}
+html[data-accent="purple"][data-theme="dark"] .bed-tag.reassigned,html[data-accent="purple"][data-theme="night"] .bed-tag.reassigned,html[data-accent="purple"][data-theme="ot"] .bed-tag.reassigned{background:color-mix(in srgb,#7dd3fc 20%,transparent);color:#e0f2fe;border-color:color-mix(in srgb,#7dd3fc 55%,transparent)}
+.bdft-key{display:flex;justify-content:center;gap:8px;margin:8px 0 0}
+.bdft-key .bed-tag{cursor:default;font-size:11px;font-weight:700;padding:3px 8px}
+.profile-photo{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;background:color-mix(in srgb,var(--teal) 16%,var(--panel));color:var(--teal);border:1px solid color-mix(in srgb,var(--teal) 35%,var(--line));flex:none}
 .bed-tag.consecutive-conflict,.bed-tag.invalid{background:color-mix(in srgb,var(--red,#ef4444) 15%,transparent);color:var(--red,#ef4444);border:1px solid color-mix(in srgb,var(--red,#ef4444) 30%,transparent)}
 .bed-tag.tapped-active{border:2px solid var(--teal);transform:scale(1.08);z-index:10;box-shadow:0 0 0 4px color-mix(in srgb,var(--teal) 25%,transparent)}
 .happy-day-tag{background:color-mix(in srgb,var(--teal) 12%,transparent);color:var(--teal);border:1px solid color-mix(in srgb,var(--teal) 25%,transparent);padding:5px 12px;border-radius:10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
@@ -3473,7 +3480,7 @@ const PHONE_RE=/^\+91[6-9]\d{9}$/;
 const PHONE_ERR="Enter a 10-digit Indian mobile number";
 let dutyPhones=new Map();      // resident_id -> +91XXXXXXXXXX (consultant session only)
 let phoneSaved=new Map();      // username -> true (admin: which residents have a number)
-function phonesForget(){dutyPhones=new Map();phoneSaved=new Map()}
+function phonesForget(){dutyPhones=new Map();phoneSaved=new Map();ui.profilePhone=null;ui._profilePhoneStarted=false;ui.profileEdit=false}
 function phoneE164(raw){
   let d=String(raw==null?"":raw).replace(/[\s().-]/g,"");
   if(!d) return "";
@@ -3580,6 +3587,172 @@ async function saveMyPhone(clear){
     phoneFieldsWipe(); ui.myPhone=null; save();
   }catch(e){phoneErrSet("mph",phoneErrCopy(e))}
   finally{setBusy(false);render({force:1})}
+}
+function canOpenProfile(){return canWrite()&&!isIntern()&&!isConsultant()}
+function profileInitials(name){
+  const p=String(name||"").replace(/^dr\.?\s+/i,"").trim().split(/\s+/).filter(Boolean);
+  const s=(p[0]?p[0][0]:"")+(p.length>1?p[p.length-1][0]:"");
+  return (s||"?").toUpperCase();
+}
+function profileEnsurePhone(){
+  if(ui._profilePhoneStarted||!canOpenProfile()) return;
+  ui._profilePhoneStarted=true;
+  ui.profilePhone={loading:true};
+  if(!sb||!sessionTok){ui.profilePhone={loading:false,e164:"",err:"Sign in again to see your number."};return}
+  sb.rpc("ward_get_my_phone",{p_token:sessionTok}).then(({data,error})=>{
+    if(error) throw error;
+    const ph=data&&PHONE_RE.test(String(data.phone||""))?String(data.phone):"";
+    ui.profilePhone={loading:false,e164:ph};
+  }).catch(e=>{
+    ui.profilePhone={loading:false,e164:"",err:rpcMissing(e)?"Phone status needs a server update.":phoneErrCopy(e),missing:rpcMissing(e)};
+  }).finally(()=>{try{render()}catch(e){}});
+}
+function profileBeginEdit(){
+  if(!canOpenProfile()) return;
+  const me=user(); if(!me) return;
+  ui.profileEdit=true;
+  ui.fields=ui.fields||{};
+  ui.fields.pu=me.username||"";
+  ui.fields.pd=me.displayName||"";
+  ui.fields.pph=ui.profilePhone&&ui.profilePhone.e164?phonePretty(ui.profilePhone.e164):"";
+  ui.profileShort=bdftGetResidentShort(me);
+  ui.profileBeds=(bdftGetResidentBeds(me)||[]).slice();
+  ui.profilePrevName=me.displayName||me.username||"";
+  render();
+}
+function profileCancelEdit(){
+  ui.profileEdit=false;
+  phoneErrSet("pph","");
+  render();
+}
+function profileToggleBed(code){
+  if(!ui.profileEdit) return;
+  const key=bdftCanonBed(code);
+  const list=ui.profileBeds||[];
+  const i=list.findIndex(b=>bdftCanonBed(b)===key);
+  if(i>=0) list.splice(i,1); else list.push(code);
+  ui.profileBeds=list;
+  render();
+}
+function profileApplySelfBdft(me,short,bedList){
+  ensureConfiguration();
+  configuration.batches=configuration.batches||[];
+  configuration.fixedBedMatrix=configuration.fixedBedMatrix||{};
+  const prev=new Set([ui.profilePrevName,me.displayName,me.username].filter(Boolean).map(s=>String(s).toLowerCase()));
+  const name=me.displayName||me.username||"";
+  const batchName=bdftGetResidentBatch(me);
+  configuration.batches.forEach(b=>{b.doctors=(b.doctors||[]).filter(d=>!prev.has(String(d.name||"").toLowerCase()))});
+  let target=configuration.batches.find(b=>String(b.name||"").toLowerCase()===String(batchName||"").toLowerCase())||configuration.batches[0];
+  if(target) target.doctors.push({id:generateId("doc"),name,abbreviation:short||"DR",enabled:true,order:(target.doctors||[]).length});
+  const taken=new Set((bedList||[]).map(bdftCanonBed));
+  Object.keys(configuration.fixedBedMatrix||{}).forEach(other=>{
+    if(prev.has(other.toLowerCase())) return;
+    const keep=(configuration.fixedBedMatrix[other]||"").split(",").map(b=>b.trim()).filter(Boolean).filter(b=>!taken.has(bdftCanonBed(b)));
+    configuration.fixedBedMatrix[other]=keep.join(",");
+  });
+  Object.keys(configuration.fixedBedMatrix||{}).forEach(k=>{if(prev.has(k.toLowerCase())&&k!==name) delete configuration.fixedBedMatrix[k]});
+  configuration.fixedBedMatrix[name]=(bedList||[]).join(",");
+  saveConfigurationToStorage(configuration);
+  buildRuntimeFromConfig(configuration);
+}
+async function profileSave(){
+  if(!canOpenProfile()) return;
+  const me=user(); if(!me||String(me.id)!==String(S.userId)){toast("You can only edit your own profile.","bad");return}
+  const username=(val("pu")||"").trim().toLowerCase();
+  const display=(val("pd")||"").trim();
+  const short=String(ui.profileShort||"").trim().toUpperCase().slice(0,16);
+  const beds=(ui.profileBeds||[]).slice();
+  if(!/^[a-z0-9][a-z0-9._-]{0,31}$/.test(username)){toast("Username: letters, numbers, . _ -","bad");return}
+  if(!display||display.length>80){toast("Display name is required.","bad");return}
+  if(!short){toast("Short name is required.","bad");return}
+  const raw=String(val("pph")||"").trim();
+  const had=ui.profilePhone&&ui.profilePhone.e164?phonePretty(ui.profilePhone.e164):"";
+  let e164=null;
+  if(raw&&raw!==had){
+    e164=phoneE164(raw);
+    if(e164===null){phoneErrSet("pph",PHONE_ERR);render({force:1});return}
+  }
+  phoneErrSet("pph","");
+  let nameNote="";
+  const nameChanged=username!==String(me.username||"").toLowerCase()||display!==String(me.displayName||"");
+  if(nameChanged){
+    if(!sb||!sessionTok){toast("Sign in again to change your name. Other details were not saved.","bad");return}
+    try{
+      const {data,error}=await sb.rpc("ward_update_my_profile",{p_token:sessionTok,p_username:username,p_display:display});
+      if(error) throw error;
+      if(!data||data.ok!==true) throw new Error("save failed");
+      me.username=String(data.username||username);
+      me.displayName=String(data.display_name||display);
+    }catch(e){
+      if(rpcMissing(e)) nameNote="Name change needs a server update. ";
+      else{toast(/already in use/i.test(String(e.message||e))?"That username is already in use.":"Could not save your name.","bad");return}
+    }
+  }
+  if(e164){
+    try{await rpcSetPhone(me.username,e164);ui.profilePhone={loading:false,e164}}
+    catch(e){toast(phoneErrCopy(e),"bad")}
+  }
+  try{profileApplySelfBdft(me,short,beds)}catch(e){toast("Could not update BDFT settings.","bad")}
+  let saved="Profile saved";
+  if(sb&&sessionTok){
+    try{
+      const res=await bdftSyncSetupToSupabase();
+      if(!res.ok) saved="Profile saved on this phone. BDFT sync: "+(res.error||"not saved");
+    }catch(e){saved="Profile saved on this phone."}
+  }else saved="Profile saved on this phone.";
+  toast(nameNote+saved, nameNote||saved!=="Profile saved"?"bad":"ok");
+  ui.profileEdit=false;
+  ui.profilePrevName=me.displayName||me.username||"";
+  save();
+  render({force:1});
+}
+async function profileClearPhone(){
+  if(!canOpenProfile()||!user()) return;
+  if(!sb||!sessionTok){toast("Sign in again to update your number.","bad");return}
+  try{
+    await rpcSetPhone(user().username,"");
+    ui.profilePhone={loading:false,e164:""};
+    if(ui.fields) ui.fields.pph="";
+    toast("Number removed","ok");
+  }catch(e){toast(phoneErrCopy(e),"bad")}
+  render({force:1});
+}
+function profileView(){
+  try{bdftInit()}catch(e){}
+  profileEnsurePhone();
+  if(!canOpenProfile()) return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="card"><p class="sm">This page is your own profile.</p></div>`;
+  const me=user()||{};
+  const editing=!!ui.profileEdit;
+  const short=editing?(ui.profileShort||""):bdftGetResidentShort(me);
+  const beds=editing?(ui.profileBeds||[]):bdftGetResidentBeds(me);
+  const ph=ui.profilePhone||{loading:true};
+  const phoneLine=ph.loading?"Checking…":ph.e164?phonePretty(ph.e164):ph.err?ph.err:(ph.missing?"Set":"Not set");
+  const wardBeds=(S.beds||[]).filter(b=>b&&b.active!==false);
+  const chosen=new Set((ui.profileBeds||[]).map(bdftCanonBed));
+  const grid=wardBeds.length?`<div class="bdft-setup-bed-grid">${wardBeds.map(b=>{const code=b.no||b.id;const on=chosen.has(bdftCanonBed(code));return `<button type="button" class="pill ${on?"full":"empty"}" aria-pressed="${on}" onclick="profileToggleBed('${esc(code)}')"><b>${esc(code)}</b></button>`}).join("")}</div>`:`<p class="tiny">No beds in the ward map.</p>`;
+  const row=(k,v)=>`<div class="meta" style="margin-top:8px"><div><b>${esc(k)}</b>${v}</div></div>`;
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
+    <div class="row" style="align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
+      <h2 class="page-title" style="margin:0">My profile</h2>
+      ${editing?`<span style="display:flex;gap:6px"><button type="button" class="btn ghost sm" onclick="profileCancelEdit()">Cancel</button><button type="button" class="btn sm" onclick="profileSave()">Save</button></span>`:`<button type="button" class="btn sm" onclick="profileBeginEdit()">Edit</button>`}
+    </div>
+    <div class="card" data-page="profile">
+      <div class="row" style="align-items:center;gap:12px;margin-bottom:8px">
+        <div class="profile-photo" aria-hidden="true">${esc(profileInitials(editing?(val("pd")||me.displayName):me.displayName))}</div>
+        <div><b>${esc(me.displayName||me.username||"")}</b><p class="tiny" style="margin:2px 0 0">Photo placeholder</p></div>
+      </div>
+      ${editing?`<label class="field"><span>Username</span><input id="pu" autocapitalize="none" autocomplete="username" value="${esc(val("pu"))}" oninput="ui.fields.pu=this.value"/></label>
+        <label class="field"><span>Display name</span><input id="pd" value="${esc(val("pd"))}" oninput="ui.fields.pd=this.value"/></label>
+        ${phoneField("pph","Mobile number (+91)","10-digit mobile","Only consultants can call you, and only while you are on duty. Other residents never see this number.",'tel')}
+        ${(ph.e164)?`<button type="button" class="btn ghost sm" style="margin:-4px 0 10px;color:var(--danger)" onclick="profileClearPhone()">Remove number</button>`:""}
+        <label class="field"><span>BDFT short name</span><input id="pshort" maxlength="16" style="text-transform:uppercase" value="${esc(short)}" oninput="ui.profileShort=this.value.toUpperCase()"/></label>
+        <div class="resident-bed-field"><span class="field-label">Owned beds (${(ui.profileBeds||[]).length})</span>${grid}</div>`
+      :`${row("Username",esc(me.username||""))}
+        ${row("Display name",esc(me.displayName||""))}
+        ${row("Phone",esc(phoneLine))}
+        ${row("BDFT short name",esc(short||""))}
+        ${row("Owned beds",beds.length?beds.map(esc).join(", "):"None")}`}
+    </div>`;
 }
 function setSessionTok(tok){
   sessionTok=tok||null;
@@ -4424,7 +4597,7 @@ let navDir="fwd";
 let navAnim=false;
 let navScroll={};
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
-const PAGE_TAB={ivitals:"ivitals",ireports:"ireports",ireport:"ireports",home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",dedit:"patients",vchart:"patients",scale:"patients",srate:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more",bdft:"more"};
+const PAGE_TAB={ivitals:"ivitals",ireports:"ireports",ireport:"ireports",home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",dedit:"patients",vchart:"patients",scale:"patients",srate:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more",bdft:"more",profile:"more"};
 function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more"||tab==="ivitals"||tab==="ireports")?tab:"home"} // R1.3.142: ivitals/ireports are intern-only tabs
 function syncRoute(){
   if(nav.stack.length){
@@ -5400,6 +5573,7 @@ function ico(name){
     phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(12 12) scale(0.75) translate(-12 -12)"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></g></svg>',
     users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/> <circle cx="9" cy="7" r="4"/> <path d="M22 21v-2a4 4 0 0 0-3-3.87"/> <path d="M16 3.13a4 4 0 0 1 0 7.75"/> </g> </svg>',
     bdft:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/> </g> </svg>',
+    profile:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(12 12) scale(0.75) translate(-12 -12)"><circle cx="12" cy="8" r="3.2"/><path d="M5.2 19.2c.7-3.2 3.2-4.8 6.8-4.8s6.1 1.6 6.8 4.8"/></g></svg>',
     logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/> <polyline points="16 17 21 12 16 7"/> <line x1="21" y1="12" x2="9" y2="12"/> </g> </svg>'
   };
   return `<span class="ico">${s[name]||""}</span>`;
@@ -5515,7 +5689,7 @@ function stampSheetEnter(html){
 }
 function shell(inner){
   const u=user();
-  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft"].includes(route.page))?"on":"";
+  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile"].includes(route.page))?"on":"";
   return `<header class="top"><div><p class="kicker">${greet()}${canWrite()?` <span class="who-inline">${esc(u.displayName)}</span>`:""}</p><h1>${esc(S.unit.name)}</h1></div>
     <div class="who-tools">${statusChip()}<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button></div></header>
     <main class="main">${inner}</main>${r151Dock()}
@@ -6058,6 +6232,7 @@ function homeView(){
     ${r17AuditMissHtml()}
     <div class="r146-col">
     <div class="r146-title"><h2>Today</h2><span class="tiny">${esc(dutyDateLabel())}</span></div>
+    ${bdftMakeCard()}
     ${bdftHomeCard()}
     ${(()=>{ // R1.6 (t411u item 5): hero card with a subtle theme and an equal-tile grid; every tile keeps its tap action
       const nW=wards.length+1,short=nW%3,wideFrom=nW===1?0:short===1?nW-4:short===2?nW-2:nW; // last row: 2 wide tiles per row
@@ -11972,7 +12147,9 @@ function moreView(){
     <p class="tiny" style="margin:-4px 0 14px;opacity:.55">Build ${esc(APP_VERSION)}</p>
     <p class="more-section">Ward</p>
     <div class="more-grid">
-    ${canAccessBdft()?row("bdftTileClick()",ico("bdft"),"BDFT","teal"):""}
+    ${canAdmin()?row("bdftTileClick()",ico("bdft"),"BDFT","teal"):""}
+    ${canAdmin()?row("bdftOpenSetup()",ico("setup"),"BDFT settings","amber"):""}
+    ${canWrite()&&!canAdmin()?row("go('profile')",ico("profile"),"My profile","teal"):""}
     ${canWrite()?row("ui.ctab='in';ui.disListOnly=false;go('census')",ico("census"),"Admit / Discharge","teal"):""}
     ${canWrite()?row("go('observe')",ico("observe"),"Under observation","amber"):""}
     ${row("go('ect')",ico("ect"),"ECT","violet")}
@@ -11994,7 +12171,7 @@ function moreView(){
     <div class="more-grid">
     ${row("ui.setupTab='theme';go('setup')",ico("theme"),"Theme","slate")}
     ${row("ui.setupTab='notify';go('setup')",ico("notify"),"Notifications","sky")}
-    ${canWrite()?row("openMyPhone()",ico("phone"),"My phone","green"):""}
+    ${canAdmin()?row("go('profile')",ico("profile"),"My profile","green"):""}
     ${row("go('connection')",ico("cloud"),"Connection","teal")}
     ${row("go('about')",ico("about"),"About","cyan")}
     ${row("askLogout()",ico("logout"),"Log out","rose","color:#e11d48")}
@@ -20014,6 +20191,15 @@ function bdftDateLabel(dateStr){
   if(diffDays < 0) return "BEDS (" + dateStr + ")";
   return "BEDS FOR " + dateStr.toUpperCase();
 }
+function bdftMakeCard(){
+  if(canAdmin()||isIntern()||isConsultant()||!canWrite()||!isEveningDuty()) return "";
+  return `<div class="card" data-home="make-bdft" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--teal);">
+    <div class="row" style="align-items:center;justify-content:space-between;">
+      <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">Evening duty</span>
+      <button type="button" class="btn ghost sm" style="padding:2px 8px;font-size:11px;min-height:24px;height:24px;border-radius:6px;" onclick="bdftOpenGenerate()">Make BDFT</button>
+    </div>
+  </div>`;
+}
 function bdftHomeCard(){
   bdftInit();
   if(isIntern()||isConsultant()) return "";
@@ -20025,7 +20211,7 @@ function bdftHomeCard(){
     return `<div class="card" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--teal);">
       <div class="row" style="align-items:center;justify-content:space-between;">
         <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">${bdftDateLabel(info.dateStr)}</span>
-        <button type="button" class="btn ghost sm" style="padding:2px 8px;font-size:11px;min-height:24px;height:24px;border-radius:6px;" onclick="bdftOpenReadOnly()">Full BDFT (${info.totalBeds}) ›</button>
+        <button type="button" class="btn ghost sm" style="padding:2px 8px;font-size:11px;min-height:24px;height:24px;border-radius:6px;" onclick="bdftOpenReadOnly()">See BDFT</button>
       </div>
     </div>`;
   }
@@ -20044,7 +20230,7 @@ function bdftHomeCard(){
   return `<div class="card" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--teal);">
     <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">
       <span class="tiny" style="font-weight:700;color:var(--teal);letter-spacing:.03em;text-transform:uppercase;">${bdftDateLabel(info.dateStr)} (${beds.length})</span>
-      <button type="button" class="btn ghost sm" style="padding:2px 8px;font-size:11px;min-height:24px;height:24px;border-radius:6px;" onclick="bdftOpenReadOnly()">Full BDFT ›</button>
+      <button type="button" class="btn ghost sm" style="padding:2px 8px;font-size:11px;min-height:24px;height:24px;border-radius:6px;" onclick="bdftOpenReadOnly()">See BDFT</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:5px;">
       ${bedChipsHtml}
@@ -20095,6 +20281,7 @@ function bdftMountReadOnly(root){
     <div style="text-align:center;margin-bottom:24px;">
       <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.5px;margin:0 0 4px;">BDFT — ${esc(dateStr)}</h2>
       <div class="tiny muted">Department of Psychiatry, AMCH</div>
+      ${bdftBedLegend()}
     </div>
     <div class="distribution-grid">`;
 
@@ -20115,7 +20302,8 @@ function bdftMountReadOnly(root){
         html+=`<span class="happy-day-tag">🌴 Happy Day</span>`;
       }else{
         beds.forEach(b=>{
-          html+=`<span class="bed-tag original" data-bed="${esc(b.code)}">${esc(b.code)}</span>`;
+          const kind=bdftBedKind(b,short,doc);
+          html+=`<span class="bed-tag ${kind}" data-bed="${esc(b.code)}" title="${kind==="reassigned"?"Redistributed":"Owned"}">${esc(b.code)}</span>`;
         });
       }
       html+=`</div></div>`;
@@ -20128,7 +20316,7 @@ function bdftMountReadOnly(root){
   if(orphans.length){
     html+=`<div class="orphan-pool"><h4 style="margin:0 0 10px;color:var(--amber,#f59e0b);">Orphan Beds</h4><div class="beds-container">`;
     orphans.forEach(o=>{
-      html+=`<span class="bed-tag original" data-bed="${esc(o.code)}">${esc(o.code)} <span class="orphan-owner-badge">${esc(o.originalOwner||"")}</span></span>`;
+      html+=`<span class="bed-tag reassigned" data-bed="${esc(o.code)}" title="Redistributed">${esc(o.code)} <span class="orphan-owner-badge">${esc(o.originalOwner||"")}</span></span>`;
     });
     html+=`</div></div>`;
   }
@@ -20174,6 +20362,15 @@ function bdftMountGenerate(root){
   if(AppState.distribution) bdftRenderInteractiveDistribution();
 }
 
+function bdftBedKind(b, holderShort, holderName){
+  const own=String((b&&b.originalOwner)||"").trim().toLowerCase();
+  const holds=[holderShort,holderName].map(s=>String(s||"").trim().toLowerCase()).filter(Boolean);
+  if(!own||!holds.length||holds.includes(own)) return "original";
+  return "reassigned";
+}
+function bdftBedLegend(){
+  return `<div class="bdft-key"><span class="bed-tag original">Owned</span><span class="bed-tag reassigned">Redistributed</span></div>`;
+}
 function getAvatarClass(yearName){
   if(!yearName) return "1";
   if(yearName.includes("3rd")||yearName.startsWith("3")) return "3";
@@ -20277,6 +20474,7 @@ function bdftRenderInteractiveDistribution(){
     <div style="text-align:center;margin-bottom:20px;">
       <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.5px;margin:0 0 4px;">BDFT — ${esc(dist.dateStr)}</h2>
       <div class="tiny muted">Department of Psychiatry, AMCH</div>
+      ${bdftBedLegend()}
     </div>
     <div class="distribution-grid">`;
 
@@ -20302,7 +20500,8 @@ function bdftRenderInteractiveDistribution(){
       }else{
         beds.forEach(b=>{
           const sel=AppState.selectedBed&&bdftBedsMatch(AppState.selectedBed.code,b.code)&&AppState.selectedBed.from&&AppState.selectedBed.from.name===doc;
-          html+=`<span class="bed-tag original${sel?' tapped-active':''}" draggable="true" data-bed="${esc(b.code)}" onclick="bdftClickBed('${esc(b.code)}','doctor','${esc(doc)}','${esc(y)}', this)">${esc(b.code)}</span>`;
+          const kind=bdftBedKind(b,short,doc);
+          html+=`<span class="bed-tag ${kind}${sel?' tapped-active':''}" draggable="true" data-bed="${esc(b.code)}" title="${kind==="reassigned"?"Redistributed":"Owned"}" onclick="bdftClickBed('${esc(b.code)}','doctor','${esc(doc)}','${esc(y)}', this)">${esc(b.code)}</span>`;
         });
       }
       html+=`</div>
@@ -20319,7 +20518,7 @@ function bdftRenderInteractiveDistribution(){
     <div class="beds-container" id="orphan-beds">`;
   orphans.forEach(o=>{
     const sel=AppState.selectedBed&&bdftBedsMatch(AppState.selectedBed.code,o.code)&&AppState.selectedBed.from&&AppState.selectedBed.from.type==="orphan";
-    html+=`<span class="bed-tag original${sel?' tapped-active':''}" draggable="true" data-bed="${esc(o.code)}" onclick="bdftClickBed('${esc(o.code)}','orphan','','', this)">${esc(o.code)} <span class="orphan-owner-badge">${esc(o.originalOwner||"")}</span></span>`;
+    html+=`<span class="bed-tag reassigned${sel?' tapped-active':''}" draggable="true" data-bed="${esc(o.code)}" title="Redistributed" onclick="bdftClickBed('${esc(o.code)}','orphan','','', this)">${esc(o.code)} <span class="orphan-owner-badge">${esc(o.originalOwner||"")}</span></span>`;
   });
   html+=`</div></div></div>`;
 
@@ -21240,7 +21439,7 @@ function render(opts){
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
   if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){el.innerHTML=`<div class="login"><div class="login-card"><h1>Ward Sync</h1><p class="muted">Checking session…</p></div></div>`;return}
-  const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,dedit:dedEditView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView,bdft:bdftView};
+  const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,dedit:dedEditView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView,bdft:bdftView,profile:profileView};
   if(isIntern()){pages.home=internHomeView;pages.snap=internSnapView;Object.keys(pages).forEach(k=>{if(k!=="home"&&k!=="snap")delete pages[k]});pages.ivitals=internVitalsView;pages.ireports=internReportsView;pages.ireport=internReportPageView} // R1.3.139: interns see the patient page only · R1.3.142: + Vitals / Reports tabs
   pages.vchart=vchartView; // R1.3.140: full-screen vitals chart (all roles)
   pages.scale=scaleView;pages.srate=srateView; // R1.3.143: rating scales (interns: CIWA-Ar / COWS only)

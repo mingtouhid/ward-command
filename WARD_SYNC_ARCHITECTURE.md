@@ -63,6 +63,7 @@ Hash pages and the tab they belong to (`PAGE_TAB`):
 | `broadcast` | More | Shift broadcast |
 | `myorders` | More | Consultant advice the consultant issued |
 | `bdft` | More | Bed distribution |
+| `profile` | More | Signed-in resident or admin: own username, display name, phone, BDFT short name, owned beds. No one else's row |
 | `ward`, `users` | More | Admin ward setup and users |
 | `setup` | More | Theme, density, accent, notifications |
 | `connection` | More | Sync status; admin project keys |
@@ -93,7 +94,11 @@ Duty sign-in is separate from login: `ward_sign_duty`, `ward_set_duty_area`, `wa
 
 Phone numbers (R1.3.136) are not columns on `residents`, because `ward_session_user` returns that row. They live in `resident_phones` / `resident_phone_audit`. The client keeps them out of `S`, UI snapshots, the outbox, and the error log. RPCs: `ward_set_resident_phone`, `ward_get_my_phone`, `ward_phone_status` (admin, presence only), `ward_list_duty_phones` (consultant, numbers of residents with an open duty sign-in in the last 20 hours). The migration header still says "NOT APPLIED". The client treats a missing RPC as "feature not available".
 
-User administration (admin): `ward_invite_user`, `ward_update_user`, `ward_set_user_designation`, `ward_set_role`, `ward_deactivate_user`. New residents can also get a BDFT batch, short name, and owned beds (`bdftSaveNewResidentSetup`). BDFT is not a block inside the users editor; it is the More tile and the settings screen. Consultants are managed with `ward_upsert_consultant`, `ward_list_faculty`, `ward_set_patient_consultant`.
+User administration (admin): `ward_invite_user`, `ward_update_user`, `ward_set_user_designation`, `ward_set_role`, `ward_deactivate_user`.
+
+My profile (`profileView`, More) is the signed-in resident's or admin's own page. Phone still uses `ward_get_my_phone` and `ward_set_resident_phone` (the number is returned only to that session). BDFT short name and owned beds still use `ward_bdft_save_setup` (resident self-edit from `r18_1`). Username and display name use `ward_update_my_profile` in `migrations/r18_2_update_my_profile.sql`, which updates only the session's own `residents` row and rejects a duplicate username. That migration is not applied here. If the RPC is missing, the page keeps the previous name and still saves phone and BDFT. There is no photo upload and no password field.
+
+New residents can also get a BDFT batch, short name, and owned beds (`bdftSaveNewResidentSetup`). BDFT is not a block inside the users editor; it is the More tile and the settings screen. Consultants are managed with `ward_upsert_consultant`, `ward_list_faculty`, `ward_set_patient_consultant`.
 
 ## Sync, outbox, and realtime
 
