@@ -1317,6 +1317,9 @@ html[data-theme="light"] .about-kicker{color:#0f766e}
 
 .who-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px}
 .top.resident-home{align-items:center;gap:12px;margin:0;padding:22px 0 18px;padding-top:max(22px,env(safe-area-inset-top,0px));border:0;border-bottom:1px solid #303030;border-radius:0;background:transparent;box-shadow:none}
+@media (min-width:760px){
+  .top.resident-home{padding-left:18px;padding-right:18px}
+}
 .home-id{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 auto;overflow:hidden}
 .profile-photo.home-photo,.photo-img.home-photo{box-sizing:border-box;width:40px;height:40px;font-size:15px;flex:none;background:#242424;border:0}
 .photo-img{border-radius:50%;object-fit:cover;display:block;background:color-mix(in srgb,var(--teal) 16%,var(--panel));border:1px solid color-mix(in srgb,var(--teal) 35%,var(--line))}
@@ -5981,7 +5984,7 @@ function navIco(name){
   const s={
     home:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="10" aria-hidden="true"><g transform="translate(10 10)"><circle cx="17.5" cy="17.5" r="13.2"/><circle cx="62" cy="17.5" r="13.2"/><circle cx="17.5" cy="62" r="13.2"/><circle cx="62" cy="62" r="13.2"/></g></svg>',
     patients:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" aria-hidden="true"><g transform="translate(2.5 13)"><circle cx="28.5" cy="17.5" r="13"/><circle cx="68" cy="16.5" r="11.2"/><path d="M2 74C2 50 12 43 28 43C44 43 54 52 54 74"/><path d="M55 70C55 50 62 44 71 44C84 44 93 52 93 72"/></g></svg>',
-    handover:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round" aria-hidden="true"><g transform="translate(13.5 4)"><rect x="1" y="11" width="71" height="78" rx="11"/><rect x="15" y="0" width="43" height="18" rx="3.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="42" r="3.6" fill="currentColor" stroke="none"/><rect x="32" y="39" width="24" height="6.5" rx="3" fill="currentColor" stroke="none"/><circle cx="18.5" cy="63" r="3.6" fill="currentColor" stroke="none"/><rect x="32" y="60" width="24" height="6.5" rx="3" fill="currentColor" stroke="none"/></g></svg>',
+    handover:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round" aria-hidden="true"><g transform="translate(13.5 4)"><rect x="1" y="11" width="71" height="78" rx="11"/><rect x="16" y="1" width="41" height="17" rx="6" fill="none" stroke="currentColor"/><circle cx="18.5" cy="42" r="3.6" fill="currentColor" stroke="none"/><rect x="32" y="39" width="24" height="6.5" rx="3" fill="currentColor" stroke="none"/><circle cx="18.5" cy="63" r="3.6" fill="currentColor" stroke="none"/><rect x="32" y="60" width="24" height="6.5" rx="3" fill="currentColor" stroke="none"/></g></svg>',
     more:'<svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><g transform="translate(13 43)"><circle cx="7" cy="7" r="7"/><circle cx="36.5" cy="7" r="7"/><circle cx="66" cy="7" r="7"/></g></svg>'
   };
   return `<span class="ico">${s[name]||""}</span>`;
