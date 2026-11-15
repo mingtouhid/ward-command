@@ -294,6 +294,12 @@ Two different "monthly" features exist.
 
 `ward_create_nightly_backup` is a separate admin/client RPC (`saveWardBackup`). It is not the Drive monthly job.
 
+## Keep-alive and storage
+
+`migrations/r19_2_keepalive_storage.sql` is not applied. `ward_ping` returns `{ok:true, at:now()}` and reads no tables. `anon` and `authenticated` may execute it. `.github/workflows/keepalive.yml` POSTs that RPC every two days with the same publishable key the page already ships. The job fails unless the response is HTTP 2xx and `ok` is true.
+
+`ward_storage_check` is service-role only. pg_cron job `ward-storage-check` runs it at 23:00 UTC on the 1st (`0 23 1 * *`), which is 04:30 IST on the 2nd. It records `pg_database_size` in `ward_storage_stats` (RLS forced, no policies). Above 350 MB the level is `warn`. Above 450 MB it is `urgent`. A warn or urgent result inserts one `notification_events` row for that level in the current IST month: event type `archive`, category `archive`, recipient scope `admins`, `dispatch_due` true, priority `high` only when urgent, target `./#/home`. That is the same archive-admin shape the existing check already allows, so `dispatch-notification` can send it. An ok reading inserts no notification. A second call for the same level in that month does not insert another row. `p_simulate_bytes` is for a rolled-back test and is rejected unless the caller is `postgres`, `supabase_admin`, or `service_role`.
+
 ## Security boundaries
 
 - Browser role is the publishable key. It can execute the granted RPCs. It cannot select the RLS-forced tables that have no policies (`mse_entries`, labs, scales, BDFT tables, intern tables, phones).
