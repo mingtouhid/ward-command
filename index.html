@@ -947,8 +947,10 @@ h3{font-size:15px;font-weight:650;letter-spacing:-.02em}
 .nav button.on{color:#0b3d24;background:var(--nav-on);font-weight:750}
 .nav:not(.intern-nav){margin-top:auto;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0 0 max(8px,env(safe-area-inset-bottom,0px))}
 .nav:not(.intern-nav) .nav-in{height:56px;min-height:56px;padding:0}
-.nav:not(.intern-nav) button{gap:0;padding:0;margin:0;height:56px;min-height:56px;border-radius:16px;font-weight:700}
+.nav:not(.intern-nav) button{gap:0;padding:0;margin:0;height:56px;min-height:56px;border-radius:16px;font-weight:700;color:#A6A6A6}
 .nav:not(.intern-nav) button.on{color:var(--teal);background:transparent;font-weight:700}
+.side-nav button{color:#A6A6A6}
+.side-nav button.on{background:var(--teal);color:#fff}
 .nav button span.lbl{font-size:11px;font-weight:650}
 
 .hero{
@@ -5960,6 +5962,15 @@ function ico(name){
   };
   return `<span class="ico">${s[name]||""}</span>`;
 }
+function navIco(name){
+  const s={
+    home:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.4" y="2.4" width="7.2" height="7.2" rx="2.15" fill="currentColor"/><rect x="14.4" y="2.4" width="7.2" height="7.2" rx="2.15" fill="currentColor"/><rect x="2.4" y="14.4" width="7.2" height="7.2" rx="2.15" fill="currentColor"/><rect x="14.4" y="14.4" width="7.2" height="7.2" rx="2.15" fill="currentColor"/></svg>',
+    patients:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.4 11a2.9 2.9 0 1 0-1.5-5.4"/><path d="M17.6 20v-1.1a3.3 3.3 0 0 0-2.3-3.1"/><circle cx="9" cy="8" r="3"/><path d="M3.6 20v-1.1C4 16.2 6.2 14.5 9 14.5s5 1.7 5.4 4.4V20"/></svg>',
+    handover:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="5" width="12" height="15.5" rx="2"/><rect x="9" y="3.2" width="6" height="3.2" rx="1"/><path d="M9 11h6M9 14h6M9 17h4"/></svg>',
+    more:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="4.8" cy="12" r="1.85"/><circle cx="12" cy="12" r="1.85"/><circle cx="19.2" cy="12" r="1.85"/></svg>'
+  };
+  return `<span class="ico">${s[name]||""}</span>`;
+}
 
 function overlayOpen(){
   return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser || ui.myPhone || ui.photoPick || ui.photoCrop || ui.seForm || ui.disPreview || ui.r17Gate || ui.bdftAdminSheet || ui.bdftResidentModal || ui.bdftBedPickerModal || ui.bdftOccupiedModal || ui.bdftUnavailableModal);
@@ -6086,14 +6097,15 @@ function shell(inner){
     ? `<div class="home-id">${photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")}<div class="home-greet"><b>${esc(greet())}, ${esc(u.displayName||u.username||"")}</b>${homeSyncSlot()}</div></div>`
     : `<div><p class="kicker">${greet()}${canWrite()?` <span class="who-inline">${esc(u.displayName||"")}</span>`:""}</p><h1>${esc((S.unit&&S.unit.name)||"")}</h1></div>`;
   const tools=appHeader?`<div class="who-tools home-tools">${bell}</div>`:`<div class="who-tools">${statusChip()}${bell}</div>`;
-  const sideBtn=(page,label,icon,extra)=>`<button type="button" class="${on(page)}" onclick="${extra||`go('${page}')`}" aria-label="${label}">${ico(icon)}<span>${label}</span></button>`;
+  const sideIcon=name=>["home","patients","handover","more"].includes(name)?navIco(name):ico(name);
+  const sideBtn=(page,label,icon,extra)=>`<button type="button" class="${on(page)}" onclick="${extra||`go('${page}')`}" aria-label="${label}">${sideIcon(icon)}<span>${label}</span></button>`;
   return `<aside class="side-nav" aria-label="Ward"><p class="side-brand">Ward Sync</p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}</aside><header class="top${appHeader?" resident-home":""}">${left}${tools}</header>
     <main class="main">${inner}</main>${r151Dock()}
     <nav class="nav"><div class="nav-in">
-      <button class="${on("home")}" onclick="go('home')" aria-label="Home">${ico('home')}<span class="lbl">Home</span></button>
-      <button class="${on("patients")}" onclick="go('patients')" aria-label="Patients">${ico('patients')}<span class="lbl">Patients</span></button>
-      <button class="${on("handover")}" onclick="go('handover')" aria-label="Handovers" ${ui.busy?"disabled":""}>${ico('handover')}<span class="lbl">Handovers</span></button>
-      <button class="${on("more")}" onclick="go('more')" aria-label="More">${ico('more')}<span class="lbl">More</span></button>
+      <button class="${on("home")}" onclick="go('home')" aria-label="Home">${navIco('home')}<span class="lbl">Home</span></button>
+      <button class="${on("patients")}" onclick="go('patients')" aria-label="Patients">${navIco('patients')}<span class="lbl">Patients</span></button>
+      <button class="${on("handover")}" onclick="go('handover')" aria-label="Handovers" ${ui.busy?"disabled":""}>${navIco('handover')}<span class="lbl">Handovers</span></button>
+      <button class="${on("more")}" onclick="go('more')" aria-label="More">${navIco('more')}<span class="lbl">More</span></button>
     </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(photoOverlays()||"")+(seFormOverlay()||"")+(disPreviewOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(bdftAdminSheetOverlay()||"")+(bdftResidentModalOverlay()||"")+(bdftBedPickerOverlay()||"")+(bdftOccupiedModalOverlay()||"")+(bdftUnavailableModalOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review, ui.r17Reason||"")}</div></div>`:""))}${busyVeil()}`;
 }
 
