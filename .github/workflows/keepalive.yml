@@ -1,0 +1,21 @@
+name: Keep alive
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 */2 * *'
+permissions:
+  contents: read
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call ward_ping
+        run: |
+          code=$(curl -sS -o /tmp/ward-ping.json -w '%{http_code}' \
+            -X POST 'https://ocgmhwetdpcthwbcnbqz.supabase.co/rest/v1/rpc/ward_ping' \
+            -H 'apikey: sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ' \
+            -H 'Authorization: Bearer sb_publishable_vqTCphv9xAUkLF8-4KN2zQ_3G4-KcvJ' \
+            -H 'Content-Type: application/json' \
+            -d '{}')
+          echo "HTTP ${code}"
+          python3 -c 'import json,sys; code=int(sys.argv[1]); body=json.load(open("/tmp/ward-ping.json")); assert 200<=code<300, code; assert body.get("ok") is True, body' "$code"
