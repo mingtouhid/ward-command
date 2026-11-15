@@ -6,7 +6,7 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 ### Changed
 
-- Client version `R2.0.0` (service worker cache `ward-sync-pwa-r2.0.0`). Home is the dark dashboard: greeting with the sync line under the name, ward title, bed distribution, where/today overview, duty status, clinical flags, schedule, and on-duty team. The bottom bar is icon-only. A wide landscape screen uses a sidebar of the existing pages. Day, night, accent, and density preferences still drive the colours. No clinical, auth, BDFT, or notification behaviour changed.
+- Client version `R2.0.0` (service worker cache `ward-sync-pwa-r2.0.0`). Home is the dark dashboard: greeting with the sync line under the name, ward title, bed distribution, where/today overview, duty status, clinical flags, schedule, and on-duty team. At 469px the column is 400px and centred. Phones under 432px keep 16px side margins. The bottom bar is a 56px icon row directly under the cards. A wide landscape screen uses a sidebar of the existing pages. Day, night, accent, and density preferences still drive the colours. No clinical, auth, BDFT, or notification behaviour changed.
 
 ### Fixed
 

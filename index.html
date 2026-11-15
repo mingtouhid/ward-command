@@ -175,7 +175,7 @@ html,body,*,*::before,*::after{-webkit-user-select:none !important;user-select:n
 input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),
 textarea,[contenteditable]:not([contenteditable=false]),[contenteditable]:not([contenteditable=false]) *{-webkit-user-select:text !important;user-select:text !important;-webkit-touch-callout:default !important}
 html{-webkit-text-size-adjust:100%;touch-action:manipulation;overscroll-behavior:none;text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
-.app{max-width:430px;margin:0 auto;height:100svh;max-height:100svh;background:var(--bg);position:relative;display:flex;flex-direction:column;overflow:hidden;}
+.app{max-width:400px;margin:0 auto;width:100%;height:100svh;max-height:100svh;background:var(--bg);position:relative;display:flex;flex-direction:column;overflow:hidden;}
 .main{container-type:inline-size;container-name:ward;
   --gutter:12px;--gutter:clamp(12px,2.6cqi,22px);
   --gap:8px;--gap:clamp(8px,1.4cqi,14px);
@@ -191,16 +191,22 @@ html{-webkit-text-size-adjust:100%;touch-action:manipulation;overscroll-behavior
 .kicker{font-family:Inter,ui-monospace,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal2);margin:0}
 h1,h2,h3,p{margin:0}.top h1{font-size:15px;font-weight:700}
 .who{text-align:right;font-size:12px}.who small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase}
-.main{padding:var(--gutter) var(--gutter) 28px;flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;scroll-padding-top:56px;scroll-padding-bottom:24px}
-.nav{position:relative;left:auto;right:auto;bottom:auto;flex:none;z-index:40;border-top:1px solid var(--line);background:var(--nav);padding-bottom:max(8px,env(safe-area-inset-bottom,0px));width:100%;}
-.nav-in{max-width:430px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
-.nav button{background:none;border:0;color:var(--muted);padding:16px 0;font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:0;min-height:56px}
-.nav button{border-radius:16px;margin:4px}.nav button.on{color:var(--teal);background:transparent}
+.main{padding:14px 0 14px;flex:0 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;scroll-padding-top:56px;scroll-padding-bottom:24px}
+.nav{position:sticky;bottom:0;left:auto;right:auto;flex:none;z-index:40;border:0;background:transparent;padding:0 0 max(8px,env(safe-area-inset-bottom,0px));width:100%;}
+.nav-in{max-width:none;margin:0;height:56px;min-height:56px;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;background:#161616;border:1px solid #242424;border-radius:20px}
+html[data-theme="light"] .nav-in{background:#fff;border-color:#e2e8f0}
+.nav button{background:none;border:0;color:var(--muted);padding:0;margin:0;font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;height:56px;min-height:56px;border-radius:16px}
+.nav button.on{color:var(--teal);background:transparent}
 .nav:not(.intern-nav) button .lbl{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .nav .ico svg,.side-nav .ico svg{width:22px;height:22px}
+.nav.intern-nav{position:relative;background:var(--nav);border-top:1px solid var(--line);padding-bottom:max(8px,env(safe-area-inset-bottom,0px))}
+.nav.intern-nav .nav-in{height:auto;min-height:0;background:transparent;border:0;border-radius:0}
+.nav.intern-nav button{height:auto;min-height:48px;padding:8px 0}
+html[data-theme="light"] .r2-team .r2-name{color:var(--ink)}
+html[data-theme="light"] .top.resident-home{border-bottom-color:var(--line)}
 .side-nav{display:none}
-.top.resident-home{margin:0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;padding:14px 16px 12px;box-shadow:none}
-.top.resident-home .profile-photo.home-photo,.top.resident-home .photo-img.home-photo{width:36px;height:36px;font-size:13px;border-radius:50%}
+.top.resident-home{margin:0;border:0;border-bottom:1px solid #303030;border-radius:0;background:transparent;padding:12px 0 12px;box-shadow:none}
+.top.resident-home .profile-photo.home-photo,.top.resident-home .photo-img.home-photo{width:40px;height:40px;font-size:15px;border-radius:50%}
 .top.resident-home .home-greet b{font-size:20px;font-weight:500;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top.resident-home .who-tools.home-tools{width:auto;min-width:40px;max-width:none;flex:0 0 auto;margin:0}
 .top.resident-home .status-chip.home-sync{width:max-content;min-width:0;max-width:100%;height:18px;min-height:18px;max-height:18px;padding:0;border:0;background:transparent;color:var(--ok);font-size:13px;font-weight:500;justify-content:flex-start}
@@ -209,14 +215,15 @@ h1,h2,h3,p{margin:0}.top h1{font-size:15px;font-weight:700}
 .r2-wardhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .r2-wardhead h2{font-size:20px;font-weight:500}
 .r2-wardhead span{color:var(--muted);font-size:14px;white-space:nowrap}
-.r2-bdft{width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;min-height:79px}
+.r2-bdft{box-sizing:border-box;width:100%;min-height:79px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;justify-content:center}
 .r2-bdft .row{align-items:center}
 .r2-kicker{font-size:13px;font-weight:700;letter-spacing:.04em}
 .r2-pill{border-radius:999px;padding:3px 8px;font-size:12px;font-weight:700;white-space:nowrap}
 .r2-pill.warn{background:rgba(232,117,42,.16);color:#E8752A}
 .r2-pill.ok{background:rgba(0,184,90,.16);color:#00B85A}
-.r2-pill.info{background:rgba(37,135,213,.18);color:#2587D5}
-.r2-sub{margin:6px 0 0;color:var(--muted);font-size:13px}
+.r2-pill.info{background:transparent;color:#2587D5;border:0}
+.r2-signin{border:0;background:#14324f;color:#2587D5;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:650;line-height:1.2}
+.r2-sub{margin:4px 0 0;color:var(--muted);font-size:13px}
 .r2-bedchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .r2-overview{background:transparent;border:1px solid var(--line);border-radius:18px;padding:16px}
 .r2-count{font-size:32px;font-weight:500;line-height:1}
@@ -226,20 +233,24 @@ h1,h2,h3,p{margin:0}.top h1{font-size:15px;font-weight:700}
 .r2-shift b{display:block;color:var(--ink);font-weight:500}
 .r2-h{margin:14px 0 8px;font-size:13px;letter-spacing:.06em;color:var(--muted);font-weight:600}
 .r2-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.r2-tile{min-height:81px;border:0;border-radius:13px;background:var(--panel);color:var(--ink);padding:12px;text-align:left;display:flex;flex-direction:column;justify-content:center}
+.r2-tile{box-sizing:border-box;height:81px;min-height:81px;border:0;border-radius:13px;background:var(--panel);color:var(--ink);padding:12px;text-align:left;display:flex;flex-direction:column;justify-content:center}
 .r2-tile b{font-size:28px;font-weight:500;line-height:1}
 .r2-tile span{margin-top:6px;color:var(--muted);font-size:13px}
 .r2-tile.free b{color:var(--ok)}
 .r2-duty,.r2-flags,.r2-sched,.r2-team{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.r2-duty{box-sizing:border-box;min-height:100px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.r2-home .card{margin:0}
+.r2-needline{margin:2px 0 0;color:#777;font-size:13px;font-weight:450;line-height:1.3}
 html[data-theme="dark"] .r2-flags,html[data-theme="dark"] .r2-sched,html[data-theme="dark"] .r2-team,html[data-theme="dark"] .r2-overview,html[data-theme="night"] .r2-flags,html[data-theme="night"] .r2-sched,html[data-theme="night"] .r2-team,html[data-theme="night"] .r2-overview,html[data-theme="ot"] .r2-flags,html[data-theme="ot"] .r2-sched,html[data-theme="ot"] .r2-team,html[data-theme="ot"] .r2-overview{background:#000}
-html[data-theme="dark"] .nav,html[data-theme="night"] .nav,html[data-theme="ot"] .nav{background:transparent;border-top:0;padding:0 12px max(10px,env(safe-area-inset-bottom,0px))}
-html[data-theme="dark"] .nav-in,html[data-theme="night"] .nav-in,html[data-theme="ot"] .nav-in{background:#161616;border:1px solid #242424;border-radius:18px}
+html[data-theme="dark"] .nav,html[data-theme="night"] .nav,html[data-theme="ot"] .nav{background:transparent;border-top:0;padding:0 0 max(8px,env(safe-area-inset-bottom,0px))}
+html[data-theme="dark"] .nav-in,html[data-theme="night"] .nav-in,html[data-theme="ot"] .nav-in{background:#161616;border:1px solid #242424;border-radius:20px}
 .nav .ico svg [fill]:not([fill="none"]),.side-nav .ico svg [fill]:not([fill="none"]){fill:currentColor}
 .nav .ico svg [stroke],.side-nav .ico svg [stroke]{stroke:currentColor}
-.r2-team .pgt-grid{grid-template-columns:1fr 1fr;gap:12px}
-.r2-team .pgt-tile{flex-direction:row;justify-content:flex-start;align-items:center;gap:10px}
-.r2-team .pgt-photo{width:36px;height:36px;background:#242424}
-.r2-team .pgt-role{display:block;color:var(--muted);font-size:12px;font-weight:450}
+.r2-team .pgt-grid{grid-template-columns:1fr 1fr;column-gap:28px;row-gap:12px;margin-top:14px}
+.r2-team .pgt-tile{flex-direction:row;justify-content:flex-start;align-items:center;gap:12px}
+.r2-team .pgt-photo{width:40px;height:40px;background:#242424;font-size:15px;font-weight:500}
+.r2-team .r2-name{display:block;color:#F5F5F5;font-size:15px;font-weight:500;line-height:1.25;letter-spacing:0}
+.r2-team .pgt-role{display:block;color:#777;font-size:13px;font-weight:400;margin-top:2px}
 .r2-link{background:none;border:0;color:var(--muted);font-size:13px;padding:0}
 .r2-none{color:var(--faint,#777);font-size:13px;margin:8px 0 0}
 .r2-team .duty-actions{display:none}
@@ -885,6 +896,9 @@ html[data-density="compact"] .main{--gap:6px;--card-pad:10px}
   .app{max-width:none;width:auto;margin:0 0 0 220px}
   .nav{display:none}
 }
+@media (max-width:431px){
+  .app{max-width:none;width:auto;margin-left:16px;margin-right:16px}
+}
 
 
 .restrain-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left}
@@ -924,6 +938,10 @@ h3{font-size:15px;font-weight:650;letter-spacing:-.02em}
 .nav{background:var(--nav);backdrop-filter:saturate(1.1) blur(12px);-webkit-backdrop-filter:saturate(1.1) blur(12px)}
 .nav button{gap:4px;padding:8px 0 10px;margin:6px 6px 8px;border-radius:var(--radius-btn,14px);font-size:11px;font-weight:600}
 .nav button.on{color:#0b3d24;background:var(--nav-on);font-weight:750}
+.nav:not(.intern-nav){background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0 0 max(8px,env(safe-area-inset-bottom,0px))}
+.nav:not(.intern-nav) .nav-in{height:56px;min-height:56px;padding:0}
+.nav:not(.intern-nav) button{gap:0;padding:0;margin:0;height:56px;min-height:56px;border-radius:16px;font-weight:700}
+.nav:not(.intern-nav) button.on{color:var(--teal);background:transparent;font-weight:700}
 .nav button span.lbl{font-size:11px;font-weight:650}
 
 .hero{
@@ -1274,9 +1292,9 @@ html[data-theme="light"] .about-kicker{color:#0f766e}
 
 
 .who-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px}
-.top.resident-home{align-items:center;gap:10px;margin:0;padding:14px 16px 12px;padding-top:max(14px,env(safe-area-inset-top,0px));border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none}
+.top.resident-home{align-items:center;gap:12px;margin:0;padding:12px 0 12px;padding-top:max(12px,env(safe-area-inset-top,0px));border:0;border-bottom:1px solid #303030;border-radius:0;background:transparent;box-shadow:none}
 .home-id{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 auto;overflow:hidden}
-.profile-photo.home-photo,.photo-img.home-photo{box-sizing:border-box;width:36px;height:36px;font-size:13px;flex:none;background:#242424}
+.profile-photo.home-photo,.photo-img.home-photo{box-sizing:border-box;width:40px;height:40px;font-size:15px;flex:none;background:#242424;border:0}
 .photo-img{border-radius:50%;object-fit:cover;display:block;background:color-mix(in srgb,var(--teal) 16%,var(--panel));border:1px solid color-mix(in srgb,var(--teal) 35%,var(--line))}
 .profile-photo-wrap{position:relative;width:72px;height:72px;flex:none}
 .photo-edit{position:absolute;right:-4px;bottom:-4px;width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0;box-shadow:var(--shadow)}
@@ -1289,7 +1307,7 @@ html[data-theme="light"] .about-kicker{color:#0f766e}
 .home-greet span{font-size:15px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .home-greet b{display:block;font-size:20px;font-weight:500;letter-spacing:0;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .who-tools.home-tools{flex:0 0 auto;width:auto;min-width:36px;max-width:none;flex-direction:row;align-items:center;justify-content:flex-end;gap:0;margin:0}
-.who-tools.home-tools .top-bell{width:36px;height:36px;border-radius:50%;background:var(--panel)}
+.who-tools.home-tools .top-bell{width:40px;height:40px;border-radius:50%;border:0;background:#242424}
 .who-tools.home-tools .top-bell svg{width:18px;height:18px}
 .top.resident-home .status-chip.home-sync{display:inline-flex;align-items:center;box-sizing:border-box;width:max-content;max-width:100%;min-width:0;height:18px;min-height:18px;max-height:18px;padding:0;border:0;background:transparent;color:var(--ok);font-size:13px;font-weight:500;line-height:18px;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top.resident-home .status-chip.home-sync>.dot{width:8px;height:8px;min-width:8px;min-height:8px;flex-shrink:0;margin-right:6px;box-shadow:none}
@@ -1472,7 +1490,7 @@ input,select,textarea{transform:none}
 .rec-card{background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}
 html[data-theme="dark"] .rec-rail:before{background:rgba(241,245,249,.12)}
 .task-board-summary>div{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;color:var(--ink)}
-.main{padding-bottom:max(28px, calc(12px + env(safe-area-inset-bottom, 0px)))}
+.main{padding-bottom:14px}
 .plist-block{padding-bottom:4px}
 .home-priority,.priority-secondary{margin-bottom:8px}
 /* R1.3.15 med-add-only: add-drug sheet has no pause/stop list; main chart keeps those. R1.3.14 pick-stack: stacked overlays close one layer; pickers zoom+fade */
@@ -6657,7 +6675,7 @@ function dutyResidentGrid(){
     const person=byId.get(String(x.userId))||{id:x.userId,name:x.name||rname(x.userId),photo:String(x.userId)===String(S.userId)?myPhotoData():""};
     const me=String(x.userId)===String(S.userId);
     const role=person.role||person.designation||x.role||x.designation||"";
-    return `<div class="pgt-tile">${pgtFace(person,"pgt-photo")}<span><b>${esc(person.name||x.name||"")}${me?" · you":""}</b>${role?`<small class="pgt-role">${esc(role)}</small>`:""}</span></div>`;
+    return `<div class="pgt-tile">${pgtFace(person,"pgt-photo")}<span class="r2-who"><span class="r2-name">${esc(person.name||x.name||"")}${me?" · you":""}</span>${role?`<small class="pgt-role">${esc(role)}</small>`:""}</span></div>`;
   }).join("")}</div>${action}`;
 }
 function r146Reasons(p){
@@ -6759,7 +6777,7 @@ function r16OffDutyHtml(){
 }
 function r146TodayHtml(){
   const cons=isConsultant(),mineN=cons?myPatientCount():0;
-  if(!cons&&canWrite()&&!dutyRecord())return `<section class="card r146-needs r2-needs" aria-label="Needs you now"><b>Needs you</b><p class="r2-none">Sign in on the duty card to see what needs you, including side-effect checks.</p></section>`;
+  if(!cons&&canWrite()&&!dutyRecord())return "";
   const head=cons?"YOU NEED TO KNOW":"NEEDS YOU NOW"; // R1.6 item 6
   const scopeMine=cons&&mineN>0&&ui.todayScope!=="ward";
   const {rows,novit}=r146TodayRows(scopeMine?isMyPatient:null);
@@ -6859,7 +6877,8 @@ function homeView(){
     </section>
     <section class="r2-duty" aria-label="Duty status">
       <div class="row"><b>Duty status</b><span class="r2-pill ${dutyOn?"ok":"warn"}">${dutyOn?"On duty":"Not on duty"}</span></div>
-      <div class="row" style="margin-top:10px"><span class="r2-sub" style="margin:0">${esc(shiftLabel(sh))} shift · ${dutyOn?"Signed in":"Sign in to continue"}</span>${canWrite()?`<button type="button" class="r2-pill info" onclick="${dutyOn?"endDuty()":"signDuty()"}">${dutyOn?"End shift":"Sign in"}</button>`:""}</div>
+      <div class="row"><span class="r2-sub" style="margin:0">${esc(shiftLabel(sh))} shift · ${dutyOn?"Signed in":"Sign in to continue"}</span>${canWrite()?`<button type="button" class="r2-signin" onclick="${dutyOn?"endDuty()":"signDuty()"}">${dutyOn?"End shift":"Sign in"}</button>`:""}</div>
+      ${(!isConsultant()&&canWrite()&&!dutyOn)?`<p class="r2-needline">Sign in to see what needs you, including side-effect checks.</p>`:""}
     </section>
     <section class="r2-flags" aria-label="Clinical flags">
       <div class="row"><b>Clinical flags</b><button type="button" class="r2-link" onclick="ui.ptag='';ui.pf='';go('patients')">View all →</button></div>
