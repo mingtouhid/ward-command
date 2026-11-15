@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r1.9.0";
+const VERSION = "ward-sync-pwa-r1.9.1";
 // R1.3.134: the on-device scanner engine lives in its own cache, filled and verified by the page; never deleted on update.
 const OCR_CACHE = "ocr-assets-v7";
 const PRECACHE = [
@@ -54,18 +54,30 @@ self.addEventListener("push", (event) => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
+function notifAbs(url){
+  try { return new URL(url || "/#/home", self.registration.scope).href; }
+  catch (e) { return new URL("/#/home", self.registration.scope).href; }
+}
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = event.notification.data && event.notification.data.url || "/#/home";
+  const data = (event.notification && event.notification.data) || {};
+  const target = notifAbs(data.url || "/#/home");
+  const payload = {
+    id: data.notification_id || data.event_id || data.id || event.notification.tag || "",
+    type: data.event_type || data.category || "",
+    url: target,
+    patient_id: data.patient_id || null,
+    entity_id: data.task_id || data.handover_id || data.ect_plan_id || null
+  };
   event.waitUntil((async () => {
     const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    for (const client of clientsList) {
-      if ("focus" in client) {
-        try { await client.navigate(target); } catch (e) {}
-        return client.focus();
-      }
+    const client = clientsList.find((c) => c && "focus" in c);
+    if (client) {
+      try { await client.focus(); } catch (e) {}
+      try { client.postMessage({ type: "ward-notif", payload }); } catch (e) {}
+      return;
     }
-    if (self.clients.openWindow) return self.clients.openWindow(target);
+    if (self.clients.openWindow) await self.clients.openWindow(target);
   })());
 });
 

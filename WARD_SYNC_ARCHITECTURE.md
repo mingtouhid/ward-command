@@ -276,7 +276,7 @@ Clinical events go through `notifyServerEvent` → `ward_create_notification_eve
 - Provider env names, not values: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `FIREBASE_SERVICE_ACCOUNT_JSON` or `FCM_SERVER_KEY`, and `SUPABASE_URL` plus `SUPABASE_SECRET_KEYS`. If push is configured but the database role is missing, the function returns `dispatch: deferred`.
 - `ward_bdft_tick` is what pg_cron job `ward-bdft-dispatch` runs every two minutes. It reads the Vault secret inside the database and posts it as the header. See `supabase/functions/dispatch-bdft/SCHEDULE.md`. This repo does not apply that migration.
 
-The service worker `push` handler shows the notification (high priority vibrates longer) and `notificationclick` focuses an open client or opens `data.url` (default `/#/home`).
+The service worker `push` handler shows the notification (high priority vibrates longer). `notificationclick` focuses an open window and posts `{type:"ward-notif"}`, or opens the absolute `data.url` when no window exists. The page keeps one pending destination in `sessionStorage` (`ws_notif_nav`) and applies it with `go()` after the session and ward list are ready. The destination comes from the stored URL and ids, not from the title. A legacy payload with no route opens the notification list.
 
 The device registers with `ward_register_push_subscription` using the VAPID public key embedded in the page (`VAPID_PUBLIC_KEY`). Preferences: `ward_get_notification_preferences` / `ward_set_notification_preferences`, with a local fallback. The in-app inbox is `ward_list_notification_inbox` (BDFT rows are included for residents and admins by the R1.8 replacement of that function) and `ward_mark_notification_read`.
 
