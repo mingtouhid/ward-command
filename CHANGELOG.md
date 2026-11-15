@@ -8,6 +8,10 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 - Client version `R1.9.1` (service worker cache `ward-sync-pwa-r1.9.1`). A notification opens the page stored on it. A tap while the app is open is delivered to that window. A cold start keeps the same destination until sign-in and the ward list are ready. A missing record shows a short message and opens a safe page. The same notification id does not navigate twice in a row.
 
+### Changed
+
+- Database only, `R1.9.0.1`. `migrations/r19_0_1_ect_dedupe_enforce.sql` was applied to Supabase. One accidental duplicate ECT session was removed (same patient, 14 Nov 2026, session 2 saved 36 seconds after session 1, no clinical data), that plan's `sessions_done` was set from 2 to 1, and unique index `ect_sessions_one_per_patient_ist_day` was created on `public.ect_sessions` (`patient_id`, `((session_at at time zone 'Asia/Kolkata')::date)`). This completes the Module 7 rule that the R1.9.0 migration had skipped.
+
 ### Added
 
 - Client version `R1.9.0` (service worker cache `ward-sync-pwa-r1.9.0`). Home shows today's or tomorrow's BDFT (IST). A distribution from yesterday or earlier leaves Home and Mine empty. Recent discharges are grouped by date. Residents see on-duty PGTs as a four-column photo grid. More has an All PGTs directory. One ECT session can be recorded per patient per day. Discharge can be reviewed and saved as a draft before confirm, with primary, secondary and tertiary diagnoses. DOR and DAMA certificates leave a line for the attendant's signature. A missing MSE or investigation is a reminder with Continue anyway, and no reason is required. Lithium and Clozapine side effects can be recorded for the bed owner. `migrations/r19_0_monitoring_directory_ect.sql` is not applied.
