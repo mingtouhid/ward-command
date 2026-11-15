@@ -191,7 +191,7 @@ html{-webkit-text-size-adjust:100%;touch-action:manipulation;overscroll-behavior
 .kicker{font-family:Inter,ui-monospace,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal2);margin:0}
 h1,h2,h3,p{margin:0}.top h1{font-size:15px;font-weight:700}
 .who{text-align:right;font-size:12px}.who small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase}
-.main{padding:14px 0 14px;flex:0 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;scroll-padding-top:56px;scroll-padding-bottom:24px}
+.main{padding:36px 0 14px;flex:0 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;scroll-padding-top:56px;scroll-padding-bottom:24px}
 .nav{position:sticky;bottom:0;left:auto;right:auto;flex:none;z-index:40;border:0;background:transparent;padding:0 0 max(8px,env(safe-area-inset-bottom,0px));width:100%;}
 .nav-in{max-width:none;margin:0;height:56px;min-height:56px;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;background:#161616;border:1px solid #242424;border-radius:20px}
 html[data-theme="light"] .nav-in{background:#fff;border-color:#e2e8f0}
@@ -205,42 +205,49 @@ html[data-theme="light"] .nav-in{background:#fff;border-color:#e2e8f0}
 html[data-theme="light"] .r2-team .r2-name{color:var(--ink)}
 html[data-theme="light"] .top.resident-home{border-bottom-color:var(--line)}
 .side-nav{display:none}
-.top.resident-home{margin:0;border:0;border-bottom:1px solid #303030;border-radius:0;background:transparent;padding:12px 0 12px;box-shadow:none}
+.top.resident-home{margin:0;border:0;border-bottom:1px solid #303030;border-radius:0;background:transparent;padding:22px 0 18px;box-shadow:none}
 .top.resident-home .profile-photo.home-photo,.top.resident-home .photo-img.home-photo{width:40px;height:40px;font-size:15px;border-radius:50%}
-.top.resident-home .home-greet b{font-size:20px;font-weight:500;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-glyph{display:flex;align-items:center;justify-content:center;color:#C8C8C8}
+.home-glyph svg{width:22px;height:22px;display:block}
+.top.resident-home .home-greet b{font-size:20px;font-weight:500;letter-spacing:0;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top.resident-home .who-tools.home-tools{width:auto;min-width:40px;max-width:none;flex:0 0 auto;margin:0}
-.top.resident-home .status-chip.home-sync{width:max-content;min-width:0;max-width:100%;height:18px;min-height:18px;max-height:18px;padding:0;border:0;background:transparent;color:var(--ok);font-size:13px;font-weight:500;justify-content:flex-start}
-.top.resident-home .top-bell{width:36px;height:36px;border-radius:50%;background:var(--panel)}
-.r2-home{display:flex;flex-direction:column;gap:14px}
+.top.resident-home .status-chip.home-sync{width:max-content;min-width:0;max-width:100%;height:18px;min-height:18px;max-height:18px;padding:0;border:0;background:transparent;color:var(--ok);font-size:14px;font-weight:500;justify-content:flex-start}
+.top.resident-home .top-bell{width:40px;height:40px;border-radius:50%;background:#242424;border:0}
+.r2-home{display:flex;flex-direction:column;gap:15px}
 .r2-wardhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .r2-wardhead h2{font-size:20px;font-weight:500}
 .r2-wardhead span{color:var(--muted);font-size:14px;white-space:nowrap}
-.r2-bdft{box-sizing:border-box;width:100%;min-height:79px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;justify-content:center}
+.r2-bdft{box-sizing:border-box;width:100%;min-height:79px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center}
+.r2-bdft:not(:has(.r2-bedchips)){height:79px;max-height:79px;overflow:hidden}
 .r2-bdft .row{align-items:center}
-.r2-kicker{font-size:13px;font-weight:700;letter-spacing:.04em}
-.r2-pill{border-radius:999px;padding:3px 8px;font-size:12px;font-weight:700;white-space:nowrap}
+.r2-kicker,.r2-cardh{font-size:18px;font-weight:600;letter-spacing:0;line-height:1.2}
+.r2-pill{border-radius:999px;padding:5px 12px;font-size:13px;font-weight:650;line-height:1.2;white-space:nowrap}
 .r2-pill.warn{background:rgba(232,117,42,.16);color:#E8752A}
 .r2-pill.ok{background:rgba(0,184,90,.16);color:#00B85A}
 .r2-pill.info{background:transparent;color:#2587D5;border:0}
-.r2-signin{border:0;background:#14324f;color:#2587D5;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:650;line-height:1.2}
-.r2-sub{margin:4px 0 0;color:var(--muted);font-size:13px}
+.r2-signin{border:0;background:#14324f;color:#2587D5;border-radius:999px;padding:7px 16px;font-size:13px;font-weight:650;line-height:1.2}
+.r2-sub{margin:4px 0 0;color:var(--muted);font-size:15px;line-height:1.3}
 .r2-bedchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.r2-overview{background:transparent;border:1px solid var(--line);border-radius:18px;padding:16px}
+.r2-overview{box-sizing:border-box;min-height:590px;background:transparent;border:1px solid var(--line);border-radius:18px;padding:28px 16px 22px}
 .r2-count{font-size:32px;font-weight:500;line-height:1}
-.r2-count small{font-size:16px;font-weight:500;margin-left:6px}
-.r2-meta{color:var(--faint,#777);font-size:13px;margin-top:4px}
+.r2-count small{font-size:16px;font-weight:500;margin-left:8px}
+.r2-meta{color:var(--faint,#777);font-size:14px;margin-top:8px}
 .r2-shift{text-align:right;font-size:14px;color:var(--muted)}
-.r2-shift b{display:block;color:var(--ink);font-weight:500}
-.r2-h{margin:14px 0 8px;font-size:13px;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.r2-shift b{display:block;color:var(--ink);font-size:16px;font-weight:500;margin-top:4px}
+.r2-h{margin:48px 0 14px;font-size:14px;letter-spacing:.06em;color:var(--muted);font-weight:600}
 .r2-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .r2-tile{box-sizing:border-box;height:81px;min-height:81px;border:0;border-radius:13px;background:var(--panel);color:var(--ink);padding:12px;text-align:left;display:flex;flex-direction:column;justify-content:center}
-.r2-tile b{font-size:28px;font-weight:500;line-height:1}
-.r2-tile span{margin-top:6px;color:var(--muted);font-size:13px}
+.r2-tile b{font-size:29px;font-weight:500;line-height:1}
+.r2-tile span{margin-top:8px;color:var(--muted);font-size:14px}
 .r2-tile.free b{color:var(--ok)}
 .r2-duty,.r2-flags,.r2-sched,.r2-team{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
-.r2-duty{box-sizing:border-box;min-height:100px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.r2-duty{box-sizing:border-box;height:100px;min-height:100px;max-height:100px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:10px 16px}
+.r2-duty .r2-signin{padding:4px 12px}
+.r2-flags{box-sizing:border-box;min-height:129px}
+.r2-sched{box-sizing:border-box;min-height:100px}
+.r2-team{box-sizing:border-box;min-height:153px}
 .r2-home .card{margin:0}
-.r2-needline{margin:2px 0 0;color:#777;font-size:13px;font-weight:450;line-height:1.3}
+.r2-needline{margin:0;color:#777;font-size:13px;font-weight:450;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 html[data-theme="dark"] .r2-flags,html[data-theme="dark"] .r2-sched,html[data-theme="dark"] .r2-team,html[data-theme="dark"] .r2-overview,html[data-theme="night"] .r2-flags,html[data-theme="night"] .r2-sched,html[data-theme="night"] .r2-team,html[data-theme="night"] .r2-overview,html[data-theme="ot"] .r2-flags,html[data-theme="ot"] .r2-sched,html[data-theme="ot"] .r2-team,html[data-theme="ot"] .r2-overview{background:#000}
 html[data-theme="dark"] .nav,html[data-theme="night"] .nav,html[data-theme="ot"] .nav{background:transparent;border-top:0;padding:0 0 max(8px,env(safe-area-inset-bottom,0px))}
 html[data-theme="dark"] .nav-in,html[data-theme="night"] .nav-in,html[data-theme="ot"] .nav-in{background:#161616;border:1px solid #242424;border-radius:20px}
@@ -938,7 +945,7 @@ h3{font-size:15px;font-weight:650;letter-spacing:-.02em}
 .nav{background:var(--nav);backdrop-filter:saturate(1.1) blur(12px);-webkit-backdrop-filter:saturate(1.1) blur(12px)}
 .nav button{gap:4px;padding:8px 0 10px;margin:6px 6px 8px;border-radius:var(--radius-btn,14px);font-size:11px;font-weight:600}
 .nav button.on{color:#0b3d24;background:var(--nav-on);font-weight:750}
-.nav:not(.intern-nav){background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0 0 max(8px,env(safe-area-inset-bottom,0px))}
+.nav:not(.intern-nav){margin-top:auto;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0 0 max(8px,env(safe-area-inset-bottom,0px))}
 .nav:not(.intern-nav) .nav-in{height:56px;min-height:56px;padding:0}
 .nav:not(.intern-nav) button{gap:0;padding:0;margin:0;height:56px;min-height:56px;border-radius:16px;font-weight:700}
 .nav:not(.intern-nav) button.on{color:var(--teal);background:transparent;font-weight:700}
@@ -1292,7 +1299,7 @@ html[data-theme="light"] .about-kicker{color:#0f766e}
 
 
 .who-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px}
-.top.resident-home{align-items:center;gap:12px;margin:0;padding:12px 0 12px;padding-top:max(12px,env(safe-area-inset-top,0px));border:0;border-bottom:1px solid #303030;border-radius:0;background:transparent;box-shadow:none}
+.top.resident-home{align-items:center;gap:12px;margin:0;padding:22px 0 18px;padding-top:max(22px,env(safe-area-inset-top,0px));border:0;border-bottom:1px solid #303030;border-radius:0;background:transparent;box-shadow:none}
 .home-id{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 auto;overflow:hidden}
 .profile-photo.home-photo,.photo-img.home-photo{box-sizing:border-box;width:40px;height:40px;font-size:15px;flex:none;background:#242424;border:0}
 .photo-img{border-radius:50%;object-fit:cover;display:block;background:color-mix(in srgb,var(--teal) 16%,var(--panel));border:1px solid color-mix(in srgb,var(--teal) 35%,var(--line))}
@@ -2918,7 +2925,7 @@ html[data-theme="dark"],html[data-theme="night"]{--info:#2587D5}
 .r146-sched li:first-child button{border-top:0}
 .r146-sched li b{min-width:44px;font-variant-numeric:tabular-nums}
 .r146-flag-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.r146-fchip{border:0;border-radius:var(--r-chip);padding:7px 12px;font-size:var(--fs-sm);font-weight:650;min-height:36px}
+.r146-fchip{border:0;border-radius:var(--r-chip);padding:6px 12px;font-size:13px;font-weight:650;min-height:28px}
 .r146-fchip.red{background:var(--red-bg);color:var(--danger)}.r146-fchip.amber{background:var(--amber-bg);color:var(--warn)}.r146-fchip.blue{background:var(--info-bg);color:var(--info)}.r146-fchip.grey{background:var(--grey-bg);color:var(--ink)}
 .r146-zero{margin-top:8px;color:var(--muted)}
 .r146-zchip{border:0;background:none;color:var(--muted);font:inherit;padding:2px 0;text-decoration:underline dotted}
@@ -3872,6 +3879,7 @@ function photoPendingSet(op,photo){
 function photoFace(initials,cls){
   const src=myPhotoData();
   if(src&&src.indexOf("data:image/jpeg;base64,")===0) return `<img class="${cls} photo-img" alt="" src="${esc(src)}">`;
+  if(String(cls).indexOf("home-photo")>=0) return `<div class="${cls} home-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8.2" r="3.1"/><path d="M5.5 19.2c.8-3.2 3.2-4.9 6.5-4.9s5.7 1.7 6.5 4.9"/></svg></div>`;
   return `<div class="${cls}" aria-hidden="true">${esc(initials)}</div>`;
 }
 function photoCropRect(natW,natH,view,zoom,panX,panY){
@@ -6815,7 +6823,7 @@ function r146ScheduleHtml(){
       when:x.doneAt?r17IstWhen(x.doneAt):""
     };
   });
-  return `<section class="r2-sched card r146-sched" aria-label="Scheduled for today"><div class="row"><b>Today's schedule</b><button type="button" class="r2-link" onclick="go('ect')">View all →</button></div>
+  return `<section class="r2-sched card r146-sched" aria-label="Scheduled for today"><div class="row"><span class="r2-cardh">Today's schedule</span><button type="button" class="r2-link" onclick="go('ect')">View all →</button></div>
     ${ect.length?r17ScheduleHtml(ect, typeof canWrite==="function"?canWrite():true):`<p class="r2-none">Nothing scheduled for today</p>`}
   </section>`;
 }
@@ -6876,19 +6884,19 @@ function homeView(){
       <div class="r2-grid">${tile(free,"Beds free","","free")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()")}</div>
     </section>
     <section class="r2-duty" aria-label="Duty status">
-      <div class="row"><b>Duty status</b><span class="r2-pill ${dutyOn?"ok":"warn"}">${dutyOn?"On duty":"Not on duty"}</span></div>
+      <div class="row"><span class="r2-cardh">Duty status</span><span class="r2-pill ${dutyOn?"ok":"warn"}">${dutyOn?"On duty":"Not on duty"}</span></div>
       <div class="row"><span class="r2-sub" style="margin:0">${esc(shiftLabel(sh))} shift · ${dutyOn?"Signed in":"Sign in to continue"}</span>${canWrite()?`<button type="button" class="r2-signin" onclick="${dutyOn?"endDuty()":"signDuty()"}">${dutyOn?"End shift":"Sign in"}</button>`:""}</div>
       ${(!isConsultant()&&canWrite()&&!dutyOn)?`<p class="r2-needline">Sign in to see what needs you, including side-effect checks.</p>`:""}
     </section>
     <section class="r2-flags" aria-label="Clinical flags">
-      <div class="row"><b>Clinical flags</b><button type="button" class="r2-link" onclick="ui.ptag='';ui.pf='';go('patients')">View all →</button></div>
+      <div class="row"><span class="r2-cardh">Clinical flags</span><button type="button" class="r2-link" onclick="ui.ptag='';ui.pf='';go('patients')">View all →</button></div>
       ${on.length?`<div class="r146-flag-chips" style="margin-top:8px">${on.map(f=>`<button type="button" class="r146-fchip ${f.c}" data-flag="${f.k}" onclick="${f.fn}">${f.n} ${esc(f.l)}</button>`).join("")}</div>`:""}
       ${off.length?`<p class="r2-none">None: ${off.map(f=>`<button type="button" class="r146-zchip" data-flag="${f.k}" onclick="${f.fn}">${esc(f.l)}</button>`).join(" · ")}</p>`:""}
     </section>
     ${r146TodayHtml()}
     ${r146ScheduleHtml()}
     <section class="r2-team" aria-label="On-duty team">
-      <div class="row"><b>On-duty team</b><span class="r2-pill ok">${esc(shiftLabel(sh))} shift</span></div>
+      <div class="row"><span class="r2-cardh">On-duty team</span><span class="r2-pill ok">${esc(shiftLabel(sh))} shift</span></div>
       ${isConsultant()?`<p class="r2-sub">Welcome, ${esc((user()||{}).displayName||"Consultant")}</p>${dutyCardBody()}`:(canWrite()?dutyResidentGrid():dutyCardBody())}
     </section>
   </div>`;
