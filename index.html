@@ -348,6 +348,12 @@ a{color:var(--teal2);text-decoration:none}
 .ptag-row::-webkit-scrollbar{display:none;width:0;height:0}
 .ptag-row .chip{flex:0 0 auto;white-space:nowrap;padding:11px 16px;font-size:13px;font-weight:650;min-height:42px}
 .duty-card .duty-actions{margin-top:10px}
+.pgt-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}
+.pgt-tile{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.pgt-tile span{font-size:11px;font-weight:650;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pgt-photo{width:52px;height:52px;border-radius:50%;object-fit:cover;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--teal) 16%,var(--panel));border:1px solid var(--line);font-weight:750;color:var(--ink)}
+.pgt-dir{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.pgt-card{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
 .plist-block{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .plist-grid{animation:listin .28s ease both}
 @keyframes listin{from{opacity:.35;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -4226,7 +4232,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R1.8.6";
+const APP_VERSION="R1.9.0";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -4238,7 +4244,7 @@ document.addEventListener("selectionchange",()=>{try{const sel=document.getSelec
 document.addEventListener("gesturestart",e=>e.preventDefault());
 document.addEventListener("gesturechange",e=>e.preventDefault());
 document.addEventListener("gestureend",e=>e.preventDefault());
-let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return freshSeed()})();
+let S=(()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.beds&&x.orders){if(!x.ect)x.ect=[{id:"ect1",pid:"p2",indication:"Severe psychotic depression, poor oral intake",sessionsDone:3,nextAt:new Date(Date.now()+86400000).toISOString(),npo:true,status:"planned",by:"r1",at:new Date(Date.now()-10*86400000).toISOString()}];if(!x.supabaseUrl)x.supabaseUrl=DEFAULT_SB_URL;if(!x.supabaseAnonKey)x.supabaseAnonKey=DEFAULT_SB_KEY;if(!x.consultants)x.consultants=[];if(!x.criticalStatusUpdates)x.criticalStatusUpdates=[];if(!x.ectSessions)x.ectSessions=[];if(!x.seLogs)x.seLogs=[];if(!x.obsStays)x.obsStays=[];return x}}catch(e){}return freshSeed()})();
 try{if(!localStorage.getItem(KEY))localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
 freshStartPurgeLegacy();
 function freshSeed(){const x=seed();if(Object.keys(FRESH_CARRY).length){Object.assign(x,FRESH_CARRY);["patients","assignments","snaps","orders","doses","tasks","handovers","hitems","events","ect","ectSessions","criticalStatusUpdates","obsStays","advice","broadcasts","mse"].forEach(f=>x[f]=[]);(x.beds||[]).forEach(b=>b.patientId=null)}return x}
@@ -4843,7 +4849,7 @@ let navDir="fwd";
 let navAnim=false;
 let navScroll={};
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
-const PAGE_TAB={ivitals:"ivitals",ireports:"ireports",ireport:"ireports",home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",dedit:"patients",vchart:"patients",scale:"patients",srate:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more",bdft:"more",profile:"more"};
+const PAGE_TAB={ivitals:"ivitals",ireports:"ireports",ireport:"ireports",home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",dedit:"patients",vchart:"patients",scale:"patients",srate:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more",bdft:"more",profile:"more",pgts:"more"};
 function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more"||tab==="ivitals"||tab==="ireports")?tab:"home"} // R1.3.142: ivitals/ireports are intern-only tabs
 function syncRoute(){
   if(nav.stack.length){
@@ -5729,6 +5735,8 @@ async function doCloudBoot(){
     Sync.reconnects=0; // R1.3.141 SYNC
     photoPushPending().catch(()=>{});
     photoFetchMine().catch(()=>{});
+    sePull().catch(()=>{});
+    pgtLoad().catch(()=>{});
     return true;
   }catch(e){
     cloudLastError=e.message||String(e);
@@ -5805,6 +5813,8 @@ async function doLogin(e){
           flushPending().catch(()=>{}); // R1.3.141 SYNC
           photoPushPending().catch(()=>{});
           photoFetchMine().catch(()=>{});
+    sePull().catch(()=>{});
+    pgtLoad().catch(()=>{});
           ui.loginBusy=false; ui.loginErr="";
           go("home");
           return;
@@ -5849,7 +5859,7 @@ function ico(name){
 }
 
 function overlayOpen(){
-  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser || ui.myPhone || ui.photoPick || ui.photoCrop || ui.r17Gate || ui.bdftAdminSheet || ui.bdftResidentModal || ui.bdftBedPickerModal || ui.bdftOccupiedModal || ui.bdftUnavailableModal);
+  return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser || ui.myPhone || ui.photoPick || ui.photoCrop || ui.seForm || ui.disPreview || ui.r17Gate || ui.bdftAdminSheet || ui.bdftResidentModal || ui.bdftBedPickerModal || ui.bdftOccupiedModal || ui.bdftUnavailableModal);
 }
 function overlayDepth(){
   let n=0;
@@ -5859,6 +5869,8 @@ function overlayDepth(){
   if(ui.myPhone) n++;
   if(ui.photoPick) n++;
   if(ui.photoCrop) n++;
+  if(ui.seForm) n++;
+  if(ui.disPreview) n++;
   if(ui.consEdit) n++;
   if(ui.notifySet) n++;
   if(ui.pick) n++;
@@ -5877,7 +5889,7 @@ function clearOverlayState(extra){
   extra=extra||{};
   ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null; ui.medEditId=null; ui.r17Gate=null; ui.r17Next=null; ui.r17Reason="";
   ui.bdftAdminSheet=false; ui.bdftResidentModal=null; ui.bdftBedPickerModal=null; ui.bdftOccupiedModal=false; ui.bdftUnavailableModal=false;
-  ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null; ui.addUser=null; ui.myPhone=null; ui.photoPick=false; ui.photoCrop=null; phoneFieldsWipe();
+  ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null; ui.addUser=null; ui.myPhone=null; ui.photoPick=false; ui.photoCrop=null; ui.seForm=null; ui.disPreview=false; phoneFieldsWipe();
   if(extra.med){
     ui.medPid=null;
     if(ui.fields){try{delete ui.fields.md;delete ui.fields.mds}catch(e){}}
@@ -5885,6 +5897,8 @@ function clearOverlayState(extra){
 }
 function popTopOverlay(extra){
   extra=extra||{};
+  if(ui.disPreview){ ui.disPreview=false; return "disPreview"; }
+  if(ui.seForm){ ui.seForm=null; return "seForm"; }
   if(ui.r17Gate){ ui.r17Gate=null; ui.r17Next=null; ui.r17Reason=""; return "r17"; }
   if(ui.confirm){ ui.confirm=null; return "confirm"; }
   if(ui.pick){ ui.pick=null; return "pick"; }
@@ -5963,7 +5977,7 @@ function stampSheetEnter(html){
 function shell(inner){
   const u=user()||{};
   const appHeader=canWrite()&&!isConsultant()&&!isIntern();
-  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile"].includes(route.page))?"on":"";
+  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile","pgts"].includes(route.page))?"on":"";
   const bell=`<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button>`;
   const left=appHeader
     ? `<div class="home-id">${photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")}<div class="home-greet"><span>${esc(greet())}</span><b>${esc(u.displayName||u.username||"")}</b></div></div>`
@@ -5976,7 +5990,7 @@ function shell(inner){
       <button class="${on("patients")}" onclick="go('patients')">${ico('patients')}<span class="lbl">Patients</span></button>
       <button class="${on("handover")}" onclick="go('handover')" ${ui.busy?"disabled":""}>${ico('handover')}<span class="lbl">Handovers</span></button>
       <button class="${on("more")}" onclick="go('more')">${ico('more')}<span class="lbl">More</span></button>
-    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(photoOverlays()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(bdftAdminSheetOverlay()||"")+(bdftResidentModalOverlay()||"")+(bdftBedPickerOverlay()||"")+(bdftOccupiedModalOverlay()||"")+(bdftUnavailableModalOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review, ui.r17Reason||"")}</div></div>`:""))}${busyVeil()}`;
+    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(photoOverlays()||"")+(seFormOverlay()||"")+(disPreviewOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(bdftAdminSheetOverlay()||"")+(bdftResidentModalOverlay()||"")+(bdftBedPickerOverlay()||"")+(bdftOccupiedModalOverlay()||"")+(bdftUnavailableModalOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review, ui.r17Reason||"")}</div></div>`:""))}${busyVeil()}`;
 }
 
 /* HOME: occupied beds only, current status */
@@ -6354,6 +6368,219 @@ function r146Superseded(){const t=Date.now();if(!r146Supd.s||t-r146Supd.t>400){r
 function r146LabAbn(x){return !!(x&&x.flag&&!/^(N|NORMAL)$/i.test(String(x.flag)))}
 const R146_RED_TAGS={suicidal:"Suicidal risk",aggressive:"Aggressive",abscond:"Abscond risk"};
 // Reasons a patient needs attention. lvl 0 red / 1 amber / 2 blue; kind "due" (something to do) or "flag" (clinical flag).
+const SE_FIELDS={
+  lithium:["Nausea/vomiting","Diarrhoea","Fine tremor","Coarse tremor","Polyuria/polydipsia","Muscle weakness","Ataxia","Cognitive changes/confusion","Drowsiness","Other adverse effects"],
+  clozapine:["Sedation/drowsiness","Hypersalivation","Constipation","Nausea/vomiting","Tachycardia","Orthostatic dizziness/hypotension","Urinary symptoms","Weight gain/appetite increase","Tremor","Seizure-related symptoms","Fever/infective symptoms","Other adverse effects"]
+};
+function seKindOf(drug){
+  const s=String(drug||"").toLowerCase();
+  if(/\blithium\b/.test(s)) return "lithium";
+  if(/\b(clozapine|clozaril)\b/.test(s)) return "clozapine";
+  return "";
+}
+function seActiveOrders(p){
+  const out=[];
+  (S.orders||[]).filter(o=>o&&String(o.pid)===String(p&&p.id)&&!o.stop&&o.status!=="stopped").forEach(o=>{
+    const k=seKindOf(o.drug); if(!k) return;
+    const hit=out.find(x=>x.med===k);
+    const start=o.start||o.at||"";
+    if(!hit) out.push({med:k,start});
+    else if(start && (!hit.start || Date.parse(start)<Date.parse(hit.start))) hit.start=start;
+  });
+  return out;
+}
+function seLogged(pid,med,day){
+  return (S.seLogs||[]).some(x=>x&&String(x.pid)===String(pid)&&x.med===med&&x.day===day);
+}
+function seOpen(pid,med){ if(!needWrite())return; ui.seForm={pid,med,effects:[],note:""}; render(); }
+function seToggle(i){
+  const f=ui.seForm; if(!f) return;
+  f.effects=f.effects||[];
+  const label=(SE_FIELDS[f.med]||[])[i];
+  if(label==null) return;
+  if(f.none) f.none=false;
+  const at=f.effects.indexOf(label);
+  if(at>=0) f.effects.splice(at,1); else f.effects.push(label);
+  render();
+}
+function seNone(){ const f=ui.seForm; if(!f) return; f.none=!f.none; if(f.none) f.effects=[]; render(); }
+async function seSave(){
+  const f=ui.seForm; if(!f) return;
+  const day=wardLocalDayKey(new Date());
+  if(seLogged(f.pid,f.med,day)){ toast("Already recorded for today.","info"); return; }
+  const effects=f.none?["No side effects reported"]:(f.effects||[]).slice();
+  if(!effects.length){ toast("Select the side effects, or No side effects reported.","bad"); return; }
+  const row={id:"se-"+Date.now().toString(36),pid:f.pid,med:f.med,day,effects,comments:String(f.note||"").slice(0,500),by:S.userId,byName:(user()&&user().displayName)||rname(S.userId),at:now()};
+  S.seLogs=S.seLogs||[]; S.seLogs.unshift(row); save();
+  ui.seForm=null; toast("Side effects recorded","ok"); render();
+  if(!(sb&&sessionTok)) return;
+  try{
+    const res=await sb.rpc("ward_save_se_log",{p_token:sessionTok,p_row:{id:row.id,patient_id:row.pid,med:row.med,day:row.day,effects:row.effects,comments:row.comments}});
+    if(res&&res.error){ if(rpcMissing(res.error)){ui.seRpc=false;return} throw res.error; }
+    row.synced=true; save();
+  }catch(e){ toast("Saved on this device. It will stay here if the server update is not applied yet.","info"); }
+}
+function seChartHtml(pid,med,start){
+  const logs=(S.seLogs||[]).filter(x=>String(x.pid)===String(pid)&&x.med===med).slice().sort((a,b)=>String(a.day).localeCompare(String(b.day)));
+  const have=new Set(logs.map(x=>x.day));
+  const today=wardLocalDayKey(new Date());
+  const miss=[];
+  const startMs=Date.parse(start||"");
+  const from=new Date(Number.isFinite(startMs)?Math.max(startMs, Date.now()-13*86400000):Date.now());
+  from.setHours(12,0,0,0);
+  for(let t=new Date(from); wardLocalDayKey(t)<=today && miss.length<14; t.setDate(t.getDate()+1)){
+    const k=wardLocalDayKey(t); if(!have.has(k)) miss.push(k);
+  }
+  const rows=logs.map(x=>`<tr><td>${esc(x.day.split("-").reverse().join("/"))}</td><td>${esc((x.effects||[]).join(", ")||"—")}</td><td>${esc(x.byName||rname(x.by)||"")}</td></tr>`).join("");
+  const missing=miss.length?`<p class="tiny">Not recorded: ${miss.map(k=>esc(k.split("-").reverse().join("/"))).join(", ")}</p>`:`<p class="tiny">No missing days in this window.</p>`;
+  return `<div class="card" style="margin-top:10px"><p class="tiny">DAILY CHART</p><table class="chart" style="width:100%"><tr><th>Date</th><th>Side effects</th><th>Recorded by</th></tr>${rows||`<tr><td colspan="3">No entries yet. A missing entry is not “no side effects”.</td></tr>`}</table>${missing}</div>`;
+}
+function seFormOverlay(){
+  const f=ui.seForm; if(!f) return "";
+  const p=patient(f.pid); if(!p) return "";
+  const spec=seActiveOrders(p).find(x=>x.med===f.med)||{start:""};
+  const fields=SE_FIELDS[f.med]||[];
+  const title=f.med==="lithium"?"Lithium side effects":"Clozapine side effects";
+  return `<div class="sheet mid"><button class="mask" type="button" onclick="ui.seForm=null;render()"></button><div class="box" role="dialog" aria-modal="true" aria-label="${title}" style="max-width:440px">
+    <h2 class="page-title" style="margin:0 0 6px">${title}</h2>
+    <p class="sm" style="margin:0 0 8px"><b>${esc(p.name)}</b><br><span class="tiny">On ${f.med==="lithium"?"Lithium":"Clozapine"} since ${esc(spec.start?dmy(spec.start):"the start date on the chart")}</span></p>
+    <p class="tiny">This record does not replace laboratory monitoring or a clinical assessment. Escalate serious symptoms through the usual clinical pathway.</p>
+    <div class="multi">${fields.map((lb,i)=>`<button type="button" class="chip ${(f.effects||[]).includes(lb)?"on":""}" onclick="seToggle(${i})">${esc(lb)}</button>`).join("")}
+      <button type="button" class="chip ${f.none?"on":""}" onclick="seNone()">No side effects reported</button></div>
+    <label class="field" style="margin-top:8px"><span>Additional comments</span><textarea rows="2" oninput="ui.seForm.note=this.value">${esc(f.note||"")}</textarea></label>
+    <p class="tiny">Date ${esc(dmy(new Date().toISOString()))} · Recorded by ${esc((user()&&user().displayName)||"")}</p>
+    ${seChartHtml(f.pid,f.med,spec.start)}
+    <button type="button" class="btn block" style="margin-top:10px" onclick="seSave()">Save record</button>
+    <button type="button" class="btn ghost block" style="margin-top:8px" onclick="ui.seForm=null;render()">Cancel</button>
+  </div></div>`;
+}
+async function sePull(){
+  if(!sb||!sessionTok||ui.seRpc===false) return;
+  try{
+    const res=await sb.rpc("ward_list_se_logs",{p_token:sessionTok});
+    if(!res||res.error){ if(res&&rpcMissing(res.error)) ui.seRpc=false; return; }
+    const rows=Array.isArray(res.data)?res.data:(res.data&&res.data.rows)||[];
+    const mine=new Map((S.seLogs||[]).map(x=>[x.id,x]));
+    rows.forEach(r=>{
+      const id=r.id; if(mine.has(id)) return;
+      mine.set(id,{id,pid:r.patient_id,med:r.med,day:String(r.day).slice(0,10),effects:r.effects||[],comments:r.comments||"",by:r.recorded_by,byName:r.by_name||"",at:r.created_at,synced:true});
+    });
+    S.seLogs=Array.from(mine.values()); save();
+  }catch(e){}
+}
+function ectLoggedToday(pid){
+  const day=wardLocalDayKey(new Date());
+  return (S.ectSessions||[]).some(x=>x&&String(x.pid)===String(pid)&&wardLocalDayKey(x.at)===day);
+}
+function recentDischargeGroups(list){
+  const today=wardLocalDayKey(new Date());
+  const yest=new Date(); yest.setDate(yest.getDate()-1);
+  const yk=wardLocalDayKey(yest);
+  const groups=[], map=new Map();
+  (list||[]).forEach(p=>{
+    const k=wardLocalDayKey(p.dischargedAt)||"";
+    if(!map.has(k)){ const g={key:k,items:[]}; map.set(k,g); groups.push(g); }
+    map.get(k).items.push(p);
+  });
+  return groups.map(g=>{
+    let title="Undated";
+    if(g.key===today) title="Today — "+new Date().toLocaleDateString([],{day:"numeric",month:"long"});
+    else if(g.key===yk) title="Yesterday — "+yest.toLocaleDateString([],{day:"numeric",month:"long"});
+    else if(g.key) title=new Date(g.key+"T12:00:00").toLocaleDateString([],{day:"numeric",month:"long"});
+    return {title, items:g.items};
+  });
+}
+function disDraftKey(id){return "ws_dis_draft_"+id}
+function disDraftGet(id){ try{return JSON.parse(localStorage.getItem(disDraftKey(id))||"null")}catch(e){return null} }
+function disDraftSaveNow(){
+  censusDraft();
+  const id=ui.disId; if(!id) return;
+  const d=ui.census||{};
+  const keep={ddx:d.ddx,ddx2:d.ddx2,ddx3:d.ddx3,dcomorb:d.dcomorb,mode:d.mode,outcome:d.outcome,ddate:d.ddate,dadvice:d.dadvice,dreview:d.dreview,treat:d.treat,dmrd:d.dmrd,dnomeds:!!d.dnomeds,dreq:d.dreq,dreqName:d.dreqName};
+  try{localStorage.setItem(disDraftKey(id),JSON.stringify(keep))}catch(e){}
+  ui.disPreview=false;
+  toast("Draft saved. This patient is still admitted.","ok");
+  render();
+}
+function disDraftApply(id){
+  const keep=disDraftGet(id); if(!keep) return;
+  ui.census=Object.assign(ui.census||{}, keep, {ddxPid:id,ddx2Pid:id});
+  ui.disDraftHit=false; ui.disForm=true; render();
+}
+function disReviewOpen(){
+  censusDraft();
+  const id=ui.disId; const p=patient(id); if(!p) return;
+  const review=r17ReviewFor(id);
+  const open=function(){ ui.disPreview=true; render(); };
+  if(review.warn){ ui.r17Next=open; r17OpenWarn(id,review); return; }
+  open();
+}
+function disPreviewOverlay(){
+  if(!ui.disPreview) return "";
+  const p=patient(ui.disId); const d=ui.census||{}; if(!p) return "";
+  const card=(h,b)=>`<div class="card" style="margin:0 0 8px"><p class="tiny">${h}</p>${b}</div>`;
+  const line=(k,v)=>`<p class="sm" style="margin:4px 0"><b>${k}</b> ${esc(v||"—")}</p>`;
+  const mode=d.mode||"advice";
+  const sig=(mode==="request"||mode==="dama")?card("Attendant's signature",`<div style="height:72px;border-bottom:1px solid var(--line);margin-top:12px"></div><p class="tiny">Space for a handwritten signature on the printed certificate.</p>`):"";
+  return `<div class="sheet"><button class="mask" type="button" onclick="ui.disPreview=false;render()"></button><div class="box" role="dialog" aria-modal="true" aria-label="Review discharge certificate" style="max-width:520px">
+    <h2 class="page-title" style="margin:0 0 8px">Review discharge certificate</h2>
+    ${card("Patient",line("Name",p.name)+line("Hospital no.",p.hospitalNo||p.code)+line("Age / sex",(p.age||"")+" "+(p.sex||"")))}
+    ${card("Admission and discharge",line("Admitted",p.admittedAt?fmt(p.admittedAt):"")+line("Discharge",d.ddate||"")+line("Type",labelOf(DISCHARGE_MODES,mode))+line("Condition",labelOf(DISCHARGE_OUTCOMES,d.outcome||"improved")))}
+    ${card("Diagnoses",line("Primary",d.ddx||p.diagnosis)+line("Secondary",d.ddx2||"")+line("Tertiary",d.ddx3||"")+line("Comorbidities",d.dcomorb||""))}
+    ${card("MSE and investigations",`<p class="sm">${esc((r17ReviewFor(p.id).hasMse?"MSE on record.":"No MSE recorded.")+" "+(r17ReviewFor(p.id).hasReport?"Investigations updated.":"No investigations updated."))}</p>`)}
+    ${card("Treatment",line("Mode",(d.treat||[]).join(", "))+line("Instructions",d.dadvice||"")+line("Review",d.dreview||""))}
+    ${sig}
+    <button type="button" class="btn danger block" onclick="ui.disPreview=false;censusDraft();dischargeFromCensus()">Confirm discharge</button>
+    <button type="button" class="btn ghost block" style="margin-top:8px" onclick="disDraftSaveNow()">Save draft</button>
+    <button type="button" class="btn ghost block" style="margin-top:8px" onclick="ui.disPreview=false;render()">Return to editing</button>
+  </div></div>`;
+}
+function pgtPeople(){
+  if(Array.isArray(ui.pgtDir)&&ui.pgtDir.length) return ui.pgtDir.filter(r=>r&&r.active!==false);
+  return (S.residents||[]).filter(r=>r&&r.active!==false&&normRole(r.role)!=="intern"&&normRole(r.role)!=="consultant").map(r=>({id:r.id,name:r.displayName||r.username||"",phone:"",photo:String(r.id)===String(S.userId)?myPhotoData():"",active:true}));
+}
+function pgtFace(person,cls){
+  const src=person&&person.photo||"";
+  const ini=profileInitials((person&&person.name)||"");
+  if(String(src).indexOf("data:image/")===0) return `<img class="${cls}" alt="" src="${esc(src)}">`;
+  return `<div class="${cls}" aria-hidden="true">${esc(ini)}</div>`;
+}
+async function pgtLoad(){
+  if(!sb||!sessionTok||ui.pgtRpc===false||ui.pgtLoading) return;
+  ui.pgtLoading=true;
+  try{
+    const res=await sb.rpc("ward_list_pgts",{p_token:sessionTok});
+    if(!res||res.error){ if(res&&rpcMissing(res.error)) ui.pgtRpc=false; return; }
+    const rows=Array.isArray(res.data)?res.data:(res.data&&res.data.people)||[];
+    ui.pgtDir=rows.map(r=>({id:r.id,name:r.display_name||r.name||"",phone:r.phone||"",photo:r.photo||"",active:r.active!==false}));
+    render({bg:1});
+  }catch(e){}
+  finally{ui.pgtLoading=false}
+}
+function pgtsView(){
+  if(isIntern()) return `<div class="card"><p class="sm">This directory is for residents and consultants.</p></div>`;
+  pgtLoad();
+  const people=pgtPeople().slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
+    <h2 class="page-title">All PGTs</h2>
+    <p class="tiny" style="margin:-4px 0 10px">Active residents. Phone numbers are for staff on Ward Sync.</p>
+    ${ui.pgtRpc===false?`<p class="tiny">Photos and phone numbers appear after the directory update is applied. Names below are from the ward list.</p>`:""}
+    <div class="pgt-dir">${people.length?people.map(r=>`<div class="card pgt-card">${pgtFace(r,"pgt-photo")}<b>${esc(r.name||"Resident")}</b>${r.phone?`<a class="btn sm" href="tel:${esc(String(r.phone).replace(/[^\d+]/g,""))}">Call</a>`:`<span class="tiny">No number</span>`}</div>`).join(""):`<div class="card"><p class="sm">No active PGTs.</p></div>`}</div>`;
+}
+function dutyResidentGrid(){
+  const open=dutyOpen();
+  const sh=shiftLabel(currentShift());
+  pgtLoad();
+  const byId=new Map(pgtPeople().map(r=>[String(r.id),r]));
+  const d=dutyRecord();
+  const action=d?`<div class="duty-actions"><button class="btn ghost block" onclick="endDuty()">End shift</button></div>`:`<div class="duty-actions"><button class="btn block" onclick="signDuty()">Sign in for ${esc(sh)}</button></div>`;
+  if(!open.length) return `<p class="sm" style="margin-top:8px">No one signed in for ${esc(sh)}</p>${action}`;
+  return `<div class="pgt-grid">${open.map(x=>{
+    const person=byId.get(String(x.userId))||{id:x.userId,name:x.name||rname(x.userId),photo:String(x.userId)===String(S.userId)?myPhotoData():""};
+    const me=String(x.userId)===String(S.userId);
+    return `<div class="pgt-tile">${pgtFace(person,"pgt-photo")}<span>${esc(person.name||x.name||"")}${me?" · you":""}</span></div>`;
+  }).join("")}</div>${action}`;
+}
 function r146Reasons(p){
   const out=[];if(!p||p.status==="discharged")return out;
   const pid=p.id,q=r146Q(pid),now=Date.now(),cw=canWrite(),sn=S.snaps[pid]||{};
@@ -6386,6 +6613,15 @@ function r146Reasons(p){
   const ts=openTasks(pid);
   if(ts.length){const hi=ts.some(t=>/^(stat|high|urgent)$/i.test(String(t.pri||"")));add(hi?1:2,"due",(ts.length>1?ts.length+" tasks · ":"Task: ")+r146Cut(ts[0].title,50),"Tasks","go('tasks')","task")}
   if(p.status==="admitted"&&wardLocalDayKey(p.admittedAt||p.admitted_at)===wardLocalDayKey(new Date()))add(2,"flag","Admitted today","Open",`r146Open(${q})`,"new");
+  if(cw&&r146IsMine(p)){
+    const day=wardLocalDayKey(new Date());
+    seActiveOrders(p).forEach(x=>{
+      if(seLogged(pid,x.med,day)) return;
+      const since=x.start?dmy(x.start):"the chart";
+      const label=x.med==="lithium"?"Lithium":"Clozapine";
+      add(1,"due",p.name+" is on "+label+" since "+since,"Record S/E",`seOpen(${q},'${x.med}')`,"se-"+x.med);
+    });
+  }
   return out.sort((a,b)=>a.lvl-b.lvl);
 }
 function r146IsFlagged(p){return r146Reasons(p).some(r=>r.kind==="flag"&&r.lvl<=1)}
@@ -6544,8 +6780,8 @@ function homeView(){
     <div class="home-side">
     <div class="card duty-card">
       ${canWrite()?"":`<div class="consultant-welcome"><p class="tiny">Welcome</p><p class="consultant-hello">${esc((user()||{}).displayName||"Consultant")}</p></div>`}
-      <div class="duty-head" style="margin-top:${canWrite()?"0":"10px"}"><p class="tiny">On duty PGTs</p><p class="tiny duty-date" aria-label="Today">${esc(dutyDateLabel())}</p></div>
-      ${dutyCardBody()}
+      <div class="duty-head" style="margin-top:${canWrite()?"0":"10px"}"><p class="tiny">${canWrite()&&!isConsultant()?`On Duty — ${esc(shiftLabel(currentShift()))} Shift`:"On duty PGTs"}</p><p class="tiny duty-date" aria-label="Today">${esc(dutyDateLabel())}</p></div>
+      ${canWrite()&&!isConsultant()?dutyResidentGrid():dutyCardBody()}
     </div>
     </div>
     </div>`;
@@ -7099,10 +7335,10 @@ function ectView(){
         <div class="ect-sess"><b>${e.sessionsDone||0}</b><span>done</span></div>
       </div>
       ${canWrite()?`<div class="btns" style="margin-top:8px">
-        <button class="btn sm" ${ectToday?"":"disabled"} onclick="markEctDone('${e.id}')">Session done</button>
+        <button class="btn sm" ${ectToday&&!ectLoggedToday(e.pid)?"":"disabled"} onclick="markEctDone('${e.id}')">Session done</button>
         <button class="btn sm ghost" onclick="cancelEct('${e.id}')">Cancel plan</button>
       </div>
-      ${ectToday?"":`<p class="tiny" style="margin-top:6px">Session done opens on ${esc(ectDayNames())}.</p>`}`:""}
+      ${ectLoggedToday(e.pid)?`<p class="tiny" style="margin-top:6px">An ECT session has already been recorded for today.</p>`:ectToday?"":`<p class="tiny" style="margin-top:6px">Session done opens on ${esc(ectDayNames())}.</p>`}`:""}
     </div>`;
   }).join("")+`</div>`;
 }
@@ -7134,6 +7370,9 @@ function censusDraft(){
   if(g("dout")|| (ui.fields&&ui.fields.dout!=null)) ui.census.outcome=val("dout")||ui.census.outcome;
   if(g("ddate")) ui.census.ddate=g("ddate").value;
   if(g("ddx")) ui.census.ddx=g("ddx").value;
+  if(g("ddx2")) ui.census.ddx2=g("ddx2").value;
+  if(g("ddx3")) ui.census.ddx3=g("ddx3").value;
+  if(g("dcomorb")) ui.census.dcomorb=g("dcomorb").value;
   // R1.3.120: discharge MRD No. (only when missing), advice and medications on discharge
   if(g("dmrd")) ui.census.dmrd=g("dmrd").value;
   if(g("dadvice")) ui.census.dadvice=g("dadvice").value;
@@ -10677,16 +10916,18 @@ function censusView(){
   if(tab==="out"){
     const pid=ui.disId||"";
     const p=pid?patient(pid):null;
-    if(p && d.ddxPid!==p.id){ d.ddx=p.diagnosis||""; d.ddxPid=p.id; d.dadvice=""; d.dreview=""; d.dnomeds=false; d.dmrd=""; d.dect=null; d.treat=disDefaultTreat(p); disMedsReset(p.id); }
+    if(p && d.ddxPid!==p.id){ d.ddx=p.diagnosis||""; d.ddx2=p.dx2||""; d.ddx3=p.dx3||""; d.dcomorb=p.comorb||""; d.ddxPid=p.id; d.dadvice=""; d.dreview=""; d.dnomeds=false; d.dmrd=""; d.dect=null; d.treat=disDefaultTreat(p); disMedsReset(p.id); ui.disDraftAsked=null; }
+    if(p && ui.disForm && ui.disDraftAsked!==p.id){ ui.disDraftAsked=p.id; ui.disDraftHit=!!disDraftGet(p.id); }
     const needMrd=disNeedsMrd(p), mrdOff=(needMrd&&!normMrd(d.dmrd))||((d.mode||"advice")==="dama"&&!disReqNorm(d.dreq,"dama").length);
     const curDx=d.ddx!=null?d.ddx:(p&&p.diagnosis||"");
     const treat=d.treat||["conservative"];
     const form=!!(p&&ui.disForm);
     const disSearch=`<input id="disQ" placeholder="Search name, hospital no., diagnosis or bed" value="${esc(ui.disQ||"")}" oninput="ui.disQ=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>`;
-    const disCards=recent.length?recent.map(x=>{
+    const disCard=x=>{
       const bno=lastBedNo(x.id);
       return `<div class="card" style="cursor:pointer" onclick="go('record','${x.id}',1)"><b>${esc(x.name)}</b><p class="tiny">${esc(x.hospitalNo||x.code)}${mrdLabel(x)?" · "+esc(mrdLabel(x)):""}${bno&&bno!=="—"?" · Bed "+esc(bno):""}${x.diagnosis?" · "+esc(x.diagnosis):""} · ${labelOf(DISCHARGE_MODES,x.dischargeMode)} · ${labelOf(DISCHARGE_OUTCOMES,x.dischargeOutcome)} · ${x.dischargedAt?fmt(x.dischargedAt):""}</p></div>`;
-    }).join(""):`<div class="card"><p class="sm">${dq?"No matching discharged patients.":"No recent discharges."}</p></div>`;
+    };
+    const disCards=recent.length?recentDischargeGroups(recent).map(g=>`<p class="sec">${esc(g.title)}</p>${g.items.map(disCard).join("")}`).join(""):`<div class="card"><p class="sm">${dq?"No matching discharged patients.":"No recent discharges."}</p></div>`;
     if(ui.disListOnly){
       return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
         <div class="row" style="align-items:center;margin-bottom:6px">
@@ -10710,7 +10951,11 @@ function censusView(){
       ${form?`<div class="card dis-form">
         ${disRecordHtml(p)}
         ${needMrd?mrdFieldHtml("dmrd",d.dmrd||"",1):""}
-        ${dxFieldHtml("Working diagnosis","ddx",curDx,"Diagnosis","census_ddx",p?p.id:"")}
+        ${ui.disDraftHit?`<div class="card"><p><b>Existing discharge draft found</b></p><p class="sm">A discharge certificate draft has already been saved for this patient.</p><div class="btns"><button type="button" class="btn sm" onclick="disDraftApply('${esc(p.id)}');ui.disPreview=true;render()">Review draft</button><button type="button" class="btn sm ghost" onclick="disDraftApply('${esc(p.id)}')">Continue editing</button></div></div>`:""}
+        ${dxFieldHtml("Primary diagnosis","ddx",curDx,"Diagnosis","census_ddx",p?p.id:"")}
+        ${dxFieldHtml("Secondary diagnosis","ddx2",d.ddx2||"","Secondary diagnosis","census_ddx2",p?p.id:"")}
+        ${dxFieldHtml("Tertiary diagnosis","ddx3",d.ddx3||"","Tertiary diagnosis","census_ddx3",p?p.id:"")}
+        ${dxFieldHtml("Comorbidities","dcomorb",d.dcomorb||"","Comorbidities","census_dcomorb",p?p.id:"")}
         <div class="field"><span>Mode of treatment</span>
           <div class="multi" id="disTreat">${TREATMENT_MODES.filter(x=>x[0]!=="conservative_ect").map(([id,lb])=>`<button type="button" class="chip ${treat.includes(id)?"on":""}" data-treat="${id}" onclick="disTreatToggle('${id}')">${lb}</button>`).join("")}
           <span class="tiny" id="disTreatLb">${disTreatHint(treat)}</span>
@@ -10728,7 +10973,8 @@ function censusView(){
         ${disReviewHtml(d)}
         <div class="field dis-mse"><span>MSE at discharge <em style="font-style:normal;opacity:.6">(optional)</em></span>${mseDisRowHtml(p.id)}</div>
         ${(()=>{const t=disNeedText(p,d);return `<p class="tiny dis-need ${/^All required/.test(t)?"ok":""}" id="disNeed" aria-live="polite">${esc(t)}</p>`})()}
-        <button class="btn danger block dis-confirm ${mrdOff?"dis-off":""}" id="disConfirm" aria-disabled="${mrdOff}" onclick="censusDraft();dischargeFromCensus()">Confirm discharge</button>
+        <button class="btn block" type="button" onclick="disReviewOpen()">Review discharge certificate</button>
+        <button class="btn ghost block" type="button" style="margin-top:8px" onclick="disDraftSaveNow()">Save draft</button>
       </div>`:""}
       ${recentAll.length?`<p class="sec">Recent discharges</p>${disSearch}${disCards}`:""}`;
   }
@@ -10966,6 +11212,8 @@ function dischargeFromCensus(){
   const ect=ectPlan(id);
   const ectBefore=ect?{status:ect.status,nextAt:ect.nextAt,sessionsDone:ect.sessionsDone}:null;
   p.diagnosis=nextDx;
+  if(d.ddxPid===p.id){ p.dx2=String(d.ddx2||"").trim(); p.dx3=String(d.ddx3||"").trim(); try{p.comorb=normComorb(d.dcomorb)||""}catch(e){p.comorb=String(d.dcomorb||"").trim()} }
+  try{localStorage.removeItem(disDraftKey(p.id))}catch(e){}
   p.status="discharged";
   p.dischargedAt=d.ddate?new Date(d.ddate).toISOString():now();
   p.dischargeMode=d.mode||"advice";
@@ -11271,6 +11519,7 @@ function saveEct(pid){
 async function markEctDone(id){
   if(!needWrite())return;
   const e=(S.ect||[]).find(x=>x.id===id);if(!e)return;
+  if(ectLoggedToday(e.pid)){toast("An ECT session has already been recorded for today.","bad");return}
   if(!isEctDay()){
     const scheduledDay = e.nextAt ? new Date(e.nextAt).getDay() : null;
     const isScheduledEctDay = scheduledDay !== null && ectDays().includes(scheduledDay);
@@ -12435,6 +12684,7 @@ function moreView(){
     ${canWrite()?row("ui.ctab='in';ui.disListOnly=false;go('census')",ico("census"),"Admit / Discharge","teal"):""}
     ${canWrite()?row("go('observe')",ico("observe"),"Under observation","amber"):""}
     ${row("go('ect')",ico("ect"),"ECT","violet")}
+    ${!isIntern()?row("go('pgts')",ico("users"),"All PGTs","indigo"):""}
     ${row("go('tasks')",ico("tasks"),"Task board","blue")}
     ${row("go('activity')",ico("activity"),"Activity log","slate")}
     ${canBroadcast()?row("go('broadcast')",ico("broadcast"),"Broadcast","cyan"):""}
@@ -16446,6 +16696,7 @@ function buildCertPdf(m,o){
   // signatures + date on the last certificate page (fixed position)
   const certPages=pages.length;
   {const sy=718;line(M,sy,M+212,sy,0.7);line(R-212,sy,R,sy,0.7);
+   if(p.dischargeMode==="request"||p.dischargeMode==="dama"){line(M,sy-28,M+190,sy-28,0.7);txt(M,sy-14,"Attendant's signature","T",10.5)}
    txt(M,sy+14,"Countersigned by VP/VS/Registrar","T",10.5);const cp="Case note prepared by";txt(R-certW(cp,"T",10.5),sy+14,cp,"T",10.5);
    txt(M,sy+42,"Date : ","T",10.5);txt(M+certW("Date : ","T",10.5),sy+42,enc(certDate(p.dischargedAt)),"TB",10.5);
    txt(R-certW("P.T.O.","TB",10.5),sy+42,"P.T.O.","TB",10.5);}
@@ -18156,7 +18407,7 @@ function vitalsSave(){
 
 /* ---- Intern pull / views ---- */
 function internWipe(){
-  ["orders","doses","tasks","internTasks","ectDone","handovers","hitems","events","ect","ectSessions","criticalStatusUpdates","obsStays","advice","broadcasts","mse","labs","dischargeCertificates","patientEdits","dutyList","consultants","assignments","faculty","consLinks","scales"].forEach(k=>{if(Array.isArray(S[k]))S[k]=[]});
+  ["orders","doses","tasks","internTasks","ectDone","handovers","hitems","events","ect","ectSessions","seLogs","criticalStatusUpdates","obsStays","advice","broadcasts","mse","labs","dischargeCertificates","patientEdits","dutyList","consultants","assignments","faculty","consLinks","scales"].forEach(k=>{if(Array.isArray(S[k]))S[k]=[]});
   S.snaps={};
 }
 function internApply(st,guard){
@@ -18244,16 +18495,14 @@ function r17WarnMse(){const pid=ui.r17Gate&&ui.r17Gate.pid;ui.r17Gate=null;ui.r1
 function r17WarnReports(){const pid=ui.r17Gate&&ui.r17Gate.pid;ui.r17Gate=null;ui.r17Next=null;render({force:1});if(!pid)return;if(typeof r146Open==="function")r146Open(pid,"results");else go("snap",pid)}
 function r17WarnContinue(){
   const g=ui.r17Gate;if(!g)return;
-  const reason=String((document.getElementById("r17Reason")||{}).value||ui.r17Reason||"").trim();
   const fresh=r17ReviewFor(g.pid);
   if(r17ReviewFingerprint(fresh)!==r17ReviewFingerprint(g.review)){
-    ui.r17Gate.review=fresh;ui.r17Reason=reason;
+    ui.r17Gate.review=fresh;
     if(!fresh.warn){ui.r17Ov=null;ui.r17Gate=null;const n=ui.r17Next;ui.r17Next=null;render({force:1});if(n)n();return}
-    toast("The record changed. Read the updated warning.","info");render({force:1});return;
+    toast("The record changed. Read the updated reminder.","info");render({force:1});return;
   }
   if(!fresh.warn){ui.r17Ov=null;ui.r17Gate=null;const n=ui.r17Next;ui.r17Next=null;render({force:1});if(n)n();return}
-  if(reason.length<3){toast("Enter a reason (at least 3 characters).","bad");return}
-  ui.r17Ov={pid:g.pid,reason:reason,fp:r17ReviewFingerprint(fresh)};
+  ui.r17Ov={pid:g.pid,reason:"",allow:true,fp:r17ReviewFingerprint(fresh)};
   ui.r17Gate=null;ui.r17Reason="";const n=ui.r17Next;ui.r17Next=null;render({force:1});if(n)n();
 }
 function r17MsePayload(pid){
@@ -18477,7 +18726,7 @@ function r17DischargeReview(patient, mses, reports, opts){
     latestReportId:latestRep?latestRep.id:null,latestReportAt:latestRep?(latestRep.reportedAt||latestRep.at||null):null,latestReportWhy:latestRep?r17RepWhy(patient,latestRep,ops):"none",latestReportEligible:!!latestEligibleRep};
 }
 function r17ReviewFingerprint(review){if(!review)return "";return [review.pid||"",review.admittedAt||"",(review.missing||[]).join(","),(review.mseIds||[]).join(","),(review.reportIds||[]).join(","),review.stagedAtomic?"atomic":"noatomic"].join("|")}
-function r17OverrideMatches(override, review){if(!review||!review.warn)return true;if(!override)return false;if(String(override.reason||"").trim().length<3)return false;if(String(override.pid)!==String(review.pid||""))return false;return override.fp===r17ReviewFingerprint(review)}
+function r17OverrideMatches(override, review){if(!review||!review.warn)return true;if(!override)return false;if(!override.allow&&String(override.reason||"").trim().length<3)return false;if(String(override.pid)!==String(review.pid||""))return false;return override.fp===r17ReviewFingerprint(review)}
 function r17WarnLines(review){
   const lines=[];
   if(!review.hasMse){lines.push("No eligible MSE on this admission.");if(review.latestMseAt)lines.push("Latest MSE "+r17IstWhen(review.latestMseAt)+" ("+(review.latestMseWhy||"not counted")+") — not counted.");else lines.push("No MSE on record.")}
@@ -18576,12 +18825,16 @@ function r17AuditMissHtml(){
   const m=ui&&ui.r17AuditMiss;if(!m||!m.text)return "";
   return '<div class="card r17-audit-miss" role="alert"><p><b>Review reason not stored</b></p><p class="sm">'+r17Esc(m.text)+'</p><button type="button" class="btn sm ghost" onclick="ui.r17AuditMiss=null;render()">Dismiss</button></div>';
 }
-function r17DischargeWarnHtml(review, reason){
-  const lines=r17WarnLines(review).map(function(t){return "<p>"+r17Esc(t)+"</p>"}).join("");
-  return '<div class="r17-warn" role="dialog" aria-modal="true" aria-labelledby="r17WarnT"><h2 id="r17WarnT">Before discharge</h2>'+lines+
-    '<label class="field"><span>Reason to continue</span><textarea id="r17Reason" rows="3" maxlength="300" placeholder="Why discharge should continue" oninput="ui.r17Reason=this.value">'+r17Esc(reason||"")+'</textarea></label>'+
-    '<div class="r17-warn-acts"><button type="button" class="btn sm ghost" onclick="r17WarnMse()">Update MSE</button><button type="button" class="btn sm ghost" onclick="r17WarnReports()">Review or add reports</button></div>'+
-    '<div class="r17-warn-acts"><button type="button" class="btn ghost" onclick="r17WarnCancel()">Cancel</button><button type="button" class="btn danger" onclick="r17WarnContinue()">Continue discharge</button></div></div>';
+function r17DischargeWarnHtml(review){
+  const lines=[];
+  if(review&&!review.hasMse) lines.push("No MSE recorded. Would you like to continue?");
+  if(review&&!review.hasReport) lines.push("No investigations updated. Would you like to continue?");
+  const body=lines.map(function(t){return "<p>"+r17Esc(t)+"</p>"}).join("");
+  const add=review&&!review.hasMse?'<button type="button" class="btn sm ghost" onclick="r17WarnMse()">Add MSE</button>':"";
+  const addR=review&&!review.hasReport?'<button type="button" class="btn sm ghost" onclick="r17WarnReports()">Add investigations</button>':"";
+  return '<div class="r17-warn" role="dialog" aria-modal="true" aria-labelledby="r17WarnT"><h2 id="r17WarnT">Before discharge</h2>'+body+
+    '<div class="r17-warn-acts">'+add+addR+'</div>'+
+    '<div class="r17-warn-acts"><button type="button" class="btn ghost" onclick="r17WarnCancel()">Cancel</button><button type="button" class="btn" onclick="r17WarnContinue()">Continue anyway</button></div></div>';
 }
 function r17ScheduleHtml(items, writable){
   if(!items||!items.length)return '<p class="sm r146-empty" style="margin:4px 0 0;color:var(--muted);">Nothing scheduled for today.</p>';
@@ -20206,17 +20459,19 @@ async function bdftLoadFromSupabase(quiet){
           }
         });
 
-        AppState.distribution = {
-          dateStr: curDate,
-          tiers: tiers,
-          orphans: orphans
-        };
-        AppState.isWorkingDayActive = true;
-        saveWorkingSnapshotToLocal({
-          id: cur.id,
-          dateStr: curDate,
-          distribution: AppState.distribution
-        });
+        const incoming = { dateStr: curDate, tiers: tiers, orphans: orphans };
+        const localOff = AppState.distribution && bdftDayOffset(AppState.distribution.dateStr);
+        const incomingOff = bdftDayOffset(curDate);
+        const keepLocal = AppState.distribution && AppState.distribution.tiers && (localOff===0||localOff===1) && (incomingOff==null || incomingOff<localOff);
+        if(!keepLocal){
+          AppState.distribution = incoming;
+          AppState.isWorkingDayActive = true;
+          saveWorkingSnapshotToLocal({
+            id: cur.id,
+            dateStr: curDate,
+            distribution: AppState.distribution
+          });
+        }
       }
 
       if(!quiet) toast("BDFT synchronized with Supabase", "ok");
@@ -20391,7 +20646,7 @@ function bdftGetActiveDistribution(){
 
 function bdftGetMyAssignedBeds(){
   const dist=bdftGetActiveDistribution();
-  if(!dist||!dist.tiers) return null;
+  if(!dist||!dist.tiers||!bdftIsCurrent(dist.dateStr)) return null;
   const u=user();
   if(!u) return null;
   const myName=(u.displayName||u.username||"").trim().toLowerCase();
@@ -20459,6 +20714,18 @@ function bdftParseDate(str){
   return isNaN(d.getTime()) ? null : d;
 }
 
+function bdftDayOffset(dateStr){
+  if(!dateStr) return null;
+  if(String(dateStr).trim().toLowerCase()==="tomorrow") return 1;
+  const distDate=bdftParseDate(String(dateStr));
+  if(!distDate) return null;
+  const nowIst=new Date(Date.now()+330*60000);
+  const todayIst=new Date(Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate()));
+  const distUtc=new Date(Date.UTC(distDate.getFullYear(), distDate.getMonth(), distDate.getDate()));
+  return Math.round((distUtc.getTime()-todayIst.getTime())/86400000);
+}
+function bdftIsToday(dateStr){return bdftDayOffset(dateStr)===0}
+function bdftIsCurrent(dateStr){const d=bdftDayOffset(dateStr);return d===0||d===1}
 function bdftDateLabel(dateStr){
   if(!dateStr || String(dateStr).trim().toLowerCase() === "tomorrow") return "TOMORROW'S BEDS";
   const distDate = bdftParseDate(dateStr);
@@ -20486,7 +20753,12 @@ function bdftHomeCard(){
   bdftInit();
   if(isIntern()||isConsultant()) return "";
   const info=bdftGetMyAssignedBeds();
-  if(!info) return "";
+  if(!info||!bdftIsCurrent(info.dateStr)){
+    return `<div class="card" data-home="bdft-empty" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--line);">
+      <span class="tiny" style="font-weight:700;letter-spacing:.03em;text-transform:uppercase;">Beds</span>
+      <p class="sm" style="margin:4px 0 0">No current BDFT yet.</p>
+    </div>`;
+  }
 
   const dateLabel=esc(info.dateStr||"Tomorrow");
   if(info.isGeneric){
@@ -20507,7 +20779,7 @@ function bdftHomeCard(){
     return `<button type="button" class="pill ${isOcc?'full':'empty'}" style="min-height:28px;height:28px;padding:2px 6px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;width:100%;" onclick="bdftTapBedPatient('${esc(code)}')" title="${isOcc?`${esc(code)}: ${esc(pName)}`:`${esc(code)}: Vacant`}">
       <b style="font-size:11.5px;font-weight:750;letter-spacing:.02em;">${esc(code)}</b>
     </button>`;
-  }).join("") : `<div style="grid-column:1/-1;padding:2px 0;"><span class="happy-day-tag" style="font-size:11px;padding:2px 6px;">🌴 Happy Day</span><span class="tiny muted" style="margin-left:6px;font-size:11px;">No beds assigned tomorrow</span></div>`;
+  }).join("") : `<div style="grid-column:1/-1;padding:2px 0;"><span class="happy-day-tag" style="font-size:11px;padding:2px 6px;">🌴 Happy Day</span><span class="tiny muted" style="margin-left:6px;font-size:11px;">No beds assigned ${bdftDayOffset(info.dateStr)===0?"today":"tomorrow"}</span></div>`;
 
   return `<div class="card" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--teal);">
     <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">
@@ -20952,15 +21224,11 @@ async function bdftFinaliseAndSave(){
     bedsAssigned:AppState.bedsAssigned
   };
 
-  saveWorkingSnapshotToLocal(snap);
-  AppState.isWorkingDayActive=true;
-
-  AppState.archives.unshift(snap);
-  if(AppState.archives.length>BDFT_MAX_ARCHIVES) AppState.archives=AppState.archives.slice(0,BDFT_MAX_ARCHIVES);
-  saveArchivesToLocal();
-
-  if(sb && sessionTok){
-    try {
+  if(!(sb && sessionTok)){
+    toast("Not saved. Sign in again to finalise this BDFT.","bad");
+    return;
+  }
+  try {
       const planDateIso = bdftIstTomorrow();
       const rows = [];
       const bedLookup = new Map();
@@ -21011,7 +21279,13 @@ async function bdftFinaliseAndSave(){
         p_plan_date: planDateIso,
         p_rows: rows
       });
-      if(!error){
+      if(error) throw error;
+      saveWorkingSnapshotToLocal(snap);
+      AppState.isWorkingDayActive=true;
+      AppState.archives.unshift(snap);
+      if(AppState.archives.length>BDFT_MAX_ARCHIVES) AppState.archives=AppState.archives.slice(0,BDFT_MAX_ARCHIVES);
+      saveArchivesToLocal();
+      {
         toast("Distribution finalised & push notice sent!","ok");
         const nid = data && (data.notification_id || data.notificationId);
         if(nid){
@@ -21029,20 +21303,12 @@ async function bdftFinaliseAndSave(){
             });
           } catch(e){}
         }
-      } else {
-        toast("Distribution finalised locally!","ok");
       }
+      ui.bdftMode = "readonly";
+      render({force: true, forceLeave: true});
     } catch(e) {
-      toast("Distribution finalised locally!","ok");
+      toast("Finalisation was not saved. This distribution is still here — try Finalize again.","bad");
     }
-  } else {
-    toast("Distribution finalised and saved!","ok");
-  }
-
-  // After finalise, switch to readonly view so the user confirms the saved distribution.
-  // PNG export remains optional via the "Export PNG" button in the readonly view.
-  ui.bdftMode = "readonly";
-  render({force: true, forceLeave: true});
 }
 
 async function bdftExportPng(explicit){
@@ -21719,7 +21985,7 @@ function render(opts){
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
   if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){el.innerHTML=`<div class="login"><div class="login-card"><h1>Ward Sync</h1><p class="muted">Checking session…</p></div></div>`;return}
-  const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,dedit:dedEditView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView,bdft:bdftView,profile:profileView};
+  const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,dedit:dedEditView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView,bdft:bdftView,profile:profileView,pgts:pgtsView};
   if(isIntern()){pages.home=internHomeView;pages.snap=internSnapView;Object.keys(pages).forEach(k=>{if(k!=="home"&&k!=="snap")delete pages[k]});pages.ivitals=internVitalsView;pages.ireports=internReportsView;pages.ireport=internReportPageView} // R1.3.139: interns see the patient page only · R1.3.142: + Vitals / Reports tabs
   pages.vchart=vchartView; // R1.3.140: full-screen vitals chart (all roles)
   pages.scale=scaleView;pages.srate=srateView; // R1.3.143: rating scales (interns: CIWA-Ar / COWS only)
