@@ -20460,8 +20460,10 @@ async function bdftLoadFromSupabase(quiet){
         });
 
         const incoming = { dateStr: curDate, tiers: tiers, orphans: orphans };
-        const keepLocalToday = AppState.distribution && AppState.distribution.tiers && bdftIsToday(AppState.distribution.dateStr) && !bdftIsToday(curDate);
-        if(!keepLocalToday){
+        const localOff = AppState.distribution && bdftDayOffset(AppState.distribution.dateStr);
+        const incomingOff = bdftDayOffset(curDate);
+        const keepLocal = AppState.distribution && AppState.distribution.tiers && (localOff===0||localOff===1) && (incomingOff==null || incomingOff<localOff);
+        if(!keepLocal){
           AppState.distribution = incoming;
           AppState.isWorkingDayActive = true;
           saveWorkingSnapshotToLocal({
@@ -20644,7 +20646,7 @@ function bdftGetActiveDistribution(){
 
 function bdftGetMyAssignedBeds(){
   const dist=bdftGetActiveDistribution();
-  if(!dist||!dist.tiers) return null;
+  if(!dist||!dist.tiers||!bdftIsCurrent(dist.dateStr)) return null;
   const u=user();
   if(!u) return null;
   const myName=(u.displayName||u.username||"").trim().toLowerCase();
@@ -20712,15 +20714,18 @@ function bdftParseDate(str){
   return isNaN(d.getTime()) ? null : d;
 }
 
-function bdftIsToday(dateStr){
-  if(!dateStr || String(dateStr).trim().toLowerCase()==="tomorrow") return false;
+function bdftDayOffset(dateStr){
+  if(!dateStr) return null;
+  if(String(dateStr).trim().toLowerCase()==="tomorrow") return 1;
   const distDate=bdftParseDate(String(dateStr));
-  if(!distDate) return false;
+  if(!distDate) return null;
   const nowIst=new Date(Date.now()+330*60000);
   const todayIst=new Date(Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate()));
   const distUtc=new Date(Date.UTC(distDate.getFullYear(), distDate.getMonth(), distDate.getDate()));
-  return Math.round((distUtc.getTime()-todayIst.getTime())/86400000)===0;
+  return Math.round((distUtc.getTime()-todayIst.getTime())/86400000);
 }
+function bdftIsToday(dateStr){return bdftDayOffset(dateStr)===0}
+function bdftIsCurrent(dateStr){const d=bdftDayOffset(dateStr);return d===0||d===1}
 function bdftDateLabel(dateStr){
   if(!dateStr || String(dateStr).trim().toLowerCase() === "tomorrow") return "TOMORROW'S BEDS";
   const distDate = bdftParseDate(dateStr);
@@ -20748,10 +20753,10 @@ function bdftHomeCard(){
   bdftInit();
   if(isIntern()||isConsultant()) return "";
   const info=bdftGetMyAssignedBeds();
-  if(!info||!bdftIsToday(info.dateStr)){
+  if(!info||!bdftIsCurrent(info.dateStr)){
     return `<div class="card" data-home="bdft-empty" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--line);">
-      <span class="tiny" style="font-weight:700;letter-spacing:.03em;text-transform:uppercase;">Today's beds</span>
-      <p class="sm" style="margin:4px 0 0">No BDFT for today yet.</p>
+      <span class="tiny" style="font-weight:700;letter-spacing:.03em;text-transform:uppercase;">Beds</span>
+      <p class="sm" style="margin:4px 0 0">No current BDFT yet.</p>
     </div>`;
   }
 
@@ -20774,7 +20779,7 @@ function bdftHomeCard(){
     return `<button type="button" class="pill ${isOcc?'full':'empty'}" style="min-height:28px;height:28px;padding:2px 6px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;width:100%;" onclick="bdftTapBedPatient('${esc(code)}')" title="${isOcc?`${esc(code)}: ${esc(pName)}`:`${esc(code)}: Vacant`}">
       <b style="font-size:11.5px;font-weight:750;letter-spacing:.02em;">${esc(code)}</b>
     </button>`;
-  }).join("") : `<div style="grid-column:1/-1;padding:2px 0;"><span class="happy-day-tag" style="font-size:11px;padding:2px 6px;">🌴 Happy Day</span><span class="tiny muted" style="margin-left:6px;font-size:11px;">No beds assigned tomorrow</span></div>`;
+  }).join("") : `<div style="grid-column:1/-1;padding:2px 0;"><span class="happy-day-tag" style="font-size:11px;padding:2px 6px;">🌴 Happy Day</span><span class="tiny muted" style="margin-left:6px;font-size:11px;">No beds assigned ${bdftDayOffset(info.dateStr)===0?"today":"tomorrow"}</span></div>`;
 
   return `<div class="card" style="margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--teal);">
     <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:6px;">

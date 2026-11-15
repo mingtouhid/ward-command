@@ -6,7 +6,7 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 ### Added
 
-- Client version `R1.9.0` (service worker cache `ward-sync-pwa-r1.9.0`). Home shows only today's BDFT. Recent discharges are grouped by date. Residents see on-duty PGTs as a four-column photo grid. More has an All PGTs directory. One ECT session can be recorded per patient per day. Discharge can be reviewed and saved as a draft before confirm, with primary, secondary and tertiary diagnoses. DOR and DAMA certificates leave a line for the attendant's signature. A missing MSE or investigation is a reminder with Continue anyway, and no reason is required. Lithium and Clozapine side effects can be recorded for the bed owner. `migrations/r19_0_monitoring_directory_ect.sql` is not applied.
+- Client version `R1.9.0` (service worker cache `ward-sync-pwa-r1.9.0`). Home shows today's or tomorrow's BDFT (IST). A distribution from yesterday or earlier leaves Home and Mine empty. Recent discharges are grouped by date. Residents see on-duty PGTs as a four-column photo grid. More has an All PGTs directory. One ECT session can be recorded per patient per day. Discharge can be reviewed and saved as a draft before confirm, with primary, secondary and tertiary diagnoses. DOR and DAMA certificates leave a line for the attendant's signature. A missing MSE or investigation is a reminder with Continue anyway, and no reason is required. Lithium and Clozapine side effects can be recorded for the bed owner. `migrations/r19_0_monitoring_directory_ect.sql` is not applied.
 
 ## 2026-11-10
 
