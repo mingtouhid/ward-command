@@ -191,7 +191,7 @@ html{-webkit-text-size-adjust:100%;touch-action:manipulation;overscroll-behavior
 .kicker{font-family:Inter,ui-monospace,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal2);margin:0}
 h1,h2,h3,p{margin:0}.top h1{font-size:15px;font-weight:700}
 .who{text-align:right;font-size:12px}.who small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase}
-.main{padding:12px 0 10px;flex:0 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;scroll-padding-top:56px;scroll-padding-bottom:24px}
+.main{padding:12px 0 calc(64px + 16px + env(safe-area-inset-bottom, 0px));flex:0 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;scroll-padding-top:56px;scroll-padding-bottom:24px}
 .nav{position:sticky;bottom:0;left:auto;right:auto;flex:none;z-index:40;border:0;background:transparent;padding:0 0 max(8px,env(safe-area-inset-bottom,0px));width:100%;}
 .nav-in{max-width:none;margin:0;height:64px;min-height:64px;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;background:#242424;border:0;border-radius:22px}
 html[data-theme="light"] .nav-in{background:#fff;border-color:#e2e8f0}
@@ -209,7 +209,7 @@ html[data-theme="light"] .top.resident-home{border-bottom-color:var(--line)}
 .top.resident-home .profile-photo.home-photo,.top.resident-home .photo-img.home-photo{width:40px;height:40px;font-size:15px;border-radius:50%}
 .home-glyph{display:flex;align-items:center;justify-content:center;color:#C8C8C8}
 .home-glyph svg{width:22px;height:22px;display:block}
-.top.resident-home .home-greet b{font-size:20px;font-weight:500;letter-spacing:0;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top.resident-home .home-greet b{font-size:18px;font-weight:500;letter-spacing:0;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top.resident-home .who-tools.home-tools{width:auto;min-width:40px;max-width:none;flex:0 0 auto;margin:0}
 .top.resident-home .status-chip.home-sync{width:max-content;min-width:0;max-width:100%;height:18px;min-height:18px;max-height:18px;padding:0;border:0;background:transparent;color:var(--ok);font-size:14px;font-weight:500;justify-content:flex-start}
 .top.resident-home .top-bell{width:40px;height:40px;border-radius:50%;background:#242424;border:0}
@@ -958,7 +958,8 @@ h3{font-size:15px;font-weight:650;letter-spacing:-.02em}
 .nav{background:var(--nav);backdrop-filter:saturate(1.1) blur(12px);-webkit-backdrop-filter:saturate(1.1) blur(12px)}
 .nav button{gap:4px;padding:8px 0 10px;margin:6px 6px 8px;border-radius:var(--radius-btn,14px);font-size:11px;font-weight:600}
 .nav button.on{color:#0b3d24;background:var(--nav-on);font-weight:750}
-.nav:not(.intern-nav){margin-top:0;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0 0 max(8px,env(safe-area-inset-bottom,0px))}
+.nav:not(.intern-nav){position:fixed;left:50%;right:auto;bottom:0;transform:translateX(-50%);width:min(400px,100%);margin:0;z-index:40;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0 0 max(8px,env(safe-area-inset-bottom,0px))}
+.nav.intern-nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(400px,100%);z-index:40;margin:0}
 .nav:not(.intern-nav) .nav-in{height:64px;min-height:64px;padding:0;background:#242424;border:0}
 html[data-theme="light"] .nav:not(.intern-nav) .nav-in{background:#fff;border:1px solid #e2e8f0}
 .nav:not(.intern-nav) button{gap:0;padding:0;margin:0;height:64px;min-height:64px;border-radius:16px;font-weight:700;color:#A6A6A6}
@@ -1316,7 +1317,7 @@ html[data-theme="light"] .about-kicker{color:#0f766e}
 
 
 .who-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px}
-.top.resident-home{align-items:center;gap:12px;margin:0;padding:22px 0 18px;padding-top:max(22px,env(safe-area-inset-top,0px));border:0;border-bottom:1px solid #303030;border-radius:0;background:transparent;box-shadow:none}
+.top.resident-home{align-items:center;gap:10px;margin:0;padding:22px 8px 18px 0;padding-top:max(22px,env(safe-area-inset-top,0px));border:0;border-bottom:1px solid #303030;border-radius:0;background:transparent;box-shadow:none}
 @media (min-width:760px){
   .top.resident-home{padding-left:18px;padding-right:18px}
 }
@@ -1332,9 +1333,11 @@ html[data-theme="light"] .about-kicker{color:#0f766e}
 .photo-crop-guide{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.5);border:2px solid #fff;pointer-events:none}
 .home-greet{display:flex;flex-direction:column;align-items:stretch;text-align:left;min-width:0;flex:1 1 auto;margin:0;line-height:1.2;overflow:hidden}
 .home-greet span{font-size:15px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.home-greet b{display:block;font-size:20px;font-weight:500;letter-spacing:0;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.who-tools.home-tools{flex:0 0 auto;width:auto;min-width:36px;max-width:none;flex-direction:row;align-items:center;justify-content:flex-end;gap:0;margin:0}
-.who-tools.home-tools .top-bell{width:40px;height:40px;border-radius:50%;border:0;background:#242424}
+.home-greet b{display:block;font-size:18px;font-weight:500;letter-spacing:0;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who-tools.home-tools{flex:0 0 auto;width:auto;min-width:40px;max-width:none;flex-direction:row;align-items:center;justify-content:flex-end;gap:0;margin:0}
+.who-tools.home-tools .top-bell{width:40px;height:40px;border-radius:50%;border:0;background:#242424;color:#F5F5F5}
+html[data-theme="light"] .who-tools.home-tools .top-bell,
+html[data-theme="light"] .top.resident-home .top-bell{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
 .who-tools.home-tools .top-bell svg{width:18px;height:18px}
 .top.resident-home .status-chip.home-sync{display:inline-flex;align-items:center;box-sizing:border-box;width:max-content;max-width:100%;min-width:0;height:18px;min-height:18px;max-height:18px;padding:0;border:0;background:transparent;color:var(--ok);font-size:13px;font-weight:500;line-height:18px;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top.resident-home .status-chip.home-sync>.dot{width:8px;height:8px;min-width:8px;min-height:8px;flex-shrink:0;margin-right:6px;box-shadow:none}
@@ -1517,7 +1520,17 @@ input,select,textarea{transform:none}
 .rec-card{background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}
 html[data-theme="dark"] .rec-rail:before{background:rgba(241,245,249,.12)}
 .task-board-summary>div{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;color:var(--ink)}
-.main{padding-bottom:14px}
+.main{padding-bottom:calc(64px + 16px + env(safe-area-inset-bottom, 0px))}
+@media (max-width:431px){
+  .nav:not(.intern-nav),.nav.intern-nav{width:calc(100% - 32px)}
+}
+@media (min-width:760px){
+  .nav:not(.intern-nav),.nav.intern-nav{width:min(1120px,100%)}
+}
+@media (min-width:1024px) and (orientation:landscape){
+  .main{padding-bottom:18px}
+  .nav{position:static;transform:none;width:auto}
+}
 .plist-block{padding-bottom:4px}
 .home-priority,.priority-secondary{margin-bottom:8px}
 /* R1.3.15 med-add-only: add-drug sheet has no pause/stop list; main chart keeps those. R1.3.14 pick-stack: stacked overlays close one layer; pickers zoom+fade */
