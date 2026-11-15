@@ -4232,7 +4232,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R1.9.0";
+const APP_VERSION="R1.9.1";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -5803,6 +5803,7 @@ async function doLogin(e){
             flushPending().catch(()=>{}); // R1.3.141 SYNC: entries this intern left on the phone
             ui.loginBusy=false; ui.loginErr="";
             go("home");
+            notifFlush();
             return;
           }
           await cloudPull().catch(()=>{});
@@ -5817,6 +5818,7 @@ async function doLogin(e){
     pgtLoad().catch(()=>{});
           ui.loginBusy=false; ui.loginErr="";
           go("home");
+          notifFlush();
           return;
         }
       }catch(err){
@@ -13063,24 +13065,99 @@ function notifyCardHtml(n){
       <p class="notify-body">${esc(n.body||"")}</p>
     </button>`;
 }
+const NOTIF_NAV_KEY="ws_notif_nav";
+function notifParseUrl(url){
+  const m=String(url||"").match(/#\/([A-Za-z0-9_-]+)(?:\/([^/?#]*))?/);
+  if(!m) return null;
+  let id="";
+  try{id=m[2]?decodeURIComponent(m[2]):""}catch(e){id=m[2]||""}
+  return {page:m[1].toLowerCase(), id:id||null};
+}
+function notifDest(raw){
+  raw=raw||{};
+  const url=raw.url||raw.target_url||raw.targetUrl||"";
+  const parsed=notifParseUrl(url);
+  const type=String(raw.type||raw.event_type||raw.category||"").toLowerCase();
+  const patientId=raw.patient_id||raw.patientId||null;
+  const entityId=raw.entity_id||raw.entityId||raw.task_id||raw.taskId||raw.handover_id||raw.handoverId||raw.ect_plan_id||raw.ectPlanId||null;
+  let page=String(raw.destination||raw.page||(parsed&&parsed.page)||"").toLowerCase();
+  let routeId=raw.routeId||(parsed&&parsed.id)||null;
+  if(!page){
+    if(type==="bdft") page="bdft";
+    else if(type==="broadcast") page="broadcast";
+    else if(type==="handover") page="handover";
+    else if(type==="task") page=patientId?"snap":"tasks";
+    else if(type==="ect") page=patientId?"snap":"ect";
+    else if(patientId) page="snap";
+    else page="setup";
+  }
+  if(page==="snap"&&!routeId) routeId=patientId||entityId;
+  if(page==="bdft"&&routeId) ui.bdftOpenId=routeId;
+  return {nid:String(raw.id||raw.notification_id||raw.notificationId||""), type, page, routeId:routeId||null, patientId:patientId||(page==="snap"?routeId:null)};
+}
+function notifRoleDest(dest){
+  const page=dest.page;
+  const ok=p=>{
+    if(isIntern()) return ["home","snap","ivitals","ireports","ireport"].includes(p);
+    if(isConsultant()) return ["home","patients","snap","record","handover","ect","tasks","setup","broadcast","myorders","pgts","more","dcert","activity","about","connection"].includes(p);
+    return !!(PAGE_TAB[p]||p==="home");
+  };
+  if(ok(page)) return dest;
+  if(dest.patientId&&ok("snap")) return Object.assign({}, dest, {page:"snap", routeId:dest.patientId});
+  return Object.assign({}, dest, {page:isIntern()?"home":"setup", routeId:null, missed:true});
+}
+function notifReady(){
+  if(!S.userId||!sessionTok) return false;
+  if(navigator.onLine&&!sessionVerified) return false;
+  return true;
+}
+function notifQueue(raw){
+  const dest=notifDest(raw);
+  const nowTs=Date.now();
+  if(dest.nid&&ui._notifLast&&ui._notifLast.id===dest.nid&&nowTs-ui._notifLast.at<1500) return false;
+  ui._notifLast={id:dest.nid, at:nowTs};
+  try{sessionStorage.setItem(NOTIF_NAV_KEY, JSON.stringify(dest))}catch(e){}
+  if(notifReady()) return notifFlush();
+  return false;
+}
+function notifFlush(){
+  let dest=null;
+  try{dest=JSON.parse(sessionStorage.getItem(NOTIF_NAV_KEY)||"null")}catch(e){dest=null}
+  if(!dest||!dest.page) return false;
+  if(!notifReady()) return false;
+  dest=notifRoleDest(dest);
+  const needsPatient=dest.page==="snap"&&dest.routeId;
+  if(needsPatient&&!patient(dest.routeId)){
+    try{sessionStorage.removeItem(NOTIF_NAV_KEY)}catch(e){}
+    toast("That record is no longer on the ward.","bad");
+    go(isIntern()?"home":"setup");
+    return true;
+  }
+  try{sessionStorage.removeItem(NOTIF_NAV_KEY)}catch(e){}
+  if(dest.page==="bdft"&&dest.routeId) ui.bdftOpenId=dest.routeId;
+  if(dest.missed) toast("That notification has no page for this sign-in.","info");
+  if(dest.page==="setup") ui.setupTab="notify";
+  go(dest.page, dest.page==="bdft"?null:dest.routeId);
+  return true;
+}
+function notifCaptureLaunch(){
+  let raw=null;
+  try{
+    const q=new URLSearchParams(location.search).get("wn");
+    if(q) raw=JSON.parse(decodeURIComponent(q));
+  }catch(e){raw=null}
+  if(!raw){
+    const parsed=notifParseUrl(location.hash);
+    if(parsed&&parsed.page&&parsed.page!=="home") raw={url:location.hash, page:parsed.page, routeId:parsed.id};
+  }
+  if(raw) notifQueue(raw);
+}
 function openNotification(id){
   const n=(ui.notifyInbox||[]).find(x=>x.id===id);
   if(!n)return;
   ui.sheet=null;
-  const kind=String(n.event_type||n.category||"").toLowerCase();
-  const link=String(n.target_url||"");
-  const bdft=link.match(/#\/bdft\/([^/?#]+)/);
-  if(kind==="bdft"||bdft){
-    ui.bdftOpenId=bdft?decodeURIComponent(bdft[1]):"";
-    go("bdft");
-    return;
-  }
-  if(kind==="broadcast"){go("broadcast");return;}
-  if(kind==="ect"){go("ect");return;}
-  if(kind==="handover"){go("handover");return;}
-  if(kind==="task"){ if(n.patient_id) go("snap",n.patient_id); else go("tasks"); return; }
-  if(n.patient_id){go("snap",n.patient_id);return;}
-  go("home");
+  markNotificationRead(id).catch(()=>{});
+  notifQueue(n);
 }
 function setupView(){
   const cfg=canCfg(user().role);
@@ -22113,6 +22190,7 @@ document.addEventListener("visibilitychange",()=>{
 });
 window.addEventListener("focus",()=>{if(cloudOn()&&!liveReady)scheduleReconnect()});
 if(!navigator.onLine){cloudStatus="offline";Sync.state="OFFLINE"}
+notifCaptureLaunch();
 (function bdftReadHash(){
   const m=String(location.hash||"").match(/^#\/bdft\/([^/?#]+)$/);
   if(!m) return;
@@ -22121,7 +22199,7 @@ if(!navigator.onLine){cloudStatus="offline";Sync.state="OFFLINE"}
   nav.stack=[{page:"bdft",id:null}];
 })();
 render();
-cloudBoot().finally(()=>render());
+cloudBoot().finally(()=>{notifFlush();render()});
 setInterval(()=>{
   if(document.visibilityState!=="visible"||!cloudOn())return;
   if(!liveReady && navigator.onLine) scheduleReconnect();
@@ -22136,6 +22214,11 @@ setInterval(()=>{
 
 
 if("serviceWorker" in navigator && location.protocol !== "file:"){
+  navigator.serviceWorker.addEventListener("message", (event)=>{
+    const data=event&&event.data||{};
+    if(data.type!=="ward-notif"||!data.payload) return;
+    notifQueue(data.payload);
+  });
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch((err) => console.warn("SW", err));
   });
