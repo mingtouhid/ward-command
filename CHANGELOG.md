@@ -4,6 +4,10 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 ## 2026-11-15
 
+### Changed
+
+- Client version `R2.0.0` (service worker cache `ward-sync-pwa-r2.0.0`). Home is the dark dashboard: greeting with the sync line under the name, ward title, bed distribution, where/today overview, duty status, clinical flags, schedule, and on-duty team. At 469px the column is 400px and centred. Phones under 432px keep 16px side margins. The phone Home overview is compact: section gaps are 10px and the ward tiles are 58px. Tablet portrait puts the cards under the hero in two columns. Tablet landscape fills the screen. The bottom bar is a 64px icon row traced from the mockup. A wide landscape screen uses a sidebar of the existing pages. Day, night, accent, and density preferences still drive the colours. No clinical, auth, BDFT, or notification behaviour changed.
+
 ### Fixed
 
 - Client version `R1.9.1` (service worker cache `ward-sync-pwa-r1.9.1`). A notification opens the page stored on it. A tap while the app is open is delivered to that window. A cold start keeps the same destination until sign-in and the ward list are ready. A missing record shows a short message and opens a safe page. The same notification id does not navigate twice in a row.
