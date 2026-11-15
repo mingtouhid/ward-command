@@ -259,6 +259,18 @@ html[data-theme="dark"] .nav-in,html[data-theme="night"] .nav-in,html[data-theme
 .r2-none{color:var(--faint,#777);font-size:12px;margin:4px 0 0}
 .r2-team .duty-actions{display:none}
 .r2-members{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.r2-split,.r2-side{display:contents}
+@media (min-width:760px) and (max-width:1100px) and (orientation:portrait){
+  .main{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+  .r2-home{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px}
+  .r2-split{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0}
+  .r2-overview{flex:1;min-height:280px;display:flex;flex-direction:column}
+  .r2-overview .r2-where{flex:3;grid-auto-rows:1fr}
+  .r2-overview .r2-today{flex:1;grid-auto-rows:1fr}
+  .r2-overview .r2-tile{height:auto;min-height:56px}
+  .r2-side{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:stretch}
+  .r2-side>*{min-width:0;height:100%}
+}
 @media (min-width:1024px) and (orientation:landscape){
   .side-nav{display:flex;position:fixed;z-index:30;left:0;top:0;bottom:0;flex-direction:column;gap:4px;width:220px;padding:18px 12px;border-right:1px solid var(--line);background:var(--bg);overflow:auto}
   .app{max-width:none;width:auto;margin:0 0 0 220px}
@@ -266,11 +278,15 @@ html[data-theme="dark"] .nav-in,html[data-theme="night"] .nav-in,html[data-theme
   .side-nav button{display:flex;align-items:center;gap:10px;background:none;border:0;color:var(--muted);border-radius:12px;padding:10px 12px;text-align:left;font-size:15px}
   .side-nav button.on{background:var(--teal);color:#fff}
   .nav{display:none}
-  .main{padding:18px 20px 24px}
-  .r2-home{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.8fr);gap:10px;align-items:start}
-  .r2-wardhead,.r2-bdft{grid-column:1 / -1}
-  .r2-overview{grid-column:1}
-  .r2-duty,.r2-flags,.r146-needs,.r16-offduty,.r2-sched,.r2-team{grid-column:2}
+  .main{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;padding:16px 18px}
+  .r2-home{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+  .r2-split{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.85fr);gap:10px;flex:1;min-height:0;align-items:stretch}
+  .r2-overview{min-height:0;overflow:auto;display:flex;flex-direction:column}
+  .r2-overview .r2-where{flex:3;grid-auto-rows:1fr}
+  .r2-overview .r2-today{flex:1;grid-auto-rows:1fr}
+  .r2-overview .r2-tile{height:auto;min-height:48px}
+  .r2-side{display:flex;flex-direction:column;gap:10px;min-height:0;overflow:auto}
+  .r2-side>*{flex:1 1 auto;min-height:0}
 }
 html[data-theme="dark"] .nav button.on,
 html[data-theme="ot"] .nav button.on,
@@ -5963,10 +5979,10 @@ function ico(name){
 }
 function navIco(name){
   const s={
-    home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="7.2" cy="7.2" r="3.15"/><circle cx="16.8" cy="7.2" r="3.15"/><circle cx="7.2" cy="16.8" r="3.15"/><circle cx="16.8" cy="16.8" r="3.15"/></svg>',
-    patients:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.6 11.2a3.1 3.1 0 1 0-1.7-5.6"/><path d="M18.2 20.4v-.8a3.6 3.6 0 0 0-2.6-3.4"/><circle cx="9" cy="7.6" r="3.5"/><path d="M2.6 20.4v-.7C3.1 16.2 5.6 14.2 9 14.2s5.9 2 6.4 5.5v.7"/></svg>',
-    handover:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5.5" y="4.8" width="13" height="16" rx="2"/><path d="M9 3.2h6a.2.2 0 0 1 .2.2V5a1.4 1.4 0 0 1-1.4 1.4h-3.6A1.4 1.4 0 0 1 8.8 5V3.4a.2.2 0 0 1 .2-.2z"/><circle cx="8.7" cy="11" r=".7" fill="currentColor" stroke="none"/><path d="M11 11h5.2"/><circle cx="8.7" cy="14.2" r=".7" fill="currentColor" stroke="none"/><path d="M11 14.2h5.2"/><circle cx="8.7" cy="17.4" r=".7" fill="currentColor" stroke="none"/><path d="M11 17.4h4"/></svg>',
-    more:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="4.6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19.4" cy="12" r="2"/></svg>'
+    home:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="10" aria-hidden="true"><g transform="translate(10 10)"><circle cx="17.5" cy="17.5" r="13.2"/><circle cx="62" cy="17.5" r="13.2"/><circle cx="17.5" cy="62" r="13.2"/><circle cx="62" cy="62" r="13.2"/></g></svg>',
+    patients:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" aria-hidden="true"><g transform="translate(2.5 13)"><circle cx="28.5" cy="17.5" r="13"/><circle cx="68" cy="16.5" r="11.2"/><path d="M2 74C2 50 12 43 28 43C44 43 54 52 54 74"/><path d="M55 70C55 50 62 44 71 44C84 44 93 52 93 72"/></g></svg>',
+    handover:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round" aria-hidden="true"><g transform="translate(13.5 4)"><rect x="1" y="11" width="71" height="78" rx="11"/><rect x="15" y="0" width="43" height="18" rx="3.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="42" r="3.6" fill="currentColor" stroke="none"/><rect x="32" y="39" width="24" height="6.5" rx="3" fill="currentColor" stroke="none"/><circle cx="18.5" cy="63" r="3.6" fill="currentColor" stroke="none"/><rect x="32" y="60" width="24" height="6.5" rx="3" fill="currentColor" stroke="none"/></g></svg>',
+    more:'<svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><g transform="translate(13 43)"><circle cx="7" cy="7" r="7"/><circle cx="36.5" cy="7" r="7"/><circle cx="66" cy="7" r="7"/></g></svg>'
   };
   return `<span class="ico">${s[name]||""}</span>`;
 }
@@ -6884,16 +6900,16 @@ function homeView(){
       ${bedCodes.length?`<div class="r2-bedchips">${bedCodes.map(code=>`<button type="button" class="r2-pill" onclick="event.stopPropagation();bdftTapBedPatient('${esc(code)}')">${esc(code)}</button>`).join("")}</div>`:""}
       ${make}
     </div>
-    <section class="r2-overview" aria-label="Ward">
+    <div class="r2-split"><section class="r2-overview" aria-label="Ward">
       <div class="row">
         <div><div class="r2-count">${list.length}<small>In ward</small></div><p class="r2-meta">${beds.length} total bed${beds.length===1?"":"s"}</p></div>
         <div class="r2-shift">${esc(shiftLabel(sh))} shift<b>${esc(dateStrong)}</b></div>
       </div>
       <p class="r2-h">WHERE</p>
-      <div class="r2-grid">${wards.map(w=>tile(w.n,w.name.charAt(0).toUpperCase()+w.name.slice(1),`openWardSection('${esc(w.id)}')`)).join("")}${tile(obsN,"Observation","go('observe')")}</div>
+      <div class="r2-grid r2-where">${wards.map(w=>tile(w.n,w.name.charAt(0).toUpperCase()+w.name.slice(1),`openWardSection('${esc(w.id)}')`)).join("")}${tile(obsN,"Observation","go('observe')")}</div>
       <p class="r2-h">TODAY</p>
-      <div class="r2-grid">${tile(free,"Beds free","","free")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()")}</div>
-    </section>
+      <div class="r2-grid r2-today">${tile(free,"Beds free","","free")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()")}</div>
+    </section><div class="r2-side">
     <section class="r2-duty" aria-label="Duty status">
       <div class="row"><span class="r2-cardh">Duty status</span><span class="r2-pill ${dutyOn?"ok":"warn"}">${dutyOn?"On duty":"Not on duty"}</span></div>
       <div class="row"><span class="r2-sub" style="margin:0">${esc(shiftLabel(sh))} shift · ${dutyOn?"Signed in":"Sign in to continue"}</span>${canWrite()?`<button type="button" class="r2-signin" onclick="${dutyOn?"endDuty()":"signDuty()"}">${dutyOn?"End shift":"Sign in"}</button>`:""}</div>
@@ -6909,7 +6925,7 @@ function homeView(){
     <section class="r2-team" aria-label="On-duty team">
       <div class="row"><span class="r2-cardh">On-duty team</span><span class="r2-pill ok">${esc(shiftLabel(sh))} shift</span></div>
       ${isConsultant()?`<p class="r2-sub">Welcome, ${esc((user()||{}).displayName||"Consultant")}</p>${dutyCardBody()}`:(canWrite()?dutyResidentGrid():dutyCardBody())}
-    </section>
+    </section></div></div>
   </div>`;
 }
 // ---------- Patient page ----------
