@@ -10,6 +10,7 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 ### Changed
 
+- Database only, `R1.9.3`. `migrations/r19_3_weekly_cleanup.sql` was applied to Supabase on 2026-11-15. `ward_weekly_cleanup` runs every Sunday at 03:30 IST. It deletes scheduler run-log rows older than 7 days and notification events older than 30 days. Deliveries cascade. Held notifications are kept. The first run removed 18,927 scheduler log rows, 2 notification events, and 30 deliveries.
 - Database only, `R1.9.0.1`. `migrations/r19_0_1_ect_dedupe_enforce.sql` was applied to Supabase. One accidental duplicate ECT session was removed (same patient, 14 Nov 2026, session 2 saved 36 seconds after session 1, no clinical data), that plan's `sessions_done` was set from 2 to 1, and unique index `ect_sessions_one_per_patient_ist_day` was created on `public.ect_sessions` (`patient_id`, `((session_at at time zone 'Asia/Kolkata')::date)`). This completes the Module 7 rule that the R1.9.0 migration had skipped.
 
 ### Added
