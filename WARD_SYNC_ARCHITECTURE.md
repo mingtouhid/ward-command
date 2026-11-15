@@ -294,6 +294,16 @@ Two different "monthly" features exist.
 
 `ward_create_nightly_backup` is a separate admin/client RPC (`saveWardBackup`). It is not the Drive monthly job.
 
+## Design tokens (R2.0.0)
+
+Colour, type, and density stay on the existing `html` attributes. The boot script reads `ward-command-theme` and `ward-command-accent-v1`. The stored accent defaults to `blue`. `html[data-accent]` overrides `--teal` and the active-nav colour. Purple on dark and night is `#8A43D5`. Blue, rose, amber, and green keep their own values. Nothing in the layout hardcodes purple for every theme.
+
+The Day / Night control stores `light` or `ot`. `data-theme="ot"` is that Night preference. `data-theme="dark"` and `data-theme="night"` share the same dashboard palette: background `#000000`, filled tiles `#242424`, borders `#242424`–`#303030`, text `#F5F5F5`, secondary `#A6A6A6`, muted `#777777`. Status colours are success `#00B85A`, warning `#E8752A`, the duty Sign in button `#2587D5`, and critical `#D83B3B`. `data-theme="light"` keeps the light slate palette. `data-theme="ot"` keeps the green night-duty palette. `data-density` still tightens cards. The font stack is Inter, then the system UI fonts.
+
+Home for residents and admins (`canWrite()` and not a consultant or intern) is `.r2-home`. The sync control is `#home-sync` under the greeting. `paintHomeSync` still writes the class and the label in place. Consultants keep the older header. Interns stay on `internShell`. Tablet landscape (`min-width: 1024px` and landscape) shows `.side-nav` with Home, Patients, Handovers, ECT, BDFT, Tasks, Activity, and More. Those are existing `go()` destinations. Activity is the existing activity log. Phone and tablet portrait keep the four-icon bottom nav (Home, Patients, Handovers, More) with the same `aria-label`s and active route.
+
+Assigned beds and Make BDFT sit inside the Bed Distribution card. Opinion stays a clinical-flag chip. Needs you, including side-effect rows, sits after Clinical flags and still waits for duty sign-in. The Discharged tile still opens recent discharges. The on-duty photo grid is the On-duty team section. Sign in and End shift live on the Duty status card.
+
 ## Keep-alive and storage
 
 `migrations/r19_2_keepalive_storage.sql` is not applied. `ward_ping` returns `{ok:true, at:now()}` and reads no tables. `anon` and `authenticated` may execute it. `.github/workflows/keepalive.yml` POSTs that RPC every two days with the same publishable key the page already ships. The job fails unless the response is HTTP 2xx and `ok` is true.
@@ -322,7 +332,7 @@ The service worker precaches `./`, `index.html`, `manifest.json`, and the main i
 
 GitHub `main` is the branch this commit is on. Nothing in the repo auto-deploys from a workflow besides the unused assemble-index path. Hosting is whatever Vercel project is connected to the GitHub repo. This document does not change or trigger a deploy.
 
-Version strings to bump together when shipping a client change: `APP_VERSION` (`R1.8`), `sw.js` `VERSION` (`ward-sync-pwa-r1.8`), and, if the manifest should match, `manifest.json` `version` (still `1.3.20`). OCR cache name changes only when OCR bytes change.
+Version strings to bump together when shipping a client change: `APP_VERSION` (`R2.0.0`), `sw.js` `VERSION` (`ward-sync-pwa-r2.0.0`), and, if the manifest should match, `manifest.json` `version` (still `1.3.20`). OCR cache name changes only when OCR bytes change. The service worker activate step deletes caches other than the current `VERSION` and `ocr-assets-v7`.
 
 ## Related documents
 
