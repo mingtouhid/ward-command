@@ -2,6 +2,12 @@
 
 All notable changes from 2026-11-10 onward are recorded here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates are Asia/Calcutta. Older product history stays in `RELEASE-NOTES-*.md` and is not copied here.
 
+## 2026-11-16
+
+### Changed
+
+- Client version stays `R2.0.0`. Service worker cache is `ward-sync-pwa-r2.0.0-2`. On a consultant Home, the bed distribution card, the duty status card, and Today's schedule are not shown. The You need to know card keeps its patient lines and drops the action buttons. Resident, admin, and intern Home are unchanged.
+
 ## 2026-11-15
 
 ### Fixed

@@ -6837,13 +6837,13 @@ function r146TodayHtml(){
   const rowHtml=x=>{const top=x.R[0];const lvl=["red","amber","blue"][x.lvl];
     return `<li class="r146-need ${lvl}" data-lvl="${lvl}"><span class="r146-dot" aria-hidden="true"></span>
       <button type="button" class="r146-need-main" onclick="r146Open(${r146Q(x.p.id)})"><span class="r151-l1"><b>${esc(x.b?x.b.no:"No bed")} · ${nm(x.p)}</b>${r146LegalOpHtml(x.p)}</span><span class="r151-l2">${x.R.slice(0,2).map(r=>esc(r.txt)).join(" · ")}${x.R.length>2?` · +${x.R.length-2}`:""}</span></button>
-      <button type="button" class="btn sm r146-need-act ${x.lvl===0||top.rel?"danger":"ghost"}" onclick="${top.fn}">${esc(top.act)}</button></li>`};
+      ${cons?"":`<button type="button" class="btn sm r146-need-act ${x.lvl===0||top.rel?"danger":"ghost"}" onclick="${top.fn}">${esc(top.act)}</button>`}</li>`};
   const counts=[0,1,2].map(l=>rows.filter(r=>r.lvl===l).length);
   return `<section class="card r146-needs" aria-label="${cons?"You need to know":"Needs you now"}">
     <div class="row r146-needs-head"><p class="tiny">${head}</p><span class="r146-counts">${!cons&&canWrite()?`<span class="r16-duty"><i aria-hidden="true"></i>On duty</span>`:""}${counts[0]?`<span class="r146-cnt red">${counts[0]}</span>`:""}${counts[1]?`<span class="r146-cnt amber">${counts[1]}</span>`:""}${counts[2]?`<span class="r146-cnt blue">${counts[2]}</span>`:""}</span></div>
     ${cons&&mineN?`<div class="r146-seg" role="group" aria-label="Scope"><button type="button" class="${scopeMine?"on":""}" aria-pressed="${scopeMine}" onclick="ui.todayScope='mine';render()">My patients</button><button type="button" class="${scopeMine?"":"on"}" aria-pressed="${!scopeMine}" onclick="ui.todayScope='ward';render()">Whole ward</button></div>`:""}
     ${rows.length?`<ul class="r146-need-list">${rows.slice(0,lim).map(rowHtml).join("")}</ul>${rows.length>lim?`<button type="button" class="btn sm ghost block r146-more-rows" onclick="ui.todayAll=1;render()">Show all ${rows.length} ›</button>`:ui.todayAll&&rows.length>4?`<button type="button" class="btn sm ghost block r146-more-rows" onclick="ui.todayAll=0;render()">Show fewer</button>`:""}`:`<p class="sm r146-empty">Nothing needs you right now.</p>`}
-    ${novit?`<div class="r146-need blue r146-novit"><span class="r146-dot" aria-hidden="true"></span><span class="r146-need-main static"><b>${novit} patient${novit>1?"s":""}</b><span>No vitals in the last 24 h</span></span><button type="button" class="btn sm ghost r146-need-act" onclick="ui.pf='due';ui.ptag='';ui.psec='';ui.preason='';ui.pcon='';go('patients')">List</button></div>`:""}
+    ${novit?`<div class="r146-need blue r146-novit"><span class="r146-dot" aria-hidden="true"></span><span class="r146-need-main static"><b>${novit} patient${novit>1?"s":""}</b><span>No vitals in the last 24 h</span></span>${cons?"":`<button type="button" class="btn sm ghost r146-need-act" onclick="ui.pf='due';ui.ptag='';ui.psec='';ui.preason='';ui.pcon='';go('patients')">List</button>`}</div>`:""}
   </section>`;
 }
 function r146ScheduleHtml(){
@@ -6907,15 +6907,16 @@ function homeView(){
   const make=(!canAdmin()&&!isIntern()&&!isConsultant()&&canWrite()&&isEveningDuty())?`<button type="button" class="r2-pill info" onclick="event.stopPropagation();bdftOpenGenerate()">Make BDFT</button>`:"";
   const dutyOn=!!dutyRecord();
   const tile=(n,l,fn,cls)=>`<button type="button" class="r2-tile ${cls||""}" onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
+  const consHome=isConsultant();
   return `<div class="r2-home">
     ${r17AuditMissHtml()}
-    <div class="r2-wardhead"><h2>${esc((canWrite()&&!isConsultant()&&!isIntern())?((S.unit&&S.unit.name)||"Ward"):"Today")}</h2><span>${esc(dateLine)}</span></div>
-    <div class="r2-bdft" role="link" tabindex="0" onclick="bdftOpenReadOnly()">
+    <div class="r2-wardhead"><h2>${esc((canWrite()&&!consHome&&!isIntern())?((S.unit&&S.unit.name)||"Ward"):"Today")}</h2><span>${esc(dateLine)}</span></div>
+    ${consHome?"":`<div class="r2-bdft" role="link" tabindex="0" onclick="bdftOpenReadOnly()">
       <div class="row"><span class="r2-kicker">BED DISTRIBUTION</span><span class="r2-pill ${current?"ok":"warn"}">${esc(bdftPill)}</span></div>
       <p class="r2-sub">${esc(bdftSub)}</p>
       ${bedCodes.length?`<div class="r2-bedchips">${bedCodes.map(code=>`<button type="button" class="r2-pill" onclick="event.stopPropagation();bdftTapBedPatient('${esc(code)}')">${esc(code)}</button>`).join("")}</div>`:""}
       ${make}
-    </div>
+    </div>`}
     <div class="r2-split"><section class="r2-overview" aria-label="Ward">
       <div class="row">
         <div><div class="r2-count">${list.length}<small>In ward</small></div><p class="r2-meta">${beds.length} total bed${beds.length===1?"":"s"}</p></div>
@@ -6926,18 +6927,18 @@ function homeView(){
       <p class="r2-h">TODAY</p>
       <div class="r2-grid r2-today">${tile(free,"Beds free","","free")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()")}</div>
     </section><div class="r2-side">
-    <section class="r2-duty" aria-label="Duty status">
+    ${consHome?"":`<section class="r2-duty" aria-label="Duty status">
       <div class="row"><span class="r2-cardh">Duty status</span><span class="r2-pill ${dutyOn?"ok":"warn"}">${dutyOn?"On duty":"Not on duty"}</span></div>
       <div class="row"><span class="r2-sub" style="margin:0">${esc(shiftLabel(sh))} shift · ${dutyOn?"Signed in":"Sign in to continue"}</span>${canWrite()?`<button type="button" class="r2-signin" onclick="${dutyOn?"endDuty()":"signDuty()"}">${dutyOn?"End shift":"Sign in"}</button>`:""}</div>
-      ${(!isConsultant()&&canWrite()&&!dutyOn)?`<p class="r2-needline">Sign in to see what needs you, including side-effect checks.</p>`:""}
-    </section>
+      ${(!consHome&&canWrite()&&!dutyOn)?`<p class="r2-needline">Sign in to see what needs you, including side-effect checks.</p>`:""}
+    </section>`}
     <section class="r2-flags" aria-label="Clinical flags">
       <div class="row"><span class="r2-cardh">Clinical flags</span><button type="button" class="r2-link" onclick="ui.ptag='';ui.pf='';go('patients')">View all →</button></div>
       ${on.length?`<div class="r146-flag-chips" style="margin-top:8px">${on.map(f=>`<button type="button" class="r146-fchip ${f.c}" data-flag="${f.k}" onclick="${f.fn}">${f.n} ${esc(f.l)}</button>`).join("")}</div>`:""}
       ${off.length?`<p class="r2-none">None: ${off.map(f=>`<button type="button" class="r146-zchip" data-flag="${f.k}" onclick="${f.fn}">${esc(f.l)}</button>`).join(" · ")}</p>`:""}
     </section>
     ${r146TodayHtml()}
-    ${r146ScheduleHtml()}
+    ${consHome?"":r146ScheduleHtml()}
     <section class="r2-team" aria-label="On-duty team">
       <div class="row"><span class="r2-cardh">On-duty team</span><span class="r2-pill ok">${esc(shiftLabel(sh))} shift</span></div>
       ${isConsultant()?`<p class="r2-sub">Welcome, ${esc((user()||{}).displayName||"Consultant")}</p>${dutyCardBody()}`:(canWrite()?dutyResidentGrid():dutyCardBody())}
