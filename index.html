@@ -3608,6 +3608,52 @@ html,body{overflow-x:hidden!important;}
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--teal) 7%,transparent);
 }
 
+
+/* R2.0.10 — guarantee the intern workspace navigation remains visible. */
+.nav.intern-nav{
+  display:block!important;
+  position:fixed!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:0!important;
+  transform:translateX(-50%)!important;
+  width:min(400px,100%)!important;
+  z-index:60!important;
+  background:var(--nav)!important;
+  border-top:1px solid var(--line)!important;
+  padding-bottom:max(8px,env(safe-area-inset-bottom,0px))!important;
+}
+.nav.intern-nav .nav-in{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:center!important;
+  min-height:60px!important;
+  height:auto!important;
+  background:transparent!important;
+  border:0!important;
+}
+.nav.intern-nav button{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:3px!important;
+  min-height:52px!important;
+  height:auto!important;
+  padding:7px 2px!important;
+}
+.nav.intern-nav button .lbl{
+  position:static!important;
+  width:auto!important;
+  height:auto!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:visible!important;
+  clip:auto!important;
+  white-space:nowrap!important;
+  font-size:11px!important;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -3947,7 +3993,15 @@ function normRole(r){
   if(r==="intern"||r==="Intern") return "intern"; // R1.3.139
   return "resident";
 }
-function roleOf(u){const x=u||user();return normRole(x?x.role:S.loginRole)} // R1.3.139: falls back to the role returned at sign-in
+function roleOf(u){
+  // The intern login role is authoritative for the lifetime of that session.
+  // The reduced intern read-state must not make the app fall back to the
+  // standard patient-only shell.
+  const loginRole=normRole(S.loginRole);
+  if(loginRole==="intern") return "intern";
+  const x=u||user();
+  return normRole(x?x.role:S.loginRole);
+} // R2.0.10: preserve intern role across reduced read-state refreshes
 function canWrite(){const r=roleOf();return r!=="consultant"&&r!=="intern"}
 function isConsultant(){return !!S.userId&&roleOf()==="consultant"}
 function canBroadcast(){return !!S.userId}
@@ -18880,7 +18934,7 @@ function patchApp(el,html,o){
   stampSheetSrc(el);
 }
 /* ===== R1.3.139: delete / restore saved MSE and lab reports · Intern role · Vitals ===== */
-function isIntern(){return !!S.userId&&roleOf()==="intern"}
+function isIntern(){return roleOf()==="intern"} // R2.0.10: preserve intern workspace routing
 function canDeleteRecords(){const r=roleOf();return !!S.userId&&(r==="resident"||r==="admin")&&!isIntern()&&!(typeof isViewerLogin==="function"&&isViewerLogin())}
 const INTERN_RPCS=new Set(["ward_login","ward_intern_read_state","ward_intern_save_lab_report","ward_save_vitals","ward_intern_save_scale","ward_complete_intern_task","ward_undo_intern_task","ward_link_intern_report_task"]); // R1.3.143 scales · R1.7 intern tasks only
 // Client-side guard: while an intern is signed in, only the four intern RPCs leave the device. The server enforces the same
