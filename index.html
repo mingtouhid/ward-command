@@ -3075,6 +3075,8 @@ html[data-theme="dark"],html[data-theme="night"]{--info:#2587D5}
 .r146-need .r146-need-main span.r151-l2{display:block;max-width:100%;font-size:12px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
 .r146-need.red .r146-need-main .r151-l1{color:var(--ink)}
 .r146-more-rows{margin-top:6px}
+.r146-other-list{margin-top:5px;padding-top:5px;border-top:1px dashed var(--line)}
+.r146-other-list .r146-need{opacity:.94}
 /* Discharge cert actions / scale footer: same spot while scrolling and at the end of the page (no lift at the end) */
 .cert-actions{margin-bottom:-18px}
 .sc-foot{margin-bottom:-4px}
@@ -3286,6 +3288,326 @@ html[data-accent="purple"][data-theme="dark"] .bed-tag.reassigned,html[data-acce
 .bdft-ro-banner{padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--teal) 10%,transparent);color:var(--teal);font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;margin-bottom:12px}
 .read-only-board .bed-tag{cursor:default}
 .read-only-board .remove-doctor-btn,.read-only-board .remove-batch-btn{display:none!important}
+
+/* R2.0.2 — patient layout, theme and quick-action refinements */
+html,body{max-width:100%;overflow-x:clip}
+.app,.main{min-width:0;max-width:100%}
+.main{width:100%;box-sizing:border-box}
+.snap-cols,.snap-cols.r146{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.snap-cols.r146{overflow-x:clip}
+.snap-cols.r146>*{min-width:0;max-width:100%;box-sizing:border-box}
+.snap-cols.r146 .card,.snap-cols.r146 .pt-head{min-width:0;max-width:100%;box-sizing:border-box}
+.snap-cols.r146 img,.snap-cols.r146 table{max-width:100%}
+.pt-head,.pt-head *,.r162-head .pt-row1,.r162-nav.r16-nav.pt-nav,.r16-tabs.pt-tabs{min-width:0;max-width:100%;box-sizing:border-box}
+.top.resident-home .home-greet b,.home-greet b{font-size:15px;line-height:1.2;font-weight:550}
+.profile-photo.home-photo,.photo-img.home-photo{background:var(--panel2);border:1px solid var(--line);color:var(--ink)}
+.home-glyph{color:var(--muted)}
+.r2-team .pgt-photo{background:var(--panel2);border:1px solid var(--line);color:var(--ink)}
+.r2-team .r2-name{color:var(--ink)}
+.r2-team .pgt-role{color:var(--muted)}
+.r2-signin{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 16px;border:1px solid #1677d2;background:#1677d2;color:#fff;font-size:14px;font-weight:750;box-shadow:0 3px 10px rgba(22,119,210,.22)}
+.r2-signin:active{transform:translateY(1px);filter:brightness(.95)}
+.r2-tile.today-admitted,.r2-tile.today-discharged{position:relative;padding-right:26px}
+.r2-tile.today-admitted.has-dot:after,.r2-tile.today-discharged.has-dot:after{content:"";position:absolute;right:10px;top:10px;width:8px;height:8px;border-radius:50%;animation:r201DotPulse 1.8s ease-in-out infinite}
+.r2-tile.today-admitted.has-dot:after{background:#2587ff;box-shadow:0 0 0 2px rgba(37,135,255,.15),0 0 10px 3px rgba(37,135,255,.6)}
+.r2-tile.today-discharged.has-dot:after{background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.14),0 0 10px 3px rgba(239,68,68,.55)}
+@keyframes r201DotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.82)}}
+/* Dock the patient quick actions above the mobile bottom navigation. */
+.app>.pt-qbar{position:fixed;left:50%;right:auto;bottom:calc(64px + env(safe-area-inset-bottom,0px) + 4px);width:min(400px,calc(100vw - 24px));transform:translateX(-50%);z-index:39;margin:0;padding:4px 6px;min-height:56px;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:0 6px 24px rgba(15,23,42,.16)}
+.app>.pt-qbar .r146-qb{min-width:0}
+.app>.pt-qbar.r16-open{z-index:42;box-shadow:none;border-color:transparent}
+.app:has(>.pt-qbar)>.main{padding-bottom:calc(140px + env(safe-area-inset-bottom,0px))}
+.r16-drawer{max-height:min(70vh,calc(100dvh - 100px));border-radius:18px 18px 0 0;padding-bottom:max(8px,env(safe-area-inset-bottom,0px))}
+@media(min-width:760px){.app>.pt-qbar{width:min(1120px,calc(100vw - 32px))}}
+@media(min-width:1024px) and (orientation:landscape){.app>.pt-qbar{left:220px;right:0;bottom:8px;width:calc(100vw - 220px);transform:none}.app:has(>.pt-qbar)>.main{padding-bottom:88px}}
+@media(prefers-reduced-motion:reduce){.r2-tile.today-admitted.has-dot:after,.r2-tile.today-discharged.has-dot:after{animation:none}}
+
+
+/* R2.0.2 mobile layout corrections: prevent patient-list horizontal drift/cropping. */
+html,body,#app,.app,.main{max-width:100%;min-width:0;width:100%;}
+html,body{overflow-x:hidden!important;}
+.app{overflow-x:hidden!important;}
+.main{overflow-x:hidden!important;overscroll-behavior-x:none;}
+.main > *, .main .plist-block, .main .plist-grid, .main .ward-block,
+.main .patient-card, .main .pt-head, .main .pt-tabs, .main .snap-cols,
+.main .snap-cols > *, .main .card, .main .row{min-width:0;max-width:100%;}
+.main .plist-grid,.main .plist-block,.main .ward-block{width:100%;}
+.main .patient-card,.main .plist-grid > *{box-sizing:border-box;}
+/* Patient action dock sits clearly above the complete nav + Android safe area. */
+.app>.pt-qbar{bottom:calc(var(--nav-h,72px) + 18px + env(safe-area-inset-bottom,0px));width:min(400px,calc(100% - 24px));}
+.app:has(>.pt-qbar)>.main{padding-bottom:calc(184px + env(safe-area-inset-bottom,0px));}
+/* Balanced navigation cells and crisp, consistent line icons. */
+.nav:not(.intern-nav){padding-bottom:max(8px,env(safe-area-inset-bottom,0px));}
+.nav:not(.intern-nav) .nav-in{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;justify-items:stretch;min-height:66px;height:66px;padding:0 4px;}
+.nav:not(.intern-nav) button{display:flex;align-items:center;justify-content:center;justify-self:stretch;align-self:stretch;width:100%;height:66px;min-height:66px;padding:0;margin:0;}
+.nav:not(.intern-nav) button .ico{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;margin:0 auto;line-height:0;}
+.nav:not(.intern-nav) button .ico svg{display:block;width:25px;height:25px;max-width:25px;max-height:25px;overflow:visible;}
+.nav:not(.intern-nav) button.on .ico{color:var(--teal);}
+/* Medication frequency picker: clear hierarchy, fewer competing controls. */
+.pick-compact .box:has(.freq-section){padding:16px!important;}
+.freq-section{padding:0;margin:0;}
+.freq-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 2px 9px;}
+.freq-section-head b{font-size:14px;font-weight:750;color:var(--ink);}
+.freq-section-head span{font-size:11px;font-weight:650;color:var(--muted);}
+.freq-common{gap:8px!important;}
+.freq-common .pick-opt{min-height:52px!important;font-size:16px!important;font-weight:750!important;border-radius:14px!important;}
+.freq-common .pick-opt.on{background:var(--teal)!important;color:var(--btn-ink)!important;border-color:var(--teal)!important;}
+.freq-other{gap:7px!important;margin-top:7px;}
+.freq-other .pick-opt{min-height:42px!important;font-size:13px!important;font-weight:650!important;border-radius:12px!important;}
+.freq-other .pick-opt.on{background:var(--teal)!important;color:var(--btn-ink)!important;border-color:var(--teal)!important;}
+.freq-check{font-size:12px;font-weight:900;margin-left:4px;}
+.freq-custom-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:58px;margin-top:10px;padding:10px 13px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);text-align:left;}
+.freq-custom-toggle>span:first-child{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.freq-custom-toggle b{font-size:13px;font-weight:750;}
+.freq-custom-toggle small{font-size:11px;line-height:1.3;color:var(--muted);}
+.freq-custom-arrow{display:grid;place-items:center;width:28px;height:28px;flex:0 0 28px;border-radius:50%;background:var(--panel2);color:var(--teal);font-size:20px;font-weight:500;}
+.freq-custom-toggle.on{border-color:var(--teal);background:var(--nav-on);}
+.freq-cust{padding:10px;margin-top:8px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);}
+.freq-cust-l{font-size:12px!important;}
+.freq-cust textarea{min-height:82px!important;background:var(--panel)!important;}
+.freq-addon-section{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);}
+.freq-addon-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.freq-addon{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:44px;padding:8px 5px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);font-size:14px;font-weight:700;}
+.freq-addon.on{background:var(--pill-full);border-color:var(--teal);color:var(--pill-full-ink);}
+.freq-addon span{font-size:12px;font-weight:900;}
+.freq-hint{margin:7px 2px 0;color:var(--muted);font-size:11px;line-height:1.35;}
+.freq-footer{position:sticky;bottom:0;margin:14px -2px -2px;padding:11px 2px 2px;background:var(--panel);border-top:1px solid var(--line);}
+.freq-summary{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1;}
+.freq-summary small{font-size:10px;color:var(--muted);font-weight:650;text-transform:uppercase;letter-spacing:.04em;}
+.freq-summary strong{font-size:13px;line-height:1.3;overflow-wrap:anywhere;}
+.freq-footer .btn{min-width:94px;min-height:46px;border-radius:13px;font-weight:750;}
+@media(max-width:370px){.freq-common .pick-opt{font-size:14px!important;}.freq-footer .btn{min-width:82px;padding:0 15px;}}
+
+
+/* R2.0.3 — fix mobile app-shell width.
+   The previous max-width:431px rule applied 16px side margins, but a later
+   width:100% rule overrode its width:auto. That made the shell 32px wider
+   than the viewport and cropped the right edge on every page. */
+/* R2.0.5 — keep the first selected patient filter fully inside the viewport. */
+.pf-row{min-width:0;width:100%;box-sizing:border-box;padding-left:2px;padding-right:2px;}
+.pf-row .pf-chip{box-sizing:border-box;transform:none!important;}
+.pf-row .pf-chip.on{transform:none!important;box-shadow:0 4px 12px -7px color-mix(in srgb,var(--teal) 72%,transparent);}
+
+@media (max-width:431px){
+  #app.app{
+    width:calc(100% - 32px)!important;
+    max-width:none!important;
+    min-width:0!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    box-sizing:border-box!important;
+  }
+  #app.app>.top,
+  #app.app>.main{
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    box-sizing:border-box;
+  }
+  #app.app>.main>*{
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+  }
+}
+
+
+/* R2.0.4 — refined rounded line icons for the patient More drawer. */
+.r16-drawer .r146-qb{gap:7px;border:1px solid color-mix(in srgb,var(--line) 78%,transparent);border-radius:15px;font-weight:650;letter-spacing:-.01em}
+.r16-drawer .r146-qb svg{display:block;width:28px;height:28px;flex:0 0 28px;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
+.r16-drawer .r146-qb:not(.red):not(.warn){color:var(--ink)}
+.r16-drawer .r146-qb:not(.red):not(.warn) svg{color:var(--teal)}
+.r16-drawer .r146-qb:active{transform:scale(.97);background:color-mix(in srgb,var(--teal) 9%,var(--panel2))}
+.r16-drawer .r146-qb span{font-size:13px;line-height:1.15}
+.r16-g2 .r146-qb svg{width:25px;height:25px;flex:0 0 25px}
+
+/* ============================================================
+   WARD SYNC R2.0.6 — shared design tokens and scoped refinements
+   Legacy component rules remain in place until each screen is verified.
+   ============================================================ */
+:root{
+  --ws-space-1:4px;--ws-space-2:8px;--ws-space-3:12px;--ws-space-4:16px;--ws-space-5:20px;--ws-space-6:24px;
+  --ws-radius-control:12px;--ws-radius-card:18px;--ws-radius-sheet:24px;--ws-radius-pill:999px;
+  --ws-icon-size:24px;--ws-icon-stroke:1.8;--ws-control-height:40px;
+  --ws-font-family:Inter,system-ui,-apple-system,sans-serif;
+  --ws-type-xs:10px;--ws-type-sm:12px;--ws-type-base:14px;--ws-type-lg:16px;--ws-type-title:22px;
+  --ws-line-tight:1.2;--ws-line-normal:1.45;
+  --ws-accent:var(--teal);--ws-text:var(--ink);--ws-subtle:var(--muted);--ws-border:var(--line);--ws-surface:var(--panel);--ws-surface-2:var(--panel2);
+  --ws-danger:var(--danger);--ws-warning:var(--warn);--ws-success:var(--ok);
+}
+/* Shared primitives: use the same measurements without overriding status colours. */
+.card:not(.hero){border-radius:var(--ws-radius-card)}
+.btn{border-radius:var(--ws-radius-control)}
+.chip,.badge,.r2-pill,.filter-pill{border-radius:var(--ws-radius-pill)}
+.pt-tab,.seg button{border-radius:10px}
+.sheet .box{border-radius:var(--ws-radius-sheet)}
+.ico.ws-icon{display:inline-flex;align-items:center;justify-content:center;width:var(--ws-icon-size);height:var(--ws-icon-size);flex:none;color:currentColor}
+.ico.ws-icon svg{display:block;width:var(--ws-icon-size);height:var(--ws-icon-size);overflow:visible}
+.more-grid .more-ico{width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.more-grid .more-ico .ico.ws-icon{width:var(--ws-icon-size);height:var(--ws-icon-size)}
+.more-grid .more-ico svg{width:var(--ws-icon-size);height:var(--ws-icon-size)}
+.more-grid .more-row{border-radius:16px;box-shadow:none}
+.more-section{margin:18px 2px 8px;font-family:var(--ws-font-family);font-size:var(--ws-type-xs);font-weight:750;letter-spacing:.12em;text-transform:uppercase;color:var(--ws-subtle)}
+.more-report-card{padding:14px;margin:10px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:var(--ws-radius-card)}
+.more-report-field{margin:0}
+.more-report-action{margin-top:10px}
+.more-row.danger .more-label{color:#e11d48}
+.top-bell .ico.ws-icon{width:20px;height:20px}
+.top-bell .ico.ws-icon svg{width:20px;height:20px}
+/* Compact context header for all non-Home pages. */
+.top.compact-top{min-height:54px;padding:8px 14px;gap:10px;background:var(--top);border-bottom:1px solid var(--line)}
+.compact-context{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.compact-kicker{font-size:9px;line-height:1.1;font-weight:750;letter-spacing:.14em;color:var(--muted)}
+.compact-context strong{font-family:var(--ws-font-family);font-size:15px;line-height:var(--ws-line-tight);font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who-tools.compact-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;min-width:0}
+.ws-sync-mini{display:inline-flex;align-items:center;gap:5px;max-width:115px;min-width:0;font-size:10px;font-weight:650;line-height:1.2;color:var(--muted);white-space:nowrap;overflow:hidden}
+.ws-sync-mini>span:last-child{overflow:hidden;text-overflow:ellipsis}
+.ws-sync-mini .dot{width:7px;height:7px;min-width:7px;min-height:7px;margin:0;flex:none}
+.top.compact-top .top-bell{width:34px;height:34px;border-radius:11px}
+/* Patient identity is now in the compact shell; the clinical page keeps a lighter Prev/Next control row. */
+.top.patient-top{min-height:60px;padding:7px 10px;gap:8px;background:var(--top);border-bottom:1px solid var(--line)}
+.patient-shell-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.patient-shell-back{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;min-width:34px;border:1px solid var(--line);border-radius:11px;background:var(--panel);color:var(--ink);padding:0}
+.patient-shell-back svg{width:19px;height:19px}
+.patient-shell-meta{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.patient-shell-primary{display:flex;align-items:baseline;gap:7px;min-width:0;line-height:1.15}
+.patient-shell-bed{flex:none;font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--teal)}
+.patient-shell-primary strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:750;color:var(--ink)}
+.patient-shell-sync{display:flex;align-items:center;min-width:0;min-height:12px}
+.patient-shell-sync .ws-sync-mini{font-size:9px;max-width:160px}
+.snap-shell-details{justify-content:flex-start;min-height:0;margin:0 0 6px}
+.snap-demographics{margin:0 0 8px;color:var(--muted);font-size:12px}
+.top.patient-top .top-bell{width:34px;height:34px;border-radius:11px}
+/* Reduce the patient navigator's vertical and visual weight; the identity is in the shell header. */
+.r162-head .pt-row1{height:36px;align-items:center;gap:4px}
+.r162-head .pt-row1::after{display:none}
+.r162-nav.r16-nav.pt-nav{height:36px;min-height:36px;grid-template-columns:minmax(58px,1fr) 62px minmax(58px,1fr);gap:5px;padding:0;border:0;border-radius:0;background:transparent;overflow:hidden}
+.r162-nav.r16-nav.pt-nav button{height:34px;min-height:34px;padding:0 7px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--muted);gap:3px}
+.r162-nav.r16-nav.pt-nav button:disabled{opacity:.45}
+.r162-nav .r162-bl{font-size:11px;font-weight:650;color:var(--muted)}
+.r162-nav .r16-arr{font-size:20px;margin:0;color:var(--muted)}
+.r162-ctr{height:34px;padding:0 4px;border:0;border-radius:10px;background:var(--panel2);color:var(--muted)}
+.r162-ctr .r162-cur{font-size:11px;font-weight:750;letter-spacing:.02em;color:var(--muted)}
+.r162-head .pt-row2{margin:6px 0 0;min-height:0}
+/* Bottom navigation: icons and labels are optically centred as one unit. */
+.nav-in{height:68px;min-height:68px}
+.nav button{height:68px;min-height:68px;gap:3px;padding:6px 2px 4px}
+.nav:not(.intern-nav) button .lbl{position:static;width:auto;height:auto;padding:0;margin:0;overflow:visible;clip:auto;white-space:nowrap;border:0;font-size:10px;line-height:1.1;font-weight:650;letter-spacing:0;color:inherit}
+.nav .ico.ws-icon,.side-nav .ico.ws-icon{width:24px;height:24px}
+.nav .ico.ws-icon svg,.side-nav .ico.ws-icon svg{width:24px;height:24px}
+.nav button.on{color:var(--teal)}
+/* Read-only Account view for roles whose profile settings are managed by an administrator. */
+.profile-readonly-head{margin:0 0 12px}
+.profile-readonly-card{padding:18px;text-align:center}
+.profile-readonly-avatar{width:54px;height:54px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--line);font-size:18px;font-weight:800;color:var(--teal)}
+.profile-readonly-name{font-size:17px;font-weight:750;line-height:1.25}
+.profile-readonly-role{margin:4px 0 16px;color:var(--muted);font-size:12px}
+.profile-readonly-card dl{margin:0 0 14px;text-align:left;border-top:1px solid var(--line)}
+.profile-readonly-card dl>div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.profile-readonly-card dt{font-size:12px;color:var(--muted)}
+.profile-readonly-card dd{margin:0;font-size:12px;font-weight:650;text-align:right;overflow-wrap:anywhere}
+@media (min-width:601px) and (max-width:1023px){
+  .top.compact-top,.top.patient-top,.top.intern-compact-top,.top.intern-patient-top{padding-left:18px;padding-right:18px}
+  .more-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+/* R2.0.7 — neutral notification rows with a narrow semantic rail and unified type icon. */
+.notify-item{
+  display:grid!important;grid-template-columns:4px 34px minmax(0,1fr);align-items:stretch!important;flex-direction:row!important;
+  gap:10px!important;width:100%!important;max-width:100%;margin-top:8px;padding:10px 12px 10px 0!important;
+  overflow:hidden;box-sizing:border-box;background:var(--panel)!important;border:1px solid var(--line);border-radius:15px;
+  text-align:left;box-shadow:none;min-height:78px;
+}
+.notify-rail{display:block;width:4px;min-height:100%;background:var(--muted);border-radius:0 4px 4px 0}
+.notify-icon{align-self:start;display:grid;place-items:center;width:30px;height:30px;margin-top:2px;border-radius:10px;background:var(--panel2);color:var(--muted)}
+.notify-icon .ico.ws-icon{width:20px;height:20px;display:grid;place-items:center}
+.notify-icon .ico.ws-icon svg{width:20px;height:20px;stroke-width:1.8}
+.notify-copy{display:flex;flex-direction:column;gap:4px;min-width:0;align-self:center}
+.notify-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.notify-when{margin:0;padding:0;color:var(--muted);font-size:10px;font-weight:650}
+.notify-title{margin:0;padding:0;color:var(--ink);font-size:13px;font-weight:750;line-height:1.3}
+.notify-by{font-size:11px;color:var(--muted);font-weight:600}
+.notify-body{margin:0;padding:0;color:var(--muted);font-size:12px;line-height:1.4;opacity:1;overflow-wrap:anywhere}
+.notify-unread{flex:none;padding:2px 6px;border-radius:999px;background:var(--panel2);color:var(--muted);font-size:9px;font-weight:750}
+.notify-item.tone-teal .notify-rail{background:var(--teal)}
+.notify-item.tone-violet .notify-rail{background:#8b5cf6}
+.notify-item.tone-amber .notify-rail{background:var(--warn)}
+.notify-item.tone-blue .notify-rail{background:#3b82f6}
+.notify-item.tone-rose .notify-rail{background:var(--danger)}
+.notify-item.tone-slate .notify-rail{background:var(--muted)}
+.notify-item.tone-teal .notify-icon{color:var(--teal)}
+.notify-item.tone-violet .notify-icon{color:#8b5cf6}
+.notify-item.tone-amber .notify-icon{color:var(--warn)}
+.notify-item.tone-blue .notify-icon{color:#3b82f6}
+.notify-item.tone-rose .notify-icon{color:var(--danger);background:var(--danger-bg)}
+.notify-item.is-critical{border-color:color-mix(in srgb,var(--danger) 32%,var(--line));background:color-mix(in srgb,var(--danger) 3%,var(--panel))!important}
+.notify-item.is-critical .notify-title{color:var(--danger)}
+.notify-item:active{background:var(--panel2)!important}
+
+
+/* R2.0.7 — consolidated mobile refinements for the new shared shell and notification components. */
+@media (max-width:600px){
+  .top.compact-top,.top.intern-compact-top{padding-left:12px;padding-right:10px}
+  .top.patient-top,.top.intern-patient-top{padding-left:8px;padding-right:8px}
+  .patient-shell-primary strong{font-size:12.5px}
+  .ws-sync-mini{max-width:95px}
+  .nav-in{height:68px;min-height:68px}
+  .notify-item{grid-template-columns:4px 30px minmax(0,1fr);gap:8px!important;padding-right:10px!important}
+  .notify-icon{width:28px;height:28px}
+}
+
+/* Reduce nested card-in-card treatment; the standalone home .hero retains its full visual treatment. */
+.card .card:not(.hero){background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+/* R2.0.7 — all app icon groups use the same 24px rounded-line renderer. */
+.r146-qb>.ico.ws-icon{width:28px;height:28px;display:grid;place-items:center;flex:0 0 28px;line-height:0}
+.r146-qb>.ico.ws-icon svg{width:22px;height:22px;display:block;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.r16-drawer .r146-qb>.ico.ws-icon{width:28px;height:28px;flex-basis:28px}
+.r16-drawer .r146-qb>.ico.ws-icon svg{width:28px;height:28px}
+.r16-g2 .r146-qb>.ico.ws-icon svg{width:25px;height:25px}
+.intern-nav .ico.ws-icon{width:24px;height:24px;display:grid;place-items:center}
+.intern-nav .ico.ws-icon svg{width:24px;height:24px}
+.main{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+
+
+/* R2.0.8 — final header edge and sync-indicator clipping polish.
+   Keep the existing header geometry and appearance; only soften the exposed
+   lower corners and give status dots room for their outer indicator halo. */
+.top.compact-top,
+.top.patient-top,
+.top.resident-home,
+.top.intern-compact-top,
+.top.intern-patient-top,
+.top.intern-home-top{
+  border-left:1px solid var(--line);
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  border-radius:0 0 14px 14px;
+}
+.top.resident-home{
+  padding-left:3px;
+}
+.top.resident-home .status-chip.home-sync{
+  padding-left:3px;
+  overflow:visible;
+}
+.top.resident-home .status-chip.home-sync>.dot{
+  flex:0 0 8px;
+}
+.ws-sync-mini{
+  padding-left:3px;
+  overflow:visible;
+}
+.ws-sync-mini .dot{
+  flex:0 0 7px;
+}
+
+
+/* R2.0.9 — subtle accent outline for the primary bottom navigation dock.
+   Uses the active theme accent so the outline follows the user's accent choice. */
+.nav:not(.intern-nav) .nav-in{
+  border:1px solid color-mix(in srgb,var(--teal) 48%,transparent)!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--teal) 7%,transparent);
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -4098,9 +4420,12 @@ function photoOverlays(){
 }
 function profileView(){
   try{bdftInit()}catch(e){}
-  profileEnsurePhone();
-  if(!canOpenProfile()) return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="card"><p class="sm">This page is your own profile.</p></div>`;
   const me=user()||{};
+  profileEnsurePhone();
+  if(!canOpenProfile()){
+    const role=normRole(me.role),roleName=role==="admin"?"Administrator":role==="consultant"?"Consultant":role==="intern"?"Intern":"Resident";
+    return `<div class="profile-readonly"><div class="profile-readonly-head"><p class="tiny">ACCOUNT</p><h2 class="page-title">My profile</h2></div><section class="card profile-readonly-card"><div class="profile-readonly-avatar">${esc(profileInitials(me.displayName||me.username||""))}</div><div class="profile-readonly-name">${esc(me.displayName||me.username||"User")}</div><p class="profile-readonly-role">${roleName}</p><dl><div><dt>Username</dt><dd>${esc(me.username||"—")}</dd></div><div><dt>Ward / unit</dt><dd>${esc((S.unit&&S.unit.name)||"—")}</dd></div></dl><p class="tiny">Account details are managed by the ward administrator.</p></section></div>`;
+  }
   const editing=!!ui.profileEdit;
   const short=editing?(ui.profileShort||""):bdftGetResidentShort(me);
   const beds=editing?(ui.profileBeds||[]):bdftGetResidentBeds(me);
@@ -4366,7 +4691,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R2.0.0";
+const APP_VERSION="R2.0.7";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -5967,41 +6292,52 @@ async function doLogin(e){
 }
 
 
+const WS_ICON_PATHS={
+  home:'<path d="m3.5 10.5 8.5-7 8.5 7"/><path d="M5.5 9.5v10h13v-10M9.5 19.5v-6h5v6"/>',
+  patients:'<circle cx="9" cy="7.5" r="3.1"/><path d="M2.8 20c.3-3.6 2.3-5.5 6.2-5.5s5.9 1.9 6.2 5.5M16 4.8a3.1 3.1 0 0 1 0 5.9M17 14.8c2.5.6 3.8 2.3 4.1 5.2"/>',
+  handover:'<rect x="4.5" y="5" width="15" height="16" rx="2.3"/><path d="M9 5V3.8h6V5M8 11l1.8 1.8L13 9.5M14.5 12h2M8 17h8"/>',
+  more:'<circle cx="5" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="19" cy="12" r="1.1"/>',
+  ect:'<path d="m13.2 2.8-7.4 9.7a.9.9 0 0 0 .7 1.4h5l-.6 7 7.5-9.9a.9.9 0 0 0-.7-1.4h-5z"/>',
+  observe:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  census:'<rect x="6" y="6" width="12" height="15" rx="2"/><path d="M9 6V5a3 3 0 0 1 6 0v1M12 10v7M8.5 13.5h7"/>',
+  setup:'<path d="M12 3.2v2M12 18.8v2M3.2 12h2M18.8 12h2M5.8 5.8l1.4 1.4M16.8 16.8l1.4 1.4M18.2 5.8l-1.4 1.4M7.2 16.8l-1.4 1.4"/><circle cx="12" cy="12" r="5.1"/><circle cx="12" cy="12" r="2"/>',
+  tasks:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2.8h6V5H9zM8.5 10.5l1.4 1.4 2.3-2.5M14.5 11h2M8.5 16h8"/>',
+  myorders:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2.8h6V5H9zM8.5 12.5l2 2 4-4.5M8.5 17h7"/>',
+  activity:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="m6.5 15 3.3-4.2 3.3 3 4.4-6"/>',
+  about:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.8h.01"/>',
+  broadcast:'<path d="M3 10v4a1 1 0 0 0 1 1h2l4 4V5l-4 4H4a1 1 0 0 0-1 1zM14.5 9a4 4 0 0 1 0 6M17.5 6a8 8 0 0 1 0 12"/>',
+  theme:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/>',
+  notify:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  cloud:'<path d="M7.5 18h9a4 4 0 0 0 .3-8 5.8 5.8 0 0 0-11-1.3A4.1 4.1 0 0 0 7.5 18z"/>',
+  phone:'<path d="M21 16.5v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 1.9 3.8a2 2 0 0 1 2-2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 1.7z"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.2a4 4 0 0 1 0 7.6"/>',
+  bdft:'<path d="M3 4v16M3 8h16a2 2 0 0 1 2 2v10M3 17h18M7 8v9"/>',
+  profile:'<circle cx="12" cy="8" r="3.2"/><path d="M5.2 20c.7-3.2 3.2-4.8 6.8-4.8s6.1 1.6 6.8 4.8"/>',
+  logout:'<path d="M10 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5M16 17l5-5-5-5M21 12H9"/>',
+  note:'<path d="M5 4.5h10l4 4v11H5zM15 4.5v4h4M9 12h6M9 16h4"/>',
+  scale:'<path d="M5 19V9M10 19V5M15 19v-7M20 19v-4"/>',
+  drug:'<rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="m9.6 8.6 4.8 6.8"/>',
+  report:'<path d="M9 3.5h6M10 3.5v5.2l-5.1 8.8a2.2 2.2 0 0 0 1.9 3.3h10.4a2.2 2.2 0 0 0 1.9-3.3L14 8.7V3.5M8.2 15h7.6"/>',
+  advice:'<path d="M4 5h16v11H9l-5 4z"/>',
+  hist:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+  chart:'<path d="M3.5 12h4l2.1-5 4.2 10 2.1-5h4.6"/>',
+  mse:'<path d="M9 21v-3H7a2 2 0 0 1-2-2v-3l-2-1 2-3.5A7 7 0 0 1 19 9c0 3-1.2 5-3 6.2V21"/><path d="M10.5 8.6a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.3"/>',
+  close:'<path d="m6 6 12 12M18 6 6 18"/>',
+  task:'<rect x="4" y="4.5" width="16" height="16" rx="3.2"/><path d="M9 4.5v-1h6v1m-6.8 7.7 2.3 2.3 5.3-5.2"/>',
+  hand:'<path d="M4 12h13m-5-6 6 6-6 6M4 7v10"/>',
+  transfer:'<path d="M7 7h13m-4-4 4 4-4 4M17 17H4m4-4-4 4 4 4"/>',
+  history:'<path d="M4.2 9a8.2 8.2 0 1 1-.1 6M4.2 4.5V9h4.5M12 7.5v5l3.2 1.9"/>',
+  lock:'<rect x="4.5" y="10" width="15" height="10.5" rx="2.8"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10M12 14.2v2.1"/>',
+  critical:'<path d="M12 3.1 21 19a1.2 1.2 0 0 1-1.05 1.8H4.05A1.2 1.2 0 0 1 3 19zM12 9v4.5M12 17.2h.01"/>',
+  discharge:'<path d="M10 4.5H5.8A1.8 1.8 0 0 0 4 6.3v11.4a1.8 1.8 0 0 0 1.8 1.8H10m4-11 4 4-4 4m4-4H9"/>',
+  vitals:'<path d="M2.5 12h4l2.2-5 4 10 2.2-5h6.6"/>',
+  reports:'<rect x="5" y="3.5" width="14" height="17" rx="2.2"/><path d="M9 8h6M9 12h6M9 16h4"/>'
+};
 function ico(name){
-  const s={
-    home:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="7.2" height="7.2" rx="2.2" fill="#14b8a6"/><rect x="13.3" y="3.5" width="7.2" height="7.2" rx="2.2" fill="#38bdf8"/><rect x="3.5" y="13.3" width="7.2" height="7.2" rx="2.2" fill="#34d399"/><rect x="13.3" y="13.3" width="7.2" height="7.2" rx="2.2" fill="#f59e0b"/></svg>',
-    patients:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.1" fill="#0ea5e9"/><path d="M5.2 18.8c.6-3.4 3.2-5.2 6.8-5.2s6.2 1.8 6.8 5.2" stroke="#0ea5e9" stroke-width="2.1" stroke-linecap="round"/><circle cx="18.2" cy="9.2" r="1.7" fill="#67e8f9"/></svg>',
-    handover:'<svg viewBox="0 0 24 24" fill="none"><rect x="4.5" y="3.5" width="11.5" height="15" rx="2.4" fill="#f59e0b"/><path d="M7.2 8h6.2M7.2 11.2h6.2M7.2 14.4h3.6" stroke="#fff7ed" stroke-width="1.7" stroke-linecap="round"/><rect x="12.2" y="12.2" width="7.4" height="7.4" rx="2.2" fill="#fb7185"/><path d="M14.2 15.9h3.4M15.9 14.2v3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>',
-    ect:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/> </g> </svg>',
-    more:'<svg viewBox="0 0 24 24" fill="none"><circle cx="6.5" cy="12" r="2" fill="#94a3b8"/><circle cx="12" cy="12" r="2" fill="#38bdf8"/><circle cx="17.5" cy="12" r="2" fill="#14b8a6"/></svg>',
-    observe:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/> <circle cx="12" cy="12" r="3"/> </g> </svg>',
-    census:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M8 7h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/> <path d="M10 7V6a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v1"/> <path d="M12 11v5M9.5 13.5h5"/> </g> </svg>',
-    setup:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <circle cx="12" cy="12" r="3"/> <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.86 1 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/> </g> </svg>',
-    tasks:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <rect x="6" y="4" width="12" height="16" rx="2"/> <path d="M9 2h6v2H9z"/> <path d="M9 10h6M9 14h4"/> </g> </svg>',
-    myorders:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <rect x="5" y="4" width="13" height="17" rx="2"/> <path d="M9 2.5h5v3H9z"/> <path d="M8.5 12.5l2 2 4-4.5"/> <path d="M8.5 17.5h6"/> </g> </svg>',
-    activity:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <rect x="3" y="3" width="18" height="18" rx="3"/> <path d="M7 15l3.5-4.5L14 13.5 17 8"/> </g> </svg>',
-    about:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <circle cx="12" cy="12" r="10"/> <path d="M12 16v-4"/> <path d="M12 8h.01"/> </g> </svg>',
-    broadcast:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M3 11v2a1 1 0 0 0 1 1h1.5l3 4a1 1 0 0 0 1.7-.7V7.7A1 1 0 0 0 8.5 7L5.5 11H4a1 1 0 0 0-1 1z"/> <path d="M15.5 8.5a4 4 0 0 1 0 7"/> <path d="M18 6a7 7 0 0 1 0 12"/> </g> </svg>',
-    theme:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <circle cx="12" cy="12" r="9"/> <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/> </g> </svg>',
-    notify:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/> <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/> </g> </svg>',
-    cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M8 17h8.5a3.2 3.2 0 0 0 .2-6.4 4.8 4.8 0 0 0-9.1-1.3A3.3 3.3 0 0 0 8 17z"/> <g stroke-width="1.1"> <path d="M12 17v2"/> <rect x="10.2" y="19" width="3.6" height="2.4" rx="0.7"/> <path d="M11 21.4v.8M13 21.4v.8"/> </g> </g> </svg>',
-    phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(12 12) scale(0.75) translate(-12 -12)"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></g></svg>',
-    users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/> <circle cx="9" cy="7" r="4"/> <path d="M22 21v-2a4 4 0 0 0-3-3.87"/> <path d="M16 3.13a4 4 0 0 1 0 7.75"/> </g> </svg>',
-    bdft:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/> </g> </svg>',
-    profile:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(12 12) scale(0.75) translate(-12 -12)"><circle cx="12" cy="8" r="3.2"/><path d="M5.2 19.2c.7-3.2 3.2-4.8 6.8-4.8s6.1 1.6 6.8 4.8"/></g></svg>',
-    logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <g transform="translate(12 12) scale(0.75) translate(-12 -12)"> <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/> <polyline points="16 17 21 12 16 7"/> <line x1="21" y1="12" x2="9" y2="12"/> </g> </svg>'
-  };
-  return `<span class="ico">${s[name]||""}</span>`;
+  const path=WS_ICON_PATHS[name]||"";
+  return path?`<span class="ico ws-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${path}</svg></span>`:"";
 }
-function navIco(name){
-  const s={
-    home:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="10" aria-hidden="true"><g transform="translate(10 10)"><circle cx="17.5" cy="17.5" r="13.2"/><circle cx="62" cy="17.5" r="13.2"/><circle cx="17.5" cy="62" r="13.2"/><circle cx="62" cy="62" r="13.2"/></g></svg>',
-    patients:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" aria-hidden="true"><g transform="translate(2.5 13)"><circle cx="28.5" cy="17.5" r="13"/><circle cx="68" cy="16.5" r="11.2"/><path d="M2 74C2 50 12 43 28 43C44 43 54 52 54 74"/><path d="M55 70C55 50 62 44 71 44C84 44 93 52 93 72"/></g></svg>',
-    handover:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round" aria-hidden="true"><g transform="translate(13.5 4)"><rect x="1" y="11" width="71" height="78" rx="11"/><rect x="16" y="1" width="41" height="17" rx="6" fill="none" stroke="currentColor"/><circle cx="18.5" cy="42" r="3.6" fill="currentColor" stroke="none"/><rect x="32" y="39" width="24" height="6.5" rx="3" fill="currentColor" stroke="none"/><circle cx="18.5" cy="63" r="3.6" fill="currentColor" stroke="none"/><rect x="32" y="60" width="24" height="6.5" rx="3" fill="currentColor" stroke="none"/></g></svg>',
-    more:'<svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><g transform="translate(13 43)"><circle cx="7" cy="7" r="7"/><circle cx="36.5" cy="7" r="7"/><circle cx="66" cy="7" r="7"/></g></svg>'
-  };
-  return `<span class="ico">${s[name]||""}</span>`;
-}
+function navIco(name){return ico(name);}
 
 function overlayOpen(){
   return !!(ui.giveOpen || ui.sheet || ui.panel || ui.pick || ui.confirm || ui.notifySet || ui.userEdit || ui.consEdit || ui.addUser || ui.myPhone || ui.photoPick || ui.photoCrop || ui.seForm || ui.disPreview || ui.r17Gate || ui.bdftAdminSheet || ui.bdftResidentModal || ui.bdftBedPickerModal || ui.bdftOccupiedModal || ui.bdftUnavailableModal);
@@ -6121,25 +6457,32 @@ function stampSheetEnter(html){
 }
 function shell(inner){
   const u=user()||{};
-  const appHeader=canWrite()&&!isConsultant()&&!isIntern();
+  const isHome=route.page==="home";
+  const snapP=route.page==="snap"?patient(route.id):null;
+  const snapB=snapP?bedObj(snapP.id):null;
   const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile","pgts"].includes(route.page))?"on":"";
-  const bell=`<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button>`;
-  const left=appHeader
-    ? `<div class="home-id">${photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")}<div class="home-greet"><b>${esc(greet())}, ${esc(u.displayName||u.username||"")}</b>${homeSyncSlot()}</div></div>`
-    : `<div><p class="kicker">${greet()}${canWrite()?` <span class="who-inline">${esc(u.displayName||"")}</span>`:""}</p><h1>${esc((S.unit&&S.unit.name)||"")}</h1></div>`;
-  const tools=appHeader?`<div class="who-tools home-tools">${bell}</div>`:`<div class="who-tools">${statusChip()}${bell}</div>`;
+  const bell=`<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications" title="Notifications">${ico("notify")}${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button>`;
+  const syncText=statusLabel()==="Live"?"Synced":statusLabel();
+  const syncMini=`<span class="ws-sync-mini ${statusClass()}" title="${esc(statusLabel())}">${statusDot()}<span>${esc(syncText)}</span></span>`;
+  const labels={patients:"Patients",handover:"Handovers",more:"More",tasks:"Task board",census:"Admission / discharge",observe:"Observation",ect:"ECT",activity:"Activity log",setup:(ui.setupTab==="notify"?"Notifications":ui.setupTab==="theme"?"Appearance":"Settings"),ward:"Ward setup",users:"User management",about:"About",connection:"Connection",broadcast:"Broadcast",myorders:"My orders",bdft:"BDFT",profile:"Account",pgts:"Resident directory",record:"Patient record",dcert:"Discharge certificate",dedit:"Discharge review",pedit:"Edit patient",vchart:"Vitals chart",scale:"Rating scales",srate:"Rating scale",ivitals:"Vitals",ireports:"Reports",ireport:"Report"};
+  const contextTitle=labels[route.page]||((S.unit&&S.unit.name)||"Ward Sync");
+  const left=isHome
+    ? `<div class="home-id">${photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")}<div class="home-greet"><b>${esc(greet())}, ${esc(u.displayName||u.username||"User")}</b>${homeSyncSlot()}</div></div>`
+    : snapP
+      ? `<div class="patient-shell-left"><button class="patient-shell-back" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="patient-shell-meta"><div class="patient-shell-primary"><span class="patient-shell-bed">${esc(snapB&&snapB.no?snapB.no:(snapP.status==="observation"?"OBS":"NO BED"))}</span><strong>${esc(snapP.name||"Patient")}</strong></div><div class="patient-shell-sync">${syncMini}</div></div></div>`
+      : `<div class="compact-context"><span class="compact-kicker">WARD SYNC</span><strong>${esc(contextTitle)}</strong></div>`;
+  const tools=isHome?`<div class="who-tools home-tools">${bell}</div>`:snapP?`<div class="who-tools compact-tools">${bell}</div>`:`<div class="who-tools compact-tools">${syncMini}${bell}</div>`;
   const sideIcon=name=>["home","patients","handover","more"].includes(name)?navIco(name):ico(name);
   const sideBtn=(page,label,icon,extra)=>`<button type="button" class="${on(page)}" onclick="${extra||`go('${page}')`}" aria-label="${label}">${sideIcon(icon)}<span>${label}</span></button>`;
-  return `<aside class="side-nav" aria-label="Ward"><p class="side-brand">Ward Sync</p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}</aside><header class="top${appHeader?" resident-home":""}">${left}${tools}</header>
+  return `<aside class="side-nav" aria-label="Ward"><p class="side-brand">Ward Sync</p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}</aside><header class="top${isHome?" resident-home":snapP?" patient-top":" compact-top"}">${left}${tools}</header>
     <main class="main">${inner}</main>${r151Dock()}
     <nav class="nav"><div class="nav-in">
       <button class="${on("home")}" onclick="go('home')" aria-label="Home">${navIco('home')}<span class="lbl">Home</span></button>
       <button class="${on("patients")}" onclick="go('patients')" aria-label="Patients">${navIco('patients')}<span class="lbl">Patients</span></button>
-      <button class="${on("handover")}" onclick="go('handover')" aria-label="Handovers" ${ui.busy?"disabled":""}>${navIco('handover')}<span class="lbl">Handovers</span></button>
+      <button class="${on("handover")}" onclick="go('handover')" aria-label="Handovers" ${ui.busy?"disabled":""}>${navIco('handover')}<span class="lbl">Handover</span></button>
       <button class="${on("more")}" onclick="go('more')" aria-label="More">${navIco('more')}<span class="lbl">More</span></button>
-    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(photoOverlays()||"")+(seFormOverlay()||"")+(disPreviewOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(bdftAdminSheetOverlay()||"")+(bdftResidentModalOverlay()||"")+(bdftBedPickerOverlay()||"")+(bdftOccupiedModalOverlay()||"")+(bdftUnavailableModalOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review, ui.r17Reason||"")}</div></div>`:""))}${busyVeil()}`;
+    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(photoOverlays()||"")+(seFormOverlay()||"")+(disPreviewOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(bdftAdminSheetOverlay()||"")+(bdftResidentModalOverlay()||"")+(bdftBedPickerOverlay()||"")+(bdftOccupiedModalOverlay()||"")+(bdftUnavailableModalOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review,ui.r17Reason||"")}</div></div>`:""))}${busyVeil()}`;
 }
-
 /* HOME: occupied beds only, current status */
 let toastTimer=null;
 const ERR_KEY="ward-command-elog";
@@ -6709,8 +7052,7 @@ function pgtsView(){
   pgtLoad();
   const people=pgtPeople().slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-    <h2 class="page-title">All PGTs</h2>
-    <p class="tiny" style="margin:-4px 0 10px">Active residents. Phone numbers are for staff on Ward Sync.</p>
+    <p class="tiny" style="margin:0 0 10px">Active residents. Phone numbers are for staff on Ward Sync.</p>
     ${ui.pgtRpc===false?`<p class="tiny">Photos and phone numbers appear after the directory update is applied. Names below are from the ward list.</p>`:""}
     <div class="pgt-dir">${people.length?people.map(r=>`<div class="card pgt-card">${pgtFace(r,"pgt-photo")}<b>${esc(r.name||"Resident")}</b>${r.phone?`<a class="btn sm" href="tel:${esc(String(r.phone).replace(/[^\d+]/g,""))}">Call</a>`:`<span class="tiny">No number</span>`}</div>`).join(""):`<div class="card"><p class="sm">No active PGTs.</p></div>`}</div>`;
 }
@@ -6806,13 +7148,16 @@ function r146Row(r){const A=r.alert;return `<li class="r146-ri l${r.lvl}${A?" r1
 // ---------- Today ----------
 function r146TodayRows(scope){
   const rows=[];let novit=0;
-  r146Active().forEach(({p,b},ord)=>{
+  const active=r146Active();
+  // Keep the ward-wide no-vitals count visible as a separate update reminder,
+  // even when the morning-shift alert list is restricted to BDFT-assigned beds.
+  active.forEach(({p})=>{if(r146Reasons(p).some(r=>r.key==="novit"))novit++});
+  active.forEach(({p,b},ord)=>{
     if(scope&&!scope(p))return;
     const R=r146Reasons(p);
-    if(R.some(r=>r.key==="novit"))novit++;
     const S2=R.filter(r=>r.key!=="novit"&&!(r.lvl===2&&r.key==="new"&&R.length>1));
     if(!S2.length)return;
-    rows.push({p,b,ord,R:S2,lvl:S2[0].lvl,red:S2.filter(r=>r.lvl===0).length});
+    rows.push({p,b,ord,R:S2,lvl:Math.min(...S2.map(r=>r.lvl)),red:S2.filter(r=>r.lvl===0).length});
   });
   rows.sort((a,b)=>a.lvl-b.lvl||b.red-a.red||a.ord-b.ord);
   return {rows,novit};
@@ -6829,20 +7174,27 @@ function r16OffDutyHtml(){
 function r146TodayHtml(){
   const cons=isConsultant(),mineN=cons?myPatientCount():0;
   if(!cons&&canWrite()&&!dutyRecord())return "";
-  const head=cons?"YOU NEED TO KNOW":"NEEDS YOU NOW"; // R1.6 item 6
+  const head=cons?"YOU NEED TO KNOW":"NEEDS YOU NOW";
   const scopeMine=cons&&mineN>0&&ui.todayScope!=="ward";
-  const {rows,novit}=r146TodayRows(scopeMine?isMyPatient:null);
-  const lim=ui.todayAll?rows.length:Math.max(4,rows.filter(r=>r.lvl===0).length); // R1.5.1: 4 rows, red rows always shown
+  const morningResident=!cons&&canWrite()&&currentShift()==="morning";
+  const mineInfo=morningResident?bdftGetMyAssignedBeds():null;
+  const morningBDFTReady=!!(mineInfo&&!mineInfo.isGeneric&&Array.isArray(mineInfo.beds));
+  const scopeFn=scopeMine?isMyPatient:morningResident?r146IsMine:null;
+  const {rows,novit}=r146TodayRows(scopeFn);
+  const urgent=rows.filter(r=>r.lvl===0);
+  const others=rows.filter(r=>r.lvl>0);
   const nm=p=>esc(p.name||"");
   const rowHtml=x=>{const top=x.R[0];const lvl=["red","amber","blue"][x.lvl];
     return `<li class="r146-need ${lvl}" data-lvl="${lvl}"><span class="r146-dot" aria-hidden="true"></span>
       <button type="button" class="r146-need-main" onclick="r146Open(${r146Q(x.p.id)})"><span class="r151-l1"><b>${esc(x.b?x.b.no:"No bed")} · ${nm(x.p)}</b>${r146LegalOpHtml(x.p)}</span><span class="r151-l2">${x.R.slice(0,2).map(r=>esc(r.txt)).join(" · ")}${x.R.length>2?` · +${x.R.length-2}`:""}</span></button>
       ${cons?"":`<button type="button" class="btn sm r146-need-act ${x.lvl===0||top.rel?"danger":"ghost"}" onclick="${top.fn}">${esc(top.act)}</button>`}</li>`};
-  const counts=[0,1,2].map(l=>rows.filter(r=>r.lvl===l).length);
+  const counts=[urgent.length,others.filter(r=>r.lvl===1).length,others.filter(r=>r.lvl===2).length];
   return `<section class="card r146-needs" aria-label="${cons?"You need to know":"Needs you now"}">
     <div class="row r146-needs-head"><p class="tiny">${head}</p><span class="r146-counts">${!cons&&canWrite()?`<span class="r16-duty"><i aria-hidden="true"></i>On duty</span>`:""}${counts[0]?`<span class="r146-cnt red">${counts[0]}</span>`:""}${counts[1]?`<span class="r146-cnt amber">${counts[1]}</span>`:""}${counts[2]?`<span class="r146-cnt blue">${counts[2]}</span>`:""}</span></div>
     ${cons&&mineN?`<div class="r146-seg" role="group" aria-label="Scope"><button type="button" class="${scopeMine?"on":""}" aria-pressed="${scopeMine}" onclick="ui.todayScope='mine';render()">My patients</button><button type="button" class="${scopeMine?"":"on"}" aria-pressed="${!scopeMine}" onclick="ui.todayScope='ward';render()">Whole ward</button></div>`:""}
-    ${rows.length?`<ul class="r146-need-list">${rows.slice(0,lim).map(rowHtml).join("")}</ul>${rows.length>lim?`<button type="button" class="btn sm ghost block r146-more-rows" onclick="ui.todayAll=1;render()">Show all ${rows.length} ›</button>`:ui.todayAll&&rows.length>4?`<button type="button" class="btn sm ghost block r146-more-rows" onclick="ui.todayAll=0;render()">Show fewer</button>`:""}`:`<p class="sm r146-empty">Nothing needs you right now.</p>`}
+    ${morningResident?`<p class="tiny muted" style="margin:5px 0 2px">${morningBDFTReady?"Showing alerts for your BDFT-assigned beds":"Morning BDFT assignment unavailable — patient alerts are withheld until your bed assignment loads"}</p>`:""}
+    ${urgent.length?`<ul class="r146-need-list">${urgent.map(rowHtml).join("")}</ul>`:`<p class="sm r146-empty">No high-priority alerts.</p>`}
+    ${others.length?`<button type="button" class="btn sm ghost block r146-more-rows" aria-expanded="${!!ui.todayOthers}" onclick="ui.todayOthers=!ui.todayOthers;render()">${ui.todayOthers?"Hide":"Others · show"} ${others.length} ›</button>${ui.todayOthers?`<ul class="r146-need-list r146-other-list">${others.map(rowHtml).join("")}</ul>`:""}`:""}
     ${novit?`<div class="r146-need blue r146-novit"><span class="r146-dot" aria-hidden="true"></span><span class="r146-need-main static"><b>${novit} patient${novit>1?"s":""}</b><span>No vitals in the last 24 h</span></span>${cons?"":`<button type="button" class="btn sm ghost r146-need-act" onclick="ui.pf='due';ui.ptag='';ui.psec='';ui.preason='';ui.pcon='';go('patients')">List</button>`}</div>`:""}
   </section>`;
 }
@@ -6906,7 +7258,7 @@ function homeView(){
   const bdftSub=current?(bedCodes.length?bedCodes.join(" · "):("No beds assigned "+(offDay===0?"today":"tomorrow"))):"BDFT status and View complete BDFT when available";
   const make=(!canAdmin()&&!isIntern()&&!isConsultant()&&canWrite()&&isEveningDuty())?`<button type="button" class="r2-pill info" onclick="event.stopPropagation();bdftOpenGenerate()">Make BDFT</button>`:"";
   const dutyOn=!!dutyRecord();
-  const tile=(n,l,fn,cls)=>`<button type="button" class="r2-tile ${cls||""}" onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
+  const tile=(n,l,fn,cls)=>`<button type="button" class="r2-tile ${cls||""}${Number(n)>0&&/today-(admitted|discharged)/.test(cls||"")?" has-dot":""}" onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
   const consHome=isConsultant();
   return `<div class="r2-home">
     ${r17AuditMissHtml()}
@@ -6925,19 +7277,19 @@ function homeView(){
       <p class="r2-h">WHERE</p>
       <div class="r2-grid r2-where">${wards.map(w=>tile(w.n,w.name.charAt(0).toUpperCase()+w.name.slice(1),`openWardSection('${esc(w.id)}')`)).join("")}${tile(obsN,"Observation","go('observe')")}</div>
       <p class="r2-h">TODAY</p>
-      <div class="r2-grid r2-today">${tile(free,"Beds free","","free")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()")}</div>
+      <div class="r2-grid r2-today">${tile(free,"Beds free","","free")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')","today-admitted")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()","today-discharged")}</div>
     </section><div class="r2-side">
     ${consHome?"":`<section class="r2-duty" aria-label="Duty status">
       <div class="row"><span class="r2-cardh">Duty status</span><span class="r2-pill ${dutyOn?"ok":"warn"}">${dutyOn?"On duty":"Not on duty"}</span></div>
       <div class="row"><span class="r2-sub" style="margin:0">${esc(shiftLabel(sh))} shift · ${dutyOn?"Signed in":"Sign in to continue"}</span>${canWrite()?`<button type="button" class="r2-signin" onclick="${dutyOn?"endDuty()":"signDuty()"}">${dutyOn?"End shift":"Sign in"}</button>`:""}</div>
-      ${(!consHome&&canWrite()&&!dutyOn)?`<p class="r2-needline">Sign in to see what needs you, including side-effect checks.</p>`:""}
+      ${""}
     </section>`}
+    ${r146TodayHtml()}
     <section class="r2-flags" aria-label="Clinical flags">
-      <div class="row"><span class="r2-cardh">Clinical flags</span><button type="button" class="r2-link" onclick="ui.ptag='';ui.pf='';go('patients')">View all →</button></div>
+      <div class="row"><span class="r2-cardh">Clinical flags</span><button type="button" class="r2-link" onclick="clearPatientListFilters(true)">View all →</button></div>
       ${on.length?`<div class="r146-flag-chips" style="margin-top:8px">${on.map(f=>`<button type="button" class="r146-fchip ${f.c}" data-flag="${f.k}" onclick="${f.fn}">${f.n} ${esc(f.l)}</button>`).join("")}</div>`:""}
       ${off.length?`<p class="r2-none">None: ${off.map(f=>`<button type="button" class="r146-zchip" data-flag="${f.k}" onclick="${f.fn}">${esc(f.l)}</button>`).join(" · ")}</p>`:""}
     </section>
-    ${r146TodayHtml()}
     ${consHome?"":r146ScheduleHtml()}
     <section class="r2-team" aria-label="On-duty team">
       <div class="row"><span class="r2-cardh">On-duty team</span><span class="r2-pill ok">${esc(shiftLabel(sh))} shift</span></div>
@@ -6991,24 +7343,10 @@ function r146DueCard(p){
   return `<section class="card r146-duenow" aria-label="Due now"><p class="tiny"><span>DUE NOW</span><span class="r151-cnt">${L.length}</span></p><ul>${L.slice(0,lim).map(r146Row).join("")}</ul>${L.length>lim?`<button type="button" class="r151-more" onclick="ui.r151DueAll=${r146Q(p.id)};render({force:1})">+${L.length-lim} more</button>`:""}</section>`;
 }
 const R146_I={
-  note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h10l4 4v12H5z"/><path d="M9 12h6M9 16h4"/></svg>',
-  scale:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 19V9M10 19V5M15 19v-7M20 19v-4"/></svg>',
-  drug:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="M9.6 8.6l4.8 6.8"/></svg>',
-  report:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/></svg>',
-  more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>',
-  advice:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>',
-  hist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>',
-  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>',
-  mse:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21v-3H7a2 2 0 0 1-2-2v-3l-2-1 2-3.5A7 7 0 0 1 19 9c0 3-1.2 5-3 6.2V21"/><path d="M10.5 8.6a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.3"/></svg>',
-  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
-  task:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2 2 4-4"/><rect x="4" y="4" width="16" height="16" rx="3"/></svg>',
-  hand:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h12M12 6l6 6-6 6"/></svg>',
-  tr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>',
-  hist2:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 8v4l3 2"/></svg>',
-  ect:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
-  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
-  crit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17.5v.5"/></svg>',
-  out:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/></svg>'
+  note:ico("note"),scale:ico("scale"),drug:ico("drug"),report:ico("report"),more:ico("more"),
+  advice:ico("advice"),hist:ico("hist"),chart:ico("chart"),mse:ico("mse"),x:ico("close"),
+  task:ico("task"),hand:ico("hand"),tr:ico("transfer"),hist2:ico("history"),ect:ico("ect"),
+  lock:ico("lock"),crit:ico("critical"),out:ico("discharge")
 };
 function r146QuickBar(p){
   if(!p||p.status==="discharged")return "";
@@ -7050,8 +7388,10 @@ function r16PlaceDrawer(){
   const d=document.getElementById("r16Drawer"),qb=document.querySelector(".pt-qbar.r16-open"),sc=document.querySelector(".r16-scrim");
   if(!d||!qb)return;
   const r=qb.getBoundingClientRect();
-  d.style.left=r.left+"px";d.style.width=r.width+"px";d.style.bottom=Math.max(0,innerHeight-r.top-1)+"px";
-  if(sc)sc.style.height=Math.max(0,r.top)+"px";
+  const gap=8,available=Math.max(120,r.top-gap);
+  d.style.left=r.left+"px";d.style.width=r.width+"px";d.style.bottom=Math.max(0,innerHeight-r.top-gap)+"px";
+  d.style.maxHeight=Math.min(innerHeight*.7,available)+"px";
+  if(sc)sc.style.height=Math.max(0,r.top-gap)+"px";
   d.classList.add("on");
   if(!d._r16sw){d._r16sw=1;let y0=null;
     d.addEventListener("touchstart",e=>{y0=e.touches&&e.touches[0]?e.touches[0].clientY:null},{passive:true});
@@ -7189,6 +7529,20 @@ function patientCard(p, bed){
         ${activeTags.filter(t=>t.id!=="jail").length?`<div class="patient-tags">${activeTags.filter(t=>!priority.includes(t)&&t.id!=="jail").slice(0,4).map(t=>`<span class="tag tag-${t.id}">${esc(t.label)}</span>`).join('')}</div>`:""}
       </div>`;
 }
+function clearPatientListFilters(){
+  // One canonical reset for search, quick filters, section, reason and consultant filters.
+  ui.q="";
+  ui.ptag="";
+  ui.psec="";
+  ui.preason="";
+  ui.pcon="";
+  ui.pf="";
+  if(arguments[0]){go("patients");return;}
+  render();
+}
+function patientListHasFilters(){
+  return !!(String(ui.q||"").trim()||ui.ptag||ui.psec||ui.preason||ui.pcon||ui.pf);
+}
 function patientsView(){
   const q=(ui.q||"").toLowerCase();
   const tag=ui.ptag||"";
@@ -7222,11 +7576,11 @@ function patientsView(){
     ${(()=>{ // R1.5: All / Mine / Flagged / Due (+ Opinion for consultants)
       const act=r146Active().map(x=>x.p),cons=isConsultant();
       const pf=ui.pf||"",mineOn=cons?tag==="mine":pf==="mine",opOn=cons&&tag==="opinion_mine";
-      const allOn=!pf&&!mineOn&&!opOn;
+      const allOn=!patientListHasFilters();
       const n={mine:act.filter(r146IsMine).length,flagged:act.filter(r146IsFlagged).length,due:act.filter(r146IsDue).length};
       const C=(k,l,on,fn,cnt)=>`<button class="chip pf-chip${on?" on":""}" data-pf="${k}" aria-pressed="${on}" onclick="${fn}"><span>${l}</span>${cnt!=null?`<small>${cnt}</small>`:""}</button>`;
       return `<div class="pf-row${cons?" pf-cons":""}" role="group" aria-label="Filter patients">
-        ${C("all","All",allOn,"ui.pf='';if(isConsultant()&&(ui.ptag==='mine'||ui.ptag==='opinion_mine'))ui.ptag='';render()")}
+        ${C("all","All",allOn,"clearPatientListFilters()")}
         ${C("mine",cons?"Mine":"Mine",mineOn,cons?"ui.pf='';ui.ptag=ui.ptag==='mine'?'':'mine';render()":"ui.pf=ui.pf==='mine'?'':'mine';render()",n.mine)}
         ${C("flagged","Flagged",pf==="flagged","ui.pf=ui.pf==='flagged'?'':'flagged';if(isConsultant()&&(ui.ptag==='mine'||ui.ptag==='opinion_mine'))ui.ptag='';render()",n.flagged)}
         ${C("due","Due",pf==="due","ui.pf=ui.pf==='due'?'':'due';if(isConsultant()&&(ui.ptag==='mine'||ui.ptag==='opinion_mine'))ui.ptag='';render()",n.due)}
@@ -7263,18 +7617,14 @@ function snapView(){
   // "Name · Age/Sex" line keeps the patient on screen (the bed is no longer repeated there; the bar shows it).
   const nb=k=>{const id=L[k];if(!id)return "";const bb=bedObj(id);return bb&&bb.no?"Bed "+bb.no:(patient(id)||{}).status==="observation"?"Observation":"No bed"};
   const pOff=ix<=0,nOff=ix<0||ix>=L.length-1,pvL=pOff?"":nb(ix-1),nxL=nOff?"":nb(ix+1);
-  const curB=b&&b.no?String(b.no):p.status==="observation"?"Obs":"No bed",curL=b&&b.no?"Bed "+b.no:p.status==="observation"?"Observation":"No bed";
-  const curSz=curB.length<=5?"":curB.length<=8?" mid":" long";
   const head=`<div class="pt-head r16-head r162-head" data-pthead>
     <div class="pt-row1">
-      <button class="back back-btn pt-back" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
       <div class="pt-nav r16-nav r162-nav" role="group" aria-label="${ix>=0?`Patient navigation, patient ${ix+1} of ${L.length}`:"Patient navigation"}">
-        <button type="button" class="pt-prev" aria-label="${pOff?"Previous patient (this is the first bed)":"Previous patient, "+esc(pvL)}" ${pOff?'disabled aria-disabled="true"':""} onclick="r146Step(-1)"><span class="r16-arr" aria-hidden="true">‹</span><span class="r162-bl">Prev</span></button>
-        <span class="r162-ctr" data-ptcur><span class="r162-vh">Current: </span><b class="r162-cur${curSz}" title="${esc(curL)}">${esc(curB)}</b><span class="r162-vh" data-ptpos="${ix+1}/${L.length}">${ix>=0?`, patient ${ix+1} of ${L.length}`:""}</span></span>
-        <button type="button" class="pt-next" aria-label="${nOff?"Next patient (this is the last bed)":"Next patient, "+esc(nxL)}" ${nOff?'disabled aria-disabled="true"':""} onclick="r146Step(1)"><span class="r162-bl">Next</span><span class="r16-arr" aria-hidden="true">›</span></button>
+        <button type="button" class="pt-prev" aria-label="${pOff?"Previous patient (this is the first bed)":"Previous patient, "+esc(pvL)}" ${pOff?'disabled aria-disabled="true"':''} onclick="r146Step(-1)"><span class="r16-arr" aria-hidden="true">‹</span><span class="r162-bl">Prev</span></button>
+        <span class="r162-ctr" data-ptcur aria-label="Patient position"><b class="r162-cur">${ix>=0?`${ix+1} / ${L.length}`:"—"}</b></span>
+        <button type="button" class="pt-next" aria-label="${nOff?"Next patient (this is the last bed)":"Next patient, "+esc(nxL)}" ${nOff?'disabled aria-disabled="true"':''} onclick="r146Step(1)"><span class="r162-bl">Next</span><span class="r16-arr" aria-hidden="true">›</span></button>
       </div>
     </div>
-    ${tab!=="summary"?`<div class="pt-id r162-id" data-ptid><strong>${esc(p.name)}</strong><span aria-hidden="true">·</span><span>${esc(String(p.age||""))}${esc(p.sex||"")}</span></div>`:""}
     ${(()=>{const c=r146Chips(p);return c?`<div class="pt-row2"><span class="pt-chips">${c}</span></div>`:""})()}
     <div class="pt-tabs r16-tabs" role="tablist" aria-label="Patient sections"><span class="pt-tab-ind" aria-hidden="true"></span>${tabBtn("summary","Summary")}${tabBtn("meds","Meds",` <small>${nActive}</small>`)}${tabBtn("notes","Notes")}${tabBtn("mse","MSE",mseRiskActive(p.id)?'<i class="pt-dot"></i>':"")}${tabBtn("results","Results",dotRes?'<i class="pt-dot"></i>':"")}${tabBtn("scales","Scales",dotSc?'<i class="pt-dot"></i>':"")}</div>
   </div>`;
@@ -7282,9 +7632,8 @@ function snapView(){
   if(tab==="summary"){
     body=`<div class="card snap-identity">
       ${canEditPatient(p)?`<button class="pedit-btn" type="button" aria-label="Edit patient details" title="Edit patient details" onclick="openPatientEdit('${p.id}')">${PEDIT_ICON}</button>`:""}
-      <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div><span>${ectPlan(p.id)?'<span class="badge r-high">ECT</span>':""}${isDelirium(p.id)?` <span class="${rcls("high")}">delirium</span>`:""}</span></div>
-      <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}${legalBadgesHtml(p.id)}${mseRiskPill(p.id)}</h2>
-      <p class="tiny" style="margin-top:4px">${p.age}${p.sex} · ${esc(p.hospitalNo||p.code)}${mrdLabel(p)?` · <span class="mrd-chip">${esc(mrdLabel(p))}</span>`:""}</p>
+      <div class="snap-riskline snap-shell-details"><span>${p.status==="observation"?'<span class="badge r-moderate">OBS</span>':""}${ectPlan(p.id)?' <span class="badge r-high">ECT</span>':""}${isDelirium(p.id)?` <span class="${rcls("high")}">delirium</span>`:""}${legalBadgesHtml(p.id)}${mseRiskPill(p.id)}</span></div>
+      <p class="tiny snap-demographics">${p.age}${p.sex} · ${esc(p.hospitalNo||p.code)}${mrdLabel(p)?` · <span class="mrd-chip">${esc(mrdLabel(p))}</span>`:""}</p>
       ${(p.address||p.phone)?`<p class="tiny" style="margin-top:4px">${p.address?esc(p.address):""}${p.address&&p.phone?" · ":""}${p.phone?phoneLinkHtml(p.phone):""}</p>`:""}
       <div class="meta">
         <div><b>Admitted</b>${fmt(p.admittedAt)}</div>
@@ -7468,7 +7817,7 @@ function ectPageHead(listN){
   return `<div class="ect-page-head">
     <div>
       <button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-      <h2 class="page-title">ECT</h2>
+      
       <p class="tiny" style="margin:4px 0 0">${listN?listN+" planned · ":""}${esc(ectDayNames())}</p>
     </div>
     ${canWrite()?`<button type="button" class="btn ghost sm" onclick="openEctSched()">Settings</button>`:""}
@@ -10781,14 +11130,15 @@ function dmRowLine(m){return [m.dose,m.route,m.freq?freqLabel(m.freq):""].filter
 function dmSectionHtml(pid,kind){
   const d=dmState(pid,kind==="admit"?"admit":"close"), ong=dmOngoing(pid), n=dmCount(d), adm=dmIsAdmit(d);
   const lbl=dmLabel(kind);
+  const dischargeOnly=!!d.dis;
   const allOn=ong.length&&ong.every(o=>dmOn(d,o));
   const allLbl=on=>adm?(on?"Stop all":"Continue all"):(on?"Clear":"Select all");
-  const ongHtml=ong.length?`<div class="dm-head"><span>${adm?"On the chart · ticked continues":"Ongoing"}</span><button type="button" class="dm-link" id="dmAll" onclick="dmSelectAll('${pid}')">${allLbl(allOn)}</button></div>
+  const ongHtml=dischargeOnly?"":(ong.length?`<div class="dm-head"><span>${adm?"On the chart · ticked continues":"Ongoing"}</span><button type="button" class="dm-link" id="dmAll" onclick="dmSelectAll('${pid}')">${allLbl(allOn)}</button></div>
     <div class="dm-list">${ong.map(o=>{const on=dmOn(d,o);return `<div class="dm-row ${on?"on":""} ${adm&&!on?"stop":""}" data-oid="${esc(o.id)}">
       <button type="button" class="dm-tick" role="checkbox" aria-checked="${on}" onclick="dmTick('${pid}','${esc(o.id)}')"><span class="dm-box" aria-hidden="true"></span>
         <span class="dm-txt"><b>${esc(o.drug||"")}</b><span>${esc(dmRowLine(o))||"—"}${o.status==="held"?` <em class="dm-tag">Held</em>`:""}${adm?` <em class="dm-tag dm-willstop">Will be stopped</em>`:""}</span></span></button>
       ${adm?"":`<button type="button" class="dm-edit" title="Change dose / frequency" onclick="dmEditOngoing('${pid}','${esc(o.id)}')">Edit</button>`}
-    </div>`}).join("")}</div>${adm?`<p class="tiny dm-note">Ticked orders continue unchanged. Unticked ones are stopped at admission. To change a dose, use Edit on the chart after admission.</p>`:""}`:`<p class="tiny dm-none">No ongoing medication.</p>`;
+    </div>`}).join("")}</div>${adm?`<p class="tiny dm-note">Ticked orders continue unchanged. Unticked ones are stopped at admission. To change a dose, use Edit on the chart after admission.</p>`:""}`:(dischargeOnly?"":`<p class="tiny dm-none">No ongoing medication.</p>`));
   const addHtml=(d.add||[]).map((m,i)=>`<div class="dm-new">
       <div class="dm-new-top"><span class="dm-new-lbl">${m.fromOrder?"Changed":"New"}</span><button type="button" class="dm-x" aria-label="Remove medication" onclick="dmRemove(${i})">×</button></div>
       ${medInputsGridHtml({drugId:"dmdrug"+i,doseId:"dmdose"+i,routeId:"dmroute"+i,freqId:"dmfreq"+i,drugVal:m.drug||"",doseVal:m.dose||"",mode:"row",prefix:"dm",idx:i})}
@@ -11135,7 +11485,7 @@ function censusView(){
         <button class="btn block" type="button" onclick="disReviewOpen()">Review discharge certificate</button>
         <button class="btn ghost block" type="button" style="margin-top:8px" onclick="disDraftSaveNow()">Save draft</button>
       </div>`:""}
-      ${recentAll.length?`<p class="sec">Recent discharges</p>${disSearch}${disCards}`:""}`;
+      ${(!form&&recentAll.length)?`<p class="sec">Recent discharges</p>${disSearch}${disCards}`:""}`;
   }
 
   const reasons=d.reasons||[];
@@ -12394,7 +12744,6 @@ function usersView(){
       ${list.length?list.map(row).join(""):`<p class="tiny users-empty">None yet</p>`}
     </section>`;
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-    <h2 class="page-title">Users</h2>
     <p class="tiny" style="margin:0 0 10px">Residents write · consultants view · interns add reports and vitals</p>
     ${sec("Consultants",cons,"consultant","Add consultant")}
     ${sec("Residents",res,"resident","Add resident")}
@@ -12634,7 +12983,7 @@ function tasksView(){
   const done=(S.tasks||[]).filter(t=>t.status==="done").length;
   const my=(S.tasks||[]).filter(t=>String(t.to||"")===String(S.userId||"")&&t.status!=="done").length;
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-    <div class="row" style="margin-bottom:8px"><h2>Task board</h2><span class="tiny">${open} open · ${done} done</span></div>
+    <div class="row" style="margin-bottom:8px"><span class="tiny">${open} open · ${done} done</span></div>
     ${r17InternTasksHtml(r17VisibleInternTasks(), canWrite()?"status":"read")}
     <div class="task-board-summary">
       <div><b>${open}</b><span>Open</span></div>
@@ -12672,7 +13021,7 @@ function aboutView(){
         <h1 class="about-name">WARD SYNC</h1>
         <p class="about-tag">Psychiatric inpatient duty board</p>
         <div class="about-rule"></div>
-        <p class="about-kicker">Version</p>
+        <p class="about-kicker">Build</p>
         <p class="about-ver">${esc(APP_VERSION)}</p>
         <div class="about-rule"></div>
         <p class="about-kicker">Developer</p>
@@ -12829,21 +13178,17 @@ function broadcastView(){
 }
 
 function moreView(){
-  const cfg=canCfg(user().role);
-  const row=(go,icon,title,tone,danger="")=>`<button class="more-row tone-${tone}" onclick="${go}">
+  const row=(go,icon,title,tone,variant="")=>`<button class="more-row tone-${tone}${variant?" "+variant:""}" onclick="${go}">
       <span class="more-ico">${icon}</span>
-      <span class="more-label" style="${danger}">${title}</span>
+      <span class="more-label">${title}</span>
     </button>`;
-  return `<h2 class="page-title">More</h2>
-    <p class="tiny" style="margin:-4px 0 14px;opacity:.55">Build ${esc(APP_VERSION)}</p>
-    <p class="more-section">Ward</p>
+  return `<p class="more-section">Ward</p>
     <div class="more-grid">
     ${canAdmin()?row("bdftOpenSetup()",ico("bdft"),"BDFT settings","teal"):""}
-    ${canWrite()&&!canAdmin()?row("go('profile')",ico("profile"),"My profile","teal"):""}
     ${canWrite()?row("ui.ctab='in';ui.disListOnly=false;go('census')",ico("census"),"Admit / Discharge","teal"):""}
     ${canWrite()?row("go('observe')",ico("observe"),"Under observation","amber"):""}
     ${row("go('ect')",ico("ect"),"ECT","violet")}
-    ${!isIntern()?row("go('pgts')",ico("users"),"All PGTs","indigo"):""}
+    ${!isIntern()?row("go('pgts')",ico("users"),"Resident directory","indigo"):""}
     ${row("go('tasks')",ico("tasks"),"Task board","blue")}
     ${row("go('activity')",ico("activity"),"Activity log","slate")}
     ${canBroadcast()?row("go('broadcast')",ico("broadcast"),"Broadcast","cyan"):""}
@@ -12852,20 +13197,23 @@ function moreView(){
     ${canAdmin()?`<p class="more-section">Administration</p>
     <div class="more-grid">
     ${row("go('ward')",ico("setup"),"Ward setup","amber")}
-    ${row("go('users')",ico("users"),"Users","indigo")}
+    ${row("go('users')",ico("users"),"User management","indigo")}
     </div>`:""}
-    ${(canAdmin()||isConsultant())?`<div class="card" style="padding:14px;margin:10px 0 4px">
-      <label class="field" style="margin:0"><span>Report month</span><input type="month" id="rmon" value="${esc(ui.reportMonth||new Date().toISOString().slice(0,7))}" oninput="ui.reportMonth=this.value"/></label>
-      <button class="btn block" style="margin-top:10px" onclick="exportMonthly()">Export monthly report</button>
-    </div>`:""}
+    ${(canAdmin()||isConsultant())?`<section class="more-report-card">
+      <label class="field more-report-field"><span>Report month</span><input type="month" id="rmon" value="${esc(ui.reportMonth||new Date().toISOString().slice(0,7))}" oninput="ui.reportMonth=this.value"/></label>
+      <button class="btn block more-report-action" onclick="exportMonthly()">Export monthly report</button>
+    </section>`:""}
+    <p class="more-section">Account</p>
+    <div class="more-grid">
+    ${row("go('profile')",ico("profile"),"My profile","green")}
+    </div>
     <p class="more-section">System</p>
     <div class="more-grid">
-    ${row("ui.setupTab='theme';go('setup')",ico("theme"),"Theme","slate")}
+    ${row("ui.setupTab='theme';go('setup')",ico("theme"),"Appearance","slate")}
     ${row("ui.setupTab='notify';go('setup')",ico("notify"),"Notifications","sky")}
-    ${canAdmin()?row("go('profile')",ico("profile"),"My profile","green"):""}
     ${row("go('connection')",ico("cloud"),"Connection","teal")}
     ${row("go('about')",ico("about"),"About","cyan")}
-    ${row("askLogout()",ico("logout"),"Log out","rose","color:#e11d48")}
+    ${row("askLogout()",ico("logout"),"Log out","rose","danger")}
     </div>`;
 }
 function dmy(v){
@@ -13212,14 +13560,26 @@ function notifyActorName(n){
   const r=(S.residents||[]).find(x=>x.id===id);
   return r&& (r.displayName||r.name||r.display_name) || "";
 }
+function notifyIconKey(n){
+  const k=String(n&& (n.event_type||n.category)||"").toLowerCase();
+  if(k==="critical_status_update"||k==="restrain")return "critical";
+  if(k==="broadcast")return "broadcast";
+  if(k==="ect")return "ect";
+  if(k==="handover")return "handover";
+  if(k==="task")return "task";
+  if(k==="advice")return "advice";
+  return "about";
+}
 function notifyCardHtml(n){
-  const by=notifyActorName(n);
-  return `<button type="button" class="notify-item tone-${notifyTone(n)}" onclick="openNotification('${esc(n.id)}')">
-      <div class="notify-head">
-        <p class="notify-when">${esc(n.created_at?stamp(n.created_at):"—")}</p>
-        <p class="notify-title">${esc(notifyDisplayTitle(n))}${by?` <span class="notify-by">— By ${esc(by)}</span>`:""}</p>
-      </div>
-      <p class="notify-body">${esc(n.body||"")}</p>
+  const by=notifyActorName(n),tone=notifyTone(n),critical=tone==="rose",unread=!n.read_at;
+  return `<button type="button" class="notify-item tone-${tone}${critical?" is-critical":""}${unread?" is-unread":""}" onclick="openNotification('${esc(n.id)}')">
+      <span class="notify-rail" aria-hidden="true"></span>
+      <span class="notify-icon">${ico(notifyIconKey(n))}</span>
+      <span class="notify-copy">
+        <span class="notify-meta"><span class="notify-when">${esc(n.created_at?stamp(n.created_at):"—")}</span>${unread?'<span class="notify-unread">Unread</span>':""}</span>
+        <span class="notify-title">${esc(notifyDisplayTitle(n))}${by?` <span class="notify-by">— By ${esc(by)}</span>`:""}</span>
+        ${n.body?`<span class="notify-body">${esc(n.body)}</span>`:""}
+      </span>
     </button>`;
 }
 const NOTIF_NAV_KEY="ws_notif_nav";
@@ -13338,7 +13698,6 @@ function setupView(){
            ${older.length?`<button type="button" class="btn ghost block" style="margin-top:10px" onclick="ui.notifyOlder=!ui.notifyOlder;render()">${ui.notifyOlder?"Hide earlier":"Earlier · "+older.length}</button>`:""}
            ${ui.notifyOlder?older.map(notifyCardHtml).join(""):""}`;
     return `${back}
-      <h2 class="page-title">Notifications</h2>
       <div class="card notify-card">
         <div class="row"><p class="tiny">INBOX</p><div class="notify-tools"><button class="btn ghost sm" onclick="loadNotificationInbox()">Refresh</button><button class="btn ghost sm" onclick="ui.notifySet=true;render()">Settings</button></div></div>
         <div style="margin-top:10px">${inboxHtml}</div>
@@ -13346,7 +13705,7 @@ function setupView(){
       </div>`;
   }
   if(tab==="theme"){
-    return `${back}<h2 class="page-title">Theme</h2>
+    return `${back}
       <div class="card">
         <p class="tiny">APPEARANCE</p>
         <div class="btns" style="grid-template-columns:1fr 1fr">
@@ -13394,7 +13753,7 @@ function connectionView(){
       <div class="queue-explain">Recorded: ${esc(wf.at?new Date(wf.at).toLocaleString():"—")}</div>
     </div>`:"";
   const deep=!!ui.setupDeep;
-  return `${back}<h2 class="page-title">Connection</h2>`+cloudCard()+wfCard+`
+  return `${back}`+cloudCard()+wfCard+`
     <div class="card">
       <div class="row"><div><p class="tiny">QUEUE</p></div><span class="badge ${c.failed?"r-critical":c.retrying?"r-moderate":"r-low"}">${c.failed?c.failed+" failed":c.retrying?c.retrying+" retrying":c.pending+" pending"}</span></div>
       ${outboxDetailsHtml()}
@@ -13445,7 +13804,7 @@ function wardHubPage(){
       <span class="setup-k">${k}</span><b>${esc(t)}</b><span class="tiny">${esc(m)}</span>
     </button>`;
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-    <div class="row" style="margin-bottom:10px"><h2 class="page-title" style="margin:0">Ward setup</h2><span class="tiny">${nBeds} beds</span></div>
+    <div class="row" style="margin-bottom:10px"><span class="tiny">${nBeds} active beds</span></div>
     <div class="setup-hub">
       ${tile("unit","01","Unit",S.unit.name||"Name the ward")}
       ${tile("sections","02","Sections",S.sections.length+" named")}
@@ -13712,21 +14071,23 @@ function pickGridCols(rows){
 }
 function freqPickHtml(p){
   const d=p.draft||freqParts(p.cur||"");
-  const regBtn=([v,lb])=>`<button type="button" class="pick-opt ${d.reg===v?"on":""}" data-freq-reg="${esc(v)}" onclick="freqPickTap('reg','${esc(String(v).replace(/'/g,"\\'"))}')">${esc(lb)}</button>`;
-  const addOn=([v,lb])=>`<button type="button" class="pick-opt ${d[v.toLowerCase()]?"on":""}" data-freq-add="${esc(v)}" onclick="freqPickTap('add','${v}')">${esc(lb)}</button>`;
+  const regBtn=([v,lb])=>`<button type="button" class="pick-opt freq-choice ${d.reg===v?"on":""}" data-freq-reg="${esc(v)}" onclick="freqPickTap('reg','${esc(String(v).replace(/'/g,"\\'"))}')">${esc(lb)}${d.reg===v?'<span class="freq-check">✓</span>':''}</button>`;
+  const addOn=([v,lb])=>`<button type="button" class="freq-addon ${d[v.toLowerCase()]?"on":""}" data-freq-add="${esc(v)}" onclick="freqPickTap('add','${v}')">${esc(lb)}${d[v.toLowerCase()]?'<span>✓</span>':''}</button>`;
   const extra=d.reg&&!MED_FREQ_REGULAR.some(x=>x[0]===d.reg)?[[d.reg,d.reg]]:[];
-  const st=freqPickState(d);
-  const cn=String(d.custom||"").length;
-  return `<p class="pick-sub">Regular</p>
-    <div class="pick-grid g4">${extra.concat(MED_FREQ_REGULAR).map(regBtn).join("")}<button type="button" class="pick-opt ${d.cust?"on":""}" data-freq-custom-btn aria-expanded="${!!d.cust}" onclick="freqPickTap('custom','')">Custom</button></div>
+  const common=MED_FREQ_REGULAR.filter(x=>["OD","BD","TDS","QID"].includes(x[0]));
+  const other=MED_FREQ_REGULAR.filter(x=>!["OD","BD","TDS","QID"].includes(x[0]));
+  const st=freqPickState(d), cn=String(d.custom||"").length;
+  return `<div class="freq-section"><div class="freq-section-head"><b>Regular schedule</b><span>Choose one</span></div>
+    <div class="pick-grid g4 freq-common">${extra.concat(common).map(regBtn).join("")}</div>
+    <div class="pick-grid g3 freq-other">${other.map(regBtn).join("")}</div>
+    <button type="button" class="freq-custom-toggle ${d.cust?"on":""}" data-freq-custom-btn aria-expanded="${!!d.cust}" onclick="freqPickTap('custom','')"><span><b>Custom frequency / taper</b><small>Enter a stepwise or non-standard schedule</small></span><span class="freq-custom-arrow">${d.cust?"−":"+"}</span></button>
     <div class="freq-cust" id="freqCust"${d.cust?"":" hidden"}>
-      <label class="freq-cust-l" for="freqCustTxt">Custom schedule <span class="freq-cnt" id="freqCnt">${cn}/${MED_FREQ_CUSTOM_MAX}</span></label>
-      <textarea id="freqCustTxt" rows="3" maxlength="${MED_FREQ_CUSTOM_MAX}" autocomplete="off" spellcheck="true" enterkeyhint="done" placeholder="e.g. 1-0-1 x3 days, then 0-0-1 x3 days, then stop" oninput="freqCustInput(this)">${esc(d.custom||"")}</textarea>
+      <label class="freq-cust-l" for="freqCustTxt">Manual instructions <span class="freq-cnt" id="freqCnt">${cn}/${MED_FREQ_CUSTOM_MAX}</span></label>
+      <textarea id="freqCustTxt" rows="3" maxlength="${MED_FREQ_CUSTOM_MAX}" autocomplete="off" spellcheck="true" enterkeyhint="done" placeholder="e.g. 1-0-1 for 3 days, then 0-0-1 for 3 days, then stop" oninput="freqCustInput(this)">${esc(d.custom||"")}</textarea>
       <div class="freq-chips" role="group" aria-label="Quick insert">${MED_FREQ_CUSTOM_CHIPS.map(([lb],i)=>`<button type="button" class="freq-chip" onclick="freqCustChip(${i})">${esc(lb)}</button>`).join("")}</div>
-    </div>
-    <p class="pick-sub">Add-on (optional, can be used alone)</p>
-    <div class="pick-grid g3">${MED_FREQ_ADDONS.map(addOn).join("")}</div>
-    <div class="pick-foot"><span class="pick-prev" id="freqPrev">${esc(st.prevTxt)}</span><button type="button" class="btn" id="freqDone" ${st.ok?"":"disabled"} onclick="freqPickDone()">Done</button></div>`;
+    </div></div>
+    <div class="freq-section freq-addon-section"><div class="freq-section-head"><b>Additional instructions</b><span>Optional</span></div><div class="freq-addon-grid">${MED_FREQ_ADDONS.map(addOn).join("")}</div><p class="freq-hint">SOS, PRN or STAT can be selected alone or added to a regular schedule.</p></div>
+    <div class="pick-foot freq-footer"><div class="freq-summary"><small>Selected frequency</small><strong id="freqPrev">${esc(st.prevTxt)}</strong></div><button type="button" class="btn" id="freqDone" ${st.ok?"":"disabled"} onclick="freqPickDone()">Done</button></div>`;
 }
 // R1.3.144: summary line + Done state. Custom ticked but empty never saves (and never silently falls back to OD).
 function freqPickState(d){
@@ -13765,10 +14126,10 @@ function freqPickTap(kind,v){
   else{const k=v.toLowerCase();d[k]=!d[k];if(k==="sos"&&d.sos)d.prn=false;if(k==="prn"&&d.prn)d.sos=false}
   const box=document.querySelector(".pick-layer .box");
   if(!box){render();return}
-  box.querySelectorAll("[data-freq-reg]").forEach(b=>b.classList.toggle("on",b.getAttribute("data-freq-reg")===d.reg));
-  box.querySelectorAll("[data-freq-add]").forEach(b=>b.classList.toggle("on",!!d[b.getAttribute("data-freq-add").toLowerCase()]));
+  box.querySelectorAll("[data-freq-reg]").forEach(b=>{const on=b.getAttribute("data-freq-reg")===d.reg;b.classList.toggle("on",on);const mark=b.querySelector(".freq-check");if(on&&!mark)b.insertAdjacentHTML("beforeend",'<span class="freq-check">✓</span>');else if(!on&&mark)mark.remove()});
+  box.querySelectorAll("[data-freq-add]").forEach(b=>{const on=!!d[b.getAttribute("data-freq-add").toLowerCase()];b.classList.toggle("on",on);let mark=b.querySelector("span");if(on&&!mark)b.insertAdjacentHTML("beforeend",'<span>✓</span>');else if(!on&&mark)mark.remove()});
   const cb=box.querySelector("[data-freq-custom-btn]"), cw=document.getElementById("freqCust");
-  if(cb){cb.classList.toggle("on",!!d.cust);cb.setAttribute("aria-expanded",String(!!d.cust))}
+  if(cb){cb.classList.toggle("on",!!d.cust);cb.setAttribute("aria-expanded",String(!!d.cust));const ar=cb.querySelector(".freq-custom-arrow");if(ar)ar.textContent=d.cust?"−":"+"}
   if(cw){cw.hidden=!d.cust;if(kind==="custom"&&d.cust){const ta=document.getElementById("freqCustTxt");if(ta){if(ta.value!==String(d.custom||""))ta.value=String(d.custom||"");try{ta.focus({preventScroll:true});ta.scrollIntoView({block:"nearest"})}catch(e){}}}}
   freqPickSync();
 }
@@ -17741,15 +18102,20 @@ function patientFilterRows(){
 
 /* R1.3.69 filter pill (residents) */
 function patientFilterPill(){
-  const T={ect:"ECT",restrain:"Restrained",delirium:"Delirium",high:"Delirium",suicidal:"Suicidal",jail:"Jail",today:"Admitted today",mine:"My patients"};
+  const T={ect:"ECT",restrain:"Restrained",delirium:"Delirium",high:"Delirium",suicidal:"Suicidal",jail:"Jail",today:"Admitted today",mine:"My patients",opinion_mine:"My opinion patients"};
   const bits=[];
-  if(ui.psec){const sec=(S.sections||[]).find(s=>s.id===ui.psec); bits.push(sec?sectionLabel(sec.name):"Section")}
-  if(ui.ptag && !(isConsultant()&&(ui.ptag==="mine"||ui.ptag==="opinion_mine"))) bits.push(T[ui.ptag]||ui.ptag);
+  if(String(ui.q||"").trim()) bits.push("Search: "+String(ui.q).trim());
+  if(ui.psec){const sec=(S.sections||[]).find(s=>s.id===ui.psec);bits.push(sec?sectionLabel(sec.name):"Section")}
+  if(ui.ptag){
+    if(isConsultant()&&ui.ptag==="mine") bits.push("My patients");
+    else if(isConsultant()&&ui.ptag==="opinion_mine") bits.push("My opinion patients");
+    else bits.push(T[ui.ptag]||ui.ptag);
+  }
   if(ui.preason) bits.push(ui.preason==="other"?"Other reason":(labelOf(ADMIT_REASONS,ui.preason)||ui.preason));
-  if(ui.pcon){const f=facultyById(ui.pcon); bits.push(f?f.name:"Consultant")}
+  if(ui.pcon){const f=facultyById(ui.pcon);bits.push(f?f.name:"Consultant")}
   if(ui.pf) bits.push({mine:"Mine",flagged:"Flagged",due:"Due"}[ui.pf]||ui.pf);
   if(!bits.length) return "";
-  return `<div class="filter-pill-row" role="status"><button type="button" class="filter-pill" onclick="ui.psec='';ui.ptag='';ui.preason='';ui.pcon='';ui.pf='';render()" aria-label="Clear filter: ${esc(bits.join(", "))}"><span>Filtered: ${esc(bits.join(" · "))}</span><span class="filter-pill-x" aria-hidden="true">✕</span></button></div>`;
+  return `<div class="filter-pill-row" role="status"><button type="button" class="filter-pill" onclick="clearPatientListFilters()" aria-label="Clear filters: ${esc(bits.join(", "))}"><span>Filtered: ${esc(bits.join(" · "))}</span><span class="filter-pill-x" aria-hidden="true">✕</span></button></div>`;
 }
 function criticalStatusForm(pid,prefill){ // R1.3.128: optional prefill (critical lab values)
   const p=patient(pid); if(!p)return; const b=bedObj(pid);
@@ -18854,13 +19220,11 @@ function internSnapView(){
   const p=patient(route.id);
   if(!p||p.status==="discharged")return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="card"><p class="sm">This patient is not on the ward.</p></div>`;
   const b=bedObj(p.id);const dr=labLsGet(labDraftKey(p.id,null));const hasDr=dr&&dr.f&&Array.isArray(dr.f.rows)&&dr.f.rows.some(r=>String(r.raw||"").trim());
-  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-    ${syncIssuesHtml(p.id)}
+  return `${syncIssuesHtml(p.id)}
     <div class="snap-cols">
     <div class="card snap-identity">
-      <div class="snap-riskline"><div class="bedno">${esc(b?b.no:"—")}</div></div>
-      <h2>${esc(p.name)}${p.status==="observation"?" <span class=\"badge r-moderate\">OBS</span>":""}</h2>
-      <p class="tiny" style="margin-top:4px">${esc(String(p.age||""))}${esc(p.sex||"")} · ${esc(p.hospitalNo||p.code||"")}${mrdLabel(p)?` · <span class="mrd-chip">${esc(mrdLabel(p))}</span>`:""}</p>
+      <div class="snap-riskline snap-shell-details"><span>${p.status==="observation"?'<span class="badge r-moderate">OBS</span>':""}${ectPlan(p.id)?' <span class="badge r-high">ECT</span>':""}${isDelirium(p.id)?` <span class="${rcls("high")}">delirium</span>`:""}${legalBadgesHtml(p.id)}${mseRiskPill(p.id)}</span></div>
+      <p class="tiny snap-demographics">${esc(String(p.age||""))}${esc(p.sex||"")} · ${esc(p.hospitalNo||p.code||"")}${mrdLabel(p)?` · <span class="mrd-chip">${esc(mrdLabel(p))}</span>`:""}</p>
       <div class="meta">
         <div><b>Admitted</b>${fmt(p.admittedAt)}</div>
         <div><b>Ward days</b>${Math.max(1,Math.round((Date.now()-new Date(p.admittedAt))/86400000))}</div>
@@ -18887,9 +19251,14 @@ function internLabsHtml(pid){
       <p class="tiny">${esc(stamp(r.at))} IST · ${op?syncChip("lab_reports",r.id,true):'<span class="lab-chip ok">Saved ✓</span>'}</p></div>`}).join("")}</div>`;
 }
 function internShell(inner){
-  const u=user()||{};
-  return `<header class="top intern-top"><div style="min-width:0"><p class="kicker">Intern · ${esc(u.displayName||u.username||"")}</p><h1 style="margin:0">${esc((S.unit&&S.unit.name)||"Ward")}</h1></div>
-    <div class="who-tools"><span class="tiny intern-st">${esc(statusLabel())}</span><button type="button" class="btn ghost sm" onclick="askLogout()">Log out</button></div></header>
+  const u=user()||{},isHome=route.page==="home",p=route.page==="snap"?patient(route.id):null,b=p?bedObj(p.id):null;
+  const title=route.page==="ivitals"?"Vitals":route.page==="ireports"?"Reports":route.page==="ireport"?"Lab report":route.page==="snap"?"Patient record":"Ward";
+  const sync=`<span class="ws-sync-mini ${statusClass()}" title="${esc(statusLabel())}">${statusDot()}<span>${esc(statusLabel()==="Live"?"Synced":statusLabel())}</span></span>`;
+  const homeLeft=`<div class="home-id">${photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")}<div class="home-greet"><b>${esc(greet())}, ${esc(u.displayName||u.username||"User")}</b>${homeSyncSlot()}</div></div>`;
+  const patientLeft=p?`<div class="patient-shell-left"><button class="patient-shell-back" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="patient-shell-meta"><div class="patient-shell-primary"><span class="patient-shell-bed">${esc(b&&b.no?b.no:(p.status==="observation"?"OBS":"NO BED"))}</span><strong>${esc(p.name||"Patient")}</strong></div><div class="patient-shell-sync">${sync}</div></div></div>`:"";
+  const left=isHome?homeLeft:p?patientLeft:`<div class="compact-context"><span class="compact-kicker">INTERN WORKSPACE</span><strong>${esc(title)}</strong></div>`;
+  const right=isHome?`<div class="who-tools home-tools"><button type="button" class="btn ghost sm" onclick="askLogout()">Log out</button></div>`:`<div class="who-tools compact-tools">${p?"":sync}<button type="button" class="btn ghost sm" onclick="askLogout()">Log out</button></div>`;
+  return `<header class="top ${isHome?"resident-home intern-home-top":p?"patient-top intern-patient-top":"compact-top intern-compact-top"}">${left}${right}</header>
     <main class="main intern-main">${inner}</main>${route.page==="ivitals"?ivBarHtml():""}${internNavHtml()}${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(confirmOverlay()||""))}${busyVeil()}`;
 }
 
@@ -19307,11 +19676,11 @@ function internSortedList(q){
 }
 function internNavHtml(){
   const t=nav.tab==="ivitals"||nav.tab==="ireports"?nav.tab:"home";const n=ivDueCount();
-  const b=(tab,ic,l,extra)=>`<button type="button" class="${t===tab?"on":""}" ${t===tab?'aria-current="page"':""} onclick="go('${tab}')"><span class="ico">${ic}</span><span class="lbl">${l}</span>${extra||""}</button>`;
+  const b=(tab,ic,l,extra)=>`<button type="button" class="${t===tab?"on":""}" ${t===tab?'aria-current="page"':""} onclick="go('${tab}')">${ic}<span class="lbl">${l}</span>${extra||""}</button>`;
   return `<nav class="nav intern-nav" aria-label="Intern"><div class="nav-in">${b("home",ico("home"),"Home")}${b("ivitals",IV_ICO_V,"Vitals",n?`<span class="iv-badge" aria-label="${n} pending">${n>99?"99+":n}</span>`:"")}${b("ireports",IV_ICO_R,"Reports")}</div></nav>`;
 }
-const IV_ICO_V='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>';
-const IV_ICO_R='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="2.2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>';
+const IV_ICO_V=ico("vitals");
+const IV_ICO_R=ico("reports");
 
 /* ---- Delete / restore a saved MSE or lab report ---- */
 let RDEL=null,__undoT=null;
@@ -20644,6 +21013,12 @@ async function bdftLoadFromSupabase(quiet){
 
       if(data.current && Array.isArray(data.current.rows) && data.current.rows.length > 0){
         const cur = data.current;
+        AppState.bdftEditMeta = {
+          id: cur.id,
+          version: Number(cur.version) || 1,
+          createdBy: cur.createdBy || cur.created_by || cur.makerId || cur.maker_id || null,
+          rows: (cur.rows || []).map(r => Object.assign({}, r))
+        };
         const curDate = cur.planDate ? dmyShow(cur.planDate) : "Tomorrow";
         const tiers = { "3rd Year": {}, "2nd Year": {}, "1st Year": {} };
         const orphans = [];
@@ -20851,6 +21226,7 @@ function bdftCloseAdminSheet(){
 function bdftOpenGenerate(){
   bdftInit();
   if(sb && sessionTok) Promise.resolve(bdftLoadFromSupabase(true)).catch(()=>{});
+  ui.bdftEditMode=false;
   ui.bdftMode="generate";
   const live=occupied().map(b=>b.no);
   AppState.selectedOccupiedBeds=live.slice();
@@ -20860,6 +21236,7 @@ function bdftOpenGenerate(){
 function bdftOpenSetup(){
   bdftInit();
   if(sb && sessionTok) Promise.resolve(bdftLoadFromSupabase(true)).catch(()=>{});
+  ui.bdftEditMode=false;
   ui.bdftMode="setup";
   go("bdft");
 }
@@ -21053,6 +21430,69 @@ function bdftMount(){
 }
 
 // ==================== BDFT READ-ONLY VIEW ====================
+function bdftCanEditCurrent(){
+  const st=ui.bdftState||{},cur=st.current||{},meta=AppState.bdftEditMeta||{};
+  const me=(st.me&&st.me.id)||S.userId;
+  const maker=meta.createdBy;
+  return !!(canWrite()&&me&&maker&&String(me)===String(maker)&&meta.id&&String(cur.id)===String(meta.id)&&cur.status==="current"&&Array.isArray(meta.rows)&&meta.rows.length);
+}
+async function bdftStartCurrentEdit(){
+  if(!(sb&&sessionTok)){toast("Sign in to edit the current BDFT.","bad");return}
+  const loaded=await bdftLoadFromSupabase(true);
+  if(!loaded||!loaded.ok||!bdftCanEditCurrent()){toast("Only the maker can edit the current BDFT. Reload the board.","bad");return}
+  if(!AppState.distribution||!AppState.distribution.tiers){toast("Current distribution could not be loaded.","bad");return}
+  ui.bdftEditMode=true;ui.bdftMode="generate";go("bdft");
+}
+function bdftCancelCurrentEdit(){
+  ui.bdftEditMode=false;ui.bdftMode="readonly";
+  bdftLoadFromSupabase(true).finally(()=>render({force:true,forceLeave:true}));
+}
+async function bdftSaveCurrentEdits(){
+  if(!ui.bdftEditMode||!AppState.distribution||!AppState.bdftEditMeta)return;
+  if(!(sb&&sessionTok)){toast("Sign in again before saving BDFT changes.","bad");return}
+  const meta=AppState.bdftEditMeta,dist=AppState.distribution,byBed=new Map();
+  for(const docs of Object.values(dist.tiers||{})) for(const [name,beds] of Object.entries(docs||{})){
+    const resident=bdftFindResident(S.residents||[],name);
+    if(!resident||!resident.id){toast("Resident mapping is missing for "+name+". No changes were sent.","bad");return}
+    (beds||[]).forEach(b=>byBed.set(bdftCanonBed(b.code),String(resident.id)));
+  }
+  (dist.orphans||[]).forEach(b=>byBed.set(bdftCanonBed(b.code),null));
+  const rows=(meta.rows||[]).filter(r=>r&&r.occupied);
+  if(!rows.length){toast("Current BDFT rows are unavailable for editing.","bad");return}
+  setBusy(true,"Saving BDFT changes…");
+  let version=Number(meta.version)||1,saved=0;
+  try{
+    for(const row of rows){
+      const key=bdftCanonBed(row.label||row.bedLabel||row.bed_id||row.bedId);
+      if(!byBed.has(key))continue;
+      const target=byBed.get(key),current=row.holderId==null?"":String(row.holderId);
+      if((target==null?"":String(target))===current)continue;
+      const bedId=String(row.bedId||row.bed_id||"");
+      if(!bedId)throw new Error("Missing database bed id for "+(row.label||key));
+      let result=await sb.rpc("ward_bdft_move",{p_token:sessionTok,p_version:version,p_bed:bedId,p_to:target,p_allow_adjacent:false});
+      if(result.error)throw result.error;
+      if(result.data&&result.data.code==="adjacent"){
+        if(!window.confirm("This move gives the resident adjacent-numbered beds. Save this move anyway?"))throw new Error("Save cancelled at adjacent-bed check.");
+        result=await sb.rpc("ward_bdft_move",{p_token:sessionTok,p_version:version,p_bed:bedId,p_to:target,p_allow_adjacent:true});
+        if(result.error)throw result.error;
+      }
+      if(result.data&&result.data.ok===false)throw new Error(result.data.message||"The server rejected a BDFT move.");
+      saved++;
+      version=Number(result.data&&result.data.state&&result.data.state.current&&result.data.state.current.version)||version+1;
+    }
+    const fresh=await bdftLoadFromSupabase(true);
+    if(!fresh||!fresh.ok)throw new Error("Changes were sent, but the latest board could not be reloaded.");
+    ui.bdftEditMode=false;ui.bdftMode="readonly";
+    toast(saved?"BDFT changes saved. No new notification was sent.":"No changes to save.","ok");
+    render({force:true,forceLeave:true});
+  }catch(e){
+    try{await bdftLoadFromSupabase(true)}catch(_){}
+    ui.bdftEditMode=false;ui.bdftMode="readonly";
+    toast((saved?"Some changes were saved; the latest board was reloaded. ":"No changes were saved. ")+(e.message||String(e)),"bad");
+    render({force:true,forceLeave:true});
+  }finally{setBusy(false)}
+}
+
 function bdftMountReadOnly(root){
   const dist=bdftGetActiveDistribution();
   if(!dist||!dist.tiers){
@@ -21065,10 +21505,13 @@ function bdftMountReadOnly(root){
   const dateStr=dist.dateStr||"Tomorrow";
 
   let html=`<div class="card read-only-board" id="distribution-card" style="padding:24px 18px;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.5px;margin:0 0 4px;">BDFT — ${esc(dateStr)}</h2>
-      <div class="tiny muted">Department of Psychiatry, AMCH</div>
-      ${bdftBedLegend()}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:24px;">
+      <div style="text-align:center;flex:1;min-width:0;">
+        <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.5px;margin:0 0 4px;">BDFT — ${esc(dateStr)}</h2>
+        <div class="tiny muted">Department of Psychiatry, AMCH</div>
+        ${bdftBedLegend()}
+      </div>
+      ${bdftCanEditCurrent()?'<button type="button" class="btn sm" onclick="bdftStartCurrentEdit()">Edit</button>':""}
     </div>
     <div class="distribution-grid">`;
 
@@ -21114,39 +21557,31 @@ function bdftMountReadOnly(root){
 // ==================== BDFT GENERATION VIEW ====================
 function bdftMountGenerate(root){
   ensureConfiguration();
+  const editing=!!ui.bdftEditMode;
   const tomorrow=new Date(); tomorrow.setDate(tomorrow.getDate()+1);
-  const dateStr=tomorrow.toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"});
   const unavailCount=AppState.selectedUnavailable.length;
   const onDutyCount=allResidents.length-unavailCount;
-
-  let html=`<div class="bdft-stats-grid">
+  let html=editing?`<div class="card" style="margin-bottom:12px;">
+    <b>Edit published BDFT</b>
+    <p class="tiny muted" style="margin-top:4px;">Move beds between residents or to the orphan pool. Saving updates the current board without archiving it or sending a new notification.</p>
+  </div>`:`<div class="bdft-stats-grid">
     <div class="bdft-stat-card"><span class="bdft-stat-lbl">Date</span><span class="bdft-stat-val" style="font-size:15px;">${esc(tomorrow.toLocaleDateString("en-GB",{day:"numeric",month:"short"}))}</span></div>
     <div class="bdft-stat-card"><span class="bdft-stat-lbl">On Duty</span><span class="bdft-stat-val">${onDutyCount}</span></div>
     <div class="bdft-stat-card"><span class="bdft-stat-lbl">Unavailable</span><span class="bdft-stat-val">${unavailCount}</span></div>
     <div class="bdft-stat-card"><span class="bdft-stat-lbl">Assigned</span><span class="bdft-stat-val">${AppState.bedsAssigned||"-"}</span></div>
   </div>
   <div class="bdft-qa-grid">
-    <button type="button" class="bdft-qa-btn" onclick="bdftOpenOccupiedModal()">
-      <svg class="icon" viewBox="0 0 24 24" style="width:22px;height:22px;stroke:var(--teal);fill:none;stroke-width:2;"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>
-      <span>Adjust Occupied (${AppState.selectedOccupiedBeds.length})</span>
-    </button>
-    <button type="button" class="bdft-qa-btn" onclick="bdftOpenUnavailableModal()">
-      <svg class="icon" viewBox="0 0 24 24" style="width:22px;height:22px;stroke:var(--teal);fill:none;stroke-width:2;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-      <span>Unavailable (${unavailCount})</span>
-    </button>
-    <button type="button" class="bdft-qa-btn bdft-qa-primary" onclick="bdftCalculateDistribution()">
-      <span>⚡ Generate for Tomorrow</span>
-    </button>
-  </div>
-  <div id="bdft-distribution-output"></div>
-  <div id="bdft-bottom-bar" class="bottom-action-bar ${AppState.distribution?'':'hidden'}">
-    <button class="btn btn-primary" type="button" onclick="bdftFinaliseAndSave()">
-      ✓ Finalise & Save
-    </button>
+    <button type="button" class="bdft-qa-btn" onclick="bdftOpenOccupiedModal()"><span>Adjust Occupied (${AppState.selectedOccupiedBeds.length})</span></button>
+    <button type="button" class="bdft-qa-btn" onclick="bdftOpenUnavailableModal()"><span>Unavailable (${unavailCount})</span></button>
+    <button type="button" class="bdft-qa-btn bdft-qa-primary" onclick="bdftCalculateDistribution()"><span>⚡ Generate for Tomorrow</span></button>
   </div>`;
-
+  html+=`<div id="bdft-distribution-output"></div>
+  <div id="bdft-bottom-bar" class="bottom-action-bar ${AppState.distribution?'':'hidden'}">
+    <button class="btn btn-primary" type="button" onclick="${editing?'bdftSaveCurrentEdits()':'bdftFinaliseAndSave()'}">${editing?'Save changes':'✓ Finalise & Save'}</button>
+    ${editing?'<button class="btn ghost" type="button" style="margin-top:8px" onclick="bdftCancelCurrentEdit()">Cancel</button>':""}
+  </div>`;
   root.innerHTML=html;
-  if(AppState.distribution) bdftRenderInteractiveDistribution();
+  if(AppState.distribution)bdftRenderInteractiveDistribution();
 }
 
 function bdftBedKind(b, holderShort, holderName){
@@ -22259,6 +22694,10 @@ function render(opts){
   }
   const main2=document.querySelector(".main");
   if(main2){
+    if(route.page==="patients"||route.page==="snap"){
+      main2.scrollLeft=0;
+      try{document.documentElement.scrollLeft=0;document.body.scrollLeft=0}catch(e){}
+    }
     if(opts.nav){
       if(navDir==="back"){
         const saved=navScroll[routeKey(route.page,route.id)]||0;
@@ -22383,3 +22822,4 @@ if("serviceWorker" in navigator && location.protocol !== "file:"){
 </script>
 </body>
 </html>
+
