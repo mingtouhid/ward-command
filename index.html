@@ -1934,6 +1934,17 @@ html[data-theme="light"] .about-card .about-tag,html[data-theme="light"] .about-
 .area-opt:active{transform:scale(.97);border-color:var(--teal)}
 .area-opt.cur,.area-opt:disabled{opacity:.55}
 .duty-grp{margin-top:10px}
+/* R2.0.11 — compact OPD/IPD groups in the resident on-duty board. */
+.duty-board-group{margin-top:9px}
+.duty-board-group+.duty-board-group{padding-top:9px;border-top:1px solid var(--line)}
+.duty-board-grid{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px;row-gap:7px;margin-top:7px}
+.duty-board-grid .duty-person-row{flex-direction:row;justify-content:flex-start;align-items:center;gap:8px;min-width:0}
+.duty-board-grid .duty-person-row .pgt-photo{width:32px;height:32px;flex:none;font-size:12px}
+.duty-board-grid .duty-person-row .r2-who{display:flex;flex-direction:column;min-width:0;gap:1px}
+.duty-board-grid .duty-person-row .r2-name{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.duty-board-grid .duty-person-row .pgt-role{font-size:10px;color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:360px){.duty-board-grid{grid-template-columns:1fr}}
+
 .duty-grp+.duty-grp{padding-top:10px;border-top:1px solid var(--line)}
 .duty-grp-h{display:flex;align-items:center;justify-content:space-between;margin:0}
 .duty-badge{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px}
@@ -3652,6 +3663,80 @@ html,body{overflow-x:hidden!important;}
   clip:auto!important;
   white-space:nowrap!important;
   font-size:11px!important;
+}
+
+
+
+/* R2.0.14 — compact quick-action tab attached to the existing bottom navbar.
+   Navbar styles are intentionally untouched. */
+.app>.pt-qbar{
+  position:fixed!important;
+  box-sizing:border-box!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:calc(72px + env(safe-area-inset-bottom,0px))!important;
+  transform:translateX(-50%)!important;
+  width:min(304px,calc(100vw - 104px))!important;
+  max-width:min(304px,calc(100vw - 104px))!important;
+  min-height:0!important;
+  height:auto!important;
+  margin:0!important;
+  padding:3px 6px 2px!important;
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:2px!important;
+  border:1px solid var(--line)!important;
+  border-bottom:0!important;
+  border-radius:13px 13px 0 0!important;
+  background:var(--nav)!important;
+  box-shadow:none!important;
+  z-index:41!important;
+}
+.app>.pt-qbar .r146-qb{
+  min-width:0!important;
+  min-height:36px!important;
+  height:36px!important;
+  padding:1px 0!important;
+  gap:1px!important;
+  border-radius:7px!important;
+  font-size:9px!important;
+  line-height:1!important;
+}
+.app>.pt-qbar .r146-qb>.ico,
+.app>.pt-qbar .r146-qb>svg{
+  width:19px!important;
+  height:19px!important;
+  flex:0 0 19px!important;
+}
+.app>.pt-qbar .r146-qb>.ico svg{
+  width:19px!important;
+  height:19px!important;
+}
+.app>.pt-qbar.r16-open{
+  border-bottom:0!important;
+  border-radius:13px 13px 0 0!important;
+  box-shadow:none!important;
+}
+@media(min-width:1024px) and (orientation:landscape){
+  .app>.pt-qbar{
+    left:calc(220px + (100vw - 220px)/2)!important;
+    width:min(304px,calc(100vw - 324px))!important;
+    max-width:min(304px,calc(100vw - 324px))!important;
+    transform:translateX(-50%)!important;
+  }
+}
+
+
+/* R2.0.15 — ensure resident photo is visible in the OPD/IPD duty-board row. */
+.duty-board-grid .duty-person-row img.pgt-photo{
+  display:block!important;
+  width:32px!important;
+  height:32px!important;
+  min-width:32px!important;
+  min-height:32px!important;
+  flex:0 0 32px!important;
+  object-fit:cover!important;
+  border-radius:50%!important;
 }
 
 </style>
@@ -7117,13 +7202,37 @@ function dutyResidentGrid(){
   const byId=new Map(pgtPeople().map(r=>[String(r.id),r]));
   const d=dutyRecord();
   const action=d?`<div class="duty-actions"><button class="btn ghost block" onclick="endDuty()">End shift</button></div>`:`<div class="duty-actions"><button class="btn block" onclick="signDuty()">Sign in for ${esc(sh)}</button></div>`;
-  if(!open.length) return `<p class="sm" style="margin-top:8px">No one signed in for ${esc(sh)}</p>${action}`;
-  return `<div class="pgt-grid">${open.map(x=>{
-    const person=byId.get(String(x.userId))||{id:x.userId,name:x.name||rname(x.userId),photo:String(x.userId)===String(S.userId)?myPhotoData():""};
+  const residentView=canWrite()&&!isConsultant(); // R2.0.15: non-consultant resident workspace shows resident photos
+  const personRow=x=>{
+    const person=byId.get(String(x.userId))||{id:x.userId,name:x.name||rname(x.userId),photo:""};
+    // The directory RPC may omit the photo. The signed-in user's local profile
+    // image is the same source used by the header; prefer it for their own row.
+    if(String(x.userId)===String(S.userId)){
+      const localPhoto=myPhotoData();
+      if(localPhoto) person.photo=localPhoto;
+    }
     const me=String(x.userId)===String(S.userId);
     const role=person.role||person.designation||x.role||x.designation||"";
-    return `<div class="pgt-tile">${pgtFace(person,"pgt-photo")}<span class="r2-who"><span class="r2-name">${esc(person.name||x.name||"")}${me?" · you":""}</span>${role?`<small class="pgt-role">${esc(role)}</small>`:""}</span></div>`;
-  }).join("")}</div>${action}`;
+    return `<div class="pgt-tile duty-person-row">${residentView?pgtFace(person,"pgt-photo"):""}<span class="r2-who"><span class="r2-name">${esc(person.name||x.name||"")}${me?" · you":""}</span>${role?`<small class="pgt-role">${esc(role)}</small>`:""}</span></div>`;
+  };
+  if(!open.length) return `<p class="sm" style="margin-top:8px">No one signed in for ${esc(sh)}</p>${action}`;
+  let list="";
+  if(currentShift()==="morning"){
+    const grouped=a=>open.filter(x=>x.area===a);
+    const other=open.filter(x=>x.area!=="ipd"&&x.area!=="opd");
+    const section=(label,area,cls)=>{
+      const people=grouped(area);
+      return `<section class="duty-grp duty-board-group ${cls}">
+        <div class="duty-grp-h"><span class="duty-badge ${cls}">${label}</span><span class="tiny">${people.length}</span></div>
+        ${people.length?`<div class="pgt-grid duty-board-grid">${people.map(personRow).join("")}</div>`:`<p class="tiny" style="margin:5px 0 0">No one signed in yet</p>`}
+      </section>`;
+    };
+    list=section("OPD","opd","opd")+section("IPD · Ward","ipd","ipd")+
+      (other.length?`<section class="duty-grp duty-board-group other"><div class="duty-grp-h"><span class="tiny" style="font-weight:750">Other / unspecified</span><span class="tiny">${other.length}</span></div><div class="pgt-grid duty-board-grid">${other.map(personRow).join("")}</div></section>`:"");
+  }else{
+    list=`<div class="pgt-grid duty-board-grid">${open.map(personRow).join("")}</div>`;
+  }
+  return `${list}${action}`;
 }
 function r146Reasons(p){
   const out=[];if(!p||p.status==="discharged")return out;
