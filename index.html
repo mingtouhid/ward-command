@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Ward Sync UI patch: admission-only gateway; discharge retained in patient actions. -->
 <!-- WARD SYNC RELEASE: R1.3.124 mental-status-examination -->
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
@@ -12,7 +13,7 @@
   try{t=localStorage.getItem("ward-command-theme")||"light"}catch(e){}
   document.documentElement.setAttribute("data-theme",t);
   document.documentElement.style.colorScheme=t;
-  try{var a=localStorage.getItem("ward-command-accent-v1")||"blue";if(a!=="teal"&&"blue purple rose amber green".split(" ").indexOf(a)>=0)document.documentElement.setAttribute("data-accent",a)}catch(e){}
+  try{var p=localStorage.getItem("ward-command-palette-v1");if(!p){var a=localStorage.getItem("ward-command-accent-v1")||"purple";p=({teal:"green",blue:"blue",purple:"violet",rose:"pink",amber:"yellow",green:"green"})[a]||"violet";}if("violet yellow blue green pink red mono".split(" ").indexOf(p)<0)p="violet";document.documentElement.setAttribute("data-palette",p);document.documentElement.removeAttribute("data-accent")}catch(e){}
 })();
 
 /* V85.5_CRITICAL_STATUS_RETENTION */
@@ -234,6 +235,7 @@ html[data-theme="light"] .top.resident-home{border-bottom-color:var(--line)}
 .r2-shift{text-align:right;font-size:12px;color:var(--muted);line-height:1.2}
 .r2-shift b{display:block;color:var(--ink);font-size:14px;font-weight:500;margin-top:1px}
 .r2-h{margin:10px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:650}
+.r2-h-spacer{min-height:1em;visibility:hidden}
 .r2-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .r2-tile{box-sizing:border-box;height:58px;min-height:58px;border:0;border-radius:12px;background:var(--panel);color:var(--ink);padding:8px 10px;text-align:left;display:flex;flex-direction:column;justify-content:center;gap:2px}
 .r2-tile b{font-size:24px;font-weight:500;line-height:1}
@@ -3739,13 +3741,2392 @@ html,body{overflow-x:hidden!important;}
   border-radius:50%!important;
 }
 
+
+/* ================================================================
+   WARD SYNC — VOISER-INSPIRED VISUAL SYSTEM
+   R2.1.0 · CSS-only presentation layer
+   Preserves clinical status colours, dimensions, component logic,
+   responsive breakpoints, navigation structure and all workflows.
+   ================================================================ */
+
+/* Shared design tokens: cool lavender day palette */
+:root,
+html[data-theme="light"]{
+  --ink:#211d2b;
+  --muted:#6f697c;
+  --faint:#948da0;
+  --line:#e7e3ef;
+  --panel:#ffffff;
+  --panel2:#f3f0f8;
+  --bg:#f6f4fa;
+  --top:rgba(247,245,251,.92);
+  --nav:rgba(255,255,255,.94);
+  --pill:#ffffff;
+  --pill-full:color-mix(in srgb,var(--teal) 12%,#ffffff);
+  --pill-full-line:color-mix(in srgb,var(--teal) 26%,#ffffff);
+  --pill-full-ink:var(--teal2);
+  --ghost:#f1eef7;
+  --mask:rgba(24,18,36,.48);
+  --hero:#241b34;
+  --hero-ink:#fbf9ff;
+  --hero-muted:#cec5dc;
+  --nav-on:color-mix(in srgb,var(--teal) 11%,#ffffff);
+  --shadow:0 8px 26px rgba(48,34,78,.075),0 1px 2px rgba(48,34,78,.035);
+  --radius-btn:16px;
+  --radius-card:24px;
+  --radius-modal:30px;
+
+  --ws-space-1:4px;
+  --ws-space-2:8px;
+  --ws-space-3:12px;
+  --ws-space-4:16px;
+  --ws-space-5:20px;
+  --ws-space-6:24px;
+  --ws-radius-control:16px;
+  --ws-radius-card:22px;
+  --ws-radius-sheet:28px;
+}
+
+/* Night palette: deep plum-charcoal, never pure black */
+html[data-theme="dark"],
+html[data-theme="night"],
+html[data-theme="ot"]{
+  --ink:#f7f4fc;
+  --muted:#aaa3b8;
+  --faint:#7d768d;
+  --line:#302a3c;
+  --panel:#191621;
+  --panel2:#211c2b;
+  --bg:#0d0b13;
+  --top:rgba(15,12,21,.92);
+  --nav:rgba(27,22,36,.96);
+  --pill:#201b2a;
+  --pill-full:color-mix(in srgb,var(--teal) 16%,#211c2b);
+  --pill-full-line:color-mix(in srgb,var(--teal) 34%,#302a3c);
+  --pill-full-ink:var(--teal2);
+  --ghost:#262130;
+  --mask:rgba(6,4,11,.78);
+  --hero:#21192d;
+  --hero-ink:#faf7ff;
+  --hero-muted:#c1b8d0;
+  --nav-on:color-mix(in srgb,var(--teal) 17%,#211c2b);
+  --shadow:0 12px 32px rgba(0,0,0,.28),0 1px 0 rgba(255,255,255,.025) inset;
+  --radius-btn:16px;
+  --radius-card:24px;
+  --radius-modal:28px;
+
+  --ws-radius-control:16px;
+  --ws-radius-card:22px;
+  --ws-radius-sheet:28px;
+}
+
+/* Keep the existing custom accent selector meaningful; the violet default
+   is applied only when there is no saved user selection. */
+:root{
+  --ws-accent:var(--teal);
+  --ws-text:var(--ink);
+  --ws-subtle:var(--muted);
+  --ws-border:var(--line);
+  --ws-surface:var(--panel);
+  --ws-surface-2:var(--panel2);
+}
+
+/* App canvas and typography */
+html,
+body{
+  background:var(--bg)!important;
+  color:var(--ink);
+}
+body{
+  font-family:Inter,system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+.app{
+  background:
+    radial-gradient(ellipse 115% 34% at 50% -8%,
+      color-mix(in srgb,var(--teal) 10%,transparent) 0%,
+      transparent 72%),
+    var(--bg)!important;
+  color:var(--ink);
+}
+html[data-theme="light"] .app,
+:root:not([data-theme]) .app{
+  background:
+    radial-gradient(ellipse 115% 30% at 50% -10%,
+      color-mix(in srgb,var(--teal) 5%,transparent) 0%,
+      transparent 74%),
+    var(--bg)!important;
+}
+.main{
+  scrollbar-color:color-mix(in srgb,var(--muted) 35%,transparent) transparent;
+}
+h1,h2,h3,.page-title,.top h1{
+  color:var(--ink);
+  letter-spacing:-.025em;
+}
+.kicker,.more-section,.sec-sticky{
+  color:var(--muted);
+}
+
+/* Headers and profile/status controls */
+.top{
+  background:var(--top)!important;
+  border-color:var(--line)!important;
+  -webkit-backdrop-filter:blur(18px);
+  backdrop-filter:blur(18px);
+}
+.top:not(.resident-home){
+  box-shadow:0 5px 18px rgba(35,24,58,.035);
+}
+.top.resident-home{
+  background:var(--top)!important;
+  border:1px solid var(--line)!important;
+  border-top:0!important;
+  border-radius:0 0 22px 22px!important;
+  box-shadow:0 6px 20px rgba(35,24,58,.045)!important;
+}
+.top-bell,
+.top.resident-home .top-bell{
+  background:var(--panel2)!important;
+  border:1px solid var(--line)!important;
+  color:var(--ink)!important;
+  box-shadow:none;
+}
+.who,.who small,.compact-context,.compact-kicker{
+  color:var(--muted);
+}
+.status-chip,.home-sync,.ws-sync-mini{
+  color:var(--muted);
+}
+
+/* Cards and grouped surfaces. Backgrounds with clinical meaning are retained. */
+.card:not(.hero){
+  border-color:var(--line);
+  border-radius:var(--radius-card);
+  box-shadow:var(--shadow);
+}
+.r2-overview,
+.r2-duty,
+.r2-flags,
+.r2-sched,
+.r2-team,
+.r2-bdft,
+.ward-board,
+.setup-tile,
+.stat,
+.more-row,
+.more-report-card,
+.login-card,
+.sheet .box{
+  border-color:var(--line);
+}
+.r2-duty,
+.r2-bdft,
+.r2-overview,
+.r2-flags,
+.r2-sched,
+.r2-team,
+.setup-tile,
+.stat,
+.more-row,
+.more-report-card,
+.login-card,
+.sheet .box{
+  background:var(--panel);
+}
+html[data-theme="dark"] .r2-flags,
+html[data-theme="dark"] .r2-sched,
+html[data-theme="dark"] .r2-team,
+html[data-theme="dark"] .r2-overview,
+html[data-theme="night"] .r2-flags,
+html[data-theme="night"] .r2-sched,
+html[data-theme="night"] .r2-team,
+html[data-theme="night"] .r2-overview,
+html[data-theme="ot"] .r2-flags,
+html[data-theme="ot"] .r2-sched,
+html[data-theme="ot"] .r2-team,
+html[data-theme="ot"] .r2-overview{
+  background:var(--panel)!important;
+}
+.hero{
+  background:linear-gradient(145deg,
+    color-mix(in srgb,var(--hero) 86%,var(--teal) 14%),
+    var(--hero))!important;
+  border-radius:26px;
+  box-shadow:var(--shadow);
+}
+.ward-block,
+.ward-board,
+.handover-empty,
+.task-board-summary>div{
+  border-color:var(--line);
+  border-radius:var(--radius-card);
+}
+.handover-item,
+.task-item{
+  border-color:var(--line);
+  box-shadow:var(--shadow);
+}
+
+/* Primary and secondary controls */
+.btn:not(.ghost):not(.warn):not(.danger):not(.idle):not([disabled]){
+  background:linear-gradient(135deg,
+    color-mix(in srgb,var(--teal) 76%,#ffffff 24%),
+    var(--teal))!important;
+  color:var(--btn-ink)!important;
+  border:1px solid color-mix(in srgb,var(--teal) 70%,#ffffff 30%);
+  box-shadow:0 7px 18px color-mix(in srgb,var(--teal) 23%,transparent);
+}
+.btn.ghost,
+.btn.idle,
+.pick,
+input,
+select,
+textarea{
+  background:var(--panel2);
+  border-color:var(--line);
+  color:var(--ink);
+}
+.btn.ghost{
+  box-shadow:none;
+}
+input,
+select,
+textarea,
+.pick{
+  border-radius:16px;
+}
+input:focus,
+select:focus,
+textarea:focus,
+.pick:focus-visible{
+  border-color:var(--teal);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 14%,transparent);
+}
+input::placeholder,
+textarea::placeholder{
+  color:var(--faint);
+}
+.seg{
+  background:var(--panel2);
+  border-color:var(--line);
+  border-radius:16px;
+}
+.seg button{
+  border-color:transparent;
+  color:var(--muted);
+  border-radius:12px;
+}
+.seg button.on,
+.chip.on,
+.pick-opt.on{
+  background:color-mix(in srgb,var(--teal) 13%,var(--panel))!important;
+  border-color:color-mix(in srgb,var(--teal) 32%,var(--line))!important;
+  color:var(--teal2)!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--teal) 8%,transparent);
+  transform:none;
+}
+.chip{
+  background:var(--panel2);
+  border-color:var(--line);
+}
+.fold-toggle{
+  background:linear-gradient(135deg,
+    color-mix(in srgb,var(--teal) 76%,#ffffff 24%),
+    var(--teal));
+  box-shadow:0 5px 14px color-mix(in srgb,var(--teal) 18%,transparent);
+}
+.fold-card.open .fold-toggle,
+.ward-block.open .fold-toggle{
+  background:var(--panel2);
+  border-color:var(--line);
+  box-shadow:none;
+}
+.r2-signin{
+  background:color-mix(in srgb,var(--teal) 13%,var(--panel))!important;
+  color:var(--teal2)!important;
+  border:1px solid color-mix(in srgb,var(--teal) 25%,var(--line));
+}
+
+/* More screen icon tiles and other icon wells */
+.more-grid .more-ico{
+  border-radius:14px;
+  background:color-mix(in srgb,var(--teal) 12%,var(--panel2));
+  color:var(--teal2);
+}
+.more-grid .more-ico svg{
+  color:currentColor;
+}
+.top-bell .ico,
+.setup-tile .ico,
+.more-row .more-ico{
+  color:var(--teal2);
+}
+.setup-tile{
+  border-radius:22px;
+  box-shadow:var(--shadow);
+}
+.more-grid .more-row{
+  border-radius:20px;
+}
+
+/* Bottom navigation: retain current dimensions and structure, restyle its surface */
+.nav:not(.intern-nav){
+  background:transparent;
+}
+.nav:not(.intern-nav) .nav-in{
+  background:var(--nav)!important;
+  border:1px solid color-mix(in srgb,var(--teal) 20%,var(--line))!important;
+  border-radius:28px!important;
+  box-shadow:0 10px 28px rgba(42,30,67,.10)!important;
+  -webkit-backdrop-filter:blur(22px);
+  backdrop-filter:blur(22px);
+}
+.nav button{
+  color:var(--muted);
+  border:1px solid transparent;
+  transition:color .16s ease,background .16s ease,border-color .16s ease;
+}
+.nav button.on,
+html[data-theme="dark"] .nav button.on,
+html[data-theme="night"] .nav button.on,
+html[data-theme="ot"] .nav button.on{
+  color:var(--teal2)!important;
+  background:color-mix(in srgb,var(--teal) 12%,var(--nav))!important;
+  border-color:color-mix(in srgb,var(--teal) 17%,transparent);
+}
+.nav.intern-nav{
+  background:transparent!important;
+}
+.nav.intern-nav .nav-in{
+  background:var(--nav)!important;
+  border:1px solid color-mix(in srgb,var(--teal) 20%,var(--line))!important;
+  border-radius:26px!important;
+  box-shadow:0 10px 28px rgba(42,30,67,.10)!important;
+}
+.nav.intern-nav button.on{
+  color:var(--teal2)!important;
+  background:color-mix(in srgb,var(--teal) 12%,var(--nav))!important;
+}
+
+/* Patient quick-action tab: preserve the attached geometry from R2.0.14 */
+.pt-qbar,
+.app>.pt-qbar{
+  background:var(--nav)!important;
+  border-color:color-mix(in srgb,var(--teal) 22%,var(--line))!important;
+  box-shadow:0 -5px 18px rgba(42,30,67,.07)!important;
+}
+.r146-qb{
+  color:var(--ink);
+}
+.r146-qb svg{
+  color:var(--teal2);
+}
+
+/* Drawers, dialogs and form sheets */
+.sheet .mask{
+  background:var(--mask);
+}
+.sheet .box{
+  background:var(--panel);
+  border-color:var(--line);
+  border-radius:var(--radius-modal);
+  box-shadow:0 18px 60px rgba(10,7,18,.22);
+}
+.login-card{
+  border-radius:26px;
+}
+
+/* Tables, dividers and subtle supporting text */
+.chart th,
+.chart td,
+.crit-item,
+.ho-item,
+.duty-grp+.duty-grp{
+  border-color:var(--line);
+}
+.chart th{
+  color:var(--muted);
+}
+.muted,
+.tiny,
+.r2-sub,
+.r2-meta,
+.r2-none,
+.more-section{
+  color:var(--muted);
+}
+.sec::before{
+  background:var(--teal);
+}
+a,
+.back{
+  color:var(--teal2);
+}
+:focus-visible{
+  outline-color:var(--teal);
+}
+
+/* Keep semantic clinical alerts, severity badges, OPD/IPD tags and success
+   indicators in their established clinical colours. */
+
+
+/* R2.1.1 — refined Voiser reference styling; presentation-only overrides. */
+:root,
+html[data-theme="light"]{
+  --ws-icon-tile:color-mix(in srgb,var(--teal) 13%,#ffffff);
+  --ws-icon-ink:color-mix(in srgb,var(--teal) 82%,#321b55);
+  --ws-nav-radius:30px;
+  --ws-nav-active-radius:25px;
+  --ws-button-shadow:0 7px 17px color-mix(in srgb,var(--teal) 24%,transparent);
+}
+html[data-theme="dark"],
+html[data-theme="night"],
+html[data-theme="ot"]{
+  --ws-icon-tile:color-mix(in srgb,var(--teal) 20%,#211b2b);
+  --ws-icon-ink:#d9c3fa;
+  --ws-nav-radius:30px;
+  --ws-nav-active-radius:25px;
+  --ws-button-shadow:0 7px 18px color-mix(in srgb,var(--teal) 28%,transparent);
+}
+
+/* Home: distinguish the small statistic tiles from the surrounding card. */
+.r2-tile{
+  background:linear-gradient(145deg,
+    color-mix(in srgb,var(--teal) 10%,var(--panel)),
+    color-mix(in srgb,var(--teal) 4%,var(--panel2)))!important;
+  border:1px solid color-mix(in srgb,var(--teal) 19%,var(--line))!important;
+  border-radius:16px!important;
+  box-shadow:0 2px 8px rgba(44,29,69,.045)!important;
+}
+html[data-theme="dark"] .r2-tile,
+html[data-theme="night"] .r2-tile,
+html[data-theme="ot"] .r2-tile{
+  background:linear-gradient(145deg,
+    color-mix(in srgb,var(--teal) 18%,var(--panel)),
+    color-mix(in srgb,var(--teal) 7%,var(--panel2)))!important;
+  border-color:color-mix(in srgb,var(--teal) 30%,var(--line))!important;
+  box-shadow:0 2px 10px rgba(0,0,0,.16)!important;
+}
+
+/* Primary actions: consistent, visible violet/accent gradient. */
+.btn:not(.ghost):not(.warn):not(.danger):not(.idle):not([disabled]),
+button.btn:not(.ghost):not(.warn):not(.danger):not(.idle):not([disabled]){
+  background:linear-gradient(135deg,
+    color-mix(in srgb,var(--teal) 72%,#ffffff 28%) 0%,
+    color-mix(in srgb,var(--teal) 91%,#32105f 9%) 56%,
+    var(--teal) 100%)!important;
+  border:1px solid color-mix(in srgb,var(--teal) 78%,#ffffff 22%)!important;
+  color:#fff!important;
+  box-shadow:var(--ws-button-shadow)!important;
+}
+.btn:not(.ghost):not(.warn):not(.danger):not(.idle):not([disabled]):active{
+  filter:brightness(.96);
+  box-shadow:0 3px 9px color-mix(in srgb,var(--teal) 20%,transparent)!important;
+}
+
+/* Bottom dock and selected destination use matching nested corner geometry. */
+.nav:not(.intern-nav) .nav-in,
+.nav.intern-nav .nav-in{
+  border-radius:var(--ws-nav-radius)!important;
+  padding:4px!important;
+  overflow:hidden;
+}
+.nav:not(.intern-nav) button,
+.nav.intern-nav button{
+  border-radius:var(--ws-nav-active-radius)!important;
+  margin:0!important;
+  min-width:0;
+}
+.nav:not(.intern-nav) button.on,
+.nav.intern-nav button.on{
+  border-radius:var(--ws-nav-active-radius)!important;
+  background:color-mix(in srgb,var(--teal) 14%,var(--nav))!important;
+  border-color:color-mix(in srgb,var(--teal) 18%,var(--line))!important;
+  color:var(--teal2)!important;
+}
+html[data-theme="light"] .nav:not(.intern-nav) button.on,
+html[data-theme="light"] .nav.intern-nav button.on{
+  color:color-mix(in srgb,var(--teal) 88%,#32105f)!important;
+}
+
+/* More page: settings-style vertical rows grouped under section headings. */
+.more-grid{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:0!important;
+  margin:0 0 14px!important;
+  padding:0 14px!important;
+  overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:26px;
+  background:var(--panel);
+  box-shadow:var(--shadow);
+}
+.more-grid>.more-row{
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:14px!important;
+  width:100%!important;
+  min-height:76px!important;
+  margin:0!important;
+  padding:12px 0!important;
+  border:0!important;
+  border-bottom:1px solid var(--line)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  text-align:left!important;
+}
+.more-grid>.more-row:last-child{border-bottom:0!important}
+.more-grid .more-row .more-ico{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex:0 0 48px!important;
+  width:48px!important;
+  height:48px!important;
+  margin:0!important;
+  border-radius:16px!important;
+  background:var(--ws-icon-tile)!important;
+  color:var(--ws-icon-ink)!important;
+}
+.more-grid .more-row .more-ico svg,
+.more-grid .more-row .more-ico .ico.ws-icon svg{
+  width:25px!important;
+  height:25px!important;
+}
+.more-grid .more-row .more-label{
+  display:block!important;
+  flex:1 1 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin:0!important;
+  overflow:visible!important;
+  font-size:15px!important;
+  font-weight:650!important;
+  line-height:1.3!important;
+  letter-spacing:-.015em!important;
+  text-align:left!important;
+  color:var(--ink)!important;
+}
+.more-grid>.more-row::after{
+  content:"";
+  flex:0 0 9px;
+  width:9px;
+  height:9px;
+  margin-right:3px;
+  border-top:2px solid var(--faint);
+  border-right:2px solid var(--faint);
+  transform:rotate(45deg);
+  opacity:.9;
+}
+.more-grid>.more-row.danger .more-label{color:#d94b66!important}
+.more-section{
+  margin:22px 4px 9px!important;
+  padding-left:4px;
+  font-size:11px!important;
+  font-weight:750!important;
+  letter-spacing:.13em!important;
+  text-transform:uppercase!important;
+}
+.more-report-card{
+  border-radius:26px!important;
+  padding:16px!important;
+  margin:0 0 14px!important;
+}
+
+/* Harmonise the icon pack: consistent rounded line artwork and lavender icon wells. */
+.more-ico,.setup-tile .ico,.top-bell .ico{
+  color:var(--ws-icon-ink)!important;
+}
+.more-ico svg,.setup-tile .ico svg,.top-bell .ico svg,
+.nav .ico svg,.side-nav .ico svg{
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+.more-ico svg [stroke]:not([stroke="none"]),
+.setup-tile .ico svg [stroke]:not([stroke="none"]){
+  stroke-width:1.8!important;
+}
+
+/* Resident directory placeholders: illustrated generic avatar, real photos remain untouched. */
+.pgt-photo:not(img){
+  position:relative;
+  overflow:hidden;
+  color:transparent!important;
+  font-size:0!important;
+  border:1px solid color-mix(in srgb,var(--teal) 22%,var(--line))!important;
+  background-color:#e9def7!important;
+  background-image:
+    radial-gradient(circle at 50% 34%,#f2c8ad 0 17%,transparent 17.8%),
+    radial-gradient(ellipse at 50% 91%,#8060b8 0 36%,transparent 36.8%),
+    linear-gradient(145deg,#f6e9f2,#d9c8f1)!important;
+  background-repeat:no-repeat!important;
+}
+.pgt-photo:not(img)::after{
+  content:"";
+  position:absolute;
+  width:13%;height:13%;
+  left:43.5%;top:26%;
+  border-radius:50%;
+  background:rgba(115,67,83,.20);
+  filter:blur(1px);
+}
+.pgt-grid .pgt-tile:nth-child(3n+2) .pgt-photo:not(img),
+.duty-board-grid .duty-person-row:nth-child(3n+2) .pgt-photo:not(img){
+  background-image:
+    radial-gradient(circle at 50% 34%,#e9b99b 0 17%,transparent 17.8%),
+    radial-gradient(ellipse at 50% 91%,#4d8c9b 0 36%,transparent 36.8%),
+    linear-gradient(145deg,#e2f0f4,#c9dfe9)!important;
+}
+.pgt-grid .pgt-tile:nth-child(3n) .pgt-photo:not(img),
+.duty-board-grid .duty-person-row:nth-child(3n) .pgt-photo:not(img){
+  background-image:
+    radial-gradient(circle at 50% 34%,#efc6a6 0 17%,transparent 17.8%),
+    radial-gradient(ellipse at 50% 91%,#b77a48 0 36%,transparent 36.8%),
+    linear-gradient(145deg,#fff0d4,#f0d9b4)!important;
+}
+
+@media(max-width:420px){
+  .more-grid{padding:0 12px!important;border-radius:23px}
+  .more-grid>.more-row{min-height:72px!important;gap:12px!important}
+  .more-grid .more-row .more-ico{flex-basis:44px!important;width:44px!important;height:44px!important;border-radius:14px!important}
+  .more-grid .more-row .more-label{font-size:14px!important}
+}
+/* End R2.1.1 visual refinement. */
+
+
+
+/* R2.1.2 — Voiser visual alignment pass (presentation only). */
+:root,html[data-theme="light"]{
+  --ws-accent:#6846e8;
+  --ws-accent-deep:#5634c7;
+  --ws-accent-soft:#e9e2fb;
+  --ws-accent-line:#cbbcf3;
+  --ws-icon-tile:#e9e4f8;
+  --ws-icon-ink:#6242d7;
+  --ws-nav-radius:999px;
+  --ws-nav-active-radius:999px;
+  --ws-button-shadow:0 7px 18px rgba(104,70,232,.24);
+}
+html[data-theme="dark"],html[data-theme="night"],html[data-theme="ot"]{
+  --ws-accent:#a98af8;
+  --ws-accent-deep:#8059e9;
+  --ws-accent-soft:rgba(169,138,248,.18);
+  --ws-accent-line:rgba(169,138,248,.38);
+  --ws-icon-tile:rgba(169,138,248,.19);
+  --ws-icon-ink:#c7b4ff;
+  --ws-nav-radius:999px;
+  --ws-nav-active-radius:999px;
+  --ws-button-shadow:0 7px 18px rgba(104,70,232,.30);
+}
+
+/* Keep the app's existing theme choice, but unify its interactive accent with Voiser violet. */
+html{
+  --teal:var(--ws-accent);
+  --teal2:var(--ws-accent-deep);
+  --accent:var(--ws-accent);
+}
+
+/* Floating capsule dock with a clearly inset, fully rounded selected destination. */
+.nav:not(.intern-nav){
+  background:transparent!important;
+  padding-left:12px!important;
+  padding-right:12px!important;
+  padding-bottom:max(7px,env(safe-area-inset-bottom,0px))!important;
+}
+.nav:not(.intern-nav) .nav-in{
+  height:76px!important;
+  min-height:76px!important;
+  padding:5px!important;
+  gap:3px!important;
+  overflow:hidden!important;
+  border:1px solid var(--ws-accent-line)!important;
+  border-radius:999px!important;
+  background:rgba(255,255,255,.94)!important;
+  box-shadow:0 12px 32px rgba(48,37,72,.15),inset 0 1px 0 rgba(255,255,255,.9)!important;
+  -webkit-backdrop-filter:blur(22px);
+  backdrop-filter:blur(22px);
+}
+.nav:not(.intern-nav) button{
+  height:64px!important;
+  min-height:64px!important;
+  margin:0 2px!important;
+  padding:5px 2px!important;
+  border:1px solid transparent!important;
+  border-radius:999px!important;
+  color:#a3a3a8!important;
+  background:transparent!important;
+  gap:2px!important;
+}
+.nav:not(.intern-nav) button.on{
+  color:#5634c7!important;
+  background:#e8e1fa!important;
+  border:1px solid #c8b9f1!important;
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.65)!important;
+}
+.nav:not(.intern-nav) button.on .ico,
+.nav:not(.intern-nav) button.on .ico svg{color:#5634c7!important;stroke:currentColor!important}
+.nav:not(.intern-nav) button .ico svg{stroke-width:2.1!important}
+html[data-theme="dark"] .nav:not(.intern-nav) .nav-in,
+html[data-theme="night"] .nav:not(.intern-nav) .nav-in,
+html[data-theme="ot"] .nav:not(.intern-nav) .nav-in{
+  background:rgba(31,26,43,.96)!important;
+  border-color:rgba(169,138,248,.36)!important;
+}
+html[data-theme="dark"] .nav:not(.intern-nav) button.on,
+html[data-theme="night"] .nav:not(.intern-nav) button.on,
+html[data-theme="ot"] .nav:not(.intern-nav) button.on{
+  background:rgba(169,138,248,.22)!important;
+  border-color:rgba(169,138,248,.42)!important;
+  color:#d3c4ff!important;
+}
+
+/* Match Voiser's grouped settings rows: quiet dividers, white surfaces and lavender icon wells. */
+.more-section{
+  margin:23px 4px 9px!important;
+  padding-left:4px!important;
+  color:#9693a3!important;
+  font-size:11px!important;
+  font-weight:750!important;
+  letter-spacing:.13em!important;
+  text-transform:uppercase!important;
+}
+.more-grid{
+  margin:0 0 15px!important;
+  padding:0 14px!important;
+  border:1px solid #e8e5ed!important;
+  border-radius:25px!important;
+  background:#fff!important;
+  box-shadow:0 2px 8px rgba(45,34,65,.035)!important;
+}
+.more-grid>.more-row{
+  min-height:74px!important;
+  gap:14px!important;
+  padding:11px 0!important;
+  border-bottom:1px solid #eeecf1!important;
+}
+.more-grid .more-row .more-ico{
+  flex:0 0 44px!important;
+  width:44px!important;
+  height:44px!important;
+  border-radius:14px!important;
+  background:#e9e4f8!important;
+  color:#6242d7!important;
+}
+.more-grid .more-row .more-ico svg,
+.more-grid .more-row .more-ico .ico.ws-icon svg{
+  width:24px!important;
+  height:24px!important;
+  stroke-width:1.9!important;
+}
+.more-grid .more-row .more-label{
+  color:#292633!important;
+  font-size:14px!important;
+  font-weight:650!important;
+  letter-spacing:-.012em!important;
+}
+.more-grid>.more-row::after{
+  border-color:#a5a1af!important;
+  width:8px!important;
+  height:8px!important;
+}
+.more-grid>.more-row.danger .more-label{color:#d94b66!important}
+.more-report-card{
+  border:1px solid #e8e5ed!important;
+  background:#fff!important;
+  box-shadow:0 2px 8px rgba(45,34,65,.035)!important;
+}
+
+/* Voiser-like violet gradient for primary actions; warning/destructive actions remain semantic. */
+.btn:not(.ghost):not(.warn):not(.danger):not(.idle):not([disabled]),
+button.btn:not(.ghost):not(.warn):not(.danger):not(.idle):not([disabled]){
+  background:linear-gradient(135deg,#a978f5 0%,#8050ef 48%,#6240e8 100%)!important;
+  border:1px solid rgba(255,255,255,.28)!important;
+  color:#fff!important;
+  box-shadow:0 7px 18px rgba(104,70,232,.25)!important;
+}
+.btn:not(.ghost):not(.warn):not(.danger):not(.idle):not([disabled]):active{
+  filter:brightness(.96);
+  box-shadow:0 3px 9px rgba(104,70,232,.2)!important;
+}
+
+/* Other icon wells use the same violet family without recolouring clinical status indicators. */
+.setup-tile .ico,.top-bell .ico{
+  color:#6242d7!important;
+}
+.setup-tile .ico{
+  background:#e9e4f8!important;
+}
+@media(max-width:420px){
+  .nav:not(.intern-nav){padding-left:10px!important;padding-right:10px!important}
+  .nav:not(.intern-nav) .nav-in{height:72px!important;min-height:72px!important;padding:4px!important}
+  .nav:not(.intern-nav) button{height:62px!important;min-height:62px!important;margin:0 1px!important}
+  .more-grid{padding:0 12px!important;border-radius:23px!important}
+  .more-grid>.more-row{min-height:70px!important}
+  .more-grid .more-row .more-ico{flex-basis:42px!important;width:42px!important;height:42px!important}
+}
+/* End R2.1.2. */
+
+
+/* R2.1.3 — three-item dock and Voiser-style grouped More rows. */
+.nav:not(.intern-nav) .nav-in{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.nav:not(.intern-nav) button{min-width:0!important}
+.more-grid>.more-row{
+  position:relative!important;
+  border-bottom:0!important;
+  padding-right:14px!important;
+}
+.more-grid>.more-row::before{
+  content:""!important;
+  position:absolute!important;
+  left:72px!important;
+  right:0!important;
+  bottom:0!important;
+  height:1px!important;
+  background:#eeecf1!important;
+  display:block!important;
+}
+.more-grid>.more-row:last-child::before{display:none!important}
+.more-grid>.more-row::after{
+  width:8px!important;height:8px!important;
+  border-top:2px solid #a5a1af!important;
+  border-right:2px solid #a5a1af!important;
+  border-radius:2px!important;
+  transform:rotate(45deg)!important;
+  flex:0 0 8px!important;
+  margin-right:3px!important;
+}
+html[data-theme="dark"] .more-grid>.more-row::before,
+html[data-theme="night"] .more-grid>.more-row::before,
+html[data-theme="ot"] .more-grid>.more-row::before{background:rgba(255,255,255,.09)!important}
+
+
+/* R2.1.4 — dark-theme More surface and precision dock contrast */
+html[data-theme="dark"] .more-grid,
+html[data-theme="night"] .more-grid,
+html[data-theme="ot"] .more-grid{
+  background:#15131b!important;
+  border:1px solid #393247!important;
+  border-radius:24px!important;
+  box-shadow:0 5px 16px rgba(0,0,0,.28)!important;
+}
+html[data-theme="dark"] .more-grid>.more-row,
+html[data-theme="night"] .more-grid>.more-row,
+html[data-theme="ot"] .more-grid>.more-row{
+  color:#f1eef8!important;
+  background:transparent!important;
+}
+html[data-theme="dark"] .more-grid>.more-row::before,
+html[data-theme="night"] .more-grid>.more-row::before,
+html[data-theme="ot"] .more-grid>.more-row::before{
+  background:#302a39!important;
+  opacity:1!important;
+}
+html[data-theme="dark"] .more-grid>.more-row::after,
+html[data-theme="night"] .more-grid>.more-row::after,
+html[data-theme="ot"] .more-grid>.more-row::after{
+  border-top-color:#aaa2b7!important;
+  border-right-color:#aaa2b7!important;
+}
+html[data-theme="dark"] .more-ico,
+html[data-theme="night"] .more-ico,
+html[data-theme="ot"] .more-ico{
+  background:rgba(169,138,248,.17)!important;
+  color:#c9b5ff!important;
+  border:1px solid rgba(169,138,248,.12)!important;
+}
+html[data-theme="dark"] .more-label,
+html[data-theme="night"] .more-label,
+html[data-theme="ot"] .more-label{
+  color:#f1eef8!important;
+}
+html[data-theme="dark"] .more-section,
+html[data-theme="night"] .more-section,
+html[data-theme="ot"] .more-section{
+  color:#aaa1b7!important;
+}
+html[data-theme="dark"] .more-report-card,
+html[data-theme="night"] .more-report-card,
+html[data-theme="ot"] .more-report-card{
+  background:#15131b!important;
+  border:1px solid #393247!important;
+  box-shadow:0 5px 16px rgba(0,0,0,.25)!important;
+}
+html[data-theme="dark"] .more-report-card .field,
+html[data-theme="night"] .more-report-card .field,
+html[data-theme="ot"] .more-report-card .field{
+  color:#e8e2f0!important;
+}
+html[data-theme="dark"] .nav:not(.intern-nav) .nav-in,
+html[data-theme="night"] .nav:not(.intern-nav) .nav-in,
+html[data-theme="ot"] .nav:not(.intern-nav) .nav-in{
+  background:rgba(25,21,33,.98)!important;
+  border:1px solid #66518a!important;
+  box-shadow:0 5px 14px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.07)!important;
+  outline:1px solid rgba(169,138,248,.12)!important;
+  outline-offset:-3px!important;
+}
+html[data-theme="dark"] .nav:not(.intern-nav) button,
+html[data-theme="night"] .nav:not(.intern-nav) button,
+html[data-theme="ot"] .nav:not(.intern-nav) button{
+  color:#aaa5b3!important;
+  border:1px solid transparent!important;
+  box-shadow:none!important;
+}
+html[data-theme="dark"] .nav:not(.intern-nav) button.on,
+html[data-theme="night"] .nav:not(.intern-nav) button.on,
+html[data-theme="ot"] .nav:not(.intern-nav) button.on{
+  color:#e1d4ff!important;
+  background:#38294f!important;
+  border:1px solid #9272c9!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 1px 4px rgba(0,0,0,.3)!important;
+}
+html[data-theme="dark"] .nav:not(.intern-nav) button.on .ico,
+html[data-theme="night"] .nav:not(.intern-nav) button.on .ico,
+html[data-theme="ot"] .nav:not(.intern-nav) button.on .ico{
+  color:#c9aaff!important;
+}
+
+
+/* Home census refinement: emphasize the total-patient count without changing tile styling. */
+.r2-count{color:var(--accent,var(--teal));font-weight:800;letter-spacing:-.035em}
+.r2-count small{color:var(--muted);font-weight:600;letter-spacing:0}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.11/dist/html2canvas-pro.min.js"></script>
-<!-- WARD COMMAND RELEASE: v87.5.2 drop-qsnap -->
+<!-- WARD SYNC RELEASE: R2.1.2 Voiser visual alignment -->
+
+<style id="ward-sync-r213-nav-icons">
+/* R2.1.3 — compact Voiser-proportioned dock and refreshed detailed icon family. */
+:root{--nav-h:66px}
+.nav:not(.intern-nav){
+  padding:0 0 max(5px,env(safe-area-inset-bottom,0px))!important;
+}
+.nav:not(.intern-nav) .nav-in{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:center!important;
+  height:66px!important;
+  min-height:66px!important;
+  padding:4px!important;
+  gap:3px!important;
+  border-radius:999px!important;
+}
+.nav:not(.intern-nav) button{
+  height:56px!important;
+  min-height:56px!important;
+  padding:3px 2px!important;
+  margin:0!important;
+  gap:1px!important;
+  border-radius:999px!important;
+}
+.nav:not(.intern-nav) button .ico{
+  width:27px!important;height:27px!important;flex:0 0 27px!important;
+}
+.nav:not(.intern-nav) button .ico svg{
+  width:25px!important;height:25px!important;
+  stroke-width:1.9!important;
+}
+.nav:not(.intern-nav) button .lbl{
+  font-size:10px!important;line-height:1.05!important;font-weight:650!important;
+}
+.nav:not(.intern-nav) button.on{
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.72)!important;
+}
+.nav:not(.intern-nav) button:active{transform:scale(.985)}
+/* The detailed icon artwork uses a shared crisp outline and controlled partial fills. */
+.ico.ws-icon svg{overflow:visible;stroke-linecap:round;stroke-linejoin:round}
+.more-grid .more-row .more-ico .ico.ws-icon svg,
+.setup-tile .ico.ws-icon svg,
+.top-bell .ico.ws-icon svg{stroke-width:1.85!important}
+@media(min-width:760px){
+  .nav:not(.intern-nav) .nav-in{height:66px!important;min-height:66px!important}
+}
+</style>
+
+
+<style id="ward-sync-r215-more-dark-text-contrast">
+/* R2.1.5 — fix dark-theme More labels; outrank the generic high-specificity label rule. */
+html[data-theme="dark"] .more-grid .more-row .more-label,
+html[data-theme="night"] .more-grid .more-row .more-label,
+html[data-theme="ot"] .more-grid .more-row .more-label {
+  color: #f3effb !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #f3effb !important;
+}
+html[data-theme="dark"] .more-grid .more-row.danger .more-label,
+html[data-theme="night"] .more-grid .more-row.danger .more-label,
+html[data-theme="ot"] .more-grid .more-row.danger .more-label {
+  color: #ff8298 !important;
+  -webkit-text-fill-color: #ff8298 !important;
+}
+</style>
+
+
+<style id="ward-sync-r216-patient-fab-menu">
+/* R2.1.6 — compact bottom-right patient action launcher */
+.pt-qfab{
+  position:fixed!important;right:18px!important;
+  bottom:calc(126px + env(safe-area-inset-bottom,0px))!important;
+  z-index:44!important;width:54px!important;height:54px!important;min-width:54px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  border:1px solid color-mix(in srgb,var(--teal) 44%,var(--line))!important;
+  border-radius:50%!important;color:var(--teal2)!important;background:var(--panel)!important;
+  box-shadow:0 8px 24px rgba(16,10,28,.24)!important;
+  cursor:pointer!important;transition:transform .22s ease,background .22s ease,box-shadow .22s ease!important;
+}
+.pt-qfab svg{width:25px!important;height:25px!important;stroke-width:2.4!important}
+.pt-qfab:active{transform:scale(.92)!important}
+.pt-qfab.is-open{background:var(--nav)!important;transform:rotate(90deg)}
+.pt-qfab-pulse{display:none!important}
+.r16-drawer.r16-fab-menu{
+  z-index:43!important;width:min(360px,calc(100vw - 24px));
+  border:1px solid var(--line)!important;border-radius:22px!important;border-bottom:1px solid var(--line)!important;
+  padding:12px!important;background:var(--panel)!important;
+  box-shadow:0 18px 48px rgba(0,0,0,.30),0 0 0 1px color-mix(in srgb,var(--teal) 10%,transparent)!important;
+  transform-origin:bottom right;
+}
+.r16-fab-menu.on{animation:r16FabIn .22s cubic-bezier(.2,.8,.2,1)}
+@keyframes r16FabIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.r16-menu-head{display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:0 2px 8px;color:var(--ink);font-size:14px;font-weight:650}
+.r16-menu-head b{color:var(--muted);font-weight:550}
+.r16-menu-close{display:none!important}
+.r16-menu-heading{font-size:9px;letter-spacing:.13em;font-weight:800;color:var(--muted);padding:7px 2px 5px}
+.r16-fab-menu .r16-menu-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.r16-fab-menu .r146-qb{
+  min-height:66px!important;height:auto!important;padding:8px 3px!important;
+  border:1px solid var(--line)!important;border-radius:14px!important;background:var(--panel2)!important;
+  color:var(--ink)!important;display:flex!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;gap:5px!important;
+  font-size:10px!important;font-weight:650!important;line-height:1.15!important;
+}
+.r16-fab-menu .r146-qb svg{width:23px!important;height:23px!important;color:var(--teal2)!important}
+.r16-fab-menu .r146-qb span{max-width:100%;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;text-align:center}
+.r16-fab-menu .r146-qb.red{background:color-mix(in srgb,var(--danger) 10%,var(--panel))!important;color:var(--danger)!important}
+.r16-fab-menu .r146-qb.red svg{color:var(--danger)!important}
+.r16-fab-menu .r146-qb.warn svg{color:var(--danger)!important}
+.r16-menu-critical{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
+.r16-menu-critical .r146-qb{min-height:44px!important;flex-direction:row!important;gap:7px!important;font-size:11px!important}
+.r16-menu-critical .r146-qb svg{width:19px!important;height:19px!important}
+.r16-scrim{background:rgba(5,3,10,.12)!important}
+@media(min-width:1024px) and (orientation:landscape){.pt-qfab{right:24px!important;bottom:calc(28px + env(safe-area-inset-bottom,0px))!important}}
+@media(prefers-reduced-motion:reduce){.pt-qfab,.r16-fab-menu.on{animation:none!important;transition:none!important}}
+</style>
+
+
+<style id="ward-sync-r217-patient-button-gradients">
+/* R2.1.7 — extend the Voiser violet gradient to patient navigation and filter controls. */
+
+/* Previous / Next: prominent gradient only while the action is available. */
+.r162-nav.r16-nav.pt-nav button:not(:disabled) {
+  background: linear-gradient(135deg, #a978f5 0%, #8050ef 48%, #6240e8 100%) !important;
+  border: 1px solid rgba(255,255,255,.34) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(104,70,232,.22) !important;
+}
+.r162-nav.r16-nav.pt-nav button:not(:disabled) .r162-bl,
+.r162-nav.r16-nav.pt-nav button:not(:disabled) .r16-arr {
+  color: #fff !important;
+}
+.r162-nav.r16-nav.pt-nav button:not(:disabled):active {
+  filter: brightness(.96);
+  box-shadow: 0 2px 7px rgba(104,70,232,.2) !important;
+}
+.r162-nav.r16-nav.pt-nav button:disabled {
+  background: var(--panel2) !important;
+  border-color: var(--line) !important;
+  color: var(--muted) !important;
+  box-shadow: none !important;
+}
+
+/* Patient filters: soft gradient at rest, full violet gradient for the selected filter. */
+.pfilter-row .chip {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, #a978f5 8%, var(--panel) 92%) 0%,
+    color-mix(in srgb, #8050ef 12%, var(--panel2) 88%) 100%) !important;
+  border: 1px solid color-mix(in srgb, #8050ef 22%, var(--line)) !important;
+  color: var(--ink) !important;
+  box-shadow: 0 2px 6px rgba(104,70,232,.07);
+}
+.pfilter-row .chip.on {
+  background: linear-gradient(135deg, #a978f5 0%, #8050ef 48%, #6240e8 100%) !important;
+  border: 1px solid rgba(255,255,255,.34) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(104,70,232,.22) !important;
+}
+.pfilter-row .chip.on * {
+  color: #fff !important;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .r162-nav.r16-nav.pt-nav button,
+  .pfilter-row .chip {
+    transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, filter .18s ease;
+  }
+}
+</style>
+
+<style id="ward-sync-r218-theme-tokens">
+/* R2.1.8 palette-specific colour and gradient tokens */
+html[data-palette="violet"]{--ws-accent-light:#7C3AED;--ws-deep-light:#5B21B6;--ws-grad-light-a:#B69AFB;--ws-grad-light-b:#8B5CF6;--ws-grad-light-c:#5B21B6;--ws-ink-light:#fff;--ws-accent-night:#B99AFF;--ws-deep-night:#E0D1FF;--ws-grad-night-a:#C4A9FF;--ws-grad-night-b:#9465F4;--ws-grad-night-c:#5B2AAE;--ws-ink-night:#fff}
+html[data-palette="yellow"]{--ws-accent-light:#A66A0A;--ws-deep-light:#754600;--ws-grad-light-a:#F4D36B;--ws-grad-light-b:#C78D1C;--ws-grad-light-c:#925909;--ws-ink-light:#fff;--ws-accent-night:#F3C65B;--ws-deep-night:#FFE6A3;--ws-grad-night-a:#F8D978;--ws-grad-night-b:#D49A27;--ws-grad-night-c:#91600A;--ws-ink-night:#fff}
+html[data-palette="blue"]{--ws-accent-light:#2563EB;--ws-deep-light:#1E40AF;--ws-grad-light-a:#83B8FF;--ws-grad-light-b:#397DEB;--ws-grad-light-c:#1D4ED8;--ws-ink-light:#fff;--ws-accent-night:#78B7FF;--ws-deep-night:#D6E9FF;--ws-grad-night-a:#8CC3FF;--ws-grad-night-b:#4389EF;--ws-grad-night-c:#174FAD;--ws-ink-night:#fff}
+html[data-palette="green"]{--ws-accent-light:#16824A;--ws-deep-light:#145B3B;--ws-grad-light-a:#83D5A8;--ws-grad-light-b:#2F9C68;--ws-grad-light-c:#145B3B;--ws-ink-light:#fff;--ws-accent-night:#63D79D;--ws-deep-night:#D1F8E2;--ws-grad-night-a:#73E0AA;--ws-grad-night-b:#2C9B69;--ws-grad-night-c:#125B3A;--ws-ink-night:#fff}
+html[data-palette="pink"]{--ws-accent-light:#C43D83;--ws-deep-light:#8A1E58;--ws-grad-light-a:#F7A9CD;--ws-grad-light-b:#E46AA6;--ws-grad-light-c:#AC2E73;--ws-ink-light:#fff;--ws-accent-night:#FF9CC8;--ws-deep-night:#FFE0EF;--ws-grad-night-a:#FFB2D4;--ws-grad-night-b:#D95F9C;--ws-grad-night-c:#8D285E;--ws-ink-night:#fff}
+html[data-palette="red"]{--ws-accent-light:#B72D3E;--ws-deep-light:#821E2B;--ws-grad-light-a:#F28D96;--ws-grad-light-b:#D84A59;--ws-grad-light-c:#9F2031;--ws-ink-light:#fff;--ws-accent-night:#FF838D;--ws-deep-night:#FFE0E3;--ws-grad-night-a:#FF9AA2;--ws-grad-night-b:#D94A59;--ws-grad-night-c:#8D1D2A;--ws-ink-night:#fff}
+html[data-palette="mono"]{--ws-accent-light:#343C49;--ws-deep-light:#202733;--ws-grad-light-a:#8E97A5;--ws-grad-light-b:#505967;--ws-grad-light-c:#202733;--ws-ink-light:#fff;--ws-accent-night:#D5DAE2;--ws-deep-night:#F6F7F9;--ws-grad-night-a:#E0E3E8;--ws-grad-night-b:#ADB5C1;--ws-grad-night-c:#7B8593;--ws-ink-night:#171B23}
+/* Shared day surface tokens; each palette lightly tints neutral surfaces. */
+html[data-palette]{
+ --teal:var(--ws-accent-light);--teal2:var(--ws-deep-light);--accent:var(--ws-accent-light);--btn-ink:var(--ws-ink-light);
+ --ws-grad-a:var(--ws-grad-light-a);--ws-grad-b:var(--ws-grad-light-b);--ws-grad-c:var(--ws-grad-light-c);
+ --pill-full:color-mix(in srgb,var(--teal) 10%,#fff);--pill-full-line:color-mix(in srgb,var(--teal) 24%,#fff);--pill-full-ink:var(--teal2);
+ --nav-on:color-mix(in srgb,var(--teal) 12%,#fff);--acc-nav-ink:var(--teal2);--acc-tint:color-mix(in srgb,var(--teal) 10%,#fff);--acc-hi:var(--ws-grad-light-a);
+ --ink:#211e2a;--muted:#666171;--faint:#928c9c;--bg:color-mix(in srgb,var(--teal) 2.5%,#f5f4f8);
+ --panel:#fff;--panel2:color-mix(in srgb,var(--teal) 5%,#f4f3f7);--line:color-mix(in srgb,var(--teal) 14%,#e3e1e9);
+ --top:rgba(250,249,252,.94);--nav:rgba(255,255,255,.94);--pill:#fff;--ghost:var(--panel2);--mask:rgba(19,15,27,.46);
+ --hero:#241c31;--hero-ink:#fbf9ff;--hero-muted:#cec5db;--shadow:0 8px 26px rgba(35,25,52,.075),0 1px 2px rgba(35,25,52,.035);
+ --ws-button-shadow:0 7px 18px color-mix(in srgb,var(--teal) 25%,transparent);
+}
+html[data-palette][data-theme="ot"],html[data-palette][data-theme="dark"],html[data-palette][data-theme="night"]{
+ --teal:var(--ws-accent-night);--teal2:var(--ws-deep-night);--accent:var(--ws-accent-night);--btn-ink:var(--ws-ink-night);
+ --ws-grad-a:var(--ws-grad-night-a);--ws-grad-b:var(--ws-grad-night-b);--ws-grad-c:var(--ws-grad-night-c);
+ --pill-full:color-mix(in srgb,var(--teal) 17%,#211d29);--pill-full-line:color-mix(in srgb,var(--teal) 38%,#302a3a);--pill-full-ink:var(--teal2);
+ --nav-on:color-mix(in srgb,var(--teal) 18%,#211d2a);--acc-nav-ink:var(--teal2);--acc-tint:color-mix(in srgb,var(--teal) 16%,#211d2a);--acc-hi:var(--ws-grad-night-a);
+ --ink:#F5F2F8;--muted:#B8B1C2;--faint:#898294;--bg:color-mix(in srgb,var(--teal) 3%,#0F0D14);
+ --panel:color-mix(in srgb,var(--teal) 4%,#1A1721);--panel2:color-mix(in srgb,var(--teal) 8%,#25212E);--line:color-mix(in srgb,var(--teal) 23%,#393442);
+ --top:rgba(17,14,23,.95);--nav:rgba(29,24,38,.97);--pill:#211d29;--ghost:var(--panel2);--mask:rgba(5,4,9,.78);
+ --hero:#241b31;--hero-ink:#FCFAFF;--hero-muted:#D0C7DC;--shadow:0 12px 30px rgba(0,0,0,.28),0 1px 0 rgba(255,255,255,.025) inset;
+ --ws-button-shadow:0 7px 20px color-mix(in srgb,var(--teal) 24%,transparent);
+}
+/* The selected palette drives primary buttons, navigators and patient filters. */
+.btn:not(.ghost):not(.warn):not(.danger):not(.idle):not([disabled]),
+button.btn:not(.ghost):not(.warn):not(.danger):not(.idle):not([disabled]){
+ background:linear-gradient(135deg,var(--ws-grad-a) 0%,var(--ws-grad-b) 48%,var(--ws-grad-c) 100%)!important;
+ border:1px solid color-mix(in srgb,var(--teal) 54%,#fff 46%)!important;color:var(--btn-ink)!important;box-shadow:var(--ws-button-shadow)!important;
+}
+.btn:not(.ghost):not(.warn):not(.danger):not(.idle):not([disabled]):active{filter:brightness(.96);box-shadow:0 3px 9px color-mix(in srgb,var(--teal) 22%,transparent)!important}
+.r162-nav.r16-nav.pt-nav button:not(:disabled){background:linear-gradient(135deg,var(--ws-grad-a),var(--ws-grad-b) 48%,var(--ws-grad-c))!important;border-color:color-mix(in srgb,var(--teal) 42%,#fff 58%)!important;color:var(--btn-ink)!important;box-shadow:var(--ws-button-shadow)!important}
+.r162-nav.r16-nav.pt-nav button:not(:disabled) .r162-bl,.r162-nav.r16-nav.pt-nav button:not(:disabled) .r16-arr{color:var(--btn-ink)!important}
+.pfilter-row .chip.on{background:linear-gradient(135deg,var(--ws-grad-a),var(--ws-grad-b) 48%,var(--ws-grad-c))!important;border-color:color-mix(in srgb,var(--teal) 42%,#fff 58%)!important;color:var(--btn-ink)!important;box-shadow:var(--ws-button-shadow)!important}
+.pfilter-row .chip.on *{color:var(--btn-ink)!important}
+.pfilter-row .chip:not(.on){background:linear-gradient(135deg,color-mix(in srgb,var(--teal) 7%,var(--panel)),color-mix(in srgb,var(--teal) 13%,var(--panel2)))!important;border-color:var(--line)!important;color:var(--ink)!important;box-shadow:0 2px 6px color-mix(in srgb,var(--teal) 7%,transparent)}
+.r2-signin,.fold-toggle{background:linear-gradient(135deg,var(--ws-grad-a),var(--ws-grad-b) 48%,var(--ws-grad-c))!important;color:var(--btn-ink)!important;border-color:color-mix(in srgb,var(--teal) 42%,#fff 58%)!important;box-shadow:var(--ws-button-shadow)!important}
+.more-grid .more-row .more-ico,.setup-tile .ico,.top-bell .ico,.more-row .more-ico{color:var(--teal2)!important}
+.more-grid .more-row .more-ico,.setup-tile .ico{background:color-mix(in srgb,var(--teal) 13%,var(--panel2))!important;border-color:color-mix(in srgb,var(--teal) 18%,var(--line))!important}
+.nav:not(.intern-nav) button.on{color:var(--teal2)!important;background:color-mix(in srgb,var(--teal) 13%,var(--nav))!important;border-color:color-mix(in srgb,var(--teal) 22%,transparent)!important}
+.nav:not(.intern-nav) button.on .ico svg{stroke:var(--teal2)!important}
+
+/* Settings-style theme picker, each card previews the active Day/Night gradient. */
+.palette-card{overflow:hidden}
+.palette-hint{margin:-3px 0 12px;color:var(--muted);line-height:1.4}
+.palette-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.palette-choice{position:relative;display:flex;flex-direction:column;gap:8px;min-width:0;min-height:82px;padding:9px;border:1px solid var(--line);border-radius:17px;background:var(--panel);color:var(--ink);text-align:left;cursor:pointer;box-shadow:0 2px 7px rgba(20,16,30,.035);transition:border-color .16s ease,background .16s ease,box-shadow .16s ease,transform .16s ease}
+.palette-choice:active{transform:scale(.985)}
+.palette-choice.selected{border:2px solid var(--teal);padding:8px;background:color-mix(in srgb,var(--teal) 7%,var(--panel));box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 11%,transparent),0 5px 14px color-mix(in srgb,var(--teal) 11%,transparent)}
+.palette-preview{display:flex;gap:0;height:28px;overflow:hidden;border-radius:10px;background:linear-gradient(120deg,var(--palette-a),var(--palette-b) 52%,var(--palette-c));box-shadow:inset 0 1px 0 rgba(255,255,255,.28)}
+.palette-preview i{display:block;flex:1;border-right:1px solid rgba(255,255,255,.16)}.palette-preview i:last-child{border:0}
+.palette-choice-name{font-size:13px;font-weight:750;line-height:1.2;padding-left:2px}
+.palette-choice-check{position:absolute;right:10px;bottom:9px;width:19px;height:19px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--teal);color:var(--btn-ink);font-size:12px;font-weight:900}
+.palette-choice:not(.selected) .palette-choice-check{display:none}
+/* Propagate palette selection into the icon pack, home surfaces and dock accents. */
+html[data-palette]{
+ --ws-accent:var(--ws-accent-light);--ws-accent-deep:var(--ws-deep-light);
+ --ws-accent-soft:color-mix(in srgb,var(--teal) 10%,#fff);
+ --ws-accent-line:color-mix(in srgb,var(--teal) 28%,#fff);
+ --ws-icon-tile:color-mix(in srgb,var(--teal) 13%,#fff);
+ --ws-icon-ink:color-mix(in srgb,var(--teal) 82%,#21172f);
+ --ws-nav-radius:999px;--ws-nav-active-radius:999px;
+}
+html[data-palette][data-theme="ot"],html[data-palette][data-theme="dark"],html[data-palette][data-theme="night"]{
+ --ws-accent:var(--ws-accent-night);--ws-accent-deep:var(--ws-deep-night);
+ --ws-accent-soft:color-mix(in srgb,var(--teal) 18%,#211d2a);
+ --ws-accent-line:color-mix(in srgb,var(--teal) 40%,#302a3a);
+ --ws-icon-tile:color-mix(in srgb,var(--teal) 20%,#211b2b);
+ --ws-icon-ink:var(--ws-deep-night);
+}
+.nav:not(.intern-nav) .nav-in{background:var(--nav)!important;border-color:var(--ws-accent-line)!important}
+.nav:not(.intern-nav) button.on{background:var(--ws-accent-soft)!important;color:var(--ws-accent-deep)!important}
+.nav:not(.intern-nav) button.on .ico svg{stroke:var(--ws-accent-deep)!important}
+.more-grid .more-row .more-ico,.setup-tile .ico{background:var(--ws-icon-tile)!important;color:var(--ws-icon-ink)!important}
+.more-grid .more-row .more-ico svg,.setup-tile .ico svg{color:var(--ws-icon-ink)!important;stroke:currentColor!important}
+.plist-block .sec-sticky{color:var(--teal2)!important}
+.undo-btn,.pgt-more{color:var(--teal2)!important}
+
+
+/* R2.1.9 — deeper Night surfaces and fully palette-driven navigation dock.
+   Keep Night surfaces neutral/dark; palette colour is reserved for accents and restrained tints. */
+html[data-palette][data-theme="ot"],
+html[data-palette][data-theme="dark"],
+html[data-palette][data-theme="night"]{
+  --bg:#08070B;
+  --panel:color-mix(in srgb,var(--teal) 1.5%,#141219);
+  --panel2:color-mix(in srgb,var(--teal) 3%,#1B1821);
+  --line:color-mix(in srgb,var(--teal) 17%,#37323F);
+  --top:#0D0B11;
+  --nav:rgba(17,14,22,.98);
+  --pill:#17141D;
+  --ghost:#1B1821;
+  --shadow:0 8px 24px rgba(0,0,0,.34),0 1px 0 rgba(255,255,255,.025) inset;
+  --ws-accent-soft:color-mix(in srgb,var(--teal) 17%,#17141D);
+  --ws-accent-line:color-mix(in srgb,var(--teal) 38%,#37323F);
+  --ws-icon-tile:color-mix(in srgb,var(--teal) 12%,#1B1822);
+  --ws-icon-ink:var(--ws-deep-night);
+}
+
+/* Ensure dashboard and grouped cards use the darker night surface rather than a pale accent wash. */
+html[data-palette][data-theme="ot"] .card:not(.hero),
+html[data-palette][data-theme="dark"] .card:not(.hero),
+html[data-palette][data-theme="night"] .card:not(.hero),
+html[data-palette][data-theme="ot"] .r2-overview,
+html[data-palette][data-theme="ot"] .r2-duty,
+html[data-palette][data-theme="ot"] .r2-flags,
+html[data-palette][data-theme="ot"] .r2-sched,
+html[data-palette][data-theme="ot"] .r2-team,
+html[data-palette][data-theme="ot"] .r2-bdft,
+html[data-palette][data-theme="ot"] .stat,
+html[data-palette][data-theme="ot"] .more-row,
+html[data-palette][data-theme="ot"] .more-report-card,
+html[data-palette][data-theme="dark"] .r2-overview,
+html[data-palette][data-theme="dark"] .r2-duty,
+html[data-palette][data-theme="dark"] .r2-flags,
+html[data-palette][data-theme="dark"] .r2-sched,
+html[data-palette][data-theme="dark"] .r2-team,
+html[data-palette][data-theme="dark"] .r2-bdft,
+html[data-palette][data-theme="dark"] .stat,
+html[data-palette][data-theme="dark"] .more-row,
+html[data-palette][data-theme="dark"] .more-report-card,
+html[data-palette][data-theme="night"] .r2-overview,
+html[data-palette][data-theme="night"] .r2-duty,
+html[data-palette][data-theme="night"] .r2-flags,
+html[data-palette][data-theme="night"] .r2-sched,
+html[data-palette][data-theme="night"] .r2-team,
+html[data-palette][data-theme="night"] .r2-bdft,
+html[data-palette][data-theme="night"] .stat,
+html[data-palette][data-theme="night"] .more-row,
+html[data-palette][data-theme="night"] .more-report-card{
+  background:var(--panel)!important;
+  border-color:var(--line)!important;
+  color:var(--ink);
+}
+html[data-palette][data-theme="ot"] .r2-overview .stat,
+html[data-palette][data-theme="ot"] .r2-overview .tile,
+html[data-palette][data-theme="dark"] .r2-overview .stat,
+html[data-palette][data-theme="dark"] .r2-overview .tile,
+html[data-palette][data-theme="night"] .r2-overview .stat,
+html[data-palette][data-theme="night"] .r2-overview .tile{
+  background:var(--panel2)!important;
+  border-color:var(--ws-accent-line)!important;
+}
+
+/* The bottom dock must follow the selected palette in both Day and Night.
+   Override legacy violet-specific dock rules without changing its geometry. */
+html[data-palette] .nav:not(.intern-nav) .nav-in{
+  background:var(--nav)!important;
+  border:1px solid var(--ws-accent-line)!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.13),inset 0 1px 0 rgba(255,255,255,.18)!important;
+  outline:0!important;
+}
+html[data-palette] .nav:not(.intern-nav) button{
+  color:var(--muted)!important;
+  background:transparent!important;
+  border:1px solid transparent!important;
+  box-shadow:none!important;
+}
+html[data-palette] .nav:not(.intern-nav) button.on{
+  color:var(--ws-deep-light)!important;
+  background:color-mix(in srgb,var(--teal) 13%,var(--nav))!important;
+  border:1px solid color-mix(in srgb,var(--teal) 36%,transparent)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 7px color-mix(in srgb,var(--teal) 15%,transparent)!important;
+}
+html[data-palette] .nav:not(.intern-nav) button.on .ico,
+html[data-palette] .nav:not(.intern-nav) button.on .ico svg{
+  color:var(--ws-deep-light)!important;
+  stroke:currentColor!important;
+}
+html[data-palette][data-theme="ot"] .nav:not(.intern-nav) .nav-in,
+html[data-palette][data-theme="dark"] .nav:not(.intern-nav) .nav-in,
+html[data-palette][data-theme="night"] .nav:not(.intern-nav) .nav-in{
+  background:rgba(17,14,22,.98)!important;
+  border-color:var(--ws-accent-line)!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.055)!important;
+  outline:0!important;
+}
+html[data-palette][data-theme="ot"] .nav:not(.intern-nav) button,
+html[data-palette][data-theme="dark"] .nav:not(.intern-nav) button,
+html[data-palette][data-theme="night"] .nav:not(.intern-nav) button{
+  color:#AAA5B3!important;
+  background:transparent!important;
+  border-color:transparent!important;
+}
+html[data-palette][data-theme="ot"] .nav:not(.intern-nav) button.on,
+html[data-palette][data-theme="dark"] .nav:not(.intern-nav) button.on,
+html[data-palette][data-theme="night"] .nav:not(.intern-nav) button.on{
+  color:var(--ws-deep-night)!important;
+  background:color-mix(in srgb,var(--teal) 20%,#17141D)!important;
+  border:1px solid color-mix(in srgb,var(--teal) 54%,#37323F)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 2px 7px rgba(0,0,0,.32)!important;
+}
+html[data-palette][data-theme="ot"] .nav:not(.intern-nav) button.on .ico,
+html[data-palette][data-theme="ot"] .nav:not(.intern-nav) button.on .ico svg,
+html[data-palette][data-theme="dark"] .nav:not(.intern-nav) button.on .ico,
+html[data-palette][data-theme="dark"] .nav:not(.intern-nav) button.on .ico svg,
+html[data-palette][data-theme="night"] .nav:not(.intern-nav) button.on .ico,
+html[data-palette][data-theme="night"] .nav:not(.intern-nav) button.on .ico svg{
+  color:var(--ws-deep-night)!important;
+  stroke:currentColor!important;
+}
+
+/* Intern dock follows the same selected theme while retaining its in-flow layout. */
+html[data-palette] .nav.intern-nav .nav-in{
+  background:var(--nav)!important;
+  border-color:var(--ws-accent-line)!important;
+}
+html[data-palette] .nav.intern-nav button.on{
+  color:var(--teal2)!important;
+  background:var(--ws-accent-soft)!important;
+}
+
+</style>
+
+<style id="ward-sync-soft-shadow-fix-r220">
+/* R2.2.0 — replace clipped-looking shadow bands with broad, low-opacity falloff.
+   No layout, stacking, borders, or interaction behaviour is changed. */
+:root{
+  --shadow:0 10px 34px rgba(24,18,38,.055),0 2px 10px rgba(24,18,38,.035);
+}
+html[data-theme="dark"],
+html[data-theme="night"],
+html[data-theme="ot"]{
+  --shadow:0 12px 38px rgba(0,0,0,.22),0 3px 14px rgba(0,0,0,.12);
+}
+/* Bottom sheets / modal surfaces: diffuse lift, with no narrow dark stripe. */
+.sheet .box,
+.sheet.adm-undo .box{
+  box-shadow:
+    0 -16px 52px rgba(20,14,32,.105),
+    0 -4px 18px rgba(20,14,32,.055),
+    0 22px 58px rgba(20,14,32,.075) !important;
+}
+html[data-theme="dark"] .sheet .box,
+html[data-theme="night"] .sheet .box,
+html[data-theme="ot"] .sheet .box,
+html[data-theme="dark"] .sheet.adm-undo .box,
+html[data-theme="night"] .sheet.adm-undo .box,
+html[data-theme="ot"] .sheet.adm-undo .box{
+  box-shadow:
+    0 -18px 56px rgba(0,0,0,.26),
+    0 -5px 20px rgba(0,0,0,.14),
+    0 24px 64px rgba(0,0,0,.16) !important;
+}
+/* Compact patient action drawer and its launcher. */
+.r16-drawer.r16-fab-menu{
+  box-shadow:
+    0 -16px 48px rgba(24,16,38,.12),
+    0 -4px 16px rgba(24,16,38,.06),
+    0 18px 48px rgba(24,16,38,.07) !important;
+}
+html[data-theme="dark"] .r16-drawer.r16-fab-menu,
+html[data-theme="night"] .r16-drawer.r16-fab-menu,
+html[data-theme="ot"] .r16-drawer.r16-fab-menu{
+  box-shadow:
+    0 -18px 52px rgba(0,0,0,.28),
+    0 -5px 18px rgba(0,0,0,.16),
+    0 20px 54px rgba(0,0,0,.18) !important;
+}
+.pt-qfab{
+  box-shadow:0 10px 30px color-mix(in srgb,var(--teal) 15%,transparent),
+             0 3px 10px rgba(20,14,32,.07) !important;
+}
+/* Floating navigation docks: retain the existing outline but remove the hard shadow rim. */
+.nav:not(.intern-nav) .nav-in,
+.nav.intern-nav .nav-in{
+  box-shadow:0 14px 38px rgba(24,18,38,.09),
+             0 4px 14px rgba(24,18,38,.045),
+             inset 0 1px 0 rgba(255,255,255,.10) !important;
+}
+html[data-theme="dark"] .nav .nav-in,
+html[data-theme="night"] .nav .nav-in,
+html[data-theme="ot"] .nav .nav-in{
+  box-shadow:0 16px 42px rgba(0,0,0,.34),
+             0 4px 16px rgba(0,0,0,.18),
+             inset 0 1px 0 rgba(255,255,255,.045) !important;
+}
+.app>.pt-qbar{
+  box-shadow:0 -10px 30px rgba(24,18,38,.055),
+             0 -3px 12px rgba(24,18,38,.03) !important;
+}
+html[data-theme="dark"] .app>.pt-qbar,
+html[data-theme="night"] .app>.pt-qbar,
+html[data-theme="ot"] .app>.pt-qbar{
+  box-shadow:0 -12px 34px rgba(0,0,0,.22),
+             0 -3px 14px rgba(0,0,0,.12) !important;
+}
+
+/* R2.2.0 dashboard refinements */
+.top.resident-home{
+  padding-top:max(15px,env(safe-area-inset-top,0px))!important;
+  padding-bottom:13px!important;
+}
+.r2-meta{display:none!important}
+.r2-duty.r2-duty-compact{
+  min-height:0!important;
+  padding:9px 12px!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+}
+.r2-duty-compact .r2-duty-message{
+  min-width:0;
+  color:var(--ink);
+  font-size:14px;
+  line-height:1.25;
+  font-weight:550;
+}
+.r2-duty-compact .r2-signin{
+  flex:0 0 auto;
+  min-height:34px;
+  padding:6px 15px!important;
+  white-space:nowrap;
+}
+
+/* R2.0.8 admission actions: prevent medication/add and submit controls from colliding */
+.census-admit-actions{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-top:14px;clear:both}
+.census-admit-actions .census-add-med{align-self:flex-start;width:auto;max-width:100%;margin:0}
+.census-admit-actions .census-submit{display:block;width:100%;min-height:54px;margin:0;white-space:normal}
+/* About card glow follows the selected palette in both appearance modes */
+html[data-palette] .about-card{border-color:color-mix(in srgb,var(--accent) 34%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 16%,transparent),0 22px 46px rgba(15,23,42,.12),0 0 34px color-mix(in srgb,var(--accent) 18%,transparent)}
+html[data-palette] .about-card{background:radial-gradient(120% 80% at 50% 0%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 58%),var(--panel)}
+html[data-palette] .about-card .about-kicker{color:var(--accent)}
+html[data-palette] .about-card .about-ver{color:var(--accent)}
+html[data-palette] .about-card .about-rule{background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 55%,transparent),transparent)}
+html[data-palette][data-theme="ot"] .about-card,html[data-palette][data-theme="dark"] .about-card,html[data-palette][data-theme="night"] .about-card{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 22%,transparent),0 22px 48px rgba(0,0,0,.48),0 0 38px color-mix(in srgb,var(--accent) 24%,transparent)}
+/* Session verification: compact, crisp multicolour LEDs; no outer glow */
+.session-check-card{text-align:center}
+.session-check-card h1{margin:2px 0 14px}
+.session-leds{display:flex;justify-content:center;align-items:center;gap:11px;height:16px;margin:0 auto 12px}
+.session-leds i{display:block;width:7px;height:7px;border-radius:50%;background:var(--led);border:1px solid color-mix(in srgb,var(--led) 62%,#334155);box-shadow:none;opacity:.58;transform:scale(.94);animation:sessionLed 2.2s ease-in-out infinite}
+.session-leds i:nth-child(1){--led:#38bdf8;animation-delay:0s}
+.session-leds i:nth-child(2){--led:#a78bfa;animation-delay:.32s}
+.session-leds i:nth-child(3){--led:#34d399;animation-delay:.64s}
+.session-leds i:nth-child(4){--led:#fbbf24;animation-delay:.96s}
+@keyframes sessionLed{0%,100%{opacity:.58;transform:scale(.94)}35%,60%{opacity:1;transform:scale(1.08)}}
+/* Connection page: compact status console with an animated satellite motif */
+.connection-hero{padding:24px 18px 18px;text-align:center;overflow:hidden;position:relative;background:radial-gradient(120% 75% at 50% 0%,color-mix(in srgb,var(--accent) 13%,transparent),transparent 70%),var(--panel)}
+.connection-visual{height:150px;max-width:250px;margin:0 auto 8px;position:relative;display:grid;place-items:center;color:var(--accent)}
+.connection-orbit{position:absolute;border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);border-radius:50%;width:116px;height:116px;transform:rotate(-28deg) scaleY(.58)}
+.connection-orbit.orbit-two{width:176px;height:176px;transform:rotate(35deg) scaleY(.48);border-style:dashed;opacity:.75}
+.connection-satellite{width:82px;height:82px;display:grid;place-items:center;border-radius:26px;background:color-mix(in srgb,var(--accent) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line));box-shadow:0 12px 30px color-mix(in srgb,var(--accent) 16%,transparent);animation:connectionFloat 3s ease-in-out infinite}
+.connection-satellite svg{width:66px;height:66px}
+.connection-spark{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:connectionBlink 1.8s ease-in-out infinite}
+.spark-a{top:24px;left:calc(50% - 56px)}.spark-b{right:calc(50% - 72px);top:62px;animation-delay:.5s}.spark-c{bottom:18px;left:calc(50% + 42px);animation-delay:1s}
+.connection-status-line{display:flex;justify-content:center;align-items:center;gap:9px;font-size:20px;font-weight:800;color:var(--ink)}
+.connection-status-dot{width:10px;height:10px;border-radius:50%;background:#94a3b8;box-shadow:0 0 0 4px color-mix(in srgb,#94a3b8 16%,transparent)}
+.connection-status-dot.live{background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.14),0 0 12px rgba(34,197,94,.55)}
+.connection-status-dot.offline,.connection-status-dot.error{background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.14)}
+.connection-host{font-size:12px;color:var(--muted);margin:7px 0 14px;overflow-wrap:anywhere}
+.connection-sync{min-height:54px;margin:0}
+.connection-error{min-height:0;margin:8px 0 0!important}
+.connection-queue{margin-top:12px}
+.connection-backup{margin-top:12px;min-height:48px}
+.connection-diagnostics{margin-top:12px}
+@keyframes connectionFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
+@keyframes connectionBlink{0%,100%{opacity:.35;transform:scale(.75)}50%{opacity:1;transform:scale(1.35)}}
+@media(prefers-reduced-motion:reduce){.session-leds i,.connection-satellite,.connection-spark{animation:none!important}}
+
+
+
+/* R2.2.1 — unified floating app header.
+   Presentation-only override: keeps the existing header markup, controls,
+   routes and sync logic while making Home and inner-page headers consistent. */
+#app.app > .top,
+#app.app > header.top,
+#app.app > .top.intern-home-top,
+#app.app > .top.intern-compact-top,
+#app.app > .top.intern-patient-top{
+  box-sizing:border-box!important;
+  width:100%!important;
+  margin:8px 0 12px!important;
+  padding:11px 13px!important;
+  min-height:76px!important;
+  border:1px solid color-mix(in srgb,var(--teal) 16%,var(--line))!important;
+  border-radius:22px!important;
+  background:var(--panel)!important;
+  background-image:none!important;
+  box-shadow:0 8px 24px color-mix(in srgb,var(--teal) 7%,transparent),
+             0 2px 6px rgba(35,24,58,.035)!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  overflow:visible!important;
+}
+#app.app > .top.resident-home,
+#app.app > .top.intern-home-top{
+  gap:12px!important;
+  padding:11px 13px!important;
+}
+#app.app > .top .home-id{gap:11px!important;}
+#app.app > .top .profile-photo.home-photo,
+#app.app > .top .photo-img.home-photo{
+  width:44px!important;height:44px!important;flex:0 0 44px!important;
+  border:1px solid color-mix(in srgb,var(--teal) 18%,var(--line))!important;
+  background:var(--panel2)!important;
+}
+#app.app > .top .home-greet{gap:3px!important;}
+#app.app > .top .home-greet b{
+  color:var(--ink)!important;font-size:15px!important;font-weight:750!important;
+  line-height:1.2!important;letter-spacing:-.02em!important;
+}
+#app.app > .top .status-chip.home-sync{
+  color:var(--muted)!important;font-size:11px!important;font-weight:650!important;
+  line-height:1.2!important;height:auto!important;min-height:14px!important;
+}
+#app.app > .top .status-chip.home-sync>.dot{
+  width:8px!important;height:8px!important;min-width:8px!important;min-height:8px!important;
+  margin-right:6px!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 13%,transparent)!important;
+}
+#app.app > .top .compact-context{gap:3px!important;}
+#app.app > .top .compact-kicker{
+  font-size:9px!important;letter-spacing:.15em!important;font-weight:800!important;
+  color:var(--muted)!important;
+}
+#app.app > .top .compact-context strong{
+  color:var(--ink)!important;font-size:17px!important;font-weight:780!important;
+  line-height:1.15!important;letter-spacing:-.025em!important;
+}
+#app.app > .top .who-tools{gap:9px!important;}
+#app.app > .top .ws-sync-mini{
+  max-width:112px!important;font-size:10px!important;font-weight:700!important;
+  color:var(--muted)!important;
+}
+#app.app > .top .top-bell{
+  position:relative!important;width:44px!important;height:44px!important;
+  min-width:44px!important;border-radius:50%!important;
+  background:color-mix(in srgb,var(--teal) 8%,var(--panel))!important;
+  border:1px solid color-mix(in srgb,var(--teal) 20%,var(--line))!important;
+  color:var(--teal2)!important;box-shadow:0 3px 10px color-mix(in srgb,var(--teal) 9%,transparent)!important;
+}
+#app.app > .top .top-bell svg{width:21px!important;height:21px!important;}
+#app.app > .top .top-bell-n{top:-3px!important;right:-3px!important;}
+#app.app > .top.patient-top{min-height:76px!important;gap:9px!important;}
+#app.app > .top .patient-shell-back{
+  width:36px!important;height:36px!important;min-width:36px!important;
+  border-radius:12px!important;background:var(--panel2)!important;
+  border-color:var(--line)!important;color:var(--teal2)!important;
+}
+#app.app > .top .patient-shell-bed{font-size:11px!important;}
+#app.app > .top .patient-shell-primary strong{font-size:14px!important;}
+#app.app > .top .patient-shell-sync .ws-sync-mini{font-size:9px!important;}
+@media(max-width:370px){
+  #app.app > .top{padding:10px 11px!important;gap:8px!important;}
+  #app.app > .top .home-greet b{font-size:13px!important;}
+  #app.app > .top .top-bell{width:40px!important;height:40px!important;min-width:40px!important;}
+  #app.app > .top .ws-sync-mini{max-width:86px!important;}
+}
+@media(prefers-reduced-motion:no-preference){
+  #app.app > .top .top-bell{transition:background .18s ease,border-color .18s ease,box-shadow .18s ease;}
+}
+
+</style>
+
+
+<style id="ward-sync-more-page-refinement-r221">
+/* R2.2.1 — More page: unified grouped settings, quiet separators, refined icon wells.
+   Presentation-only overrides. Existing actions, permissions, and routing are unchanged. */
+.main .more-section{
+  margin:22px 5px 9px!important;
+  padding:0 3px!important;
+  color:var(--muted)!important;
+  font-size:10px!important;
+  line-height:1.2!important;
+  font-weight:800!important;
+  letter-spacing:.16em!important;
+  text-transform:uppercase!important;
+}
+.main .more-grid{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:0!important;
+  margin:0 0 14px!important;
+  padding:5px 10px!important;
+  overflow:hidden;
+  border:1px solid var(--line)!important;
+  border-radius:23px!important;
+  background:var(--panel)!important;
+  box-shadow:0 5px 18px rgba(35,24,54,.045),inset 0 1px 0 rgba(255,255,255,.55)!important;
+}
+.main .more-grid>.more-row{
+  position:relative!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:13px!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:66px!important;
+  margin:0!important;
+  padding:9px 7px!important;
+  border:0!important;
+  border-radius:13px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  text-align:left!important;
+  transform:none;
+}
+.main .more-grid>.more-row:not(:last-child)::before{
+  content:"";
+  position:absolute;
+  left:62px;
+  right:5px;
+  bottom:0;
+  height:1px;
+  background:color-mix(in srgb,var(--line) 78%,transparent);
+}
+.main .more-grid>.more-row:active{
+  background:var(--ws-accent-soft,rgba(124,58,237,.07))!important;
+}
+.main .more-grid .more-ico{
+  display:flex!important;
+  flex:0 0 43px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:43px!important;
+  height:43px!important;
+  margin:0!important;
+  border:1px solid color-mix(in srgb,var(--ws-accent-line,var(--line)) 72%,transparent)!important;
+  border-radius:14px!important;
+  background:linear-gradient(145deg,var(--ws-icon-tile,#f0e8ff),color-mix(in srgb,var(--ws-icon-tile,#f0e8ff) 62%,var(--panel)))!important;
+  color:var(--ws-icon-ink,var(--teal2))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.58)!important;
+}
+.main .more-grid .more-ico svg{
+  display:block!important;
+  width:23px!important;
+  height:23px!important;
+  stroke:currentColor!important;
+  stroke-width:1.85!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+.main .more-grid .more-label{
+  display:block!important;
+  flex:1 1 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin:0!important;
+  overflow:visible!important;
+  color:var(--ink)!important;
+  font-family:var(--ws-font-family,Inter,system-ui,sans-serif)!important;
+  font-size:14px!important;
+  font-weight:650!important;
+  line-height:1.35!important;
+  letter-spacing:-.018em!important;
+  text-align:left!important;
+}
+.main .more-grid>.more-row::after{
+  content:""!important;
+  display:block!important;
+  flex:0 0 8px!important;
+  width:8px!important;
+  height:8px!important;
+  margin:0 5px 0 8px!important;
+  border-top:1.8px solid var(--muted)!important;
+  border-right:1.8px solid var(--muted)!important;
+  transform:rotate(45deg)!important;
+  opacity:.72!important;
+}
+.main .more-grid>.more-row.danger .more-label{color:#d94b66!important}
+.main .more-grid>.more-row.danger .more-ico{
+  color:#d94b66!important;
+  background:color-mix(in srgb,#d94b66 10%,var(--panel))!important;
+  border-color:color-mix(in srgb,#d94b66 20%,var(--line))!important;
+}
+.main .more-report-card{
+  margin:0 0 14px!important;
+  padding:14px!important;
+  border:1px solid var(--line)!important;
+  border-radius:21px!important;
+  background:var(--panel)!important;
+  box-shadow:0 5px 18px rgba(35,24,54,.045)!important;
+}
+.main .more-report-field{margin:0 0 10px!important}
+.main .more-report-field>span{
+  margin:0 0 7px!important;
+  color:var(--muted)!important;
+  font-size:10px!important;
+  font-weight:750!important;
+  letter-spacing:.1em!important;
+  text-transform:uppercase!important;
+}
+.main .more-report-action{min-height:46px!important;border-radius:14px!important}
+html[data-theme="dark"] .main .more-grid,
+html[data-theme="night"] .main .more-grid,
+html[data-theme="ot"] .main .more-grid{
+  background:var(--panel)!important;
+  border-color:var(--line)!important;
+  box-shadow:0 7px 20px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+html[data-theme="dark"] .main .more-grid>.more-row:not(:last-child)::before,
+html[data-theme="night"] .main .more-grid>.more-row:not(:last-child)::before,
+html[data-theme="ot"] .main .more-grid>.more-row:not(:last-child)::before{
+  background:rgba(211,197,232,.12)!important;
+}
+html[data-theme="dark"] .main .more-grid .more-ico,
+html[data-theme="night"] .main .more-grid .more-ico,
+html[data-theme="ot"] .main .more-grid .more-ico{
+  background:linear-gradient(145deg,rgba(169,138,248,.2),rgba(116,79,173,.12))!important;
+  border-color:rgba(190,165,245,.18)!important;
+  color:#cbb7ff!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07)!important;
+}
+html[data-theme="dark"] .main .more-grid .more-label,
+html[data-theme="night"] .main .more-grid .more-label,
+html[data-theme="ot"] .main .more-grid .more-label{color:var(--ink)!important}
+html[data-theme="dark"] .main .more-report-card,
+html[data-theme="night"] .main .more-report-card,
+html[data-theme="ot"] .main .more-report-card{
+  background:var(--panel)!important;
+  border-color:var(--line)!important;
+  box-shadow:0 7px 20px rgba(0,0,0,.18)!important;
+}
+@media (min-width:760px){
+  .main .more-grid{max-width:none!important}
+  .main .more-grid>.more-row{min-height:70px!important}
+}
+@media (prefers-reduced-motion:reduce){
+  .main .more-grid>.more-row{transition:none!important}
+}
+</style>
+
+
+<style id="ward-sync-r223-more-and-inner-header">
+/* R2.2.3 — compact More settings rows with no internal hairline dividers. */
+.main .more-section{
+  margin:15px 5px 6px!important;
+  padding:0 3px!important;
+  font-size:10px!important;
+  line-height:1.15!important;
+  letter-spacing:.14em!important;
+  font-weight:800!important;
+}
+.main .more-grid{
+  gap:2px!important;
+  margin:0 0 10px!important;
+  padding:5px 8px!important;
+  border-radius:20px!important;
+}
+.main .more-grid>.more-row{
+  min-height:53px!important;
+  padding:5px 5px!important;
+  gap:10px!important;
+  border:0!important;
+  border-radius:12px!important;
+}
+.main .more-grid>.more-row::before,
+.main .more-grid>.more-row:not(:last-child)::before{
+  display:none!important;
+  content:none!important;
+}
+.main .more-grid .more-ico{
+  flex:0 0 32px!important;
+  width:32px!important;
+  height:32px!important;
+  border-radius:10px!important;
+  border:1px solid color-mix(in srgb,var(--ws-accent-line,var(--line)) 62%,transparent)!important;
+  box-shadow:none!important;
+  background:color-mix(in srgb,var(--ws-icon-tile,var(--panel2)) 82%,var(--panel))!important;
+}
+.main .more-grid .more-ico svg{
+  width:19px!important;
+  height:19px!important;
+  stroke-width:1.65!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+.main .more-grid .more-label{
+  font-size:13.5px!important;
+  line-height:1.25!important;
+  font-weight:650!important;
+  letter-spacing:-.015em!important;
+}
+.main .more-grid>.more-row::after{
+  flex-basis:7px!important;
+  width:7px!important;
+  height:7px!important;
+  margin-left:7px!important;
+  margin-right:4px!important;
+  border-width:1.6px!important;
+  opacity:.58!important;
+}
+.main .more-grid>.more-row:active{
+  background:color-mix(in srgb,var(--teal) 7%,transparent)!important;
+}
+.main .more-report-card{
+  margin:0 0 10px!important;
+  padding:11px!important;
+  border-radius:19px!important;
+}
+.main .more-report-field{margin-bottom:8px!important}
+.main .more-report-action{min-height:42px!important;border-radius:13px!important}
+
+/* The Home greeting keeps its floating header card. Inner pages use a bare title/status row. */
+#app.app>.top.compact-top,
+#app.app>.top.patient-top,
+#app.app>.top.intern-compact-top,
+#app.app>.top.intern-patient-top{
+  width:auto!important;
+  min-height:44px!important;
+  margin:5px 0 4px!important;
+  padding:5px 2px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  overflow:visible!important;
+}
+#app.app>.top.compact-top .compact-kicker,
+#app.app>.top.intern-compact-top .compact-kicker{
+  display:none!important;
+}
+#app.app>.top.compact-top .compact-context,
+#app.app>.top.intern-compact-top .compact-context{
+  gap:0!important;
+}
+#app.app>.top.compact-top .compact-context strong,
+#app.app>.top.intern-compact-top .compact-context strong{
+  font-size:20px!important;
+  line-height:1.18!important;
+  font-weight:760!important;
+  letter-spacing:-.035em!important;
+  color:var(--ink)!important;
+}
+#app.app>.top.compact-top .who-tools,
+#app.app>.top.intern-compact-top .who-tools{
+  align-items:center!important;
+  gap:9px!important;
+}
+#app.app>.top.compact-top .ws-sync-mini,
+#app.app>.top.intern-compact-top .ws-sync-mini{
+  max-width:116px!important;
+  font-size:11px!important;
+  font-weight:650!important;
+  color:var(--muted)!important;
+}
+#app.app>.top.compact-top .top-bell,
+#app.app>.top.intern-compact-top .top-bell{
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  border-radius:50%!important;
+  background:color-mix(in srgb,var(--teal) 7%,var(--panel))!important;
+  border:1px solid color-mix(in srgb,var(--teal) 20%,var(--line))!important;
+  box-shadow:none!important;
+}
+/* Patient detail header keeps the back control and patient identity, but loses the banner surface. */
+#app.app>.top.patient-top,
+#app.app>.top.intern-patient-top{
+  min-height:48px!important;
+  gap:8px!important;
+}
+#app.app>.top.patient-top .patient-shell-back,
+#app.app>.top.intern-patient-top .patient-shell-back{
+  width:36px!important;height:36px!important;min-width:36px!important;
+  border-radius:12px!important;
+}
+#app.app>.top.patient-top .patient-shell-primary strong,
+#app.app>.top.intern-patient-top .patient-shell-primary strong{
+  font-size:14px!important;
+  font-weight:720!important;
+}
+#app.app>.top.patient-top .who-tools,
+#app.app>.top.intern-patient-top .who-tools{gap:8px!important}
+#app.app>.top.patient-top .top-bell,
+#app.app>.top.intern-patient-top .top-bell{
+  width:38px!important;height:38px!important;min-width:38px!important;
+  border-radius:50%!important;
+}
+@media(max-width:420px){
+  .main .more-section{margin-top:13px!important;margin-bottom:5px!important}
+  .main .more-grid{padding:4px 7px!important;margin-bottom:9px!important}
+  .main .more-grid>.more-row{min-height:50px!important;padding:4px!important}
+  .main .more-grid .more-ico{width:30px!important;height:30px!important;flex-basis:30px!important}
+  .main .more-grid .more-ico svg{width:18px!important;height:18px!important}
+  #app.app>.top.compact-top .compact-context strong,
+  #app.app>.top.intern-compact-top .compact-context strong{font-size:19px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .main .more-grid>.more-row{transition:none!important}
+}
+</style>
+
+<style id="ward-sync-r225-header-and-shadow-polish">
+/* R2.2.5 — header surface consistency and unclipped, diffuse elevation. */
+
+/* Use the exact same theme-aware translucent surface as the floating navbar.
+   Keep the Home greeting card; inner-page title rows stay transparent. */
+#app.app > .top.resident-home,
+#app.app > .top.intern-home-top{
+  background:var(--nav)!important;
+  background-color:var(--nav)!important;
+  background-image:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  border:1px solid color-mix(in srgb,var(--ws-accent-line,var(--line)) 62%,var(--line))!important;
+  border-radius:22px!important;
+  box-shadow:0 7px 22px rgba(35,24,58,.045),
+             0 2px 6px rgba(35,24,58,.025)!important;
+  isolation:isolate;
+}
+#app.app > .top.compact-top,
+#app.app > .top.patient-top,
+#app.app > .top.intern-compact-top,
+#app.app > .top.intern-patient-top{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+/* Remove the large decorative tint bloom behind the page header. */
+#app.app{
+  background:var(--bg)!important;
+}
+
+/* The app shell was clipping all descendants' outer shadows at its bounds.
+   Main remains the scrolling viewport, preserving scroll and touch behaviour. */
+#app.app{
+  overflow:visible!important;
+}
+#app.app > .main{
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-x:none;
+}
+
+/* Softer shared elevation tokens for all components using --shadow. */
+:root{
+  --shadow:0 7px 22px rgba(30,22,45,.042),
+           0 1px 5px rgba(30,22,45,.022);
+}
+html[data-theme="dark"],
+html[data-theme="night"],
+html[data-theme="ot"]{
+  --shadow:0 8px 24px rgba(0,0,0,.17),
+           0 2px 8px rgba(0,0,0,.085);
+}
+
+/* About / identity card: keep theme glow, remove the hard zero-blur ring
+   and broad glow that previously made a visible halo band. */
+html[data-palette] .about-card{
+  box-shadow:
+    0 14px 32px rgba(35,24,58,.065),
+    0 3px 9px rgba(35,24,58,.028),
+    0 0 24px color-mix(in srgb,var(--accent) 7%,transparent)!important;
+}
+html[data-palette][data-theme="dark"] .about-card,
+html[data-palette][data-theme="night"] .about-card,
+html[data-palette][data-theme="ot"] .about-card{
+  box-shadow:
+    0 16px 36px rgba(0,0,0,.24),
+    0 3px 10px rgba(0,0,0,.12),
+    0 0 26px color-mix(in srgb,var(--accent) 9%,transparent)!important;
+}
+
+/* Shared elevated clinical cards and grouped surfaces. */
+#app.app .card:not(.hero),
+#app.app .r2-overview,
+#app.app .r2-duty,
+#app.app .r2-flags,
+#app.app .r2-sched,
+#app.app .r2-team,
+#app.app .r2-bdft,
+#app.app .about-card,
+#app.app .more-grid,
+#app.app .more-report-card{
+  box-shadow:0 7px 20px rgba(35,24,58,.038),
+             0 1px 5px rgba(35,24,58,.022)!important;
+}
+html[data-theme="dark"] #app.app .card:not(.hero),
+html[data-theme="night"] #app.app .card:not(.hero),
+html[data-theme="ot"] #app.app .card:not(.hero),
+html[data-theme="dark"] #app.app .r2-overview,
+html[data-theme="dark"] #app.app .r2-duty,
+html[data-theme="dark"] #app.app .r2-flags,
+html[data-theme="dark"] #app.app .r2-sched,
+html[data-theme="dark"] #app.app .r2-team,
+html[data-theme="dark"] #app.app .r2-bdft,
+html[data-theme="dark"] #app.app .more-grid,
+html[data-theme="dark"] #app.app .more-report-card,
+html[data-theme="night"] #app.app .r2-overview,
+html[data-theme="night"] #app.app .r2-duty,
+html[data-theme="night"] #app.app .r2-flags,
+html[data-theme="night"] #app.app .r2-sched,
+html[data-theme="night"] #app.app .r2-team,
+html[data-theme="night"] #app.app .r2-bdft,
+html[data-theme="night"] #app.app .more-grid,
+html[data-theme="night"] #app.app .more-report-card,
+html[data-theme="ot"] #app.app .r2-overview,
+html[data-theme="ot"] #app.app .r2-duty,
+html[data-theme="ot"] #app.app .r2-flags,
+html[data-theme="ot"] #app.app .r2-sched,
+html[data-theme="ot"] #app.app .r2-team,
+html[data-theme="ot"] #app.app .r2-bdft,
+html[data-theme="ot"] #app.app .more-grid,
+html[data-theme="ot"] #app.app .more-report-card{
+  box-shadow:0 8px 24px rgba(0,0,0,.17),
+             0 2px 8px rgba(0,0,0,.085)!important;
+}
+
+/* Floaters and sheets: remove hard shadow rims; retain their outlines. */
+.nav:not(.intern-nav) .nav-in,
+.nav.intern-nav .nav-in{
+  box-shadow:0 10px 28px rgba(30,22,45,.065),
+             0 2px 8px rgba(30,22,45,.03),
+             inset 0 1px 0 rgba(255,255,255,.12)!important;
+}
+html[data-theme="dark"] .nav .nav-in,
+html[data-theme="night"] .nav .nav-in,
+html[data-theme="ot"] .nav .nav-in{
+  box-shadow:0 10px 30px rgba(0,0,0,.26),
+             0 2px 8px rgba(0,0,0,.12),
+             inset 0 1px 0 rgba(255,255,255,.04)!important;
+}
+.r16-drawer.r16-fab-menu,
+.sheet .box,
+.sheet.adm-undo .box{
+  box-shadow:0 14px 36px rgba(30,22,45,.09),
+             0 3px 12px rgba(30,22,45,.04)!important;
+}
+html[data-theme="dark"] .r16-drawer.r16-fab-menu,
+html[data-theme="night"] .r16-drawer.r16-fab-menu,
+html[data-theme="ot"] .r16-drawer.r16-fab-menu,
+html[data-theme="dark"] .sheet .box,
+html[data-theme="night"] .sheet .box,
+html[data-theme="ot"] .sheet .box,
+html[data-theme="dark"] .sheet.adm-undo .box,
+html[data-theme="night"] .sheet.adm-undo .box,
+html[data-theme="ot"] .sheet.adm-undo .box{
+  box-shadow:0 16px 40px rgba(0,0,0,.28),
+             0 3px 12px rgba(0,0,0,.13)!important;
+}
+.pt-qfab{
+  box-shadow:0 9px 24px color-mix(in srgb,var(--teal) 12%,transparent),
+             0 2px 7px rgba(30,22,45,.045)!important;
+}
+.app>.pt-qbar{
+  box-shadow:0 -8px 24px rgba(30,22,45,.045),
+             0 -2px 7px rgba(30,22,45,.022)!important;
+}
+html[data-theme="dark"] .app>.pt-qbar,
+html[data-theme="night"] .app>.pt-qbar,
+html[data-theme="ot"] .app>.pt-qbar{
+  box-shadow:0 -9px 26px rgba(0,0,0,.2),
+             0 -2px 8px rgba(0,0,0,.09)!important;
+}
+
+/* Avoid pseudo-element shadow/ring collisions from the Home greeting's image. */
+#app.app > .top.resident-home::before,
+#app.app > .top.resident-home::after,
+#app.app > .top.intern-home-top::before,
+#app.app > .top.intern-home-top::after{
+  pointer-events:none;
+}
+</style>
+
+<style id="ward-sync-svg-icon-pack">
+/* Official Ward Sync SVG icon pack — currentColor symbols inherit each section's theme. */
+.ico.ws-icon-pack{display:inline-flex;align-items:center;justify-content:center;flex:none;line-height:0}
+.ico.ws-icon-pack>svg{display:block;width:100%;height:100%;overflow:visible;fill:none;stroke:none;color:inherit}
+.ico.ws-icon-pack use{color:inherit}
+.more-grid .more-ico{width:25px!important;height:25px!important;flex:0 0 25px!important}
+.more-grid .more-ico .ws-icon-pack,.more-grid .more-ico .ws-icon-pack>svg{width:25px;height:25px}
+.more-go{display:inline-flex;align-items:center;justify-content:center;width:18px;height:22px;flex:0 0 18px;color:var(--muted);opacity:.78}
+.more-go .ws-icon-pack,.more-go .ws-icon-pack>svg{width:16px;height:16px}
+.more-grid>.more-row::after{display:none!important;content:none!important}
+.nav .ico.ws-icon-pack,.side-nav .ico.ws-icon-pack{width:24px;height:24px}
+.top-bell .ico.ws-icon-pack{width:20px;height:20px}
+.setup-tile .ico.ws-icon-pack{width:24px;height:24px}
+</style>
 </head>
 <body>
+<svg id="ward-sync-icon-sprite" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
+  <symbol id="icon-admit-patient" viewBox="0 0 24 24">
+    <!-- Duotone depth layer -->
+  <path d="M6 3.5h7.5L18 8v4.2a5.5 5.5 0 0 0-5.8 7.8H6a2 2 0 0 1-2-2v-12.5a2 2 0 0 1 2-2Z" fill="currentColor" opacity="0.14"/>
+  <circle cx="17.5" cy="17.5" r="4.5" fill="currentColor" opacity="0.22"/>
+  <!-- Main document body -->
+  <path d="M11.5 20H6a2 2 0 0 1-2-2V5.5a2 2 0 0 1 2-2h7.5L18 8v3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Folded corner -->
+  <path d="M13.25 3.5V8H18" fill="none" stroke="currentColor" stroke-width="1.32" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Medical cross & chart lines inside file -->
+  <path d="M9 8.25v3M7.5 9.75h3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M7.5 14h4.5M7.5 16.75h2.75" fill="none" stroke="currentColor" stroke-width="1.28" stroke-linecap="round"/>
+  <!-- Admission plus badge -->
+  <circle cx="17.5" cy="17.5" r="4.25" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <path d="M17.5 15.5v4M15.5 17.5h4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-under-observation" viewBox="0 0 24 24">
+    <!-- Duotone depth layer -->
+  <path d="M2.25 12C4.2 7.8 7.8 5.25 12 5.25S19.8 7.8 21.75 12c-1.95 4.2-5.55 6.75-9.75 6.75S4.2 16.2 2.25 12Z" fill="currentColor" opacity="0.12"/>
+  <circle cx="12" cy="12" r="3.5" fill="currentColor" opacity="0.24"/>
+  <!-- Corner clinical observation viewfinders -->
+  <path d="M3.5 6.25V4.75a1 1 0 0 1 1-1H6M20.5 6.25V4.75a1 1 0 0 0-1-1H18M3.5 17.75v1.5a1 1 0 0 0 1 1H6M20.5 17.75v1.5a1 1 0 0 1-1 1H18" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>
+  <!-- Eye contour -->
+  <path d="M2.25 12C4.2 7.8 7.8 5.25 12 5.25S19.8 7.8 21.75 12c-1.95 4.2-5.55 6.75-9.75 6.75S4.2 16.2 2.25 12Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Iris & pupil reticle -->
+  <circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <circle cx="12" cy="12" r="1.25" fill="currentColor"/>
+  <!-- Specular glint -->
+  <circle cx="13.35" cy="10.65" r="0.65" fill="currentColor"/>
+  </symbol>
+  <symbol id="icon-ect" viewBox="0 0 24 24">
+    <!-- Duotonelightning fill -->
+  <path d="M13.2 2.75 6.25 13h5.1l-1.05 8.25L17.75 11h-5.1l.55-8.25Z" fill="currentColor" opacity="0.20"/>
+  <!-- Bilateral neuromodulation pulse arcs -->
+  <path d="M4.2 7.5a8.5 8.5 0 0 0 0 9M19.8 7.5a8.5 8.5 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.75"/>
+  <!-- Electrode contact nodes -->
+  <circle cx="3.25" cy="12" r="1.1" fill="currentColor"/>
+  <circle cx="20.75" cy="12" r="1.1" fill="currentColor"/>
+  <!-- Crisp central energy bolt -->
+  <path d="M13.2 2.75 6.25 13h5.1l-1.05 8.25L17.75 11h-5.1l.55-8.25Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="icon-bdft" viewBox="0 0 24 24">
+    <!-- Duotone mattress & blanket fill -->
+  <path d="M3.25 12.5h17.5a1.5 1.5 0 0 1 1.5 1.5v2.75H3.25V12.5Z" fill="currentColor" opacity="0.18"/>
+  <rect x="5.25" y="9.5" width="4.75" height="3" rx="1.2" fill="currentColor" opacity="0.22"/>
+  <!-- Headboard & footboard posts -->
+  <path d="M3.25 5.5v13.5M22.25 11v8" fill="none" stroke="currentColor" stroke-width="1.44" stroke-linecap="round"/>
+  <!-- Pillow -->
+  <rect x="5.25" y="9.5" width="4.75" height="3" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.32"/>
+  <!-- Blanket / Duvet arch -->
+  <path d="M10 12.5V10.8c0-.72.58-1.3 1.3-1.3h7.45a2 2 0 0 1 2 2v1" fill="none" stroke="currentColor" stroke-width="1.32" stroke-linecap="round"/>
+  <!-- Bed frame & rail -->
+  <path d="M3.25 12.5h17.5a1.5 1.5 0 0 1 1.5 1.5v2.75H3.25" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Caster wheels -->
+  <circle cx="4.5" cy="19.5" r="1" fill="currentColor"/>
+  <circle cx="21" cy="19.5" r="1" fill="currentColor"/>
+  <!-- Ward distribution cross badge -->
+  <path d="M15.5 4.25v3M14 5.75h3" fill="none" stroke="currentColor" stroke-width="1.36" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-handovers" viewBox="0 0 24 24">
+    <!-- Duotone board fill -->
+  <rect x="4.25" y="4.5" width="12.5" height="16" rx="2" fill="currentColor" opacity="0.14"/>
+  <circle cx="17.25" cy="16.25" r="4.5" fill="currentColor" opacity="0.22"/>
+  <!-- Clipboard body -->
+  <path d="M12 20.5H6.25a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2H8M13 4.5h1.75a2 2 0 0 1 2 2v4.25" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Clipboard clip -->
+  <rect x="8" y="2.75" width="5" height="3" rx="1" fill="none" stroke="currentColor" stroke-width="1.32"/>
+  <!-- Note lines -->
+  <path d="M7.25 9.25h6.5M7.25 12.25h4.25M7.25 15.25h3" fill="none" stroke="currentColor" stroke-width="1.28" stroke-linecap="round"/>
+  <!-- Shift handover exchange badge -->
+  <circle cx="17.25" cy="16.25" r="4.5" fill="none" stroke="currentColor" stroke-width="1.36"/>
+  <path d="M15.4 15.1h3.5l-1.1-1.1M19.1 17.4h-3.5l1.1 1.1" fill="none" stroke="currentColor" stroke-width="1.24" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="icon-task-board" viewBox="0 0 24 24">
+    <!-- Duotone board fill -->
+  <rect x="4.5" y="4.5" width="15" height="16.5" rx="2.25" fill="currentColor" opacity="0.14"/>
+  <!-- Clipboard frame -->
+  <path d="M8.5 4.5H6.75A2.25 2.25 0 0 0 4.5 6.75v12A2.25 2.25 0 0 0 6.75 21h10.5a2.25 2.25 0 0 0 2.25-2.25v-12A2.25 2.25 0 0 0 17.25 4.5H15.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Clipboard top clasp -->
+  <rect x="8.5" y="2.75" width="7" height="3.25" rx="1.25" fill="none" stroke="currentColor" stroke-width="1.36"/>
+  <!-- Task Row 1 (Completed) -->
+  <path d="M7.5 10.1l1.15 1.15 2.1-2.25" fill="none" stroke="currentColor" stroke-width="1.36" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12.75 10h3.75" fill="none" stroke="currentColor" stroke-width="1.36" stroke-linecap="round"/>
+  <!-- Task Row 2 (Completed) -->
+  <path d="M7.5 13.85l1.15 1.15 2.1-2.25" fill="none" stroke="currentColor" stroke-width="1.36" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12.75 13.75h3.75" fill="none" stroke="currentColor" stroke-width="1.36" stroke-linecap="round"/>
+  <!-- Task Row 3 (Pending checkbox) -->
+  <rect x="7.5" y="16.6" width="2.4" height="2.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.24"/>
+  <path d="M12.75 17.75h2.5" fill="none" stroke="currentColor" stroke-width="1.36" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-broadcast" viewBox="0 0 24 24">
+    <!-- Duotone horn fill -->
+  <path d="M8 9.25 16.5 5.2v13.1L8 14.25H4.75a1.75 1.75 0 0 1-1.75-1.75V11A1.75 1.75 0 0 1 4.75 9.25H8Z" fill="currentColor" opacity="0.17"/>
+  <!-- Megaphone body & horn -->
+  <path d="M8 9.25 16.5 5.2v13.1L8 14.25H4.75a1.75 1.75 0 0 1-1.75-1.75V11A1.75 1.75 0 0 1 4.75 9.25H8Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Internal division & handle -->
+  <path d="M8 9.25v5" fill="none" stroke="currentColor" stroke-width="1.32" stroke-linecap="round"/>
+  <path d="M5.25 14.25 6.4 18.4a1.25 1.25 0 0 0 1.2.9h1.15a1 1 0 0 0 .96-1.27L8.6 14.5" fill="none" stroke="currentColor" stroke-width="1.32" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Acoustic wave arcs -->
+  <path d="M19.25 9.25a3.5 3.5 0 0 1 0 5M21.25 7.25a6.5 6.5 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-activity-log" viewBox="0 0 24 24">
+    <!-- Duotone screen fill -->
+  <rect x="3.25" y="4.25" width="17.5" height="15.5" rx="2.5" fill="currentColor" opacity="0.14"/>
+  <!-- Screen frame -->
+  <rect x="3.25" y="4.25" width="17.5" height="15.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <!-- Header divider & status dots -->
+  <path d="M3.25 8.25h17.5" fill="none" stroke="currentColor" stroke-width="1.12" opacity="0.65"/>
+  <circle cx="6" cy="6.25" r="0.8" fill="currentColor"/>
+  <circle cx="8.5" cy="6.25" r="0.8" fill="currentColor" opacity="0.5"/>
+  <!-- Crisp ECG/Telemetry pulse wave -->
+  <path d="M5.75 14.25H8.5l1.4-3.75 2.1 6.25 1.85-4.5 1.15 2h3.25" fill="none" stroke="currentColor" stroke-width="1.44" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="icon-resident-directory" viewBox="0 0 24 24">
+    <!-- Duotone card fill -->
+  <rect x="2.75" y="5" width="18.5" height="14.5" rx="2.25" fill="currentColor" opacity="0.14"/>
+  <circle cx="8.25" cy="11.25" r="2" fill="currentColor" opacity="0.25"/>
+  <!-- ID Card outline -->
+  <rect x="2.75" y="5" width="18.5" height="14.5" rx="2.25" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <!-- Top lanyard clip -->
+  <path d="M10 5V3.75a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V5" fill="none" stroke="currentColor" stroke-width="1.28" stroke-linecap="round"/>
+  <!-- Clinician portrait -->
+  <circle cx="8.25" cy="11" r="2" fill="none" stroke="currentColor" stroke-width="1.32"/>
+  <path d="M5.35 16.25a3.25 3.25 0 0 1 5.8 0" fill="none" stroke="currentColor" stroke-width="1.32" stroke-linecap="round"/>
+  <!-- Directory credential lines -->
+  <path d="M13.25 10h5M13.25 12.75h5M13.25 15.5h3.25" fill="none" stroke="currentColor" stroke-width="1.32" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-user-management" viewBox="0 0 24 24">
+    <!-- Duotone avatar fills -->
+  <circle cx="9.25" cy="8.25" r="3.25" fill="currentColor" opacity="0.20"/>
+  <path d="M3.25 19.25c0-3.1 2.68-5.5 6-5.5s6 2.4 6 5.5" fill="currentColor" opacity="0.14"/>
+  <!-- Primary user -->
+  <circle cx="9.25" cy="8.25" r="3.25" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <path d="M3.25 19.25c0-3.1 2.68-5.5 6-5.5s6 2.4 6 5.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- Secondary user profile -->
+  <path d="M15.5 5.4a3 3 0 0 1 0 5.7M17.25 14.1c2.1.55 3.5 2.2 3.5 4.4" fill="none" stroke="currentColor" stroke-width="1.36" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-ward-setup" viewBox="0 0 24 24">
+    <!-- Duotone gear fill -->
+  <path d="M12 3.25l1.2 1.85 2.05-.65.9 2 2 .9-.65 2.05 1.85 1.2v2.8l-1.85 1.2.65 2.05-2 .9-.9 2-2.05-.65L12 20.75l-1.2-1.85-2.05.65-.9-2-2-.9.65-2.05L4.65 13.4v-2.8l1.85-1.2-.65-2.05 2-.9.9-2 2.05.65L12 3.25Z" fill="currentColor" opacity="0.15"/>
+  <!-- Precision contoured 8-tooth gear -->
+  <path d="M10.85 3.25h2.3l.55 2.05a7.2 7.2 0 0 1 1.65.95l1.95-.8 1.6 1.6-.8 1.95c.42.5.75 1.05.95 1.65l2.05.55v2.3l-2.05.55a7.2 7.2 0 0 1-.95 1.65l.8 1.95-1.6 1.6-1.95-.8a7.2 7.2 0 0 1-1.65.95l-.55 2.05h-2.3l-.55-2.05a7.2 7.2 0 0 1-1.65-.95l-1.95.8-1.6-1.6.8-1.95a7.2 7.2 0 0 1-.95-1.65l-2.05-.55v-2.3l2.05-.55c.2-.6.53-1.15.95-1.65l-.8-1.95 1.6-1.6 1.95.8c.5-.42 1.05-.75 1.65-.95l.55-2.05Z" fill="none" stroke="currentColor" stroke-width="1.36" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Inner hub circle -->
+  <circle cx="12" cy="12" r="3.25" fill="none" stroke="currentColor" stroke-width="1.36"/>
+  </symbol>
+  <symbol id="icon-report-month" viewBox="0 0 24 24">
+    <!-- Duotone calendar header -->
+  <path d="M3.75 7.5A2.25 2.25 0 0 1 6 5.25h12A2.25 2.25 0 0 1 20.25 7.5v2.25H3.75V7.5Z" fill="currentColor" opacity="0.22"/>
+  <rect x="3.75" y="5.25" width="16.5" height="15" rx="2.25" fill="currentColor" opacity="0.10"/>
+  <!-- Calendar body & header divider -->
+  <rect x="3.75" y="5.25" width="16.5" height="15" rx="2.25" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <path d="M3.75 9.75h16.5" fill="none" stroke="currentColor" stroke-width="1.32"/>
+  <!-- Binder rings -->
+  <path d="M8 3.5v3.25M16 3.5v3.25" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- Month grid cells -->
+  <circle cx="8" cy="13.25" r="1" fill="currentColor"/>
+  <circle cx="12" cy="13.25" r="1" fill="currentColor"/>
+  <circle cx="16" cy="13.25" r="1" fill="currentColor"/>
+  <circle cx="8" cy="16.75" r="1" fill="currentColor"/>
+  <circle cx="12" cy="16.75" r="1" fill="currentColor"/>
+  </symbol>
+  <symbol id="icon-export-monthly-report" viewBox="0 0 24 24">
+    <!-- Duotone report fill -->
+  <path d="M5.5 3.5h8.25L18.5 8.25v11.25a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2V5.5a2 2 0 0 1 2-2Z" fill="currentColor" opacity="0.15"/>
+  <!-- Report document & fold -->
+  <path d="M12.5 21.5H5.5a2 2 0 0 1-2-2V5.5a2 2 0 0 1 2-2h8.25L18.5 8.25V12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.5 3.5v4.75h5" fill="none" stroke="currentColor" stroke-width="1.32" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Analytics bar chart inside report -->
+  <path d="M7.25 16.5v-2.75M10.25 16.5v-5.25M13.25 16.5v-3.75" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- Export arrow -->
+  <path d="M15.25 19.5 20.5 14.25M16.5 14.25h4v4" fill="none" stroke="currentColor" stroke-width="1.44" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="icon-appearance" viewBox="0 0 24 24">
+    <!-- Duotone palette fill -->
+  <path d="M12 3a9 9 0 0 0-9 9c0 4.97 4.03 9 9 9 1.65 0 2.75-1.1 2.75-2.5 0-.68-.26-1.3-.7-1.78-.4-.44-.63-1-.63-1.62 0-1.32 1.08-2.35 2.4-2.35H17.5A3.5 3.5 0 0 0 21 9.25C21 5.72 16.97 3 12 3Z" fill="currentColor" opacity="0.15"/>
+  <!-- Palette contour -->
+  <path d="M12 3a9 9 0 0 0-9 9c0 4.97 4.03 9 9 9 1.65 0 2.75-1.1 2.75-2.5 0-.68-.26-1.3-.7-1.78-.4-.44-.63-1-.63-1.62 0-1.32 1.08-2.35 2.4-2.35H17.5A3.5 3.5 0 0 0 21 9.25C21 5.72 16.97 3 12 3Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Color swatch wells -->
+  <circle cx="7.5" cy="10.5" r="1.25" fill="currentColor"/>
+  <circle cx="10.5" cy="7.25" r="1.25" fill="currentColor"/>
+  <circle cx="14.75" cy="7.75" r="1.25" fill="currentColor"/>
+  <circle cx="7.75" cy="14.75" r="1.25" fill="currentColor"/>
+  </symbol>
+  <symbol id="icon-notifications" viewBox="0 0 24 24">
+    <!-- Duotone bell dome -->
+  <path d="M6 10a6 6 0 0 1 12 0c0 3.5 1.5 5.5 2.25 6.75H3.75C4.5 15.5 6 13.5 6 10Z" fill="currentColor" opacity="0.16"/>
+  <!-- Top hanger -->
+  <path d="M12 3v1.25" fill="none" stroke="currentColor" stroke-width="1.44" stroke-linecap="round"/>
+  <!-- Bell body & flared rim -->
+  <path d="M6 10a6 6 0 0 1 12 0c0 3.5 1.5 5.5 2.25 6.75H3.75C4.5 15.5 6 13.5 6 10Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Clapper -->
+  <path d="M9.75 17a2.5 2.5 0 0 0 4.5 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- Subtle ring resonance arc -->
+  <path d="M17.5 4.75A7.5 7.5 0 0 1 19.75 8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.75"/>
+  </symbol>
+  <symbol id="icon-connection" viewBox="0 0 24 24">
+    <!-- Duotone cloud fill -->
+  <path d="M6.5 18.25h11a4.25 4.25 0 0 0 .65-8.45A5.75 5.75 0 0 0 7.1 8.1a4.5 4.5 0 0 0-.6 10.15Z" fill="currentColor" opacity="0.16"/>
+  <!-- Cloud outline -->
+  <path d="M6.5 18.25h11a4.25 4.25 0 0 0 .65-8.45A5.75 5.75 0 0 0 7.1 8.1a4.5 4.5 0 0 0-.6 10.15Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Inner connection pulse / check-wave -->
+  <path d="M9.25 13.5h1.5l1.1-2.25 1.5 4 1.15-1.75h1.25" fill="none" stroke="currentColor" stroke-width="1.32" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="icon-about" viewBox="0 0 24 24">
+    <!-- Duotone circle fill -->
+  <circle cx="12" cy="12" r="8.75" fill="currentColor" opacity="0.14"/>
+  <!-- Outer circle -->
+  <circle cx="12" cy="12" r="8.75" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <!-- Serifed 'i' stem & dot -->
+  <path d="M10.75 11.25H12v4.75M10.75 16h2.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="12" cy="8" r="1.1" fill="currentColor"/>
+  </symbol>
+  <symbol id="icon-my-profile" viewBox="0 0 24 24">
+    <!-- Duotone head & shoulders fill -->
+  <circle cx="12" cy="8.25" r="3.75" fill="currentColor" opacity="0.18"/>
+  <path d="M4.75 19.5c0-3.6 3.25-6.25 7.25-6.25s7.25 2.65 7.25 6.25" fill="currentColor" opacity="0.12"/>
+  <!-- Head circle -->
+  <circle cx="12" cy="8.25" r="3.75" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <!-- Shoulders arc -->
+  <path d="M4.75 19.5c0-3.6 3.25-6.25 7.25-6.25s7.25 2.65 7.25 6.25" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-log-out" viewBox="0 0 24 24">
+    <!-- Duotone portal backplate -->
+  <path d="M10 4.25H6.25a2 2 0 0 0-2 2v11.5a2 2 0 0 0 2 2H10" fill="currentColor" opacity="0.14"/>
+  <!-- Door bracket -->
+  <path d="M10.25 4.25H6.25a2 2 0 0 0-2 2v11.5a2 2 0 0 0 2 2h4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Exit arrow -->
+  <path d="M9.75 12h10M16.25 8.5 19.75 12l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.44" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="icon-nav-home" viewBox="0 0 24 24">
+    <!-- Duotone house body -->
+  <path d="M5.25 10.25 12 4.5l6.75 5.75V19a1.5 1.5 0 0 1-1.5 1.5H6.75A1.5 1.5 0 0 1 5.25 19v-8.75Z" fill="currentColor" opacity="0.12"/>
+  <!-- Roof & walls -->
+  <path d="M3.25 11.25 12 3.75l8.75 7.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M5.25 9.75V19a1.5 1.5 0 0 0 1.5 1.5h10.5a1.5 1.5 0 0 0 1.5-1.5V9.75" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Doorway -->
+  <path d="M9.75 20.5v-5.25a1 1 0 0 1 1-1h2.5a1 1 0 0 1 1 1v5.25" fill="none" stroke="currentColor" stroke-width="1.36" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="icon-nav-patients" viewBox="0 0 24 24">
+    <!-- Duotone patient silhouettes -->
+  <circle cx="9.25" cy="8.5" r="3" fill="currentColor" opacity="0.16"/>
+  <path d="M3.75 19c0-2.9 2.46-5.25 5.5-5.25s5.5 2.35 5.5 5.25" fill="currentColor" opacity="0.12"/>
+  <!-- Foreground patient -->
+  <circle cx="9.25" cy="8.5" r="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <path d="M3.75 19c0-2.9 2.46-5.25 5.5-5.25s5.5 2.35 5.5 5.25" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- Background patient -->
+  <path d="M15.25 5.85a2.85 2.85 0 0 1 0 5.3M16.75 14c1.95.5 3.5 2.05 3.5 4.25" fill="none" stroke="currentColor" stroke-width="1.36" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-nav-more" viewBox="0 0 24 24">
+    <!-- Duotone capsule halo -->
+  <rect x="2.75" y="7.5" width="18.5" height="9" rx="4.5" fill="currentColor" opacity="0.12"/>
+  <!-- Three crisp ellipsis dots -->
+  <circle cx="7" cy="12" r="1.6" fill="currentColor"/>
+  <circle cx="12" cy="12" r="1.6" fill="currentColor"/>
+  <circle cx="17" cy="12" r="1.6" fill="currentColor"/>
+  </symbol>
+  <symbol id="icon-chevron-right" viewBox="0 0 24 24">
+    <path d="M9.5 6.5 15 12l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.48" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="icon-chevron-down" viewBox="0 0 24 24">
+    <path d="M6.5 9.5 12 15l5.5-5.5" fill="none" stroke="currentColor" stroke-width="1.48" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+</svg>
 <div class="app" id="app"><div class="login"><div class="login-card"><h1>Ward Sync</h1><p class="muted">Opening…</p></div></div></div>
 <script>
 const KEY="ward-command-html-v2-v8748-fresh";
@@ -3782,13 +6163,21 @@ function labelOf(rows,id){const h=(rows||[]).find(r=>String(r[0])===String(id));
 
 /* R1.3.86 BACK BUTTON: shared line-arrow icon */
 const BACK_ICON=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg>`;
-const ACCENT_KEY="ward-command-accent-v1";
-const ACCENTS=[["teal","Teal"],["blue","Blue"],["purple","Purple"],["rose","Rose"],["amber","Amber"],["green","Green"]];
-const ACCENT_SW={"teal": {"light": "#0f766e", "dark": "#34d399", "ink": "#ffffff", "dink": "#022c22"}, "blue": {"light": "#1d4ed8", "dark": "#60a5fa", "ink": "#ffffff", "dink": "#0b1a33"}, "purple": {"light": "#7e22ce", "dark": "#8A43D5", "ink": "#ffffff", "dink": "#ffffff"}, "rose": {"light": "#be123c", "dark": "#fb7185", "ink": "#ffffff", "dink": "#2a0610"}, "amber": {"light": "#d97706", "dark": "#fbbf24", "ink": "#1c1917", "dink": "#1c1300"}, "green": {"light": "#15803d", "dark": "#4ade80", "ink": "#ffffff", "dink": "#052e16"}};
-function currentAccent(){try{const a=localStorage.getItem(ACCENT_KEY)||"blue";return ACCENTS.some(x=>x[0]===a)?a:"blue"}catch(e){return "blue"}} /* R1.3.86: blue is the default accent; teal = explicit choice (no attribute) */
-function applyAccent(a){const v=a||currentAccent();if(v==="teal")document.documentElement.removeAttribute("data-accent");else document.documentElement.setAttribute("data-accent",v)}
-function setAccent(a){const v=ACCENTS.some(x=>x[0]===a)?a:"blue";try{localStorage.setItem(ACCENT_KEY,v)}catch(e){}applyAccent(v);render()}
-function accentSwatches(theme){const dark=theme!=="light";const cur=currentAccent();return `<div class="accent-row">${ACCENTS.map(([id,lb])=>{const c=ACCENT_SW[id];const bg=dark?c.dark:c.light;const ink=dark?c.dink:c.ink;return `<div class="accent-cell"><button class="accent-sw ${cur===id?"on":""}" style="background:${bg}" aria-label="${lb} accent" aria-pressed="${cur===id}" onclick="setAccent('${id}')">${cur===id?`<svg viewBox="0 0 24 24" fill="none" stroke="${ink}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`:""}</button><div class="accent-cap">${lb}</div></div>`}).join("")}</div>`}
+const LEGACY_ACCENT_KEY="ward-command-accent-v1";
+const PALETTE_KEY="ward-command-palette-v1";
+const PALETTES={
+ violet:{label:"Violet",day:["#B69AFB","#8B5CF6","#5B21B6"],night:["#C4A9FF","#9465F4","#5B2AAE"]},
+ yellow:{label:"Yellow",day:["#F4D36B","#C78D1C","#925909"],night:["#F8D978","#D49A27","#91600A"]},
+ blue:{label:"Blue",day:["#83B8FF","#397DEB","#1D4ED8"],night:["#8CC3FF","#4389EF","#174FAD"]},
+ green:{label:"Green",day:["#83D5A8","#2F9C68","#145B3B"],night:["#73E0AA","#2C9B69","#125B3A"]},
+ pink:{label:"Pink",day:["#F7A9CD","#E46AA6","#AC2E73"],night:["#FFB2D4","#D95F9C","#8D285E"]},
+ red:{label:"Red",day:["#F28D96","#D84A59","#9F2031"],night:["#FF9AA2","#D94A59","#8D1D2A"]},
+ mono:{label:"Monochrome",day:["#8E97A5","#505967","#202733"],night:["#F0F2F5","#B9C0CA","#687281"]}
+};
+function currentPalette(){try{const p=localStorage.getItem(PALETTE_KEY);if(p&&PALETTES[p])return p;const a=localStorage.getItem(LEGACY_ACCENT_KEY)||"purple";return ({teal:"green",blue:"blue",purple:"violet",rose:"pink",amber:"yellow",green:"green"})[a]||"violet"}catch(e){return "violet"}}
+function applyPalette(id){const p=PALETTES[id]?id:currentPalette();document.documentElement.setAttribute("data-palette",p);document.documentElement.removeAttribute("data-accent");const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",currentTheme()==="light"?"#f6f4f9":"#100e16")}
+function setPalette(id){const p=PALETTES[id]?id:"violet";try{localStorage.setItem(PALETTE_KEY,p)}catch(e){}applyPalette(p);render()}
+function themeSwatches(theme){const cur=currentPalette(),mode=theme==="light"?"day":"night";return `<div class="palette-grid">${Object.entries(PALETTES).map(([id,p])=>{const c=p[mode],on=cur===id;return `<button type="button" class="palette-choice ${on?"selected":""}" style="--palette-a:${c[0]};--palette-b:${c[1]};--palette-c:${c[2]}" aria-label="${p.label} theme" aria-pressed="${on}" onclick="setPalette('${id}')"><span class="palette-preview"><i></i><i></i><i></i></span><span class="palette-choice-name">${p.label}</span><span class="palette-choice-check" aria-hidden="true">${on?"✓":""}</span></button>`}).join("")}</div>`}
 const DENSITY_KEY="ward-command-density-v1";
 function currentTheme(){
   try{
@@ -3806,7 +6195,7 @@ function applyTheme(theme){
 }
 function setTheme(theme){
   const t=theme==="light"?"light":"ot";
-  localStorage.setItem(THEME_KEY,t);applyTheme(t);render();
+  localStorage.setItem(THEME_KEY,t);applyTheme(t);applyPalette();render();
 }
 function currentDensity(){
   try{return localStorage.getItem(DENSITY_KEY)==="compact"?"compact":"comfortable"}catch(e){return "comfortable"}
@@ -3902,7 +6291,7 @@ function feedbackWake(){
 }
 document.addEventListener("visibilitychange",feedbackWake);
 window.addEventListener("pageshow",feedbackWake);
-applyTheme(currentTheme());applyAccent();
+applyTheme(currentTheme());applyPalette();
 applyDensity(currentDensity());
 
 function notifyPrefs(){
@@ -6472,9 +8861,85 @@ const WS_ICON_PATHS={
   vitals:'<path d="M2.5 12h4l2.2-5 4 10 2.2-5h6.6"/>',
   reports:'<rect x="5" y="3.5" width="14" height="17" rx="2.2"/><path d="M9 8h6M9 12h6M9 16h4"/>'
 };
+const WS_ICON_DETAILS={
+  home:'<path d="M3.2 10.7 12 3.6l8.8 7.1" stroke-width="2.1"/><path d="M5.4 9.4v10.9h13.2V9.4" stroke-width="2.1"/><path d="M9.1 20.3v-6.1h5.8v6.1" fill="currentColor" fill-opacity=".16" stroke-width="1.8"/><path d="M7.2 8.1 12 4.2l4.8 3.9" stroke-width="1.1" opacity=".5"/>',
+  patients:'<circle cx="9" cy="7.4" r="3.2" fill="currentColor" fill-opacity=".16" stroke-width="2"/><path d="M2.7 20c.4-3.7 2.5-5.7 6.3-5.7s5.9 2 6.3 5.7" stroke-width="2"/><path d="M16.1 4.9a3.2 3.2 0 0 1 0 5.9M17 14.8c2.4.7 3.8 2.4 4.2 5.2" stroke-width="2"/>',
+  more:'<circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none"/>',
+  handover:'<rect x="4.2" y="5.1" width="15.6" height="16" rx="2.4" stroke-width="2"/><path d="M9 5V3.4h6V5" stroke-width="2"/><path d="m7.8 11.2 2 2 3.5-3.7" stroke-width="2.1"/><path d="M14.8 12h2.1M8 17.2h8.2" stroke-width="1.9"/><path d="M6.2 7.4h11.6v11.9H6.2z" fill="currentColor" fill-opacity=".055" stroke="none"/>',
+  ect:'<path d="m13.5 2.7-8 10.1a.9.9 0 0 0 .7 1.5h5l-.8 7 8.1-10.2a.9.9 0 0 0-.7-1.5h-5z" fill="currentColor" fill-opacity=".15" stroke-width="2"/><path d="m13.4 2.8-2.2 7.1h4.2" stroke-width="1.2" opacity=".65"/>',
+  observe:'<path d="M2 12s3.4-7.1 10-7.1S22 12 22 12s-3.4 7.1-10 7.1S2 12 2 12Z" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="currentColor" fill-opacity=".14" stroke-width="2"/><circle cx="12" cy="12" r="1.35" fill="currentColor" stroke="none"/>',
+  census:'<rect x="5.7" y="5.7" width="12.6" height="15" rx="2.2" stroke-width="2"/><path d="M9 5.7V4.8a3 3 0 0 1 6 0v.9" stroke-width="2"/><path d="M12 9.4v7.2M8.4 13h7.2" stroke-width="2"/><path d="M8 7.6h8v11.2H8z" fill="currentColor" fill-opacity=".06" stroke="none"/>',
+  setup:'<path d="M10.2 2.8h3.6l.6 2.1 1.8.8 2-1.1 2.1 2.6-1.4 1.8.2 2 2 1v3.2l-2.1.7-.8 1.9 1.1 1.9-2.5 2.2-1.9-1.3-2 .2-1 2H8.7l-.7-2.1-1.9-.8-1.9 1.1-2.2-2.5 1.3-1.9-.2-2-2-1v-3.2l2.1-.7.8-1.9-1.1-1.9 2.5-2.2 1.9 1.3 2-.2z" transform="translate(1.4 0) scale(.92)" fill="currentColor" fill-opacity=".12" stroke-width="1.65"/><circle cx="12" cy="12" r="3.6" fill="none" stroke-width="2"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>',
+  tasks:'<rect x="4.6" y="4.1" width="14.8" height="17" rx="2.2" stroke-width="2"/><path d="M9 2.8h6v3H9z" fill="currentColor" fill-opacity=".17" stroke-width="1.8"/><path d="m7.8 11.2 1.7 1.7 3.2-3.4M14.7 11.7h2M8 17h8" stroke-width="1.9"/>',
+  activity:'<rect x="3.1" y="3.1" width="17.8" height="17.8" rx="3" stroke-width="2"/><path d="M6.2 16.8h2.3l2.1-4.1 2.4 2.1 4.8-6" stroke-width="2.1"/><path d="M6.1 6.2h3" stroke-width="1.2" opacity=".55"/>',
+  broadcast:'<path d="M3.2 10v4a1.3 1.3 0 0 0 1.3 1.3h2.1l4.2 4V4.7l-4.2 4H4.5A1.3 1.3 0 0 0 3.2 10Z" fill="currentColor" fill-opacity=".14" stroke-width="2"/><path d="M14.2 9a4.2 4.2 0 0 1 0 6M17.1 6.1a8.2 8.2 0 0 1 0 11.8" stroke-width="2"/><path d="m7 15.3 1.3 4.1h2" stroke-width="1.7"/>',
+  users:'<circle cx="9" cy="7" r="3.3" fill="currentColor" fill-opacity=".15" stroke-width="2"/><path d="M2.5 20.5c.4-3.8 2.6-5.8 6.5-5.8s6.1 2 6.5 5.8" stroke-width="2"/><path d="M16 4a3.3 3.3 0 0 1 0 6.2M17.1 14.8c2.7.6 4.1 2.5 4.4 5.7" stroke-width="2"/>',
+  bdft:'<path d="M3.2 4v16M3.2 8h16a1.8 1.8 0 0 1 1.8 1.8V20M3.2 17.2H21" stroke-width="2"/><path d="M7.1 8v9.2M10.3 8v9.2M13.5 8v9.2" stroke-width="1.25" opacity=".55"/><path d="M4.2 9h14.8v7.2H4.2z" fill="currentColor" fill-opacity=".08" stroke="none"/>',
+  theme:'<circle cx="12" cy="12" r="9" stroke-width="2"/><path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" fill-opacity=".18" stroke-width="1.7"/><path d="M12 3v18" stroke-width="1.4" opacity=".6"/>',
+  notify:'<path d="M6 8.5a6 6 0 0 1 12 0c0 6.5 2.8 8.4 2.8 8.4H3.2S6 15 6 8.5Z" fill="currentColor" fill-opacity=".12" stroke-width="2"/><path d="M10.1 20.5a2.1 2.1 0 0 0 3.8 0M9 5.2a3.7 3.7 0 0 1 6 0" stroke-width="1.7"/>',
+  cloud:'<path d="M7.1 18.2h9.7a4.2 4.2 0 0 0 .2-8.4 5.8 5.8 0 0 0-11-1.2 4.2 4.2 0 0 0 1.1 9.6Z" fill="currentColor" fill-opacity=".11" stroke-width="2"/><path d="M9 14.1h6M10.1 11.7h3.8" stroke-width="1.4" opacity=".65"/>',
+  about:'<circle cx="12" cy="12" r="9" stroke-width="2"/><circle cx="12" cy="7.7" r="1.15" fill="currentColor" stroke="none"/><path d="M12 11v5.2" stroke-width="2.2"/><path d="M5.8 17.8a7.5 7.5 0 0 0 12.4 0" stroke-width="1.1" opacity=".45"/>',
+  profile:'<circle cx="12" cy="7.7" r="3.3" fill="currentColor" fill-opacity=".14" stroke-width="2"/><path d="M4.8 20.2c.7-3.5 3.1-5.2 7.2-5.2s6.5 1.7 7.2 5.2" stroke-width="2"/><path d="M8.3 17.1c1.1-.7 2.3-1 3.7-1s2.6.3 3.7 1" stroke-width="1.1" opacity=".55"/>',
+  logout:'<path d="M10 3.2H5.7A2.2 2.2 0 0 0 3.5 5.4v13.2a2.2 2.2 0 0 0 2.2 2.2H10" stroke-width="2"/><path d="M15.5 7.1 20.4 12l-4.9 4.9M20.1 12H8.7" stroke-width="2.1"/><path d="M6.5 7h2.1M6.5 17h2.1" stroke-width="1.2" opacity=".55"/>',
+  myorders:'<rect x="4.5" y="4" width="15" height="17" rx="2.2" stroke-width="2"/><path d="M9 2.8h6v3H9z" fill="currentColor" fill-opacity=".16" stroke-width="1.7"/><path d="M8 11h8M8 14.5h8M8 18h5" stroke-width="1.7"/>',
+  phone:'<path d="M7 3.2h3l1.3 4.1-2 1.7a15 15 0 0 0 5.7 5.7l1.7-2 4.1 1.3v3a2 2 0 0 1-2.2 2A17.8 17.8 0 0 1 5 6.1 2 2 0 0 1 7 3.2Z" fill="currentColor" fill-opacity=".12" stroke-width="1.9"/><path d="m14.8 4.1 1.8 1.8 3.1-3" stroke-width="1.6"/>',
+  note:'<path d="M5 3.5h9.5l4.5 4.6v12.4H5z" stroke-width="2"/><path d="M14.5 3.8v4.5H19" stroke-width="1.8"/><path d="M8.2 12h7.6M8.2 15.5h7.6M8.2 18.5h4.2" stroke-width="1.7"/><path d="M6.5 5h6v1.5h-6z" fill="currentColor" fill-opacity=".12" stroke="none"/>',
+  scale:'<path d="M4 20V9M9.3 20V4M14.7 20v-7M20 20v-4" stroke-width="2.1"/><path d="M2.8 20.5h18.4" stroke-width="1.5"/><circle cx="9.3" cy="4.2" r="1.7" fill="currentColor" fill-opacity=".2" stroke-width="1.5"/>',
+  drug:'<path d="M5.1 17.8a4.1 4.1 0 0 1 0-5.8l6.9-6.9a4.1 4.1 0 0 1 5.8 5.8l-6.9 6.9a4.1 4.1 0 0 1-5.8 0Z" fill="currentColor" fill-opacity=".12" stroke-width="2"/><path d="m8.2 9.1 6.7 6.7" stroke-width="2"/><path d="m12.1 5.9 6 6" stroke-width="1.1" opacity=".5"/>',
+  report:'<path d="M9 3.2h6M10 3.2v5.2l-5.2 9a2.2 2.2 0 0 0 1.9 3.3h10.6a2.2 2.2 0 0 0 1.9-3.3L14 8.4V3.2" stroke-width="2"/><path d="M8.1 15.3h7.8M10 18h4" stroke-width="1.7"/><path d="M10 8.5h4" stroke-width="1.2" opacity=".55"/>',
+  advice:'<path d="M4 4.2h16v11.3H9l-5 4.3z" fill="currentColor" fill-opacity=".1" stroke-width="2"/><path d="M8 8.3h8M8 11.7h5" stroke-width="1.7"/><path d="m14.8 15.5 1.2 1.2 2.1-2.2" stroke-width="1.7"/>',
+  hist:'<circle cx="12" cy="12" r="8.8" stroke-width="2"/><path d="M12 7.1v5.2l3.4 2" stroke-width="2"/><path d="M5.5 5.5 3.8 3.8M3.8 3.8v3.4M3.8 3.8h3.4" stroke-width="1.5"/>',
+  chart:'<path d="M3.2 12h4l2.2-5 4 10 2.3-5h5.1" stroke-width="2.1"/><path d="M3.2 4.2v15.6h17.6" stroke-width="1.3" opacity=".55"/><circle cx="9.4" cy="7" r="1.2" fill="currentColor" stroke="none"/>',
+  mse:'<path d="M9 21v-3H7a2 2 0 0 1-2-2v-3l-2-1 2-3.5A7 7 0 0 1 19 9c0 3-1.2 5-3 6.2V21" stroke-width="1.9"/><path d="M10.5 8.6a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.3" stroke-width="1.8"/><circle cx="12.5" cy="15.1" r=".8" fill="currentColor" stroke="none"/><path d="M8 18h7" stroke-width="1.1" opacity=".5"/>',
+  close:'<path d="m6.2 6.2 11.6 11.6M17.8 6.2 6.2 17.8" stroke-width="2.2"/>',
+  task:'<rect x="4" y="4.2" width="16" height="16.5" rx="2.8" stroke-width="2"/><path d="M9 4.2V3h6v1.2" stroke-width="1.8"/><path d="m7.7 11.6 2.1 2.1 4.4-4.5M8 17h8" stroke-width="2"/>',
+  hand:'<path d="M4 12h13.2m-5.3-5.4L17.3 12l-5.4 5.4" stroke-width="2.1"/><path d="M4 7.2v9.6" stroke-width="1.7"/><circle cx="4" cy="12" r="1.3" fill="currentColor" stroke="none"/>',
+  transfer:'<path d="M6 7h13m-4-4 4 4-4 4M18 17H5m4-4-4 4 4 4" stroke-width="2"/><path d="M8 7h7M9 17h7" stroke-width="1.1" opacity=".5"/>',
+  history:'<path d="M4.2 9a8.2 8.2 0 1 1-.1 6M4.2 4.5V9h4.5M12 7.5v5l3.2 1.9" stroke-width="2"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>',
+  lock:'<rect x="4.5" y="10" width="15" height="10.5" rx="2.8" fill="currentColor" fill-opacity=".1" stroke-width="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10M12 14.2v2.1" stroke-width="2"/><circle cx="12" cy="14.1" r="1" fill="currentColor" stroke="none"/>',
+  critical:'<path d="M12 3.1 21 19a1.2 1.2 0 0 1-1.05 1.8H4.05A1.2 1.2 0 0 1 3 19z" fill="currentColor" fill-opacity=".12" stroke-width="2"/><path d="M12 9v4.5M12 17.2h.01" stroke-width="2.2"/>',
+  discharge:'<path d="M10 4.5H5.8A1.8 1.8 0 0 0 4 6.3v11.4a1.8 1.8 0 0 0 1.8 1.8H10" stroke-width="2"/><path d="m14 8 4 4-4 4m4-4H8.5" stroke-width="2.1"/><path d="M6.3 7h2.2M6.3 17h2.2" stroke-width="1.2" opacity=".5"/>',
+  vitals:'<path d="M2.5 12h4l2.2-5 4 10 2.2-5h6.6" stroke-width="2.1"/><path d="M3 5.2v13.6h18" stroke-width="1.2" opacity=".45"/><circle cx="8.7" cy="7" r="1.05" fill="currentColor" stroke="none"/>',
+  reports:'<rect x="5" y="3.5" width="14" height="17" rx="2.2" stroke-width="2"/><path d="M9 8h6M9 12h6M9 16h4" stroke-width="1.8"/><path d="M7 5.5h10v1.2H7z" fill="currentColor" fill-opacity=".12" stroke="none"/>'
+};
+
+Object.assign(WS_ICON_DETAILS,{
+  census:'<path d="M7 3.8h7.2l3.8 3.8v12.6H6a2 2 0 0 1-2-2V5.8a2 2 0 0 1 2-2Z" stroke-width="1.65"/><path d="M14 4v4h4M9 12h6M9 15.2h4" stroke-width="1.45"/><path d="M12 9.8v5.8M9.1 12.7h5.8" stroke-width="1.55"/><path d="M7 5.7h3" stroke-width="1.15" opacity=".55"/>',
+  observe:'<path d="M2.5 12s3.25-6.1 9.5-6.1 9.5 6.1 9.5 6.1-3.25 6.1-9.5 6.1-9.5-6.1-9.5-6.1Z" stroke-width="1.7"/><circle cx="12" cy="12" r="3.35" stroke-width="1.65"/><circle cx="12" cy="12" r="1.25" fill="currentColor" stroke="none"/><path d="M4.8 8.4 6 7.4M18 16.6l1.2-1" stroke-width="1.2" opacity=".6"/>',
+  ect:'<path d="M13.4 2.8 5.8 13a.85.85 0 0 0 .68 1.35h4.7l-.55 6.85 7.58-10.15a.85.85 0 0 0-.68-1.35h-4.7l.57-6.9Z" stroke-width="1.7" stroke-linejoin="round"/><path d="m13 5.2-1.35 5.25h3.15" stroke-width="1.15" opacity=".6"/>',
+  bdft:'<path d="M3.2 5.2v14.5M3.2 8.4h16.2a1.7 1.7 0 0 1 1.7 1.7v9.6M3.2 17.2h17.9" stroke-width="1.7"/><path d="M6.4 8.5v8.5M9.4 8.5v8.5M12.4 8.5v8.5M15.4 8.5v8.5" stroke-width="1.25" opacity=".72"/><path d="M4.2 9.5h15.7v5.8H4.2z" fill="currentColor" fill-opacity=".08" stroke="none"/><path d="M6 5.2h8" stroke-width="1.35"/>',
+  handover:'<rect x="4.5" y="4.6" width="12.8" height="16" rx="2" stroke-width="1.65"/><path d="M8.4 4.6V3.5h5v1.1" stroke-width="1.5"/><path d="m7.4 10.2 1.6 1.6 2.7-2.9M7.4 15h5.9" stroke-width="1.55"/><path d="M14.2 13.7h6m-2.4-2.4 2.4 2.4-2.4 2.4" stroke-width="1.55"/><path d="M6.7 6.8h8.4" stroke-width="1.05" opacity=".55"/>',
+  tasks:'<rect x="5" y="4.5" width="14" height="17" rx="2.1" stroke-width="1.65"/><path d="M9 4.5V3.4h6v1.1" stroke-width="1.55"/><path d="m8 10.5 1.35 1.35 2.2-2.35M13.3 11h3.2M8 16l1.35 1.35 2.2-2.35M13.3 16.5h3.2" stroke-width="1.55"/><path d="M7.2 6.8h9.6" stroke-width="1.05" opacity=".55"/>',
+  broadcast:'<path d="M3.2 10v4a1.5 1.5 0 0 0 1.5 1.5h2.1l4.1 3.3V5.2l-4.1 3.3H4.7A1.5 1.5 0 0 0 3.2 10Z" stroke-width="1.7"/><path d="M14.1 9a4.1 4.1 0 0 1 0 6M16.8 6.4a7.7 7.7 0 0 1 0 11.2M7 15.5l1.1 4h2" stroke-width="1.55"/><path d="M4.7 10.3h2.1" stroke-width="1.1" opacity=".6"/>',
+  activity:'<path d="M4.2 3.7h15.6a1.6 1.6 0 0 1 1.6 1.6v13.4a1.6 1.6 0 0 1-1.6 1.6H4.2a1.6 1.6 0 0 1-1.6-1.6V5.3a1.6 1.6 0 0 1 1.6-1.6Z" stroke-width="1.55"/><path d="M5.2 13h3l1.65-3.7 2.55 6.1 2.05-3.7h4.3" stroke-width="1.75"/><path d="M5.4 6.8h3.1M15.6 6.8h2.9" stroke-width="1.15" opacity=".55"/>',
+  users:'<circle cx="9" cy="7.1" r="2.85" stroke-width="1.65"/><path d="M3.1 19.9c.35-3.25 2.3-5.05 5.9-5.05 3.55 0 5.55 1.8 5.9 5.05" stroke-width="1.65"/><path d="M15.1 4.8a2.8 2.8 0 0 1 0 5.3M16.2 14.6c2.55.55 3.9 2.3 4.25 5.25" stroke-width="1.6"/><path d="M6.6 17.2c1.25-.7 3.2-.7 4.45 0" stroke-width="1.05" opacity=".5"/>',  residentDir:'<rect x="3.8" y="4.2" width="16.4" height="15.7" rx="2" stroke-width="1.6"/><circle cx="9" cy="10" r="2.1" stroke-width="1.5"/><path d="M5.8 16.4c.25-1.9 1.3-2.9 3.2-2.9s2.95 1 3.2 2.9M14.5 9h3M14.5 12h3M14.5 15h2.2" stroke-width="1.45"/><path d="M6.1 6.4h11.8" stroke-width="1.05" opacity=".5"/>',
+
+  setup:'<path d="m10 2.9 4-.05.55 2.05 1.65.72 1.9-1.1 2.1 2.95-1.35 1.65.08 1.85 1.55 1.2-.95 3.45-2.05.2-1.35 1.25-.05 2.15-3.7 1.1-1.1-1.75-1.8-.45-1.7 1.05-2.85-2.35.65-1.95-.75-1.7-1.9-.85.25-3.6 1.95-.65.85-1.55-.55-2.05 3.15-1.85 1.45 1.45 1.85-.05 1.05-1.72Z" stroke-width="1.4" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.15" stroke-width="1.6"/><circle cx="12" cy="12" r="1.05" fill="currentColor" fill-opacity=".18" stroke="none"/>',
+  theme:'<path d="M12 3.1a8.9 8.9 0 1 0 8.9 8.9c0-1.45-1.15-2.55-2.55-2.55h-1.55a1.8 1.8 0 0 1-1.25-3.1c.55-.55.25-1.45-.55-1.75A8.85 8.85 0 0 0 12 3.1Z" stroke-width="1.65"/><circle cx="7.7" cy="11.2" r="1" fill="currentColor" stroke="none"/><circle cx="10.2" cy="7.8" r=".9" fill="currentColor" stroke="none"/><circle cx="6.9" cy="15.1" r=".85" fill="currentColor" stroke="none"/><path d="M12 3.2v3.1" stroke-width="1.1" opacity=".55"/>',
+  notify:'<path d="M6.2 9a5.8 5.8 0 0 1 11.6 0c0 6.2 2.25 7.4 2.25 7.4H3.95S6.2 15.2 6.2 9Z" stroke-width="1.65"/><path d="M9.6 19.1a2.55 2.55 0 0 0 4.8 0M9 5.6a4.1 4.1 0 0 1 6 0" stroke-width="1.45"/><path d="M4.7 13.5h14.6" stroke-width="1.05" opacity=".5"/>',
+  cloud:'<path d="M6.7 18.2h10.4a4.05 4.05 0 0 0 .25-8.1 5.35 5.35 0 0 0-10.25-1.2 4.05 4.05 0 0 0-.4 9.3Z" stroke-width="1.65"/><path d="M8.2 13.1h7.6M9.7 15.4h4.6" stroke-width="1.25"/><circle cx="12" cy="10.8" r=".85" fill="currentColor" stroke="none"/>',
+  about:'<circle cx="12" cy="12" r="9" stroke-width="1.65"/><path d="M12 10.8v5.4" stroke-width="1.8"/><circle cx="12" cy="7.6" r="1.05" fill="currentColor" stroke="none"/><path d="M5.8 17.4a7.5 7.5 0 0 0 12.4 0" stroke-width="1.05" opacity=".55"/>',
+  profile:'<circle cx="12" cy="7.6" r="3.1" stroke-width="1.65"/><path d="M4.3 20.1c.55-3.45 3.1-5.35 7.7-5.35s7.15 1.9 7.7 5.35" stroke-width="1.65"/><path d="M8 17.3c2.35-1.25 5.65-1.25 8 0" stroke-width="1.1" opacity=".55"/>',
+  logout:'<path d="M10 3.6H6.1a2 2 0 0 0-2 2v12.8a2 2 0 0 0 2 2H10" stroke-width="1.65"/><path d="M14.7 7.1 19.5 12l-4.8 4.9M19.1 12H8.4" stroke-width="1.8"/><path d="M6.7 7.2h1.8M6.7 16.8h1.8" stroke-width="1.05" opacity=".5"/>'
+});
+const WS_ICON_PACK_IDS={
+  home:"nav-home",patients:"nav-patients",more:"nav-more",
+  census:"admit-patient",admit:"admit-patient",observe:"under-observation",ect:"ect",
+  bdft:"bdft",handover:"handovers",tasks:"task-board",broadcast:"broadcast",
+  activity:"activity-log",residentDir:"resident-directory",users:"user-management",
+  setup:"ward-setup",theme:"appearance",notify:"notifications",cloud:"connection",
+  about:"about",profile:"my-profile",logout:"log-out",
+  reportMonth:"report-month",exportReport:"export-monthly-report",
+  chevronRight:"chevron-right",chevronDown:"chevron-down"
+};
 function ico(name){
-  const path=WS_ICON_PATHS[name]||"";
-  return path?`<span class="ico ws-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${path}</svg></span>`:"";
+  const packId=WS_ICON_PACK_IDS[name];
+  if(packId){
+    const safeId=String(packId).replace(/[^a-z0-9-]/gi,"");
+    return `<span class="ico ws-icon ws-icon-pack" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><use href="#icon-${safeId}" xlink:href="#icon-${safeId}"></use></svg></span>`;
+  }
+  const artwork=WS_ICON_DETAILS[name]||WS_ICON_PATHS[name]||"";
+  return artwork?`<span class="ico ws-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">${artwork}</svg></span>`:"";
 }
 function navIco(name){return ico(name);}
 
@@ -6599,11 +9064,11 @@ function shell(inner){
   const isHome=route.page==="home";
   const snapP=route.page==="snap"?patient(route.id):null;
   const snapB=snapP?bedObj(snapP.id):null;
-  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile","pgts"].includes(route.page))?"on":"";
+  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["handover","census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile","pgts"].includes(route.page))?"on":"";
   const bell=`<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications" title="Notifications">${ico("notify")}${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button>`;
   const syncText=statusLabel()==="Live"?"Synced":statusLabel();
   const syncMini=`<span class="ws-sync-mini ${statusClass()}" title="${esc(statusLabel())}">${statusDot()}<span>${esc(syncText)}</span></span>`;
-  const labels={patients:"Patients",handover:"Handovers",more:"More",tasks:"Task board",census:"Admission / discharge",observe:"Observation",ect:"ECT",activity:"Activity log",setup:(ui.setupTab==="notify"?"Notifications":ui.setupTab==="theme"?"Appearance":"Settings"),ward:"Ward setup",users:"User management",about:"About",connection:"Connection",broadcast:"Broadcast",myorders:"My orders",bdft:"BDFT",profile:"Account",pgts:"Resident directory",record:"Patient record",dcert:"Discharge certificate",dedit:"Discharge review",pedit:"Edit patient",vchart:"Vitals chart",scale:"Rating scales",srate:"Rating scale",ivitals:"Vitals",ireports:"Reports",ireport:"Report"};
+  const labels={patients:"Patients",handover:"Handovers",more:"More",tasks:"Task board",census:"Admit patient",observe:"Observation",ect:"ECT",activity:"Activity log",setup:(ui.setupTab==="notify"?"Notifications":ui.setupTab==="theme"?"Appearance":"Settings"),ward:"Ward setup",users:"User management",about:"About",connection:"Connection",broadcast:"Broadcast",myorders:"My orders",bdft:"BDFT",profile:"Account",pgts:"Resident directory",record:"Patient record",dcert:"Discharge certificate",dedit:"Discharge review",pedit:"Edit patient",vchart:"Vitals chart",scale:"Rating scales",srate:"Rating scale",ivitals:"Vitals",ireports:"Reports",ireport:"Report"};
   const contextTitle=labels[route.page]||((S.unit&&S.unit.name)||"Ward Sync");
   const left=isHome
     ? `<div class="home-id">${photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")}<div class="home-greet"><b>${esc(greet())}, ${esc(u.displayName||u.username||"User")}</b>${homeSyncSlot()}</div></div>`
@@ -6614,11 +9079,10 @@ function shell(inner){
   const sideIcon=name=>["home","patients","handover","more"].includes(name)?navIco(name):ico(name);
   const sideBtn=(page,label,icon,extra)=>`<button type="button" class="${on(page)}" onclick="${extra||`go('${page}')`}" aria-label="${label}">${sideIcon(icon)}<span>${label}</span></button>`;
   return `<aside class="side-nav" aria-label="Ward"><p class="side-brand">Ward Sync</p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}</aside><header class="top${isHome?" resident-home":snapP?" patient-top":" compact-top"}">${left}${tools}</header>
-    <main class="main">${inner}</main>${r151Dock()}
+    <main class="main">${inner}</main>${r151Dock()}${snapP&&isConsultant()&&snapP.status!=="discharged"?`<button type="button" class="snap-advice-fab" onclick="openAdviceForm('${snapP.id}')" aria-label="Give advice to ${esc(snapP.name)}"><span class="snap-advice-fab-ico">${ico("myorders")}</span><span>Give advice</span></button>`:""}
     <nav class="nav"><div class="nav-in">
       <button class="${on("home")}" onclick="go('home')" aria-label="Home">${navIco('home')}<span class="lbl">Home</span></button>
       <button class="${on("patients")}" onclick="go('patients')" aria-label="Patients">${navIco('patients')}<span class="lbl">Patients</span></button>
-      <button class="${on("handover")}" onclick="go('handover')" aria-label="Handovers" ${ui.busy?"disabled":""}>${navIco('handover')}<span class="lbl">Handover</span></button>
       <button class="${on("more")}" onclick="go('more')" aria-label="More">${navIco('more')}<span class="lbl">More</span></button>
     </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(photoOverlays()||"")+(seFormOverlay()||"")+(disPreviewOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(bdftAdminSheetOverlay()||"")+(bdftResidentModalOverlay()||"")+(bdftBedPickerOverlay()||"")+(bdftOccupiedModalOverlay()||"")+(bdftUnavailableModalOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review,ui.r17Reason||"")}</div></div>`:""))}${busyVeil()}`;
 }
@@ -7381,8 +9845,9 @@ function r146ScheduleHtml(){
       when:x.doneAt?r17IstWhen(x.doneAt):""
     };
   });
+  if(!ect.length)return "";
   return `<section class="r2-sched card r146-sched" aria-label="Scheduled for today"><div class="row"><span class="r2-cardh">Today's schedule</span><button type="button" class="r2-link" onclick="go('ect')">View all →</button></div>
-    ${ect.length?r17ScheduleHtml(ect, typeof canWrite==="function"?canWrite():true):`<p class="r2-none">Nothing scheduled for today</p>`}
+    ${r17ScheduleHtml(ect, typeof canWrite==="function"?canWrite():true)}
   </section>`;
 }
 function homeView(){
@@ -7425,7 +9890,7 @@ function homeView(){
   const consHome=isConsultant();
   return `<div class="r2-home">
     ${r17AuditMissHtml()}
-    <div class="r2-wardhead"><h2>${esc((canWrite()&&!consHome&&!isIntern())?((S.unit&&S.unit.name)||"Ward"):"Today")}</h2><span>${esc(dateLine)}</span></div>
+    <div class="r2-wardhead"><h2>${esc((canWrite()&&!consHome&&!isIntern())?((S.unit&&S.unit.name)||"Ward"):"Today")}</h2></div>
     ${consHome?"":`<div class="r2-bdft" role="link" tabindex="0" onclick="bdftOpenReadOnly()">
       <div class="row"><span class="r2-kicker">BED DISTRIBUTION</span><span class="r2-pill ${current?"ok":"warn"}">${esc(bdftPill)}</span></div>
       <p class="r2-sub">${esc(bdftSub)}</p>
@@ -7434,18 +9899,16 @@ function homeView(){
     </div>`}
     <div class="r2-split"><section class="r2-overview" aria-label="Ward">
       <div class="row">
-        <div><div class="r2-count">${list.length}<small>In ward</small></div><p class="r2-meta">${beds.length} total bed${beds.length===1?"":"s"}</p></div>
+        <div><div class="r2-count">${list.length}<small>Total patients</small></div></div>
         <div class="r2-shift">${esc(shiftLabel(sh))} shift<b>${esc(dateStrong)}</b></div>
       </div>
-      <p class="r2-h">WHERE</p>
+      <p class="r2-h r2-h-spacer" aria-hidden="true"></p>
       <div class="r2-grid r2-where">${wards.map(w=>tile(w.n,w.name.charAt(0).toUpperCase()+w.name.slice(1),`openWardSection('${esc(w.id)}')`)).join("")}${tile(obsN,"Observation","go('observe')")}</div>
       <p class="r2-h">TODAY</p>
       <div class="r2-grid r2-today">${tile(free,"Beds free","","free")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')","today-admitted")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()","today-discharged")}</div>
     </section><div class="r2-side">
-    ${consHome?"":`<section class="r2-duty" aria-label="Duty status">
-      <div class="row"><span class="r2-cardh">Duty status</span><span class="r2-pill ${dutyOn?"ok":"warn"}">${dutyOn?"On duty":"Not on duty"}</span></div>
-      <div class="row"><span class="r2-sub" style="margin:0">${esc(shiftLabel(sh))} shift · ${dutyOn?"Signed in":"Sign in to continue"}</span>${canWrite()?`<button type="button" class="r2-signin" onclick="${dutyOn?"endDuty()":"signDuty()"}">${dutyOn?"End shift":"Sign in"}</button>`:""}</div>
-      ${""}
+    ${consHome?"":`<section class="r2-duty r2-duty-compact" aria-label="Duty status">
+      <span class="r2-duty-message">${dutyOn?"You are already signed in":"You are not signed in"}</span>${canWrite()?`<button type="button" class="r2-signin" onclick="${dutyOn?"endDuty()":"signDuty()"}">${dutyOn?"Sign out":"Sign in"}</button>`:""}
     </section>`}
     ${r146TodayHtml()}
     <section class="r2-flags" aria-label="Clinical flags">
@@ -7513,11 +9976,12 @@ const R146_I={
 };
 function r146QuickBar(p){
   if(!p||p.status==="discharged")return "";
-  const q=r146Q(p.id),B=(k,l,fn,cls)=>`<button type="button" class="r146-qb ${cls||""}" data-qb="${k}" onclick="${fn}">${R146_I[k]||""}<span>${l}</span></button>`;
-  // R1.6 (t411u item 4): Note · Scale · Drug · MSE · More; Report moved into the More drawer, which opens attached to this bar.
-  if(canWrite()){const open=ui.r16More===p.id;
-    return `${open?r16DrawerHtml(p):""}<nav class="pt-qbar${open?" r16-open":""}" aria-label="Quick actions">${B("note","Note",`openPgtNote(${q})`)}${B("scale","Scale",`srateOpen(${q})`)}${B("drug","Drug",`openMedForm(${q})`)}${B("mse","MSE",`r146Mse(${q})`)}${open?`<button type="button" class="r146-qb r16-on" data-qb="more" aria-expanded="true" aria-controls="r16Drawer" onclick="r16MoreClose(1)">${R146_I.x}<span>Close</span></button>`:`<button type="button" class="r146-qb" data-qb="more" aria-expanded="false" aria-haspopup="true" onclick="r146More(${q})">${R146_I.more}<span>More</span></button>`}</nav>`}
-  if(isConsultant())return `<nav class="pt-qbar" aria-label="Quick actions">${B("advice","Advice",`openAdviceForm(${q})`)}${scCanRateAny()?B("scale","Scale",`srateOpen(${q})`):""}${B("hist","History",`go('record',${q})`)}${B("chart","Vitals",`vchartOpen(${q})`)}</nav>`;
+  const q=r146Q(p.id);
+  if(canWrite()){
+    const open=ui.r16More===p.id;
+    return `${open?r16DrawerHtml(p):""}<button type="button" class="pt-qfab${open?" is-open":""}" aria-label="${open?"Close":"Open"} patient actions" aria-expanded="${open?"true":"false"}" aria-controls="r16Drawer" onclick="${open?"r16MoreClose()":`r146More(${q})`}">${open?R146_I.x:R146_I.more}<span class="pt-qfab-pulse"></span></button>`;
+  }
+  if(isConsultant())return "";
   return "";
 }
 // R1.6 (t411u item 4, option 1): More opens a drawer attached to the quick bar (same panel colour, no gap, 4-across icon grid).
@@ -7529,31 +9993,40 @@ function r146More(pid){
 // R1.6 item 1: when the shift changes (08:00 / 14:00 / 22:00 device time) the Home duty card and shift labels refresh by themselves.
 var __r16Shift=(function(){try{return currentShift()}catch(e){return null}})();
 try{setInterval(()=>{try{const c=currentShift();if(c!==__r16Shift){__r16Shift=c;if(S&&S.userId&&!ui.sheet&&(route.page==="home"||route.page==="snap"))render({bg:1})}}catch(e){}},30000)}catch(e){}
-function r16MoreClose(focusMore){if(!ui.r16More)return;ui.r16More=null;render();if(focusMore){const b=document.querySelector('.pt-qbar [data-qb="more"]');if(b)try{b.focus()}catch(e){}}}
+function r16MoreClose(focusMore){if(!ui.r16More)return;ui.r16More=null;render();if(focusMore){const b=document.querySelector(".pt-qfab");if(b)try{b.focus()}catch(e){}}}
 function r16MoreDo(fn,id){ui.r16More=null;r146Do(fn,id)}
 function r16DrawerHtml(p){
   const pid=p.id,q=r146Q(pid),sn=S.snaps[pid]||{},b=bedObj(pid),rs=restrainHeld(pid);
   const I=(fn,l,ic,cls)=>`<button type="button" class="r146-qb ${cls||""}" role="menuitem" data-mi="${esc(fn)}" onclick="r16MoreDo('${fn}',${q})">${R146_I[ic]||""}<span>${esc(l)}</span></button>`;
-  return `<button type="button" class="r16-scrim" aria-label="Close more actions" tabindex="-1" onclick="r16MoreClose()"></button>
-  <div class="r16-drawer" id="r16Drawer" role="menu" aria-label="More actions for ${esc(b&&b.no?"Bed "+b.no:"this patient")}">
-    <div class="r16-grab" aria-hidden="true"></div>
-    <div class="r16-dt"><span>More for <b>${esc(b&&b.no?"Bed "+b.no:p.status==="observation"?"Observation":"this patient")}</b></span><span>Tap Close or swipe down</span></div>
-    <div class="r16-g4">
+  const H=t=>`<div class="r16-menu-heading">${t}</div>`;
+  return `<button type="button" class="r16-scrim" aria-label="Close patient actions" tabindex="-1" onclick="r16MoreClose()"></button>
+  <div class="r16-drawer r16-fab-menu" id="r16Drawer" role="menu" aria-label="Patient actions for ${esc(b&&b.no?"Bed "+b.no:"this patient")}">
+    <div class="r16-menu-head"><span>Patient actions <b>${esc(b&&b.no?"· Bed "+b.no:p.status==="observation"?"· Observation":"")}</b></span></div>
+    ${H("QUICK ACTIONS")}
+    <div class="r16-g4 r16-menu-grid">
+      ${I("openPgtNote","Note","note")}${I("srateOpen","Scale","scale")}${I("openMedForm","Drug","drug")}${I("r146Mse","MSE","mse")}
+    </div>
+    ${H("PATIENT CARE")}
+    <div class="r16-g4 r16-menu-grid">
       ${I("labOpen","Report","report")}${I("addQuickTask","Task","task")}${I("flagHandover","Handover","hand")}
-      ${p.status!=="discharged"?I("transferForm","Transfer","tr"):""}${I("vchartOpen","Vitals chart","chart")}${I("r146History","History","hist2")}
+      ${p.status!=="discharged"?I("transferForm","Transfer","tr"):""}
+      ${I("vchartOpen","Vitals chart","chart")}${I("r146History","History","hist2")}
       ${I("openEctForm",ectPlan(pid)?"ECT planned":"ECT","ect")}${I("toggleRestrain",rs?"Release":"Restrain","lock",(sn.tags||[]).includes("restrained")?"warn":"")}
     </div>
-    <div class="r16-sep" aria-hidden="true"></div>
-    <div class="r16-g2">${I("criticalStatusForm","Critical value","crit","red")}${p.status==="admitted"?I("openSnapDischarge","Discharge","out","red"):""}</div>
+    <div class="r16-menu-critical">
+      ${I("criticalStatusForm","Critical value","crit","red")}${p.status==="admitted"?I("openSnapDischarge","Discharge","out","red"):""}
+    </div>
   </div>`;
 }
 function r16PlaceDrawer(){
-  const d=document.getElementById("r16Drawer"),qb=document.querySelector(".pt-qbar.r16-open"),sc=document.querySelector(".r16-scrim");
+  const d=document.getElementById("r16Drawer"),qb=document.querySelector(".pt-qfab"),sc=document.querySelector(".r16-scrim");
   if(!d||!qb)return;
   const r=qb.getBoundingClientRect();
-  const gap=8,available=Math.max(120,r.top-gap);
-  d.style.left=r.left+"px";d.style.width=r.width+"px";d.style.bottom=Math.max(0,innerHeight-r.top-gap)+"px";
-  d.style.maxHeight=Math.min(innerHeight*.7,available)+"px";
+  const gap=10,available=Math.max(180,r.top-gap-12),w=Math.min(360,innerWidth-24);
+  d.style.width=w+"px";
+  d.style.left=Math.max(12,Math.min(innerWidth-w-12,r.right-w))+"px";
+  d.style.bottom=Math.max(12,innerHeight-r.top+gap)+"px";
+  d.style.maxHeight=Math.min(innerHeight*.72,available)+"px";
   if(sc)sc.style.height=Math.max(0,r.top-gap)+"px";
   d.classList.add("on");
   if(!d._r16sw){d._r16sw=1;let y0=null;
@@ -7602,7 +10075,7 @@ function r16NotesPage(p){
     <div class="chips"><button class="chip ${isDelirium(p.id)?"on":""}" onclick="toggleHighRisk('${p.id}')">Delirium</button>${TAGS.filter(tg=>!['ect','obs','leave','restrained','delirium'].includes(tg.id)).map(tg=>{
       const on=(sn.tags||[]).includes(tg.id);return `<button class="chip ${on?"on":""}" onclick="toggleTag('${p.id}','${tg.id}')">${tg.label}</button>`}).join("")}</div></div>`:""}
   ${adviceCardHtml(p)}
-  ${isConsultant()&&p.status!=="discharged"?`<div class="card snap-actions-card"><p class="tiny">CONSULTANT</p><button class="btn block adv-give" style="margin-top:8px" onclick="openAdviceForm('${p.id}')">Give advice</button></div>`:""}`;
+`;
 }
 // R1.6: MSE page — every MSE newest first by IST date; tap opens the full MSE. Consultants read only.
 function r16MsePage(p){
@@ -11314,7 +13787,7 @@ function dmSectionHtml(pid,kind){
       ${ongHtml}
       ${addHtml?`<div class="dm-head"><span>${adm?"New on admission":"Added"}</span></div>${addHtml}`:""}
       <button type="button" class="btn ghost sm dm-add" onclick="dmAdd()">+ Add medication</button>
-      ${d.dis?`<p class="tiny dm-note">Each medicine needs a dose and a frequency. For a taper or a fixed course, type it in the taper / duration box; it prints in the Frequency column instead.</p><label class="dm-none-tick"><input type="checkbox" id="dnomeds" ${(ui.census||{}).dnomeds?"checked":""} onchange="ui.census=ui.census||{};ui.census.dnomeds=this.checked;dmRefreshCount()"/> No medications on discharge</label>`:""}
+      ${d.dis?`<label class="dm-none-tick"><input type="checkbox" id="dnomeds" ${(ui.census||{}).dnomeds?"checked":""} onchange="ui.census=ui.census||{};ui.census.dnomeds=this.checked;dmRefreshCount()"/> No medications on discharge</label>`:""}
     </div></div></div>
   </div>`;
 }
@@ -11580,10 +14053,7 @@ function censusView(){
     const hay=[x.name,x.hospitalNo,x.mrdNo,x.code,x.diagnosis,bno!=="-"?bno:""].filter(Boolean).join(" ").toLowerCase();
     return hay.includes(dq);
   });
-  const seg=`<div class="seg">
-    <button class="${tab==="in"?"on":""}" onclick="censusDraft();ui.ctab='in';ui.disListOnly=false;render()">Admit</button>
-    <button class="${tab==="out"?"on":""}" onclick="censusDraft();ui.ctab='out';ui.disListOnly=false;render()">Discharge</button>
-  </div>`;
+  const seg=""; // Admission/discharge switching is intentionally removed from this page.
 
   if(tab==="out"){
     const pid=ui.disId||"";
@@ -11659,7 +14129,7 @@ function censusView(){
     return (b.no+" "+sec).toLowerCase().includes(bq);
   });
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-    <h2 class="page-title">Admit</h2>${seg}
+    <h2 class="page-title">Admit patient</h2>
     <div class="card">
       <label class="field"><span>Hospital no. *</span><input id="ahosp" required value="${esc(d.hosp||"")}" placeholder="UHID / IP number" autocomplete="off" oninput="onAdmitHospInput(this.value)"/></label>
       <div id="ahospMatch">${hospMatchBannerHtml("admit",d.hosp)}</div>
@@ -11687,8 +14157,10 @@ function censusView(){
       </div>
       <p class="tiny" style="margin:10px 0 6px">MEDICATIONS <em style="font-style:normal;opacity:.6">(optional)</em></p>
       ${(d.meds&&d.meds.length?d.meds:[{drug:"",dose:"",route:"PO",freq:"OD"}]).map((m,i)=>medRowHtml("a",i,m)).join("")}
-      <button class="btn ghost sm" type="button" onclick="addCensusMed()">Add medication</button>
-      <button class="btn block" ${empties.length?"":"disabled"} onclick="censusDraft();admitFromCensus()">Admit to bed</button>
+      <div class="census-admit-actions">
+        <button class="btn ghost sm census-add-med" type="button" onclick="addCensusMed()">Add medication</button>
+        <button class="btn block census-submit" ${empties.length?"":"disabled"} onclick="censusDraft();admitFromCensus()">Admit to bed</button>
+      </div>
     </div>`;
 }
 function admDateGuard(v,fid,btnSel){ // R1.3.145: blank/invalid, future, or >2 days back (needs a second tap)
@@ -12234,9 +14706,15 @@ async function markEctDone(id){
 }
 function cancelEct(id){
   if(!needWrite())return;
-  const e=(S.ect||[]).find(x=>x.id===id);if(!e)return;
+  const e=(S.ect||[]).find(x=>x.id===id);if(!e||e.status==="cancelled")return;
+  ui.confirm={fn:"cancelEct",id,title:"Cancel ECT plan?",ok:"Cancel plan",danger:true,body:"Cancel this ECT plan?"};
+  render();
+}
+function cancelEctNow(id){
+  if(!needWrite())return;
+  const e=(S.ect||[]).find(x=>x.id===id);if(!e||e.status==="cancelled")return;
   e.status="cancelled";e.at=now();
-  ev(e.pid,"ECT plan cancelled",true,"ect");qEct(e);save();dismissOverlay();
+  ev(e.pid,"ECT plan cancelled",true,"ect");qEct(e);save();
   pushEctNow(e,"cancelled");
 }
 async function pushEctNow(e,action){setBusy(true);
@@ -12697,7 +15175,7 @@ function signDuty(){
     render();return;
   }
   ui.confirm={fn:"signDuty",title:"Sign in for shift",ok:"Sign in",
-    body:"Sign in as on duty for "+shiftLabel(sh)+" ("+shiftHours(sh)+")? This does not block anyone who stays off duty."};
+    body:"Sign in for "+shiftLabel(sh)+"?"};
   render();
 }
 function dutyAreaLabel(a){return a==="opd"?"OPD":a==="ipd"?"IPD (Ward)":""}
@@ -12706,7 +15184,7 @@ function pickDutyArea(a){
   if(c.fn==="switchArea"){ui.confirm=null;render();return setDutyAreaNow(a)}
   const sh=currentShift();
   ui.confirm={fn:"signDuty",area:a,title:"Sign in for shift",ok:"Sign in",danger:false,
-    body:"Sign in as on duty for "+shiftLabel(sh)+" ("+shiftHours(sh)+") in "+dutyAreaLabel(a)+"? This does not block anyone who stays off duty."};
+    body:"Sign in for "+shiftLabel(sh)+" · "+dutyAreaLabel(a)+"?"};
   render();
 }
 function switchDutyArea(){
@@ -13088,6 +15566,7 @@ function confirmYes(){
   if(c.fn==="clearBeds") return clearSectionBedsNow(c.secId);
   if(c.fn==="obsClose") return closeObservation(c.pid,c.outcome);
   if(c.fn==="signDuty") return signDutyNow(c.area);
+  if(c.fn==="cancelEct") return cancelEctNow(c.id);
   if(c.fn==="endDuty") return endDutyNow();
   if(c.fn==="removeConsultant") return removeConsultantNow(c.id);
   if(c.fn==="toggleRestrain") return toggleRestrainNow(c.id);
@@ -13345,37 +15824,39 @@ function moreView(){
       <span class="more-ico">${icon}</span>
       <span class="more-label">${title}</span>
     </button>`;
-  return `<p class="more-section">Ward</p>
+  return `<p class="more-section">Patient</p>
     <div class="more-grid">
-    ${canAdmin()?row("bdftOpenSetup()",ico("bdft"),"BDFT settings","teal"):""}
-    ${canWrite()?row("ui.ctab='in';ui.disListOnly=false;go('census')",ico("census"),"Admit / Discharge","teal"):""}
+    ${canWrite()?row("ui.ctab='in';ui.disListOnly=false;go('census')",ico("census"),"Admit patient","teal"):""}
     ${canWrite()?row("go('observe')",ico("observe"),"Under observation","amber"):""}
     ${row("go('ect')",ico("ect"),"ECT","violet")}
-    ${!isIntern()?row("go('pgts')",ico("users"),"Resident directory","indigo"):""}
+    ${isConsultant()?row("go('myorders')",ico("myorders"),"My advices","indigo"):""}
+    </div>
+    <p class="more-section">Ward</p>
+    <div class="more-grid">
+    ${row("go('handover')",ico("handover"),"Handovers","amber")}
     ${row("go('tasks')",ico("tasks"),"Task board","blue")}
-    ${row("go('activity')",ico("activity"),"Activity log","slate")}
     ${canBroadcast()?row("go('broadcast')",ico("broadcast"),"Broadcast","cyan"):""}
-    ${isConsultant()?row("go('myorders')",ico("myorders"),"My orders","indigo"):""}
+    ${row("go('activity')",ico("activity"),"Activity log","slate")}
+    ${!isIntern()?row("go('pgts')",ico("residentDir"),"Resident directory","indigo"):""}
     </div>
     ${canAdmin()?`<p class="more-section">Administration</p>
     <div class="more-grid">
-    ${row("go('ward')",ico("setup"),"Ward setup","amber")}
     ${row("go('users')",ico("users"),"User management","indigo")}
+    ${row("go('ward')",ico("setup"),"Ward setup","amber")}
     </div>`:""}
-    ${(canAdmin()||isConsultant())?`<section class="more-report-card">
+    ${(canAdmin()||isConsultant())?`<p class="more-section">Reports</p><section class="more-report-card">
       <label class="field more-report-field"><span>Report month</span><input type="month" id="rmon" value="${esc(ui.reportMonth||new Date().toISOString().slice(0,7))}" oninput="ui.reportMonth=this.value"/></label>
       <button class="btn block more-report-action" onclick="exportMonthly()">Export monthly report</button>
     </section>`:""}
-    <p class="more-section">Account</p>
-    <div class="more-grid">
-    ${row("go('profile')",ico("profile"),"My profile","green")}
-    </div>
     <p class="more-section">System</p>
     <div class="more-grid">
     ${row("ui.setupTab='theme';go('setup')",ico("theme"),"Appearance","slate")}
     ${row("ui.setupTab='notify';go('setup')",ico("notify"),"Notifications","sky")}
-    ${row("go('connection')",ico("cloud"),"Connection","teal")}
     ${row("go('about')",ico("about"),"About","cyan")}
+    </div>
+    <p class="more-section">Account</p>
+    <div class="more-grid">
+    ${row("go('profile')",ico("profile"),"My profile","green")}
     ${row("askLogout()",ico("logout"),"Log out","rose","danger")}
     </div>`;
 }
@@ -13876,9 +16357,10 @@ function setupView(){
           <button class="btn ${theme!=="light"?"":"ghost"}" onclick="setTheme('ot')">Night</button>
         </div>
       </div>
-      <div class="card">
-        <p class="tiny">ACCENT COLOUR</p>
-        ${accentSwatches(theme)}
+      <div class="card palette-card">
+        <p class="tiny">COLOUR THEME</p>
+        <p class="sm palette-hint">Choose a colour style. Day and Night each use a coordinated version of the selected theme.</p>
+        ${themeSwatches(theme)}
       </div>
       <div class="card">
         <p class="tiny">DENSITY</p>
@@ -13908,32 +16390,36 @@ function connectionView(){
   const elog=loadElog();
   const c=outboxCounts();
   const wf=loadWorkflowFailure();
+  const cls=statusClass();
+  const host=S.supabaseUrl?S.supabaseUrl.replace(/^https?:\/\//,""):"No project linked";
+  const status=statusLabel();
   const wfCard=wf?`<div class="card" style="border-left:4px solid #ef4444">
-      <div class="row"><div><p class="tiny">LAST CLINICAL WORKFLOW FAILURE</p><p class="sm" style="margin-top:3px">Most recent admission/transfer/discharge server rejection</p></div><span class="badge r-critical">${esc(wf.kind||"workflow")}</span></div>
+      <div class="row"><div><p class="tiny">LAST WORKFLOW FAILURE</p><p class="sm" style="margin-top:3px">Admission, transfer or discharge</p></div><span class="badge r-critical">${esc(wf.kind||"workflow")}</span></div>
       <div class="queue-error" style="margin-top:10px"><b>Stage:</b> ${esc(wf.stage||"—")}<br><b>Workflow:</b> ${esc(wf.workflow||"—")}<br><b>Patient ID:</b> ${esc(wf.patient_id||"—")}<br><b>Bed ID:</b> ${esc(wf.bed_id||"—")}<br><b>PostgreSQL code:</b> ${esc(wf.code||"—")}<br><b>Message:</b> ${esc(wf.message||"—")}${wf.details?`<br><b>Details:</b> ${esc(wf.details)}`:""}${wf.hint?`<br><b>Hint:</b> ${esc(wf.hint)}`:""}${wf.status!=null?`<br><b>HTTP status:</b> ${esc(String(wf.status))}`:""}${wf.context?`<br><b>PostgreSQL context:</b><br><code style="white-space:pre-wrap">${esc(wf.context)}</code>`:""}</div>
-      <div class="queue-explain"><b>What happened:</b> The server rejected the atomic clinical workflow. The transaction should have rolled back, so this error does not by itself indicate a partially committed admission.</div>
-      <div class="queue-explain"><b>Next step:</b> No SQL or manual database inspection is required on the device. If this admission is retried on this build, this card will preserve the exact server error for diagnosis.</div>
-      <div class="queue-explain">Recorded: ${esc(wf.at?new Date(wf.at).toLocaleString():"—")}</div>
+      <p class="tiny" style="margin-top:10px">Recorded ${esc(wf.at?new Date(wf.at).toLocaleString():"—")}</p>
     </div>`:"";
   const deep=!!ui.setupDeep;
-  return `${back}`+cloudCard()+wfCard+`
-    <div class="card">
-      <div class="row"><div><p class="tiny">QUEUE</p></div><span class="badge ${c.failed?"r-critical":c.retrying?"r-moderate":"r-low"}">${c.failed?c.failed+" failed":c.retrying?c.retrying+" retrying":c.pending+" pending"}</span></div>
+  return `${back}
+    <section class="connection-hero card">
+      <div class="connection-visual ${esc(cls)}" aria-hidden="true">
+        <div class="connection-orbit orbit-one"></div><div class="connection-orbit orbit-two"></div>
+        <div class="connection-satellite"><svg viewBox="0 0 80 80" fill="none"><path d="M40 11 48 32 69 40 48 48 40 69 32 48 11 40 32 32 40 11Z" fill="currentColor" opacity=".18"/><circle cx="40" cy="40" r="15" fill="currentColor"/><path d="M34 40h12M40 34v12" stroke="white" stroke-width="3" stroke-linecap="round"/><path d="M17 17 25 25M63 55l-8 8M63 17l-8 8M17 63l8-8" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".8"/></svg></div>
+        <span class="connection-spark spark-a"></span><span class="connection-spark spark-b"></span><span class="connection-spark spark-c"></span>
+      </div>
+      <div class="connection-status-line"><span class="connection-status-dot ${esc(cls)}"></span><span>${esc(status)}</span></div>
+      <p class="connection-host">${esc(host)}</p>
+      <button class="btn block connection-sync" onclick="reconnectCloud()">${sb?"Sync now":"Connect / sync"}</button>
+      <p class="tiny connection-error" id="cloudmsg">${cloudLastError?esc(cloudLastError):""}</p>
+    </section>
+    ${wfCard}
+    <section class="card connection-queue">
+      <div class="row"><div><p class="tiny">SYNC QUEUE</p></div><span class="badge ${c.failed?"r-critical":c.retrying?"r-moderate":"r-low"}">${c.failed?c.failed+" failed":c.retrying?c.retrying+" retrying":c.pending+" pending"}</span></div>
       ${outboxDetailsHtml()}
-      ${pending.length?`<button class="btn ghost block" style="margin-top:10px" onclick="retryAllFailed()">Retry sync</button>
-      <button class="btn ghost block" style="margin-top:8px" onclick="dropStaleOutbox()">Drop stale queue items</button>`:""}
-      <button class="btn ghost block" style="margin-top:8px" onclick="saveWardBackup()">Save ward backup now</button>
+      ${pending.length?`<button class="btn ghost block" style="margin-top:10px" onclick="retryAllFailed()">Retry sync</button><button class="btn ghost block" style="margin-top:8px" onclick="dropStaleOutbox()">Clear stale items</button>`:""}
+      <button class="btn ghost block connection-backup" onclick="saveWardBackup()">Save ward backup</button>
       ${ui.backupMsg?`<p class="tiny" style="margin-top:8px">${esc(ui.backupMsg)}</p>`:""}
-    </div>
-    ${deep?`<div class="card">
-      <p class="tiny">DIAGNOSTICS</p>
-      <button class="btn block" onclick="runDiagnostics()">Run diagnostics</button>
-      <div style="margin-top:10px">${diag}</div>
-    </div>
-    <div class="card">
-      <div class="row"><div><p class="tiny">LOG</p></div><button class="btn ghost sm" onclick="clearElog()">Clear</button></div>
-      <div class="elog">${elog.length?elog.map(renderElogEntry).join(""):`<p class="tiny">Empty</p>`}</div>
-    </div>`:`<button class="btn ghost block" onclick="ui.setupDeep=true;render()">Show diagnostics</button>`}
+    </section>
+    ${deep?`<div class="card"><p class="tiny">DIAGNOSTICS</p><button class="btn block" onclick="runDiagnostics()">Run diagnostics</button><div style="margin-top:10px">${diag}</div></div><div class="card"><div class="row"><div><p class="tiny">LOG</p></div><button class="btn ghost sm" onclick="clearElog()">Clear</button></div><div class="elog">${elog.length?elog.map(renderElogEntry).join(""):`<p class="tiny">Empty</p>`}</div></div>`:`<button class="btn ghost block connection-diagnostics" onclick="ui.setupDeep=true;render()">Advanced diagnostics</button>`}
     ${projectKeysCard()}`;
 }
 
@@ -22816,7 +25302,7 @@ function render(opts){
   const chipXs=Array.from(document.querySelectorAll(".ptag-row")).map(r=>r.scrollLeft);
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
-  if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){el.innerHTML=`<div class="login"><div class="login-card"><h1>Ward Sync</h1><p class="muted">Checking session…</p></div></div>`;return}
+  if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){el.innerHTML=`<div class="login"><div class="login-card session-check-card"><div class="session-leds" role="status" aria-label="Checking session"><i></i><i></i><i></i><i></i></div><h1>Ward Sync</h1><p class="muted">Establishing secure connection</p></div></div>`;return}
   const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,dedit:dedEditView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView,bdft:bdftView,profile:profileView,pgts:pgtsView};
   if(isIntern()){pages.home=internHomeView;pages.snap=internSnapView;Object.keys(pages).forEach(k=>{if(k!=="home"&&k!=="snap")delete pages[k]});pages.ivitals=internVitalsView;pages.ireports=internReportsView;pages.ireport=internReportPageView} // R1.3.139: interns see the patient page only · R1.3.142: + Vitals / Reports tabs
   pages.vchart=vchartView; // R1.3.140: full-screen vitals chart (all roles)
@@ -22983,6 +25469,234 @@ if("serviceWorker" in navigator && location.protocol !== "file:"){
   });
 }
 </script>
+
+<style id="ward-sync-header-shadow-final">
+/* Home header: fully transparent surface, preserving the greeting and controls. */
+#app.app > .top.resident-home,
+#app.app > .top.intern-home-top{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  isolation:auto!important;
+}
+
+/* Let patient Previous / Next button shadows breathe instead of being
+   clipped by their local row/header wrappers. */
+#app.app .pt-head.r162-head,
+#app.app .r162-head,
+#app.app .r162-head .pt-row1,
+#app.app .r162-head .r162-nav,
+#app.app .r162-head .r162-nav.pt-nav{
+  overflow:visible!important;
+  clip-path:none!important;
+}
+
+/* Softer, wider button elevation with no narrow dark edge or hard shadow band. */
+#app.app .r162-nav.r16-nav.pt-nav button:not(:disabled){
+  box-shadow:
+    0 7px 20px rgba(92,55,165,.13),
+    0 2px 7px rgba(40,25,65,.045)!important;
+}
+#app.app .r162-nav.r16-nav.pt-nav button:not(:disabled):active{
+  box-shadow:
+    0 3px 10px rgba(92,55,165,.11),
+    0 1px 4px rgba(40,25,65,.035)!important;
+}
+#app.app .btn:not(.ghost):not(.warn):not(.danger):not(.idle):not([disabled]),
+#app.app button.primary:not(:disabled),
+#app.app .r2-signin:not(:disabled){
+  filter:none;
+  box-shadow:
+    0 7px 20px color-mix(in srgb,var(--teal) 12%,transparent),
+    0 2px 7px rgba(30,22,45,.035)!important;
+}
+#app.app .btn:not(.ghost):not(.warn):not(.danger):not(.idle):not([disabled]):active,
+#app.app button.primary:not(:disabled):active{
+  box-shadow:
+    0 3px 10px color-mix(in srgb,var(--teal) 10%,transparent),
+    0 1px 4px rgba(30,22,45,.025)!important;
+}
+html[data-theme="dark"] #app.app .r162-nav.r16-nav.pt-nav button:not(:disabled),
+html[data-theme="night"] #app.app .r162-nav.r16-nav.pt-nav button:not(:disabled),
+html[data-theme="ot"] #app.app .r162-nav.r16-nav.pt-nav button:not(:disabled){
+  box-shadow:
+    0 7px 20px rgba(0,0,0,.22),
+    0 2px 7px rgba(0,0,0,.10)!important;
+}
+</style>
+
+
+<style id="ward-sync-compact-home-header">
+/* Compact transparent Home greeting row: retain comfortable breathing room
+   while keeping the avatar and notification control fully visible. */
+#app.app > .top.resident-home,
+#app.app > .top.intern-home-top{
+  box-sizing:border-box!important;
+  padding:7px 0!important;
+  min-height:0!important;
+  height:auto!important;
+  margin-top:0!important;
+  margin-bottom:0!important;
+}
+#app.app > .top.resident-home .profile-photo.home-photo,
+#app.app > .top.resident-home .photo-img.home-photo,
+#app.app > .top.resident-home .top-bell{
+  flex:0 0 40px!important;
+}
+</style>
+
+
+<style id="ward-sync-clean-admit-discharge-dots">
+/* Keep the crisp coloured indicator and subtle outline; remove the broad
+   outer halo that was making the dots look blurred. */
+#app.app .r2-tile.today-admitted.has-dot:after{
+  box-shadow:0 0 0 2px rgba(37,135,255,.16)!important;
+}
+#app.app .r2-tile.today-discharged.has-dot:after{
+  box-shadow:0 0 0 2px rgba(239,68,68,.15)!important;
+}
+</style>
+
+
+<style id="ward-sync-elegant-session-loader">
+/* Refined session-verification screen */
+#app .login:has(.session-check-card){
+  min-height:100dvh!important;
+  padding:24px!important;
+  justify-content:center!important;
+  background:
+    radial-gradient(ellipse 78% 44% at 50% 43%,rgba(133,86,220,.075),transparent 72%),
+    var(--bg)!important;
+}
+#app .session-check-card{
+  box-sizing:border-box!important;
+  width:min(100%,380px)!important;
+  padding:34px 26px 30px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:0!important;
+  text-align:center!important;
+  border:1px solid color-mix(in srgb,var(--accent) 19%,var(--line))!important;
+  border-radius:28px!important;
+  background:linear-gradient(155deg,
+    color-mix(in srgb,var(--panel) 96%,white 4%),
+    var(--panel))!important;
+  box-shadow:
+    0 22px 54px rgba(45,30,75,.075),
+    0 3px 12px rgba(45,30,75,.035),
+    inset 0 1px 0 rgba(255,255,255,.72)!important;
+}
+#app .session-check-card .session-leds{
+  order:0!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  width:42px!important;
+  height:42px!important;
+  margin:0 auto 22px!important;
+  gap:0!important;
+  border-radius:50%!important;
+  background:conic-gradient(from 0deg,
+    #38bdf8 0deg 72deg,
+    transparent 82deg 90deg,
+    #8b5cf6 100deg 162deg,
+    transparent 172deg 180deg,
+    #34d399 190deg 252deg,
+    transparent 262deg 270deg,
+    #fbbf24 280deg 342deg,
+    transparent 352deg 360deg)!important;
+  animation:wsLoaderSpin 2.4s linear infinite!important;
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px))!important;
+  mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px))!important;
+}
+#app .session-check-card .session-leds::after{
+  content:""!important;
+  position:absolute!important;
+  inset:13px!important;
+  border-radius:50%!important;
+  background:linear-gradient(145deg,#a78bfa,#6736c8)!important;
+  box-shadow:0 1px 5px rgba(103,54,200,.22)!important;
+  -webkit-mask:none!important;
+  mask:none!important;
+}
+#app .session-check-card .session-leds i{display:none!important}
+#app .session-check-card h1{
+  order:1!important;
+  margin:0 0 9px!important;
+  font-size:29px!important;
+  line-height:1.12!important;
+  letter-spacing:-.045em!important;
+  font-weight:800!important;
+  color:var(--ink)!important;
+}
+#app .session-check-card p{
+  order:2!important;
+  margin:0!important;
+  font-size:14px!important;
+  line-height:1.5!important;
+  letter-spacing:.025em!important;
+  color:var(--muted)!important;
+}
+@keyframes wsLoaderSpin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){
+  #app .session-check-card .session-leds{animation:none!important}
+}
+html[data-theme="dark"] #app .session-check-card,
+html[data-theme="night"] #app .session-check-card,
+html[data-theme="ot"] #app .session-check-card{
+  box-shadow:0 22px 54px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+
+/* Consultant snapshot: compact floating Give advice action, clear of the bottom navigation. */
+.snap-advice-fab{
+  position:fixed;right:max(18px,calc((100vw - 680px)/2 + 22px));
+  bottom:calc(var(--nav-h,78px) + env(safe-area-inset-bottom,0px) + 16px);
+  z-index:35;display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  min-height:48px;padding:0 18px;border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));
+  border-radius:999px;background:var(--accent);color:#fff;font:600 14px/1 Inter,system-ui,sans-serif;
+  box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 24%,transparent);
+  -webkit-tap-highlight-color:transparent;
+}
+.snap-advice-fab:active{transform:translateY(1px);filter:brightness(.96)}
+.snap-advice-fab-ico{display:inline-flex;align-items:center;justify-content:center}
+.snap-advice-fab-ico svg{width:18px;height:18px;stroke:currentColor}
+@media(min-width:900px){.snap-advice-fab{right:max(24px,calc((100vw - 680px)/2 + 24px));}}
+
+
+/* Profile avatar geometry fix — keep the home-header frame perfectly circular
+   in consultant and intern shells, regardless of image/fallback rendering. */
+#app.app > header.top.resident-home .profile-photo.home-photo,
+#app.app > header.top.resident-home .photo-img.home-photo,
+#app.app > header.top.intern-home-top .profile-photo.home-photo,
+#app.app > header.top.intern-home-top .photo-img.home-photo{
+  box-sizing:border-box!important;
+  display:flex!important;
+  width:44px!important;
+  height:44px!important;
+  min-width:44px!important;
+  min-height:44px!important;
+  max-width:44px!important;
+  max-height:44px!important;
+  flex:0 0 44px!important;
+  aspect-ratio:1 / 1!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+}
+#app.app > header.top.resident-home img.photo-img.home-photo,
+#app.app > header.top.intern-home-top img.photo-img.home-photo{
+  display:block!important;
+  object-fit:cover!important;
+  object-position:center!important;
+}
+</style>
+
 </body>
 </html>
 
