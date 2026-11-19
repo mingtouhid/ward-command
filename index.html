@@ -27280,6 +27280,8 @@ html:has(#app.app.oa-mode),body:has(#app.app.oa-mode){height:100%!important;min-
   }
 }
 
+/* Keep the BDFT action tablet-only; do not expose a native button in the phone layout. */
+html:not(.ws-resident-tablet) #app.app .main .r2-bdft-see{display:none!important;}
 /* R2.0.8: Home tablet side cards use the available horizontal space. */
 @media (min-width:900px) and (orientation:landscape){
   html.ws-resident-tablet #app.app .main .r2-side{
