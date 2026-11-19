@@ -8,7 +8,7 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 - The Home BDFT card now treats the active ward-wide distribution for today or tomorrow as the source of truth, rather than relying only on the signed-in resident's personal assignment. The Make BDFT prompt is hidden once an active distribution exists. Bed numbers are shown in bed chips instead of being repeated in a summary line, and the complete distribution remains available in read-only view.
 - BDFT push-notification taps are normalised to the published BDFT page. The notification route clears the distribution edit id and explicitly sets read-only mode, preventing a tap from opening the generation/edit terminal.
-- PWA icon declarations now point to the canonical `icons/` directory and use separate regular and maskable 192px/512px assets. The service worker cache is `ward-sync-pwa-r2.0.0-3`; its precache includes the refreshed app icons, Apple touch icon, favicon, notification glyph and badge while retaining legacy root icon paths for compatibility.
+- PWA icon declarations now point to the canonical `icons/` directory and use separate regular and maskable 192px/512px assets. The service worker cache is `ward-sync-pwa-r2.0.0-3`; its precache includes the refreshed app icons, Apple touch icon, favicon, notification glyph and badge while while refreshing the four legacy root-level icon paths still used by the service-worker precache.
 
 ### Documentation and maintenance
 

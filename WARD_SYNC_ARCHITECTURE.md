@@ -334,7 +334,7 @@ The service worker uses:
 
 The precache contains the app shell, manifest, legacy root icon paths, current `icons/` PWA assets, notification glyph and badge. Install calls `skipWaiting`; activate deletes older app caches while preserving the current app cache and OCR cache, then calls `clients.claim()`. Same-origin app-shell requests use network-first with a 4-second navigation timeout and a 12-second resource timeout, falling back to cached `index.html`. Same-origin non-shell GETs are network-first. Cross-origin GETs are stale-while-revalidate, except Supabase and `/ocr/`, which are not intercepted for caching.
 
-The manifest points to `icons/icon-192.png` and `icons/icon-512.png` for regular installation icons, with separate `icons/icon-192-maskable.png` and `icons/icon-512-maskable.png` entries for maskable display. The HTML head links to the `icons/` favicons and Apple touch icons. Root-level PNGs are old compatibility paths, not the current manifest icon source.
+The manifest points to `icons/icon-192.png` and `icons/icon-512.png` for regular installation icons, with separate `icons/icon-192-maskable.png` and `icons/icon-512-maskable.png` entries for maskable display. The HTML head links to the `icons/` favicons and Apple touch icons. The four root-level paths still precached by `sw.js` (`icon-192.png`, `icon-512.png`, `apple-touch-icon.png`, `favicon-32.png`) are refreshed compatibility aliases of the canonical assets under `icons/`. Current HTML and manifest declarations use `icons/`.
 
 Version values in the current source snapshot are not aligned and must be read separately:
 - `APP_VERSION`: `R2.0.7` (HTML client label).
