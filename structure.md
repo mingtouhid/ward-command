@@ -47,9 +47,9 @@ This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCH
 
 | Identifier | Value | Meaning |
 | --- | --- | --- |
-| HTML `APP_VERSION` | `R2.0.7` | Build label displayed by the app. |
+| HTML `APP_VERSION` | `R2.0.8` | Build label displayed by the app. |
 | BDFT `BDFT_APP_VERSION` | `7.0` | Inlined BDFT engine label. |
-| Service worker `VERSION` | `ward-sync-pwa-r2.0.0-3` | Cache name; changing it triggers app cache replacement. |
+| Service worker `VERSION` | `ward-sync-pwa-r2.0.0-4` | Cache name; changing it triggers app cache replacement. |
 | OCR cache | `ocr-assets-v7` | Separate OCR asset cache. |
 | Manifest `version` / `build` | `1.3.20` / `R1.3.20 icons` | Legacy custom manifest metadata, not the displayed HTML build. |
 
