@@ -7314,7 +7314,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R2.0.7";
+const APP_VERSION="R2.0.8";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -22095,7 +22095,7 @@ function medSheetHtml(pid){
   ui.fields=ui.fields||{};
   const drug=ui.fields.md||"";
   const dose=ui.fields.mds||"";
-  return `<div class="sheet mid"><button class="mask" onclick="closeMedForm()"></button><div class="box ws-med-form">
+  return `<div class="sheet mid ws-med-form-sheet"><button class="mask" onclick="closeMedForm()"></button><div class="box ws-med-form">
     <div class="row"><b>Medication</b><button class="btn ghost sm" onclick="closeMedForm()">Close</button></div>
     <div class="med-sec"><p class="tiny">DRUG + DOSE</p>
       ${medInputsGridHtml({drugId:"md",doseId:"mds",routeId:"mroute",freqId:"mfreq",drugVal:drug,doseVal:dose,mode:"sheet"})}
@@ -27234,16 +27234,16 @@ html:has(#app.app.oa-mode),body:has(#app.app.oa-mode){height:100%!important;min-
 
   /* Add medication: dock the composer at the right edge of the tablet workspace.
      Keep the patient list visible and stack every form field vertically. */
-  html.ws-resident-tablet #app.app>.sheet:has(.ws-med-form){
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet{
     position:fixed!important;inset:74px 16px 16px auto!important;
     display:flex!important;align-items:stretch!important;justify-content:flex-end!important;
     width:min(520px,calc(100vw - var(--ws-tablet-rail) - 32px))!important;
     height:auto!important;padding:0!important;box-sizing:border-box!important;
   }
-  html.ws-resident-tablet #app.app>.sheet:has(.ws-med-form)>.mask{
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet>.mask{
     position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;
   }
-  html.ws-resident-tablet #app.app>.sheet:has(.ws-med-form)>.ws-med-form{
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet>.ws-med-form{
     position:relative!important;width:100%!important;max-width:520px!important;
     height:100%!important;max-height:none!important;min-height:0!important;
     margin:0!important;padding:20px!important;border-radius:20px!important;
@@ -27251,17 +27251,17 @@ html:has(#app.app.oa-mode),body:has(#app.app.oa-mode){height:100%!important;min-
     display:flex!important;flex-direction:column!important;gap:12px!important;
     box-shadow:0 18px 54px rgba(15,23,42,.22)!important;
   }
-  html.ws-resident-tablet #app.app>.sheet:has(.ws-med-form) .ws-med-form .med-sec{
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet .ws-med-form .med-sec{
     width:100%!important;min-width:0!important;margin:0!important;
   }
-  html.ws-resident-tablet #app.app>.sheet:has(.ws-med-form) .ws-med-form .obs-med-grid{
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet .ws-med-form .obs-med-grid{
     display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important;
   }
-  html.ws-resident-tablet #app.app>.sheet:has(.ws-med-form) .ws-med-form input,
-  html.ws-resident-tablet #app.app>.sheet:has(.ws-med-form) .ws-med-form select{
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet .ws-med-form input,
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet .ws-med-form select{
     width:100%!important;min-width:0!important;min-height:46px!important;
   }
-  html.ws-resident-tablet #app.app>.sheet:has(.ws-med-form) .ws-med-form .btn.block{
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet .ws-med-form .btn.block{
     width:100%!important;margin-top:auto!important;min-height:48px!important;
   }
 }
@@ -27271,14 +27271,81 @@ html:has(#app.app.oa-mode),body:has(#app.app.oa-mode){height:100%!important;min-
   html.ws-resident-tablet #app.app .main .r2-bedchips{flex:1 1 100%!important;order:3!important}
 }
 @media (min-width:760px) and (max-width:1023px) and (orientation:portrait){
-  html.ws-resident-tablet #app.app>.sheet:has(.ws-med-form){
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet{
     inset:16px!important;width:auto!important;max-width:none!important;
     justify-content:center!important;align-items:center!important;
   }
-  html.ws-resident-tablet #app.app>.sheet:has(.ws-med-form)>.ws-med-form{
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet>.ws-med-form{
     width:min(560px,100%)!important;height:auto!important;max-height:90dvh!important;
   }
 }
+
+/* R2.0.8: Home tablet side cards use the available horizontal space. */
+@media (min-width:900px) and (orientation:landscape){
+  html.ws-resident-tablet #app.app .main .r2-side{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    grid-auto-flow:row!important;
+    align-items:start!important;
+    align-content:start!important;
+    gap:12px!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-side>*{
+    flex:none!important;
+    min-width:0!important;
+    width:100%!important;
+    max-width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    align-self:start!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-side>.r2-duty{grid-column:1!important}
+  html.ws-resident-tablet #app.app .main .r2-side>.r146-needs{grid-column:2!important}
+  html.ws-resident-tablet #app.app .main .r2-side:not(:has(.r146-needs)):has(.r2-duty)>.r2-flags{grid-column:2!important}
+  html.ws-resident-tablet #app.app .main .r2-side:has(.r146-needs)>.r2-flags{grid-column:1!important}
+  html.ws-resident-tablet #app.app .main .r2-side:not(:has(.r146-needs)):not(:has(.r2-duty))>.r2-flags{grid-column:1!important}
+  html.ws-resident-tablet #app.app .main .r2-side>.r146-sched{grid-column:2!important}
+  html.ws-resident-tablet #app.app .main .r2-side>.r2-team{grid-column:1/-1!important}
+  
+  /* The docked Add Medication sheet is identified explicitly, not by a :has() ancestor query. */
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet{
+    position:fixed!important;
+    inset:74px 16px 16px auto!important;
+    display:flex!important;
+    align-items:stretch!important;
+    justify-content:flex-end!important;
+    width:min(520px,calc(100vw - var(--ws-tablet-rail,88px) - 32px))!important;
+    height:auto!important;
+    padding:0!important;
+    box-sizing:border-box!important;
+  }
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet>.mask{
+    position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;
+  }
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet>.ws-med-form{
+    position:relative!important;
+    display:flex!important;flex-direction:column!important;gap:12px!important;
+    width:100%!important;max-width:520px!important;
+    height:100%!important;max-height:none!important;min-height:0!important;
+    margin:0!important;padding:20px!important;border-radius:20px!important;
+    overflow-y:auto!important;overscroll-behavior:contain!important;
+    box-shadow:0 18px 54px rgba(15,23,42,.22)!important;
+  }
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet .ws-med-form .med-sec{
+    width:100%!important;min-width:0!important;margin:0!important;
+  }
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet .ws-med-form .obs-med-grid{
+    display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important;
+  }
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet .ws-med-form input,
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet .ws-med-form select{
+    width:100%!important;min-width:0!important;min-height:46px!important;
+  }
+  html.ws-resident-tablet #app.app>.sheet.ws-med-form-sheet .ws-med-form .btn.block{
+    width:100%!important;margin-top:auto!important;min-height:48px!important;
+  }
+}
+
 </style>
 </body>
 </html>
