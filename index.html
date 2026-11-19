@@ -5931,6 +5931,21 @@ html[data-theme="ot"] .app>.pt-qbar{
 .setup-tile .ico.ws-icon-pack{width:24px;height:24px}
 </style>
 <meta name="ward-sync-office-admin" content="frontend-integration-r1">
+
+<style id="oa-published-roster-cleanup-v9">
+.published-roster-document{width:100%;max-width:100%;overflow-x:auto}
+.published-roster-document .roster-doc{margin:0!important}
+.published-roster-document + .oa-toolbar{margin-top:12px}
+</style>
+<style id="oa-roster-column-controls-v1">
+.oa-edit-table th .oa-col-head{display:flex;align-items:center;gap:5px;min-width:0}
+.oa-edit-table th .oa-colname{flex:1 1 auto;width:100%;min-width:75px;padding:6px 7px;font-size:12px;line-height:1.25}
+.oa-edit-table th .oa-remove-col-btn{flex:0 0 23px;width:23px;height:23px;min-width:23px;border:0;border-radius:6px;background:#fff0f0;color:#9b3b3b;font-size:16px;line-height:1;cursor:pointer}
+.oa-edit-table th .oa-remove-col-btn:disabled{visibility:hidden;pointer-events:none}
+.oa-edit-table th{min-width:105px}
+.oa-edit-table th:first-child,.oa-edit-table th:last-child{min-width:34px}
+.oa-toolbar .btn{white-space:nowrap}
+</style>
 </head>
 <body>
 <svg id="ward-sync-icon-sprite" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
@@ -8824,22 +8839,55 @@ async function doCloudBoot(){
 }
 
 /* WARD SYNC — Office Administration isolated frontend */
-const OA={page:"rosters",type:"pgt_monthly",rosters:[],users:[],pgtUsersLoaded:false,setup:null,editing:null,loading:false,error:"",notice:""};
+const OA={page:"rosters",type:"pgt_monthly",rosters:[],users:[],pgtUsersLoaded:false,groupSets:[],groupSetsLoaded:false,activeGroupSetId:null,groupDraft:null,groupEditingId:null,groupDraftName:"",setup:null,editing:null,loading:false,error:"",notice:"",lastMarkup:"",renderVersion:0,preserveScrollTop:null,scrollReset:false};
 function oaRpc(name,args){if(!sb||!sessionTok)throw new Error("No active Office Administration session");return sb.rpc(name,{p_token:sessionTok,...(args||{})}).then(({data,error})=>{if(error)throw error;return data});}
 function oaEsc(v){return esc(v==null?"":String(v))}
-function oaStatus(s){return ({draft:"Draft",review:"Awaiting review",published:"Published"})[s]||s||"—"}
+function oaStatus(s){return ({draft:"Draft",review:"Ready to publish",published:"Published"})[s]||s||"—"}
 function oaDate(v){if(!v)return "—";try{return new Date(v+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}catch(e){return v}}
-async function oaLoad(){OA.loading=true;OA.error="";render({force:1});try{if(OA.page==="rosters"){const d=await oaRpc("office_admin_list_rosters",{p_roster_type:OA.type});OA.rosters=d.rosters||[]}else if(OA.page==="users"){const d=await oaRpc("office_admin_list_users",{});OA.users=d.users||[];OA.pgtUsersLoaded=true}else if(OA.page==="ward"){const d=await oaRpc("office_admin_read_ward_setup",{});OA.setup=d}}catch(e){OA.error=e.message||String(e)}finally{OA.loading=false;render({force:1})}}
-function oaPage(p){OA.page=p;OA.editing=null;OA.notice="";oaLoad()}
+async function oaLoad(){
+ const currentMain=document.querySelector(".oa-main");
+ if(OA.preserveScrollTop===null) OA.preserveScrollTop=OA.scrollReset?0:(currentMain?.scrollTop||0);
+ OA.loading=true;OA.error="";render({force:1});
+ try{
+  if(OA.page==="rosters"){
+   const d=await oaRpc("office_admin_list_rosters",{p_roster_type:OA.type});OA.rosters=d.rosters||[];
+  } else if(OA.page==="groups"){
+   const [gd,ud]=await Promise.all([oaRpc("office_admin_list_pgt_group_sets",{}),oaRpc("office_admin_list_users",{})]);
+   OA.groupSets=gd.sets||[];OA.groupSetsLoaded=true;
+   OA.users=Array.isArray(ud?.users)?ud.users:[];OA.pgtUsersLoaded=true;
+   if(OA.groupDraft===null){
+    const chosen=OA.groupSets.find(x=>String(x.id)===String(OA.activeGroupSetId))||OA.groupSets[0]||null;
+    OA.groupEditingId=chosen?.id||null;OA.groupDraftName=chosen?.name||"Standard PGT Groups";
+    OA.groupDraft=chosen?JSON.parse(JSON.stringify(chosen.groups||[])):oaDefaultGroups();
+    if(chosen)OA.activeGroupSetId=chosen.id;
+   }
+  } else if(OA.page==="users"){
+   const d=await oaRpc("office_admin_list_users",{});OA.users=d.users||[];OA.pgtUsersLoaded=true;
+  } else if(OA.page==="ward"){
+   const d=await oaRpc("office_admin_read_ward_setup",{});OA.setup=d;
+  }
+ }catch(e){OA.error=e.message||String(e)}
+ finally{OA.loading=false;OA.scrollReset=false;render({force:1})}
+}
+function oaPage(p){OA.page=p;OA.editing=null;OA.notice="";OA.scrollReset=true;OA.preserveScrollTop=0;oaLoad()}
 async function oaNewRoster(){
+ OA.scrollReset=true;OA.preserveScrollTop=0;
  if(OA.type==="pgt_monthly"){
-  try{const d=await oaRpc("office_admin_list_users",{});OA.users=Array.isArray(d?.users)?d.users:[];OA.pgtUsersLoaded=true}
-  catch(e){OA.pgtUsersLoaded=false;OA.error="PGT name suggestions could not be loaded. You can still enter names manually."}
+  try{
+   const [ud,gd]=await Promise.all([oaRpc("office_admin_list_users",{}),oaRpc("office_admin_list_pgt_group_sets",{})]);
+   OA.users=Array.isArray(ud?.users)?ud.users:[];OA.pgtUsersLoaded=true;
+   OA.groupSets=gd.sets||[];OA.groupSetsLoaded=true;
+  }catch(e){OA.pgtUsersLoaded=false;OA.error="PGT suggestions or saved groups could not be loaded. You can still continue manually."}
  }
- OA.editing={id:null,roster_type:OA.type,period_start:"",period_end:"",title:OA.type==="pgt_monthly"?"PGT Duty Roster":"Faculty Duty Roster",reference_number:"",issue_date:new Date().toISOString().slice(0,10),content:oaTemplateContent(OA.type)};
+ const content=oaTemplateContent(OA.type);
+ if(OA.type==="pgt_monthly"){
+  const chosen=OA.groupSets.find(x=>String(x.id)===String(OA.activeGroupSetId))||OA.groupSets[0]||null;
+  if(chosen){content.groups=JSON.parse(JSON.stringify(chosen.groups||[]));OA.activeGroupSetId=chosen.id;}
+ }
+ OA.editing={id:null,roster_type:OA.type,period_start:"",period_end:"",title:OA.type==="pgt_monthly"?"PGT Duty Roster":"Faculty Duty Roster",reference_number:"",issue_date:new Date().toISOString().slice(0,10),content};
  render({force:1})
 }
-async function oaEditRoster(id){OA.loading=true;render({force:1});try{const d=await oaRpc("office_admin_get_roster",{p_roster_id:id});OA.editing=d.roster;if(typeof OA.editing.content==="string")OA.editing.content=JSON.parse(OA.editing.content||"{}");if((OA.editing.roster_type||OA.type)==="pgt_monthly"){const u=await oaRpc("office_admin_list_users",{});OA.users=Array.isArray(u?.users)?u.users:[];OA.pgtUsersLoaded=true;}}catch(e){OA.error=e.message||String(e)}finally{OA.loading=false;render({force:1})}}
+async function oaEditRoster(id){OA.scrollReset=true;OA.preserveScrollTop=0;OA.loading=true;render({force:1});try{const d=await oaRpc("office_admin_get_roster",{p_roster_id:id});OA.editing=d.roster;if(typeof OA.editing.content==="string")OA.editing.content=JSON.parse(OA.editing.content||"{}");if((OA.editing.roster_type||OA.type)==="pgt_monthly"){const [u,g]=await Promise.all([oaRpc("office_admin_list_users",{}),oaRpc("office_admin_list_pgt_group_sets",{})]);OA.users=Array.isArray(u?.users)?u.users:[];OA.pgtUsersLoaded=true;OA.groupSets=g.sets||[];OA.groupSetsLoaded=true;}}catch(e){OA.error=e.message||String(e)}finally{OA.loading=false;render({force:1})}}
 
 function oaTemplateContent(type){
  if(type==="pgt_monthly") return {
@@ -8880,20 +8928,15 @@ function oaEnsureRosterContent(){
  if(typeof c==="string"){try{c=JSON.parse(c||"{}")}catch(e){c={}}}
  const type=r.roster_type||OA.type;
  if(!Array.isArray(c.columns)||!c.columns.length)c=oaTemplateContent(type);
+ // Keep the saved column configuration intact. Earlier versions forcibly reset
+ // PGT columns to the nine defaults, which discarded user-added columns.
+ c.columns=c.columns.map((x,i)=>String(x==null?`Duty ${i+1}`:x).trim()||`Duty ${i+1}`);
  c.rows=Array.isArray(c.rows)?c.rows:[];c.notes=Array.isArray(c.notes)?c.notes:[];c.groups=Array.isArray(c.groups)?c.groups:[];
- c.rows=c.rows.map(row=>Array.isArray(row)?row:c.columns.map(k=>row&&row[k]||""));
+ c.rows=c.rows.map(row=>{
+  const values=Array.isArray(row)?row:c.columns.map(k=>row&&row[k]||"");
+  return c.columns.map((_,i)=>values[i]??"");
+ });
  if(type==="pgt_monthly"){
-  const expected=["DATE","DAY","OPD","DTC 10-12","ECT","SUICIDE 8-2","SUICIDE 2-8","2-10 PM","10 PM to 8 AM"];
-  if(JSON.stringify(c.columns)!==JSON.stringify(expected)){
-   const oldColumns=c.columns.slice(),oldRows=c.rows.slice(),di=oldColumns.findIndex(x=>/^date$/i.test(x)),dy=oldColumns.findIndex(x=>/^day$/i.test(x)),legacy=[];
-   c.rows=oldRows.map((row,ri)=>{
-    const next=expected.map(()=>"");if(di>=0)next[0]=row[di]||"";if(dy>=0)next[1]=row[dy]||"";
-    row.forEach((v,j)=>{if(j!==di&&j!==dy&&String(v||"").trim())legacy.push(`Row ${ri+1} — ${oldColumns[j]}: ${v}`)});
-    return next;
-   });
-   c.columns=expected;
-   if(legacy.length)c.notes.push("Entries from the previous roster layout were preserved here for manual reassignment: "+legacy.join("; "));
-  }
   const defaults=["Group A","Group B","Group C","Group D"];
   c.groups=c.groups.map((g,i)=>{
    if(typeof g==="string")return {name:g,members:[]};
@@ -8905,58 +8948,98 @@ function oaEnsureRosterContent(){
  }
  r.content=c;OA.editing=r;return c;
 }
+function oaDefaultGroups(){return ["A","B","C","D"].map(x=>({name:"Group "+x,members:[]}));}
+function oaActiveGroups(){return OA.page==="groups"&&Array.isArray(OA.groupDraft)?OA.groupDraft:oaEnsureRosterContent().groups;}
+function oaCloneGroups(groups){return JSON.parse(JSON.stringify(Array.isArray(groups)?groups:[]));}
 function oaPgtSuggestionUsers(){
- return (OA.users||[]).filter(u=>u&&u.active!==false&&String(u.role||"").toLowerCase()==="resident"&&(u.display_name||u.name||u.username)).sort((a,b)=>String(a.display_name||a.name||a.username).localeCompare(String(b.display_name||b.name||b.username)));
+ const eligibleRoles=new Set(["resident","admin","office_admin"]);
+ return (OA.users||[]).filter(u=>u&&u.active!==false&&eligibleRoles.has(String(u.role||"").toLowerCase())&&(u.display_name||u.name||u.username)).sort((a,b)=>String(a.display_name||a.name||a.username).localeCompare(String(b.display_name||b.name||b.username)));
 }
 function oaPgtDatalist(){
  const n=oaPgtSuggestionUsers().length;
- return `<div class="oa-pgt-suggestion-note">${n?`<b>${n} active PGT accounts found.</b> Tap a name field to search and select a registered PGT, or type a name manually.`:`<b>No active PGT accounts were returned.</b> You can still type names manually; check User Management if suggestions should be available.`}</div>`;
+ return `<div class="oa-pgt-suggestion-note">${n?`<b>${n} active accounts found.</b> Includes active residents and administrator accounts. Tap a name field to search, or type a name manually.`:`<b>No active PGT accounts were returned.</b> You can still type names manually; check User Management if suggestions should be available.`}</div>`;
 }
 function oaPgtSuggestionName(u){return String(u?.display_name||u?.name||u?.username||"").trim()}
 function oaRenderPgtSuggestions(g,m,query=""){
  const box=document.getElementById(`oaPgtSuggest_${g}_${m}`);if(!box)return;
  const users=oaPgtSuggestionUsers(),q=String(query||"").trim().toLowerCase();
  const matches=users.filter(u=>!q||[u.display_name,u.name,u.username].some(v=>String(v||"").toLowerCase().includes(q))).slice(0,12);
- box.innerHTML=matches.length?`<div class="oa-pgt-suggestion-heading">${q?"Matching registered PGTs":"Active PGT accounts"} · ${matches.length}</div>${matches.map(u=>{const idx=users.indexOf(u);return `<button type="button" role="option" onpointerdown="event.preventDefault();oaChoosePgtSuggestion(${g},${m},${idx})"><span>${oaEsc(oaPgtSuggestionName(u))}</span><small>${oaEsc(u.username||"Resident")}</small></button>`}).join("")}</div>`:`<div class="oa-pgt-no-match">${users.length?"No matching account. You can keep typing a name manually.":"No active resident suggestions are available."}</div>`;
+ box.innerHTML=matches.length?`<div class="oa-pgt-suggestion-heading">${q?"Matching registered PGTs":"Active eligible accounts"} · ${matches.length}</div>${matches.map(u=>{const idx=users.indexOf(u);return `<button type="button" role="option" onpointerdown="event.preventDefault();oaChoosePgtSuggestion(${g},${m},${idx})"><span>${oaEsc(oaPgtSuggestionName(u))}</span><small>${oaEsc(u.username||"Resident")}</small></button>`}).join("")}</div>`:`<div class="oa-pgt-no-match">${users.length?"No matching account. You can keep typing a name manually.":"No active eligible account suggestions are available."}</div>`;
  box.classList.add("show");
 }
-function oaShowPgtSuggestions(g,m){const c=oaEnsureRosterContent(),name=c.groups[g]?.members?.[m]?.name||"";oaRenderPgtSuggestions(g,m,name)}
+function oaShowPgtSuggestions(g,m){const groups=oaActiveGroups(),name=groups[g]?.members?.[m]?.name||"";oaRenderPgtSuggestions(g,m,name)}
 function oaHidePgtSuggestions(g,m){const box=document.getElementById(`oaPgtSuggest_${g}_${m}`);if(box)box.classList.remove("show")}
 function oaChoosePgtSuggestion(g,m,index){
- const c=oaEnsureRosterContent(),users=oaPgtSuggestionUsers(),u=users[index],item=c.groups[g]?.members?.[m];if(!u||!item)return;
+ const groups=oaActiveGroups(),users=oaPgtSuggestionUsers(),u=users[index],item=groups[g]?.members?.[m];if(!u||!item)return;
  item.name=oaPgtSuggestionName(u);if(!item.abbr)item.abbr=oaMakePgtAbbr(item.name);
  const row=document.querySelector(`.oa-member-row[data-group="${g}"][data-member="${m}"]`);
  if(row){const name=row.querySelector(".oa-pgt-name-input"),abbr=row.querySelector(".oa-abbr-field input");if(name)name.value=item.name;if(abbr)abbr.value=item.abbr}
  oaHidePgtSuggestions(g,m);
 }
 function oaGroupMemberDisplay(m){return `${m.name||""}${m.abbr?" ("+m.abbr+")":""}`}
+function oaRosterGroupSetSelector(){
+ const sets=OA.groupSets||[];
+ return `<section class="oa-builder-section oa-roster-group-source"><div class="oa-builder-heading"><div><h3>1. PGT group set</h3><p class="oa-help">Choose a saved group configuration. The selected names and abbreviations are copied into this roster and remain fixed for this month.</p></div><span class="oa-count">${oaEnsureRosterContent().groups.length} groups</span></div><div class="oa-group-source-row"><label class="field"><span>Saved PGT groups</span><select id="oaRosterGroupSet" onchange="oaApplyGroupSet(this.value)"><option value="">Use groups saved in this draft</option>${sets.map(x=>`<option value="${oaEsc(x.id)}" ${String(x.id)===String(OA.activeGroupSetId)?"selected":""}>${oaEsc(x.name)}</option>`).join("")}</select></label><button class="btn secondary sm" onclick="oaPage('groups')">Manage group sets</button></div>${sets.length?`<p class="oa-mini">${sets.length} reusable group set${sets.length===1?"":"s"} saved.</p>`:`<p class="oa-mini">No group sets saved yet. Configure and save one in PGT Groups.</p>`}</section>`;
+}
+function oaApplyGroupSet(id){
+ if(!id)return;
+ const set=(OA.groupSets||[]).find(x=>String(x.id)===String(id));if(!set)return;
+ if(OA.editing?.content?.rows?.some(row=>row.slice(2).some(v=>String(v||"").trim()))&&!confirm("Apply this saved group set? Duty entries will stay unchanged, but the roster's group member list will be replaced."))return;
+ const c=oaEnsureRosterContent();c.groups=oaCloneGroups(set.groups);OA.activeGroupSetId=set.id;
+ render({force:1});
+}
+function oaOpenGroupSet(id){const set=(OA.groupSets||[]).find(x=>String(x.id)===String(id));OA.page="groups";OA.editing=null;OA.groupEditingId=set?.id||null;OA.activeGroupSetId=set?.id||null;OA.groupDraftName=set?.name||"Standard PGT Groups";OA.groupDraft=set?oaCloneGroups(set.groups):oaDefaultGroups();const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});}
+function oaNewGroupSet(){OA.page="groups";OA.editing=null;OA.groupEditingId=null;OA.activeGroupSetId=null;OA.groupDraftName="New PGT Group Set";OA.groupDraft=oaDefaultGroups();OA.preserveScrollTop=0;OA.scrollReset=true;render({force:1});}
+async function oaSaveGroupSet(){
+ try{
+  if(!String(OA.groupDraftName||"").trim())throw new Error("Enter a name for this group set.");
+  const invalid=(OA.groupDraft||[]).some(g=>!String(g.name||"").trim()||(g.members||[]).some(m=>m.name&&!m.abbr));
+  if(invalid)throw new Error("Give every group a name and every named PGT a short abbreviation.");
+  const d=await oaRpc("office_admin_save_pgt_group_set",{p_set_id:OA.groupEditingId||null,p_name:String(OA.groupDraftName).trim(),p_groups:OA.groupDraft});
+  const id=d?.id;if(!id)throw new Error("The server did not return the saved group set ID.");
+  toast("PGT group set saved","ok");OA.groupEditingId=id;OA.activeGroupSetId=id;
+  const list=await oaRpc("office_admin_list_pgt_group_sets",{});OA.groupSets=list.sets||[];OA.groupSetsLoaded=true;
+  const saved=OA.groupSets.find(x=>String(x.id)===String(id));if(saved){OA.groupDraft=oaCloneGroups(saved.groups);OA.groupDraftName=saved.name;}
+  render({force:1});
+ }catch(e){toast(e.message||String(e),"bad")}
+}
+async function oaDeleteGroupSet(id){
+ if(!confirm("Delete this saved PGT group set? Existing rosters will not be changed."))return;
+ try{await oaRpc("office_admin_delete_pgt_group_set",{p_set_id:id});OA.groupSets=(OA.groupSets||[]).filter(x=>String(x.id)!==String(id));if(String(OA.groupEditingId)===String(id))oaNewGroupSet();else render({force:1});toast("Group set deleted","ok");}
+ catch(e){toast(e.message||String(e),"bad")}
+}
+function oaPgtGroupsView(){
+ const sets=OA.groupSets||[],groups=Array.isArray(OA.groupDraft)?OA.groupDraft:oaDefaultGroups();
+ const cards=groups.map((g,gi)=>`<section class="oa-group-card"><div class="oa-group-card-head"><label class="field"><span>Group name</span><input value="${oaEsc(g.name)}" oninput="oaGroupNameInput(${gi},this.value)"></label>${groups.length>1?`<button class="oa-iconbtn" title="Remove group" onclick="oaRemoveGroup(${gi})">×</button>`:""}</div><div class="oa-members-head"><b>PGT members</b><span>Name and short code</span></div><div class="oa-group-members">${(g.members||[]).map((m,mi)=>`<div class="oa-member-row" data-group="${gi}" data-member="${mi}"><div class="oa-pgt-name-wrap"><label class="field"><span>PGT name</span><input class="oa-pgt-name-input" autocomplete="off" placeholder="Search active staff or type name" value="${oaEsc(m.name)}" onfocus="oaShowPgtSuggestions(${gi},${mi})" onblur="oaHidePgtSuggestions(${gi},${mi})" oninput="oaGroupMemberNameInput(${gi},${mi},this.value)" onchange="oaGroupMemberNameChange(${gi},${mi},this.value)"></label><div class="oa-pgt-suggestions" id="oaPgtSuggest_${gi}_${mi}" role="listbox"></div></div><label class="field oa-abbr-field"><span>Short code</span><input maxlength="5" placeholder="e.g. TA" value="${oaEsc(m.abbr)}" oninput="oaGroupMemberAbbrInput(${gi},${mi},this.value)"></label><button class="oa-iconbtn oa-remove-member" title="Remove PGT" onclick="oaRemoveGroupMember(${gi},${mi})">×</button></div>`).join("")||`<p class="oa-empty-members">No members in this group.</p>`}</div><button type="button" class="btn secondary sm" onclick="event.preventDefault();event.stopPropagation();oaAddGroupMember(${gi})">+ Add PGT</button></section>`).join("");
+ return `<div class="oa-head"><div><p class="oa-kicker">ROSTER CONFIGURATION</p><h1>PGT group settings</h1><p class="oa-muted">Maintain reusable PGT groups once. Select a saved group set when creating each monthly roster.</p></div><button type="button" class="btn" onclick="oaNewGroupSet()">+ New group set</button></div><div class="oa-groups-workspace"><aside class="oa-saved-groups"><div class="oa-saved-groups-head"><b>Saved group sets</b><span>${sets.length}</span></div>${sets.length?sets.map(x=>`<div class="oa-saved-group-row ${String(x.id)===String(OA.groupEditingId)?"selected":""}"><button class="oa-saved-group-open" onclick="oaOpenGroupSet('${oaEsc(x.id)}')"><b>${oaEsc(x.name)}</b><small>${(x.groups||[]).length} groups · Updated ${oaDate(String(x.updated_at||"").slice(0,10))}</small></button><button class="oa-iconbtn" title="Delete group set" onclick="oaDeleteGroupSet('${oaEsc(x.id)}')">×</button></div>`).join(""):`<p class="oa-muted">No group sets have been saved yet.</p>`}</aside><section class="oa-group-editor"><div class="oa-group-editor-head"><div><label class="field"><span>Group set name</span><input id="oaGroupSetName" maxlength="100" value="${oaEsc(OA.groupDraftName)}" oninput="OA.groupDraftName=this.value" placeholder="e.g. Psychiatry PGT groups"></label><p class="oa-help">${OA.groupEditingId?"Editing a saved configuration.":"New configuration — save it to reuse it in future months."}</p></div><span class="oa-count">${groups.length} groups</span></div>${oaPgtDatalist()}<div class="oa-groups-grid">${cards}</div><div class="oa-group-editor-actions"><button type="button" class="btn secondary" onclick="oaAddGroup()">+ Add group</button><button type="button" class="btn" onclick="oaSaveGroupSet()">Save group set</button></div></section></div>`;
+}
 function oaRosterForm(){
  const r=OA.editing||{},c=oaEnsureRosterContent(),editable=(r.status||"draft")==="draft",pgt=(r.roster_type||OA.type)==="pgt_monthly";
- const groupsHtml=pgt?`<section class="oa-builder-section oa-pgt-groups"><div class="oa-builder-heading"><div><h3>1. PGT group settings</h3><p class="oa-help">Create the groups first. Select registered PGTs from the suggestions and assign a short abbreviation. These groups and abbreviations will appear below the roster.</p></div><span class="oa-count">${c.groups.length} groups</span></div>${oaPgtDatalist()}<div class="oa-groups-grid">${c.groups.map((g,gi)=>`<div class="oa-group-card"><div class="oa-group-card-head"><label class="field"><span>Group name</span><input value="${oaEsc(g.name)}" ${editable?`oninput="oaGroupNameInput(${gi},this.value)"`:'disabled'}></label>${editable&&c.groups.length>1?`<button class="oa-iconbtn" title="Remove group" onclick="oaRemoveGroup(${gi})">×</button>`:""}</div><div class="oa-members-head"><b>PGT members</b><span>Name and abbreviation</span></div><div class="oa-group-members">${(g.members||[]).map((m,mi)=>`<div class="oa-member-row" data-group="${gi}" data-member="${mi}"><div class="oa-pgt-name-wrap"><label class="field"><span>PGT name</span><input class="oa-pgt-name-input" autocomplete="off" placeholder="Tap to select or type PGT name" value="${oaEsc(m.name)}" ${editable?`onfocus="oaShowPgtSuggestions(${gi},${mi})" onblur="oaHidePgtSuggestions(${gi},${mi})" oninput="oaGroupMemberNameInput(${gi},${mi},this.value)" onchange="oaGroupMemberNameChange(${gi},${mi},this.value)"`:'disabled'}></label><div class="oa-pgt-suggestions" id="oaPgtSuggest_${gi}_${mi}" role="listbox" aria-label="Registered PGT suggestions"></div></div><label class="field oa-abbr-field"><span>Short code</span><input maxlength="5" placeholder="e.g. TA" value="${oaEsc(m.abbr)}" ${editable?`oninput="oaGroupMemberAbbrInput(${gi},${mi},this.value)"`:'disabled'}></label>${editable?`<button class="oa-iconbtn oa-remove-member" title="Remove PGT" onclick="oaRemoveGroupMember(${gi},${mi})">×</button>`:""}</div>`).join("")||`<p class="oa-empty-members">No PGTs added to this group yet.</p>`}</div>${editable?`<button class="btn secondary sm" onclick="oaAddGroupMember(${gi})">+ Add PGT</button>`:""}</div>`).join("")}</div>${editable?`<button class="btn secondary" onclick="oaAddGroup()">+ Add group</button>`:""}</section>`:"";
+ const groupsHtml="";
  const assignmentValues=[...c.groups.map(g=>String(g.name||"").replace(/^group\s*/i,"")),...c.groups.map(g=>g.name||""),...c.groups.flatMap(g=>(g.members||[]).map(m=>m.abbr).filter(Boolean)),"—"];
  const suggestions=[...new Set(assignmentValues.filter(Boolean))];
  const dateRows=c.rows.map((row,i)=>`<tr><td class="oa-rownum">${i+1}</td>${c.columns.map((col,j)=>`<td><input class="oa-cell" list="${pgt?"oaDutySuggestions":""}" aria-label="Row ${i+1}, ${oaEsc(col)}" value="${oaEsc(row[j]??"")}" ${editable?`oninput="oaCellInput(${i},${j},this.value)"`:'disabled'}></td>`).join("")}<td><button class="oa-iconbtn" title="Remove row" ${editable?`onclick="oaRemoveRosterRow(${i})"`:"disabled"}>×</button></td></tr>`).join("");
- const pgtHeaders=pgt?c.columns.map(x=>`<th>${oaEsc(x)}</th>`).join(""):c.columns.map((col,j)=>`<th><input class="oa-colname" value="${oaEsc(col)}" ${editable?`oninput="oaColumnInput(${j},this.value)"`:'disabled'} aria-label="Column heading ${j+1}"></th>`).join("");
+ const pgtHeaders=c.columns.map((col,j)=>{const fixed=j<2;return `<th><div class="oa-col-head"><input class="oa-colname" value="${oaEsc(col)}" ${editable&&!fixed?`oninput="oaColumnInput(${j},this.value)"`:'disabled'} aria-label="Column heading ${j+1}"><button type="button" class="oa-remove-col-btn" title="${fixed?'Date and day columns are required':'Remove '+oaEsc(col)}" ${editable&&!fixed?`onclick="oaRemoveRosterColumn(${j})"`:'disabled'} aria-label="Remove column ${j+1}">×</button></div></th>`}).join("");
  return `<div class="oa-card oa-roster-builder"><div class="oa-row"><button class="btn secondary" onclick="OA.editing=null;render({force:1})">← Back</button><span class="oa-status">${oaStatus(r.status||"draft")}</span></div>
- <h2>${r.id?"Edit roster":"Create duty roster"}</h2><p class="oa-help">${pgt?"Set up the PGT groups, then allocate group letters and PGT abbreviations in the daily duty table.":"Enter the roster details, then fill the duty table."}</p>
+ <h2>${r.id?"Edit roster":"Create duty roster"}</h2><p class="oa-help">${pgt?"Choose a saved PGT group set, then allocate group letters and PGT abbreviations in the daily duty table.":"Enter the roster details, then fill the duty table."}</p>
  <div class="oa-field-grid"><label class="field"><span>Roster title</span><input id="oaTitle" ${editable?"":"disabled"} value="${oaEsc(r.title||"")}"></label><label class="field"><span>Reference / dispatch no.</span><input id="oaRef" ${editable?"":"disabled"} value="${oaEsc(r.reference_number||"")}"></label><label class="field"><span>Period start</span><input id="oaStart" type="date" ${editable?"":"disabled"} value="${oaEsc(r.period_start||"")}"></label><label class="field"><span>Period end</span><input id="oaEnd" type="date" ${editable?"":"disabled"} value="${oaEsc(r.period_end||"")}"></label><label class="field"><span>Issue date</span><input id="oaIssue" type="date" ${editable?"":"disabled"} value="${oaEsc(r.issue_date||"")}"></label></div>
- ${groupsHtml}
+ ${pgt?oaRosterGroupSetSelector():groupsHtml}
  <datalist id="oaDutySuggestions">${suggestions.map(v=>`<option value="${oaEsc(v)}"></option>`).join("")}</datalist>
  <section class="oa-builder-section"><div class="oa-builder-heading"><div><h3>${pgt?"2. Daily duty allocation":"1. Duty allocation table"}</h3><p class="oa-help">${pgt?"Use group letters (A–D) or individual PGT short codes. Combined assignments such as MM+AS can be typed directly.":"Enter duty assignments directly into the cells."}</p></div><span class="oa-count">${c.rows.length} days</span></div>
- <div class="oa-toolbar">${editable?`<button class="btn secondary" onclick="oaGenerateDates()">Generate dates from period</button><button class="btn secondary" onclick="oaAddRosterRow()">+ Add row</button>${!pgt?`<button class="btn secondary" onclick="oaAddRosterColumn()">+ Add duty column</button>`:""}`:""}<button class="btn secondary" onclick="oaPreviewRoster()">Preview</button><button class="btn secondary" onclick="oaExportDocx()">Export editable Word (.docx)</button></div>
+ <div class="oa-toolbar">${editable?`<button class="btn secondary" onclick="oaGenerateDates()">Generate dates from period</button><button class="btn secondary" onclick="oaAddRosterRow()">+ Add row</button><button class="btn secondary" onclick="oaAddRosterColumn()">+ Add duty column</button>`:""}<button class="btn secondary" onclick="oaPreviewRoster()">Preview</button><button class="btn secondary" onclick="oaExportDocx()">Export editable Word (.docx)</button></div>
  ${pgt?`<div class="oa-pgt-desktop-table"><div class="oa-table-wrap"><table class="oa-edit-table oa-pgt-duty-table"><thead><tr><th>#</th>${pgtHeaders}<th>Action</th></tr></thead><tbody>${dateRows||`<tr><td colspan="${c.columns.length+2}" class="oa-empty-cell">Set the period and generate the daily rows.</td></tr>`}</tbody></table></div></div><p class="oa-help">Full desktop roster table. On narrower screens, scroll the table horizontally to view all nine duty columns, including 10 PM to 8 AM.</p>`:`<div class="oa-table-wrap"><table class="oa-edit-table"><thead><tr><th>#</th>${pgtHeaders}<th>Action</th></tr></thead><tbody>${dateRows||`<tr><td colspan="${c.columns.length+2}" class="oa-empty-cell">Set the period and generate the daily rows.</td></tr>`}</tbody></table></div><p class="oa-help">On a phone, swipe the duty table horizontally to reach the later duty columns.</p>`}
  </section>
  <section class="oa-builder-section"><div class="oa-builder-heading"><div><h3>${pgt?"3. Notes (N.B.)":"2. Instructions / notes"}</h3><p class="oa-help">Add instructions to appear below the roster.</p></div></div><div id="oaNotes">${c.notes.map((n,i)=>`<div class="oa-note-row"><input value="${oaEsc(n)}" ${editable?`oninput="oaNoteInput(${i},this.value)"`:"disabled"} placeholder="Enter instruction"><button class="oa-iconbtn" ${editable?`onclick="oaRemoveNote(${i})"`:"disabled"}>×</button></div>`).join("")}</div>${editable?`<button class="btn secondary" onclick="oaAddNote()">+ Add instruction</button>`:""}</section>
  <section class="oa-builder-section"><h3>4. Document preview</h3><div id="oaRosterPreview">${oaRosterPreviewContent(c)}</div></section>
- <div class="oa-actions">${editable?`<button class="btn" onclick="oaSaveDraft()">Save draft</button>${r.id?`<button class="btn secondary" onclick="oaMoveReview()">Submit for review</button>`:""}`:""}${r.id&&r.status==="review"?`<button class="btn" onclick="oaPublish()">Publish roster</button><button class="btn secondary" onclick="oaReturnDraft()">Return to draft</button>`:""}</div></div>`;
+ <div class="oa-actions">${editable?`<button type="button" class="btn secondary" onclick="oaSaveDraft()">Save draft</button><button type="button" class="btn secondary" onclick="oaMoveReview()">Mark ready for publication</button><button type="button" class="btn" onclick="oaFinalizePublish()">Finalize &amp; publish</button>`:""}${r.id&&r.status==="review"?`<button type="button" class="btn" onclick="oaPublish()">Finalize &amp; publish</button><button type="button" class="btn secondary" onclick="oaReturnDraft()">Return to draft</button>`:""}</div><p class="oa-workflow-note">Marking ready does not send the roster to the HOD or another named reviewer. It records the roster as ready; an Office Admin can finalize and publish it.</p></div>`;
 }
 function oaRefreshPreview(){const p=document.getElementById("oaRosterPreview");if(p)p.innerHTML=oaRosterPreviewContent(oaEnsureRosterContent())}
 function oaCellInput(i,j,v){const c=oaEnsureRosterContent();if(c.rows[i])c.rows[i][j]=v;}
 function oaColumnInput(j,v){oaEnsureRosterContent().columns[j]=v;}
 function oaNoteInput(i,v){oaEnsureRosterContent().notes[i]=v;}
-function oaGroupNameInput(g,v){const c=oaEnsureRosterContent();if(c.groups[g])c.groups[g].name=v;}
-function oaGroupMemberNameInput(g,m,v){const c=oaEnsureRosterContent(),item=c.groups[g]?.members?.[m];if(item)item.name=v;oaRenderPgtSuggestions(g,m,v);}
-function oaGroupMemberNameChange(g,m,v){const c=oaEnsureRosterContent(),item=c.groups[g]?.members?.[m];if(!item)return;item.name=v;if(!item.abbr)item.abbr=oaMakePgtAbbr(v);}
+function oaGroupNameInput(g,v){const groups=oaActiveGroups();if(groups[g])groups[g].name=v;}
+function oaGroupMemberNameInput(g,m,v){const groups=oaActiveGroups(),item=groups[g]?.members?.[m];if(item)item.name=v;oaRenderPgtSuggestions(g,m,v);}
+function oaGroupMemberNameChange(g,m,v){const groups=oaActiveGroups(),item=groups[g]?.members?.[m];if(!item)return;item.name=v;if(!item.abbr)item.abbr=oaMakePgtAbbr(v);}
 function oaPgtMobileDutyTables(c,editable){
  const groups=[
   {title:"Daytime duties",indices:[0,1,2,3,4],remove:true},
@@ -8965,16 +9048,32 @@ function oaPgtMobileDutyTables(c,editable){
  if(!c.rows.length)return `<div class="oa-pgt-mobile-tables"><div class="oa-empty-cell">Set the period and generate the daily rows.</div></div>`;
  return `<div class="oa-pgt-mobile-tables">${groups.map((g,gi)=>`<section class="oa-pgt-mobile-table-group"><h4>${g.title}</h4><div class="oa-table-wrap"><table class="oa-pgt-mobile-duty-table"><thead><tr>${g.indices.map(i=>`<th>${oaEsc(c.columns[i]||"")}</th>`).join("")}${g.remove?"<th>Action</th>":""}</tr></thead><tbody>${c.rows.map((row,ri)=>`<tr>${g.indices.map(i=>`<td>${i===0?`<span class="oa-pgt-mobile-date">${oaEsc(row[i]||"")}</span>`:i===1?`<span class="oa-pgt-mobile-day">${oaEsc(row[i]||"")}</span>`:`<input aria-label="${oaEsc(c.columns[i])}, ${oaEsc(row[0]||`day ${ri+1}`)}" list="oaDutySuggestions" value="${oaEsc(row[i]??"")}" ${editable?`oninput="oaCellInput(${ri},${i},this.value)"`:'disabled'}>`}</td>`).join("")}${g.remove?`<td><button class="oa-iconbtn oa-mobile-remove-day" title="Remove day ${ri+1}" ${editable?`onclick="oaRemoveRosterRow(${ri})"`:"disabled"}>×</button></td>`:""}</tr>`).join("")}</tbody></table></div></section>`).join("")}</div>`;
 }
-function oaGroupMemberAbbrInput(g,m,v){const c=oaEnsureRosterContent(),item=c.groups[g]?.members?.[m];if(item)item.abbr=String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5);}
+function oaGroupMemberAbbrInput(g,m,v){const groups=oaActiveGroups(),item=groups[g]?.members?.[m];if(item)item.abbr=String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5);}
 function oaMakePgtAbbr(name){const words=String(name||"").replace(/^(dr\.?|doctor)\s+/i,"").trim().split(/\s+/).filter(Boolean);if(words.length>1)return (words[0][0]+words[words.length-1][0]).toUpperCase();return words[0]?words[0].slice(0,2).toUpperCase():"";}
-function oaAddGroupMember(g){const c=oaEnsureRosterContent();c.groups[g].members.push({name:"",abbr:""});render({force:1})}
-function oaRemoveGroupMember(g,m){const c=oaEnsureRosterContent();c.groups[g].members.splice(m,1);render({force:1})}
-function oaAddGroup(){const c=oaEnsureRosterContent();c.groups.push({name:`Group ${String.fromCharCode(65+c.groups.length)}`,members:[]});render({force:1})}
-function oaRemoveGroup(g){if(!confirm("Remove this group and its member list?"))return;const c=oaEnsureRosterContent();c.groups.splice(g,1);render({force:1})}
+function oaAddGroupMember(g){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft))return;const groups=OA.groupDraft;if(!groups[g])return;const nextIndex=groups[g].members.length;groups[g].members.push({name:"",abbr:""});const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});requestAnimationFrame(()=>document.querySelector(`.oa-member-row[data-group="${g}"][data-member="${nextIndex}"] .oa-pgt-name-input`)?.focus({preventScroll:true}));}
+function oaRemoveGroupMember(g,m){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft)||!OA.groupDraft[g])return;OA.groupDraft[g].members.splice(m,1);const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});}
+function oaAddGroup(){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft))return;OA.groupDraft.push({name:`Group ${String.fromCharCode(65+OA.groupDraft.length)}`,members:[]});const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});}
+function oaRemoveGroup(g){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft)||!confirm("Remove this group and its member list?"))return;OA.groupDraft.splice(g,1);const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});}
 function oaAddRosterRow(){const c=oaEnsureRosterContent();c.rows.push(c.columns.map(()=>""));render({force:1})}
 function oaRemoveRosterRow(i){const c=oaEnsureRosterContent();c.rows.splice(i,1);render({force:1})}
-function oaAddRosterColumn(){const name=prompt("Enter the new duty column heading:");if(!name||!name.trim())return;const c=oaEnsureRosterContent();c.columns.push(name.trim());c.rows.forEach(r=>r.push(""));render({force:1})}
-function oaRemoveRosterColumn(j){if(!confirm("Remove this column and its entries?"))return;const c=oaEnsureRosterContent();c.columns.splice(j,1);c.rows.forEach(r=>r.splice(j,1));render({force:1})}
+function oaAddRosterColumn(){
+ const name=prompt("Enter the new duty column heading:");if(!name||!name.trim())return;
+ const c=oaEnsureRosterContent(),clean=name.trim();
+ if(c.columns.some(x=>String(x).trim().toLowerCase()===clean.toLowerCase()))return toast("A column with that heading already exists.","bad");
+ c.columns.push(clean);c.rows.forEach(row=>row.push(""));
+ const main=document.querySelector(".oa-main");OA._actionScrollTop=main?.scrollTop||0;
+ render({force:1});requestAnimationFrame(oaRestoreMainScrollAfterRender);
+}
+function oaRemoveRosterColumn(j){
+ const c=oaEnsureRosterContent(),pgt=(OA.editing?.roster_type||OA.type)==="pgt_monthly";
+ if(!Number.isInteger(j)||j<0||j>=c.columns.length)return;
+ if(j<2)return toast("The Day and Date columns are required and cannot be removed.","bad");
+ const heading=c.columns[j]||`Column ${j+1}`;
+ if(!confirm(`Remove “${heading}” and all assignments in this column?`))return;
+ c.columns.splice(j,1);c.rows.forEach(row=>row.splice(j,1));
+ const main=document.querySelector(".oa-main");OA._actionScrollTop=main?.scrollTop||0;
+ render({force:1});requestAnimationFrame(oaRestoreMainScrollAfterRender);
+}
 function oaAddNote(){oaEnsureRosterContent().notes.push("");render({force:1})}
 function oaRemoveNote(i){oaEnsureRosterContent().notes.splice(i,1);render({force:1})}
 function oaGenerateDates(){
@@ -8991,19 +9090,89 @@ function oaGenerateDates(){
  }
  render({force:1});
 }
-function oaPreviewRoster(){oaRefreshPreview()}
-function oaSyncRosterMeta(){const r=OA.editing||{};r.title=document.getElementById("oaTitle")?.value??r.title;r.reference_number=document.getElementById("oaRef")?.value??r.reference_number;r.period_start=document.getElementById("oaStart")?.value??r.period_start;r.period_end=document.getElementById("oaEnd")?.value??r.period_end;r.issue_date=document.getElementById("oaIssue")?.value??r.issue_date;OA.editing=r;return r}
-function oaReadRosterForm(){const content=oaEnsureRosterContent(),r=oaSyncRosterMeta();if(!content.columns.length)throw new Error("The duty table needs at least one column.");if(content.rows.some(row=>row.length!==content.columns.length))throw new Error("The duty table has inconsistent rows. Please review it.");if(r.roster_type==="pgt_monthly"&&content.groups.some(g=>(g.members||[]).some(m=>m.name&&!m.abbr)))throw new Error("Add a short code for every PGT name in the group settings.");return {p_roster_type:OA.type,p_roster_id:r.id||null,p_period_start:r.period_start||null,p_period_end:r.period_end||null,p_title:r.title,p_reference_number:r.reference_number,p_issue_date:r.issue_date||null,p_content:content}}
-async function oaSaveDraft(){try{const d=await oaRpc("office_admin_save_roster_draft",oaReadRosterForm());OA.editing.id=d;OA.editing.status="draft";OA.notice="Draft saved";await oaLoad();await oaEditRoster(d)}catch(e){toast(e.message||String(e),"bad")}}
-async function oaMoveReview(){try{await oaRpc("office_admin_submit_roster_for_review",{p_roster_id:OA.editing.id});OA.editing.status="review";toast("Submitted for review","ok");await oaLoad();await oaEditRoster(OA.editing.id)}catch(e){toast(e.message||String(e),"bad")}}
-async function oaPublish(){if(!confirm("Publish this roster? It will replace the currently published roster of this type."))return;try{await oaRpc("office_admin_publish_roster",{p_roster_id:OA.editing.id});OA.editing=null;toast("Roster published","ok");await oaLoad()}catch(e){toast(e.message||String(e),"bad")}}
+function oaPreviewRoster(){
+ oaSyncRosterMeta();oaRefreshPreview();
+ const target=document.getElementById("oaRosterPreview");
+ if(target){const main=document.querySelector(".oa-main");const top=target.getBoundingClientRect().top+(main?main.scrollTop:window.scrollY)-18;if(main)main.scrollTo({top:Math.max(0,top),behavior:"smooth"});else target.scrollIntoView({behavior:"smooth",block:"start"});}
+}
+function oaSyncRosterMeta(){
+ const r=OA.editing||{};
+ const read=id=>{const el=document.getElementById(id);return el?String(el.value??""):null};
+ const title=read("oaTitle"),ref=read("oaRef"),start=read("oaStart"),end=read("oaEnd"),issue=read("oaIssue");
+ if(title!==null)r.title=title.trim();
+ if(ref!==null)r.reference_number=ref.trim();
+ if(start!==null)r.period_start=start||null;
+ if(end!==null)r.period_end=end||null;
+ if(issue!==null)r.issue_date=issue||null;
+ OA.editing=r;return r;
+}
+function oaReadRosterForm(requireComplete=false){
+ const content=oaEnsureRosterContent(),r=oaSyncRosterMeta();
+ const type=r.roster_type||OA.type;
+ if(!content.columns.length)throw new Error("The duty table needs at least one column.");
+ if(content.rows.some(row=>row.length!==content.columns.length))throw new Error("The duty table has inconsistent rows. Please review it.");
+ if(type==="pgt_monthly"&&content.groups.some(g=>(g.members||[]).some(m=>m.name&&!m.abbr)))throw new Error("Add a short code for every PGT name in the group settings.");
+ if(requireComplete){
+  if(!String(r.title||"").trim())throw new Error("Enter a roster title before submitting or publishing.");
+  if(!r.period_start||!r.period_end)throw new Error("Select both the period start and period end dates before submitting or publishing.");
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(r.period_start)||!/^\d{4}-\d{2}-\d{2}$/.test(r.period_end))throw new Error("The period dates are invalid. Re-select both dates.");
+  if(r.period_start>r.period_end)throw new Error("Period end cannot be earlier than period start.");
+ }
+ return {p_roster_type:type,p_roster_id:r.id||null,p_period_start:r.period_start||null,p_period_end:r.period_end||null,p_title:String(r.title||"").trim(),p_reference_number:r.reference_number||"",p_issue_date:r.issue_date||null,p_content:JSON.parse(JSON.stringify(content))};
+}
+function oaNormaliseRosterId(result,fallback){
+ if(typeof result==="string"&&result.trim())return result;
+ if(result&&typeof result==="object"){const id=result.id||result.roster_id||result.data?.id;if(id)return id;}
+ if(fallback)return fallback;
+ throw new Error("The server saved the draft but did not return its roster ID. Refresh the roster list before continuing.");
+}
+async function oaPersistCurrentDraft(requireComplete=false){
+ const payload=oaReadRosterForm(requireComplete);
+ const existing=OA.editing?.id||payload.p_roster_id||null;
+ const result=await oaRpc("office_admin_save_roster_draft",{...payload,p_roster_id:existing});
+ const id=oaNormaliseRosterId(result,existing);
+ OA.editing.id=id;OA.editing.roster_type=payload.p_roster_type;
+ OA.editing.title=payload.p_title;OA.editing.period_start=payload.p_period_start;OA.editing.period_end=payload.p_period_end;
+ OA.editing.reference_number=payload.p_reference_number;OA.editing.issue_date=payload.p_issue_date;OA.editing.content=payload.p_content;
+ OA.editing.status="draft";
+ return id;
+}
+function oaRestoreMainScrollAfterRender(){const main=document.querySelector(".oa-main");if(main&&Number.isFinite(OA._actionScrollTop))main.scrollTop=OA._actionScrollTop;}
+async function oaSaveDraft(){
+ try{const main=document.querySelector(".oa-main");OA._actionScrollTop=main?.scrollTop||0;await oaPersistCurrentDraft(false);OA.notice="Draft saved";toast("Draft saved","ok");render({force:1});requestAnimationFrame(oaRestoreMainScrollAfterRender)}
+ catch(e){toast(e.message||String(e),"bad")}
+}
+async function oaMoveReview(){
+ try{
+  const main=document.querySelector(".oa-main");OA._actionScrollTop=main?.scrollTop||0;
+  const id=await oaPersistCurrentDraft(true);
+  await oaRpc("office_admin_submit_roster_for_review",{p_roster_id:id});
+  OA.editing.status="review";toast("Marked ready for publication. No external reviewer is assigned in the current workflow.","ok");
+  await oaLoad();await oaEditRoster(id);requestAnimationFrame(oaRestoreMainScrollAfterRender);
+ }catch(e){toast(e.message||String(e),"bad")}
+}
+async function oaFinalizePublish(){
+ if(!confirm("Finalize and publish this roster? This will replace the currently published roster of the same type."))return;
+ try{
+  const id=OA.editing?.status==="review"&&OA.editing?.id?OA.editing.id:await oaPersistCurrentDraft(true);
+  await oaRpc("office_admin_publish_roster",{p_roster_id:id});
+  OA.editing=null;OA.page="rosters";OA.notice="Roster published";OA.scrollReset=true;OA.preserveScrollTop=0;
+  toast("Roster finalized and published","ok");await oaLoad();
+ }catch(e){toast(e.message||String(e),"bad")}
+}
+async function oaPublish(){
+ if(OA.editing?.status==="draft")return oaFinalizePublish();
+ if(!confirm("Publish this roster? It will replace the currently published roster of this type."))return;
+ try{await oaRpc("office_admin_publish_roster",{p_roster_id:OA.editing.id});OA.editing=null;OA.notice="Roster published";toast("Roster published","ok");await oaLoad()}
+ catch(e){toast(e.message||String(e),"bad")}
+}
 async function oaReturnDraft(){try{await oaRpc("office_admin_return_roster_to_draft",{p_roster_id:OA.editing.id});OA.editing.status="draft";await oaLoad();await oaEditRoster(OA.editing.id)}catch(e){toast(e.message||String(e),"bad")}}
 async function oaRestore(id){if(!confirm("Restore this version as a new draft?"))return;try{const d=await oaRpc("office_admin_restore_roster_version",{p_roster_id:id});toast("New draft revision created","ok");await oaLoad();await oaEditRoster(d)}catch(e){toast(e.message||String(e),"bad")}}
 /* Minimal OOXML/DOCX writer: uncompressed ZIP; generated locally, editable in Word/LibreOffice. */
 function oaXml(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;")}
 function oaCrc32(bytes){let c=0xffffffff;for(let i=0;i<bytes.length;i++){c^=bytes[i];for(let j=0;j<8;j++)c=(c>>>1)^((c&1)?0xedb88320:0)}return (c^0xffffffff)>>>0}
 function oaZip(files){
- const enc=new TextEncoder(), chunks=[],central=[];let offset=0;
+ const enc=new TextEncoder(),chunks=[],central=[];let offset=0;
  const u16=n=>[n&255,(n>>>8)&255],u32=n=>[n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];
  for(const [name,content] of Object.entries(files)){const nb=enc.encode(name),data=enc.encode(content),crc=oaCrc32(data);
   const local=new Uint8Array([...u32(0x04034b50),...u16(20),...u16(0),...u16(0),...u16(0),...u16(0),...u32(crc),...u32(data.length),...u32(data.length),...u16(nb.length),...u16(0),...nb,...data]);
@@ -9015,33 +9184,111 @@ function oaZip(files){
  const end=new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),...u16(count),...u16(count),...u32(csize),...u32(offset),...u16(0)]);
  return new Blob([...chunks,...central,end],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
 }
-function oaWordRun(t,bold=false,size=20){return `<w:r><w:rPr>${bold?"<w:b/>":""}<w:sz w:val="${size}"/></w:rPr><w:t xml:space="preserve">${oaXml(t)}</w:t></w:r>`}
-function oaWordP(t,opts={}){return `<w:p><w:pPr>${opts.align?`<w:jc w:val="${opts.align}"/>`:""}${opts.after!==undefined?`<w:spacing w:after="${opts.after}"/>`:""}</w:pPr>${oaWordRun(t,!!opts.bold,opts.size||20)}</w:p>`}
-function oaWordCell(t,header=false){return `<w:tc><w:tcPr><w:tcBorders><w:top w:val="single" w:sz="6"/><w:left w:val="single" w:sz="6"/><w:bottom w:val="single" w:sz="6"/><w:right w:val="single" w:sz="6"/></w:tcBorders><w:tcMar><w:top w:w="70" w:type="dxa"/><w:bottom w:w="70" w:type="dxa"/><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tcMar>${header?'<w:shd w:fill="EAEAEA"/>':""}</w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr>${oaWordRun(t,header,18)}</w:p></w:tc>`}
+function oaWordRun(t,bold=false,size=18){const sz=size==null?"":`<w:sz w:val="${size}"/><w:szCs w:val="${size}"/>`;return `<w:r><w:rPr>${bold?"<w:b/>":""}${sz}</w:rPr><w:t xml:space="preserve">${oaXml(t)}</w:t></w:r>`}
+function oaWordP(t,opts={}){
+ const spacing=`<w:spacing w:before="${opts.before??0}" w:after="${opts.after??5}" w:line="${opts.line??240}" w:lineRule="${opts.lineRule||"auto"}"/>`;
+ const pprSize=opts.pprSize?`<w:rPr><w:sz w:val="${opts.pprSize}"/><w:szCs w:val="${opts.pprSize}"/></w:rPr>`:"";
+ const runSize=Object.prototype.hasOwnProperty.call(opts,"size")?opts.size:18;
+ return `<w:p><w:pPr>${spacing}${opts.align?`<w:jc w:val="${opts.align}"/>`:""}${opts.keepNext?"<w:keepNext/>":""}${pprSize}</w:pPr>${t?oaWordRun(t,!!opts.bold,runSize):""}</w:p>`;
+}
+function oaWordCell(t,header=false,width=0,size=18,pprSize=36){
+ const text=String(t==null?"":t).replace(/\r?\n/g," ");
+ return `<w:tc><w:tcPr>${width?`<w:tcW w:w="${width}" w:type="dxa"/>`:""}<w:vAlign w:val="center"/><w:tcMar><w:top w:w="12" w:type="dxa"/><w:left w:w="32" w:type="dxa"/><w:bottom w:w="12" w:type="dxa"/><w:right w:w="32" w:type="dxa"/></w:tcMar><w:tcBorders><w:top w:val="single" w:sz="5" w:space="0" w:color="auto"/><w:left w:val="single" w:sz="5" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="5" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="5" w:space="0" w:color="auto"/></w:tcBorders>${header?'<w:shd w:val="clear" w:color="auto" w:fill="EAEAEA"/>':""}</w:tcPr><w:p><w:pPr><w:spacing w:after="0" w:line="170" w:lineRule="auto"/><w:jc w:val="center"/><w:rPr><w:sz w:val="${pprSize}"/><w:szCs w:val="${pprSize}"/></w:rPr></w:pPr>${oaWordRun(text,header,size)}</w:p></w:tc>`;
+}
+function oaWordTableRow(cells,header=false,height=300){return `<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="${height}"/></w:trPr>${cells.join("")}</w:tr>`}
+function oaWordTableStart(width){return `<w:tbl><w:tblPr><w:tblW w:w="${width}" w:type="dxa"/><w:tblInd w:w="32" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="7" w:space="0" w:color="auto"/><w:left w:val="single" w:sz="7" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="7" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="7" w:space="0" w:color="auto"/><w:insideH w:val="single" w:sz="5" w:space="0" w:color="auto"/><w:insideV w:val="single" w:sz="5" w:space="0" w:color="auto"/></w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="12" w:type="dxa"/><w:left w:w="32" w:type="dxa"/><w:bottom w:w="12" w:type="dxa"/><w:right w:w="32" w:type="dxa"/></w:tblCellMar><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr>`}
+function oaDistributeWidths(weights,total=11200){const sum=weights.reduce((a,b)=>a+b,0)||1;let used=0;return weights.map((w,i)=>{if(i===weights.length-1)return total-used;const n=Math.max(250,Math.round(total*w/sum));used+=n;return n})}
 async function oaExportDocx(){
  try{
   const r=oaSyncRosterMeta(),c=oaEnsureRosterContent(),cols=c.columns||[],rows=c.rows||[],isPgt=(r.roster_type||OA.type)==="pgt_monthly";
   if(!cols.length)throw new Error("The duty table has no columns.");
   if(isPgt&&c.groups.some(g=>(g.members||[]).some(m=>m.name&&!m.abbr)))throw new Error("Add a short code for every PGT name in the group settings.");
-  const paras=[oaWordP(c.institution||"ASSAM MEDICAL COLLEGE & HOSPITAL, DIBRUGARH",{bold:true,align:"center",size:22}),oaWordP(c.department||"DEPARTMENT OF PSYCHIATRY",{bold:true,align:"center",size:20}),oaWordP(`${c.subtitle||r.title||"DUTY ROSTER"} w.e.f. ${oaDate(r.period_start)} to ${oaDate(r.period_end)}`,{bold:true,align:"center",size:20}),oaWordP(`No. ${r.reference_number||""}     Dated ${oaDate(r.issue_date)}`,{align:"both",size:16})];
-  const dutyTable='<w:tbl><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="8"/><w:left w:val="single" w:sz="8"/><w:bottom w:val="single" w:sz="8"/><w:right w:val="single" w:sz="8"/><w:insideH w:val="single" w:sz="6"/><w:insideV w:val="single" w:sz="6"/></w:tblBorders><w:tblW w:w="0" w:type="auto"/></w:tblPr><w:tblGrid>'+cols.map(()=>'<w:gridCol w:w="1200"/>').join("")+'</w:tblGrid><w:tr>'+cols.map(x=>oaWordCell(String(x).replace(/\n/g," "),true)).join("")+'</w:tr>'+rows.map(row=>'<w:tr>'+cols.map((k,i)=>oaWordCell(Array.isArray(row)?row[i]:(row&&row[k])||"")).join("")+'</w:tr>').join("")+'</w:tbl>';
-  paras.push(dutyTable);
+  if(!String(r.title||"").trim()||!r.period_start||!r.period_end)throw new Error("Enter a roster title and both period dates before exporting.");
+  if(r.period_start>r.period_end)throw new Error("Period end cannot be earlier than period start.");
+
+  // Reproduce the uploaded PGT_Duty_Roster-example.docx: A4 portrait,
+  // exact nine-column proportions, black ruled tables, grey header rows,
+  // four-column group register, numbered notes and the HOD sign-off block.
+  const pageWidth=11906,usableWidth=11200;
+  const pgtTwipsByHeading={"DATE":1341,"DAY":1341,"OPD":664,"DTC 10-12":1315,"ECT":919,"SUICIDE 8-2":1379,"SUICIDE 2-8":1379,"2-10 PM":1047,"10 PM TO 8 AM":1815};
+  const facultyWeights=[1.05,1.05,1.75,1.95,1.4];
+  const weights=cols.map((x,i)=>isPgt?(pgtTwipsByHeading[String(x||"").trim().toUpperCase()]||1000):(facultyWeights[i]||1));
+  const widths=oaDistributeWidths(weights,usableWidth);
+  const rosterHeading=c.subtitle||(isPgt?"DUTY ROSTER OF PGTs":"FACULTY / VP / RESIDENT PHYSICIAN-GDMO — WEEKLY DUTY ROSTER");
+  const periodText=`${oaDate(r.period_start)} to ${oaDate(r.period_end)}`;
+  const headerParas=isPgt?[
+   oaWordP(c.institution||"ASSAM MEDICAL COLLEGE & HOSPITAL, DIBRUGARH",{bold:true,align:"center",size:28,pprSize:40,after:5,line:240,keepNext:true}),
+   oaWordP(c.department||"DEPARTMENT OF PSYCHIATRY",{bold:true,align:"center",size:null,pprSize:40,after:5,line:240,keepNext:true}),
+   oaWordP(`${rosterHeading} w.e.f. ${periodText}`,{bold:true,align:"center",size:22,pprSize:22,after:12,line:240,keepNext:true}),
+   oaWordP(`No. ${r.reference_number||"—"}`,{size:18,pprSize:18,align:"both",after:18,line:240,keepNext:true}),
+   oaWordP(`Dated ${oaDate(r.issue_date)}`,{size:18,pprSize:18,align:"both",after:18,line:240,keepNext:true}),
+   oaWordP("",{pprSize:36,after:8,line:80})
+  ]:[
+   oaWordP(c.institution||"ASSAM MEDICAL COLLEGE & HOSPITAL, DIBRUGARH",{bold:true,align:"center",size:28,pprSize:40,after:5,line:240,keepNext:true}),
+   oaWordP(c.department||"DEPARTMENT OF PSYCHIATRY",{bold:true,align:"center",size:null,pprSize:40,after:5,line:240,keepNext:true}),
+   oaWordP(`${rosterHeading} w.e.f. ${periodText}`,{bold:true,align:"center",size:22,pprSize:22,after:12,line:240,keepNext:true}),
+   oaWordP(`No. ${r.reference_number||"—"}`,{size:18,pprSize:18,align:"both",after:4,line:240,keepNext:true}),
+   oaWordP(`Dated ${oaDate(r.issue_date)}`,{size:18,pprSize:18,align:"both",after:18,line:240,keepNext:true}),
+   oaWordP("",{pprSize:36,after:8,line:80})
+  ];
+
+  let table=oaWordTableStart(usableWidth)+`<w:tblGrid>${widths.map(w=>`<w:gridCol w:w="${w}"/>`).join("")}</w:tblGrid>`;
+  table+=oaWordTableRow(cols.map((x,i)=>oaWordCell(String(x).replace(/\n/g," "),true,widths[i],20,36)),true,275);
+  // A 31-day PGT month needs a very slight row tightening to retain the
+  // complete HOD sign-off block on the same A4 page. Thirty-day months retain
+  // the reference template's exact paragraph-mark size.
+  const pgtBodyPprSize=isPgt&&rows.length>30?34:36;
+  rows.forEach(row=>table+=oaWordTableRow(cols.map((k,i)=>oaWordCell(Array.isArray(row)?row[i]:(row&&row[k])||"",false,widths[i],18,pgtBodyPprSize)),false,300));
+  table+="</w:tbl>";
+  const paras=[...headerParas,table];
+
   if(isPgt&&c.groups.length){
    const max=Math.max(0,...c.groups.map(g=>(g.members||[]).length));
-   let groupRows='<w:tr>'+c.groups.map(g=>oaWordCell(g.name||"Group",true)).join("")+'</w:tr>';
-   for(let i=0;i<max;i++)groupRows+='<w:tr>'+c.groups.map(g=>{const m=(g.members||[])[i];return oaWordCell(m?`${m.name||""}${m.abbr?" ("+m.abbr+")":""}`:"")}).join("")+'</w:tr>';
-   paras.push(oaWordP("",{after:40}));
-   paras.push('<w:tbl><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="8"/><w:left w:val="single" w:sz="8"/><w:bottom w:val="single" w:sz="8"/><w:right w:val="single" w:sz="8"/><w:insideH w:val="single" w:sz="6"/><w:insideV w:val="single" w:sz="6"/></w:tblBorders><w:tblW w:w="0" w:type="auto"/></w:tblPr><w:tblGrid>'+c.groups.map(()=>'<w:gridCol w:w="2400"/>').join("")+'</w:tblGrid>'+groupRows+'</w:tbl>');
-  } else if((c.groups||[]).length){paras.push(oaWordP("Group allocations",{bold:true,after:80}));(c.groups||[]).forEach(g=>paras.push(oaWordP(`${g.name||g.title||"Group"}: ${g.members||g.allocation||""}`)))}
-  if((c.notes||[]).length){paras.push(oaWordP(isPgt?"N.B.":"Notes",{bold:true,after:80}));(c.notes||[]).forEach((n,i)=>paras.push(oaWordP(`${i+1}. ${n}`,{size:18})))}
-  paras.push('<w:p><w:pPr><w:jc w:val="right"/></w:pPr>'+oaWordRun("Prof. & HOD – Psychiatry",true,20)+'</w:p>','<w:p><w:pPr><w:jc w:val="right"/></w:pPr>'+oaWordRun("AMCH, Dibrugarh",true,20)+'</w:p>');
-  const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${paras.join("")}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="700" w:right="650" w:bottom="700" w:left="650"/></w:sectPr></w:body></w:document>`;
+   const gWidths=oaDistributeWidths(c.groups.map(()=>1),usableWidth);
+   let gt=oaWordTableStart(usableWidth)+`<w:tblGrid>${gWidths.map(w=>`<w:gridCol w:w="${w}"/>`).join("")}</w:tblGrid>`;
+   gt+=oaWordTableRow(c.groups.map((g,i)=>oaWordCell(g.name||"Group",true,gWidths[i],20)),true,220);
+   for(let i=0;i<max;i++)gt+=oaWordTableRow(c.groups.map((g,j)=>{const m=(g.members||[])[i];return oaWordCell(m?`${m.name||""}${m.abbr?" ("+m.abbr+")":""}`:"",false,gWidths[j],18)}),false,185);
+   gt+="</w:tbl>";paras.push(oaWordP("",{pprSize:36,after:8,line:80}),gt);
+  }else if((c.groups||[]).length){
+   paras.push(oaWordP("Group allocations",{bold:true,size:18,pprSize:36,after:5,keepNext:true}));
+   (c.groups||[]).forEach(g=>paras.push(oaWordP(`${g.name||g.title||"Group"}: ${g.members||g.allocation||""}`,{size:18,pprSize:36,after:5,line:185})));
+  }
+
+  if((c.notes||[]).length){
+   paras.push(oaWordP(isPgt?"N.B.":"Notes",{bold:true,size:18,pprSize:36,after:5,keepNext:true}));
+   (c.notes||[]).forEach((n,i)=>paras.push(oaWordP(`${i+1}. ${n}`,{size:18,pprSize:36,after:5,line:185})));
+  }
+  // Keep the sample's clear writing space for a physical signature.
+  paras.push(`<w:p><w:pPr><w:spacing w:before="0" w:after="620" w:line="100" w:lineRule="exact"/></w:pPr></w:p>`);
+  paras.push(`<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:rPr><w:sz w:val="36"/><w:szCs w:val="36"/></w:rPr></w:pPr>${oaWordRun("Prof. & HOD – Psychiatry",true,20)}<w:r><w:br/></w:r>${oaWordRun("AMCH, Dibrugarh",true,20)}</w:p>`);
+
+  const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${paras.join("")}<w:sectPr><w:pgSz w:w="${pageWidth}" w:h="16838"/><w:pgMar w:top="260" w:right="353" w:bottom="260" w:left="353" w:header="100" w:footer="100"/></w:sectPr></w:body></w:document>`;
   const files={"[Content_Types].xml":`<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`,"_rels/.rels":`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`,"word/document.xml":doc};
   const blob=oaZip(files),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`${(r.title||"Duty_Roster").replace(/[^a-z0-9_-]+/gi,"_")}${r.status==="published"?"":"_DRAFT"}.docx`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
  }catch(e){toast(e.message||String(e),"bad")}
 }
-function oaRosterList(){const rows=OA.rosters||[];return `<div class="oa-head"><div><p class="oa-kicker">DUTY ROSTERS</p><h1>Roster management</h1></div><button class="btn" onclick="oaNewRoster()">+ New draft</button></div><div class="oa-tabs"><button class="${OA.type==="pgt_monthly"?"on":""}" onclick="OA.type='pgt_monthly';oaLoad()">PGT monthly</button><button class="${OA.type==="faculty_weekly"?"on":""}" onclick="OA.type='faculty_weekly';oaLoad()">Faculty weekly</button></div>${rows.length?rows.map(r=>`<div class="oa-card oa-roster"><div class="oa-row"><b>${oaEsc(r.title||"Untitled roster")}</b><span class="oa-status ${oaEsc(r.status)}">${oaStatus(r.status)}</span></div><p>${oaDate(r.period_start)} – ${oaDate(r.period_end)} · Version ${r.version||1}</p><p class="oa-muted">${oaEsc(r.reference_number||"No reference number")} ${r.is_current?"· Current published version":""}</p><div class="oa-actions"><button class="btn secondary" onclick="oaEditRoster('${r.id}')">${r.status==="draft"||r.status==="review"?"Open":"View"}</button>${r.status==="published"?`<button class="btn secondary" onclick="oaRestore('${r.id}')">Restore as draft</button>`:""}</div></div>`).join(""):`<div class="oa-empty">No ${OA.type==="pgt_monthly"?"PGT monthly":"Faculty weekly"} rosters yet.</div>`}`}
-function oaUsersView(){return `<div class="oa-head"><div><p class="oa-kicker">ACCOUNTS</p><h1>User management</h1></div><button class="btn" onclick="oaUserForm()">+ Add user</button></div>${(OA.users||[]).map(u=>`<div class="oa-card"><div class="oa-row"><b>${oaEsc(u.display_name)}</b><span class="oa-status ${u.active?"published":"draft"}">${u.active?"Active":"Deactivated"}</span></div><p>${oaEsc(u.username)} · ${oaEsc(u.role)}</p><p class="oa-muted">${oaEsc(u.designation||"")} ${oaEsc(u.email||"")}</p><button class="btn secondary" onclick='oaUserForm(${JSON.stringify(u).replace(/'/g,"&#39;")})'>Edit account</button></div>`).join("")}`}
+function oaRosterList(){
+ const rows=OA.rosters||[];
+ const kind=OA.type==="faculty_weekly"?"Faculty weekly":"PGT monthly";
+ return `<div class="oa-roster-list-head"><div><p class="oa-kicker">DUTY ROSTERS</p><h2>Roster management</h2><p class="oa-muted">Choose a roster type to view existing schedules or create a new draft.</p></div><button type="button" class="btn" onclick="oaNewRoster()">+ New draft</button></div>
+ <section class="oa-roster-type-panel"><div class="oa-roster-type-grid">
+ <button type="button" class="oa-roster-type-card ${OA.type==="pgt_monthly"?"selected":""}" onclick="if(OA.type!=='pgt_monthly'){OA.type='pgt_monthly';oaLoad()}" aria-pressed="${OA.type==="pgt_monthly"}"><span class="oa-roster-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M7.5 3.5v3M16.5 3.5v3M4 9h16M8 12h3M8 16h3M14 12h2"/></svg></span><span class="oa-roster-type-copy"><b>PGT monthly</b><small>Monthly PGT duty allocation</small></span><span class="oa-roster-type-chevron">›</span></button>
+ <button type="button" class="oa-roster-type-card ${OA.type==="faculty_weekly"?"selected":""}" onclick="if(OA.type!=='faculty_weekly'){OA.type='faculty_weekly';oaLoad()}" aria-pressed="${OA.type==="faculty_weekly"}"><span class="oa-roster-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.4-3.4 2.2-5.2 5.5-5.2s5.1 1.8 5.5 5.2M16 6.2a3 3 0 0 1 0 5.8M17 14c2.2.5 3.4 2.1 3.6 5"/></svg></span><span class="oa-roster-type-copy"><b>Faculty weekly</b><small>Faculty, VP and RP/GDMO duties</small></span><span class="oa-roster-type-chevron">›</span></button>
+ </div></section>
+ <div class="oa-roster-results-head"><div><h3>${oaEsc(kind)} rosters</h3><span>${rows.length} ${rows.length===1?"roster":"rosters"}</span></div></div>
+ ${rows.length?rows.map(r=>`<div class="oa-card oa-roster"><div class="oa-row"><b>${oaEsc(r.title||"Untitled roster")}</b><span class="oa-status ${oaEsc(r.status)}">${oaStatus(r.status)}</span></div><p>${oaDate(r.period_start)} – ${oaDate(r.period_end)} · Version ${r.version||1}</p><p class="oa-muted">${oaEsc(r.reference_number||"No reference number")} ${r.is_current?"· Current published version":""}</p><div class="oa-actions"><button type="button" class="btn secondary" onclick="oaEditRoster('${r.id}')">${r.status==="draft"||r.status==="review"?"Open":"View"}</button>${r.status==="published"?`<button type="button" class="btn secondary" onclick="oaRestore('${r.id}')">Restore as draft</button>`:""}</div></div>`).join(""):`<div class="oa-empty oa-roster-empty">No ${OA.type==="pgt_monthly"?"PGT monthly":"Faculty weekly"} rosters yet.</div>`}`;
+}
+function oaUsersView(){
+ const all=(OA.users||[]).slice();
+ const roleMeta={resident:{title:"PGT Residents",order:1},consultant:{title:"Faculty & Consultants",order:2},office_admin:{title:"Office Administration",order:3},admin:{title:"System Administrators",order:4},intern:{title:"Interns",order:5}};
+ const roles=[...new Set(all.map(u=>String(u.role||"other").toLowerCase()))].sort((a,b)=>(roleMeta[a]?.order??99)-(roleMeta[b]?.order??99)||a.localeCompare(b));
+ const sections=roles.map(role=>{
+  const users=all.filter(u=>String(u.role||"other").toLowerCase()===role).sort((a,b)=>String(a.display_name||a.username).localeCompare(String(b.display_name||b.username)));
+  const meta=roleMeta[role]||{title:role.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())};
+  return `<section class="oa-user-role-group"><div class="oa-user-role-heading"><h3>${oaEsc(meta.title)}</h3><span>${users.length}</span></div><div class="oa-user-grid">${users.map(u=>`<article class="oa-user-card"><div class="oa-user-card-top"><div class="oa-user-avatar">${oaEsc(String(u.display_name||u.username||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase())}</div><span class="oa-status ${u.active?"published":"draft"}">${u.active?"Active":"Deactivated"}</span></div><b class="oa-user-name">${oaEsc(u.display_name||u.username)}</b><p class="oa-user-username">${oaEsc(u.username)} · ${oaEsc(role.replace(/_/g," "))}</p>${u.designation?`<p class="oa-user-detail">${oaEsc(u.designation)}</p>`:""}${u.email?`<p class="oa-user-detail">${oaEsc(u.email)}</p>`:""}<button type="button" class="btn secondary sm" onclick='oaUserForm(${JSON.stringify(u).replace(/'/g,"&#39;")})'>Edit account</button></article>`).join("")}</div></section>`;
+ }).join("");
+ return `<div class="oa-head oa-users-head"><div><p class="oa-kicker">ACCOUNTS</p><h1>User management</h1><p class="oa-muted">Accounts are grouped by role. Select an account to view or update its details.</p></div><button type="button" class="btn" onclick="oaUserForm()">+ Add user</button></div>${sections||`<div class="oa-empty">No user accounts found.</div>`}`;
+}
 function oaUserForm(u){u=u||{};const html=`<div class="oa-card"><h2>${u.id?"Edit account":"Create account"}</h2><label class="field"><span>Username</span><input id="ouName" value="${oaEsc(u.username)}"></label><label class="field"><span>Display name</span><input id="ouDisplay" value="${oaEsc(u.display_name)}"></label><label class="field"><span>Password ${u.id?"(leave blank to keep current)":""}</span><input id="ouPass" type="password"></label><label class="field"><span>Role</span><select id="ouRole">${["resident","consultant","intern","office_admin"].map(x=>`<option ${u.role===x?"selected":""}>${x}</option>`).join("")}</select></label><label class="field"><span>Email</span><input id="ouEmail" value="${oaEsc(u.email)}"></label><label class="field"><span>Designation</span><input id="ouDesignation" value="${oaEsc(u.designation)}"></label><label class="field"><span>Phone</span><input id="ouPhone" value="${oaEsc(u.phone)}"></label>${u.id?`<label class="oa-check"><input id="ouActive" type="checkbox" ${u.active?"checked":""}> Account active</label>`:""}<div class="oa-actions"><button class="btn" onclick="oaSaveUser('${oaEsc(u.username||"")}')">Save account</button><button class="btn secondary" onclick="oaLoad()">Cancel</button></div></div>`;const el=document.getElementById("oaModal");el.innerHTML=html;el.classList.add("show")}
 async function oaSaveUser(old){try{const un=document.getElementById("ouName").value,display=document.getElementById("ouDisplay").value,pw=document.getElementById("ouPass").value,role=document.getElementById("ouRole").value,email=document.getElementById("ouEmail").value,designation=document.getElementById("ouDesignation").value,phone=document.getElementById("ouPhone").value;let d;if(old){d=await oaRpc("office_admin_update_user",{p_username:old,p_new_username:un,p_display:display,p_password:pw,p_role:role,p_active:document.getElementById("ouActive").checked,p_email:email,p_designation:designation})}else{d=await oaRpc("office_admin_invite_user",{p_username:un,p_password:pw,p_display:display,p_role:role,p_email:email,p_designation:designation})}if(phone)await oaRpc("office_admin_set_user_phone",{p_username:un,p_phone:phone});document.getElementById("oaModal").classList.remove("show");toast("Account saved","ok");await oaLoad()}catch(e){toast(e.message||String(e),"bad")}}
 
@@ -9087,10 +9334,15 @@ function wardRosterTable(r){
  return `<div class="roster-doc"><div style="text-align:center;font-weight:800">${cell(c.institution||"ASSAM MEDICAL COLLEGE & HOSPITAL, DIBRUGARH")}</div><div style="text-align:center;font-weight:800">${cell(c.department||"DEPARTMENT OF PSYCHIATRY")}</div><div style="text-align:center;font-weight:700;margin:4px 0 10px">${cell(c.subtitle||r.title||"DUTY ROSTER")}</div><div class="sm muted" style="text-align:center;margin-bottom:8px">Ref: ${cell(r.reference_number||"—")} · Issue date: ${cell(r.issue_date||"—")}</div><div style="overflow:auto"><table style="border-collapse:collapse;width:100%;min-width:520px;font-size:12px"><thead><tr>${cols.map(x=>`<th style="border:1px solid var(--line);padding:7px;background:var(--surface-2)">${cell(x)}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${(Array.isArray(row)?row:cols.map(k=>row&&row[k]||"")).map(v=>`<td style="border:1px solid var(--line);padding:7px;vertical-align:top">${cell(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${(r.roster_type==="pgt_monthly"&&c.groups||[]).length?`<div class="oa-group-preview-wrap"><table class="oa-group-preview"><thead><tr>${c.groups.map(g=>`<th>${cell(g.name||"Group")}</th>`).join("")}</tr></thead><tbody>${Array.from({length:Math.max(0,...c.groups.map(g=>(g.members||[]).length))},(_,i)=>`<tr>${c.groups.map(g=>{const m=(g.members||[])[i];return `<td>${m?cell(m.name)+(m.abbr?` (${cell(m.abbr)})`:""):""}</td>`}).join("")}</tr>`).join("")}</tbody></table></div>`:""}${(c.notes||[]).length?`<h4>Notes</h4><ol>${c.notes.map(n=>`<li class="sm">${cell(n)}</li>`).join("")}</ol>`:""}<div style="text-align:right;margin-top:22px;font-weight:700">Prof. &amp; HOD – Psychiatry<br>AMCH, Dibrugarh</div></div>`;
 }
 function wardExportRoster(id){const r=(wardPublishedRosters||[]).find(x=>String(x.id)===String(id));if(!r)return;OA.editing=r;oaExportDocx()}
-function wardRostersView(){if(!wardRosterLoaded&&!wardRosterLoading)wardLoadPublishedRosters();return `<div class="page-head"><h1 class="page-title">Duty rosters</h1><p class="muted">Published duty schedules</p></div>${wardRosterError?`<div class="card"><p class="err">${esc(wardRosterError)}</p><button class="btn secondary" onclick="wardRosterLoaded=false;wardLoadPublishedRosters()">Retry</button></div>`:""}${wardRosterLoading?`<div class="card muted">Loading published rosters…</div>`:""}${(wardPublishedRosters||[]).map(r=>`<section class="card" style="margin-bottom:12px"><div class="row between"><b>${esc(r.title|| (r.roster_type==="pgt_monthly"?"PGT Monthly Roster":"Faculty Weekly Roster"))}</b><span class="lab-chip ok">Published</span></div><p class="muted sm">${dmy(r.period_start)} – ${dmy(r.period_end)} · Version ${r.version||1}</p>${r.reference_number?`<p class="sm">Ref: ${esc(r.reference_number)}</p>`:""}${wardRosterTable(r)}<div class="oa-toolbar"><button class="btn secondary sm" onclick="wardExportRoster('${r.id}')">Download editable Word (.docx)</button></div></section>`).join("")}${wardRosterLoaded&&!wardPublishedRosters.length?`<div class="card muted">No current rosters have been published.</div>`:""}`}
+function wardRostersView(){if(!wardRosterLoaded&&!wardRosterLoading)wardLoadPublishedRosters();return `<div class="page-head"><h1 class="page-title">Duty rosters</h1><p class="muted">Published duty schedules</p></div>${wardRosterError?`<div class="card"><p class="err">${esc(wardRosterError)}</p><button class="btn secondary" onclick="wardRosterLoaded=false;wardLoadPublishedRosters()">Retry</button></div>`:""}${wardRosterLoading?`<div class="card muted">Loading published rosters…</div>`:""}${(wardPublishedRosters||[]).map(r=>`<section class="card" style="margin-bottom:12px"><div class="published-roster-document">${wardRosterTable(r)}</div><div class="oa-toolbar"><button class="btn secondary sm" onclick="wardExportRoster('${r.id}')">Download editable Word (.docx)</button></div></section>`).join("")}${wardRosterLoaded&&!wardPublishedRosters.length?`<div class="card muted">No current rosters have been published.</div>`:""}`}
 
 
-function officeAdminView(){return `<div class="oa-app"><header class="oa-top"><div><small>WARD SYNC · OFFICE ADMINISTRATION</small><b>${oaEsc((S.residents||[]).find(x=>x.id===S.userId)?.displayName||"Office Admin")}</b></div><button onclick="oaLogout()">Log out</button></header><nav class="oa-nav"><button class="${OA.page==="rosters"?"on":""}" onclick="oaPage('rosters')">Duty rosters</button><button class="${OA.page==="ward"?"on":""}" onclick="oaPage('ward')">Ward setup</button><button class="${OA.page==="users"?"on":""}" onclick="oaPage('users')">User management</button></nav><main class="oa-main">${OA.error?`<div class="oa-error">${oaEsc(OA.error)}</div>`:""}${OA.loading?`<div class="oa-empty">Loading…</div>`:OA.editing?oaRosterForm():OA.page==="rosters"?oaRosterList():OA.page==="users"?oaUsersView():oaWardView()}</main><div id="oaModal" class="oa-modal" onclick="if(event.target===this)this.classList.remove('show')"></div></div>`}
+function officeAdminView(){
+ const nav=[{id:"rosters",label:"Duty rosters",sub:"Create, review and publish"},{id:"groups",label:"PGT groups",sub:"Reusable group settings"},{id:"ward",label:"Ward setup",sub:"Sections, beds and consultants"},{id:"users",label:"User management",sub:"Office and ward accounts"}];
+ const active=nav.find(x=>x.id===OA.page)||nav[0];
+ const content=OA.loading?`<div class="oa-loading-state"><div class="oa-loader-ring"></div><b>Loading ${oaEsc(active.label.toLowerCase())}</b><small>Retrieving office data securely</small></div>`:OA.page==="rosters"?(OA.editing?oaRosterForm():oaRosterList()):OA.page==="groups"?oaPgtGroupsView():OA.page==="users"?oaUsersView():oaWardView();
+ return `<div class="oa-app"><header class="oa-top"><div class="oa-brand"><span class="oa-brand-mark">WS</span><div><small>WARD SYNC · OFFICE ADMINISTRATION</small><b>${oaEsc((S.residents||[]).find(x=>x.id===S.userId)?.displayName||"Office Admin")}</b></div></div><div class="oa-department-title">Department of Psychiatry- AMCH</div><div class="oa-top-actions"><span class="oa-connection-state"><i></i> Connected</span><button onclick="oaLogout()">Log out</button></div></header><div class="oa-workspace"><aside class="oa-sidebar"><div class="oa-sidebar-title">WORKSPACE</div><div class="oa-side-nav">${nav.map(n=>`<button class="oa-side-link ${OA.page===n.id?"on":""}" onclick="oaPage('${n.id}')"><span class="oa-side-icon">${({rosters:"▤",groups:"▦",ward:"⌂",users:"♙"})[n.id]}</span><span><b>${n.label}</b><small>${n.sub}</small></span></button>`).join("")}</div><div class="oa-sidebar-footer"><span class="oa-sidebar-dot"></span><span>Office workspace</span></div></aside><main class="oa-main"><div class="oa-page-heading"><div><p class="oa-kicker">${oaEsc(active.label.toUpperCase())}</p><h1>${oaEsc(active.label)}</h1><p>${oaEsc(active.sub)}</p></div>${OA.error?`<div class="oa-error">${oaEsc(OA.error)}</div>`:""}</div>${content}</main></div><div id="oaModal" class="oa-modal" onclick="if(event.target===this)this.classList.remove('show')"></div></div>`;
+}
 function oaLogout(){oaRpc("office_admin_logout",{}).catch(()=>{});setSessionTok(null);sessionPw=null;sessionVerified=false;S.userId=null;S.loginRole="";save();OA.editing=null;go("home")}
 
 function loginView(){
@@ -25662,7 +25914,27 @@ function render(opts){
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
   if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){el.innerHTML=`<div class="login"><div class="login-card session-check-card"><div class="session-leds" role="status" aria-label="Checking session"><i></i><i></i><i></i><i></i></div><h1>Ward Sync</h1><p class="muted">Establishing secure connection</p></div></div>`;return}
-  if(isOfficeAdmin()){el.classList.add("oa-mode");el.innerHTML=officeAdminView();return}el.classList.remove("oa-mode")
+  if(isOfficeAdmin()){
+    el.classList.add("oa-mode");
+    const currentMain=el.querySelector(".oa-main");
+    const nextMarkup=officeAdminView();
+    if(nextMarkup===OA.lastMarkup && currentMain) return;
+    const savedTop=OA.preserveScrollTop!==null?OA.preserveScrollTop:(currentMain?.scrollTop||0);
+    const savedLeft=currentMain?.scrollLeft||0;
+    const savedTables=currentMain?Array.from(currentMain.querySelectorAll(".oa-table-wrap")).map(x=>x.scrollLeft):[];
+    el.innerHTML=nextMarkup;
+    OA.lastMarkup=nextMarkup;
+    const renderVersion=++OA.renderVersion;
+    requestAnimationFrame(()=>{
+      if(renderVersion!==OA.renderVersion||!el.classList.contains("oa-mode"))return;
+      const nextMain=el.querySelector(".oa-main");if(!nextMain)return;
+      nextMain.scrollTop=savedTop;nextMain.scrollLeft=savedLeft;
+      Array.from(nextMain.querySelectorAll(".oa-table-wrap")).forEach((x,i)=>{if(savedTables[i]!=null)x.scrollLeft=savedTables[i]});
+      if(!OA.loading){OA.preserveScrollTop=null;OA.scrollReset=false;}
+    });
+    return;
+  }
+  el.classList.remove("oa-mode");OA.lastMarkup="";OA.preserveScrollTop=null;
   const pages={home:homeView,patients:patientsView,snap:snapView,record:recordView,dcert:dcertView,dedit:dedEditView,handover:handoverView,ect:ectView,tasks:tasksView,setup:setupView,activity:activityView,ward:wardView,census:censusView,observe:observeView,more:moreView,users:usersView,about:aboutView,connection:connectionView,broadcast:broadcastView,myorders:myOrdersView,pedit:peditView,bdft:bdftView,profile:profileView,pgts:pgtsView,rosters:wardRostersView};
   if(isIntern()){pages.home=internHomeView;pages.snap=internSnapView;Object.keys(pages).forEach(k=>{if(k!=="home"&&k!=="snap")delete pages[k]});pages.ivitals=internVitalsView;pages.ireports=internReportsView;pages.ireport=internReportPageView} // R1.3.139: interns see the patient page only · R1.3.142: + Vitals / Reports tabs
   pages.vchart=vchartView; // R1.3.140: full-screen vitals chart (all roles)
@@ -26194,6 +26466,224 @@ body:has(#app.oa-mode) {
 .oa-pgt-duty-table th:nth-child(10){white-space:normal!important}
 </style>
 
+
+<style id="oa-landscape-workspace-v5">
+/* Office Administration is designed for horizontal desktop/tablet displays. */
+#app.app.oa-mode,
+#app.app.oa-mode > .oa-app {width:100%!important;max-width:none!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-main {
+  width:calc(100% - 64px)!important;
+  max-width:1480px!important;
+  box-sizing:border-box!important;
+  padding:24px 0 56px!important;
+  margin-left:auto!important;margin-right:auto!important;
+}
+#app.app.oa-mode .oa-nav {display:flex!important;justify-content:center!important;align-items:center!important;gap:10px!important;width:100%!important;max-width:none!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-nav button {min-width:150px!important;flex:0 0 auto!important}
+#app.app.oa-mode .oa-card {box-sizing:border-box!important;min-width:0!important}
+#app.app.oa-mode .oa-roster-builder {width:100%!important;max-width:none!important;overflow:visible!important;padding:22px!important}
+#app.app.oa-mode .oa-field-grid {
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:16px 20px!important;width:100%!important;min-width:0!important;
+}
+#app.app.oa-mode .oa-field-grid>.field {display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;overflow:visible!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-field-grid>.field input,
+#app.app.oa-mode .oa-field-grid>.field select {
+  display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;
+}
+#app.app.oa-mode .oa-groups-grid {grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px!important}
+#app.app.oa-mode .oa-group-card {min-width:0!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-pgt-desktop-table,
+#app.app.oa-mode .oa-pgt-desktop-table .oa-table-wrap {width:100%!important;max-width:100%!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-pgt-duty-table {min-width:1320px!important;width:1320px!important;table-layout:fixed!important}
+#app.app.oa-mode .oa-preview {width:100%!important;max-width:100%!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-preview .oa-duty-preview {width:100%!important;min-width:900px!important}
+#app.app.oa-mode .oa-note-row input {min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
+@media (min-width:900px) and (orientation:landscape) {
+  #app.app.oa-mode .oa-roster-builder {padding:24px!important}
+  #app.app.oa-mode .oa-groups-grid {grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media (max-width:899px), (orientation:portrait) {
+  #app.app.oa-mode .oa-main {width:calc(100% - 32px)!important;min-width:1000px!important;margin-left:16px!important;margin-right:16px!important}
+  #app.app.oa-mode .oa-nav {min-width:1000px!important;margin-left:16px!important}
+}
+</style>
+
+
+<style id="oa-desktop-workbench-v6">
+/* Office Admin is a desktop-landscape workspace: fixed vertical navigation + flexible content. */
+#app.app.oa-mode{position:relative!important;display:block!important;width:100%!important;max-width:none!important;height:auto!important;min-height:100dvh!important;overflow:visible!important;margin:0!important;padding:0!important}
+#app.app.oa-mode>.oa-app{display:flex!important;flex-direction:column!important;width:100%!important;min-width:1160px!important;min-height:100dvh!important;height:auto!important;max-height:none!important;overflow:visible!important;padding:0!important;background:#f6f5fa!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-top{position:sticky!important;top:0!important;z-index:40!important;display:flex!important;justify-content:space-between!important;align-items:center!important;min-height:66px!important;padding:10px 26px!important;background:#fff!important;border-bottom:1px solid #e5e0ed!important;box-shadow:0 2px 8px rgba(30,20,50,.035)!important}
+#app.app.oa-mode .oa-brand{display:flex!important;align-items:center!important;gap:12px!important;flex-direction:row!important}
+#app.app.oa-mode .oa-brand-mark{display:grid!important;place-items:center!important;width:38px!important;height:38px!important;border-radius:11px!important;background:linear-gradient(145deg,#8b5cf6,#6736c8)!important;color:#fff!important;font-size:12px!important;font-weight:850!important;letter-spacing:.03em!important}
+#app.app.oa-mode .oa-brand div{display:flex!important;flex-direction:column!important;gap:3px!important}
+#app.app.oa-mode .oa-brand small{font-size:10px!important;letter-spacing:.11em!important;font-weight:800!important;color:#777184!important}
+#app.app.oa-mode .oa-brand b{font-size:15px!important;color:#24202d!important}
+#app.app.oa-mode .oa-top-actions{display:flex!important;align-items:center!important;gap:14px!important}
+#app.app.oa-mode .oa-connection-state{display:flex!important;align-items:center!important;gap:7px!important;color:#5e6870!important;font-size:12px!important}
+#app.app.oa-mode .oa-connection-state i{width:7px!important;height:7px!important;border-radius:50%!important;background:#1fa971!important;box-shadow:0 0 0 3px #1fa9711d!important}
+#app.app.oa-mode .oa-top button{padding:9px 15px!important;border-radius:10px!important;background:#f5f1fb!important;border:1px solid #ddd3ef!important;color:#342b42!important}
+#app.app.oa-mode .oa-workspace{display:grid!important;grid-template-columns:238px minmax(0,1fr)!important;align-items:stretch!important;min-height:calc(100dvh - 66px)!important;width:100%!important}
+#app.app.oa-mode .oa-sidebar{position:sticky!important;top:66px!important;align-self:start!important;display:flex!important;flex-direction:column!important;width:238px!important;height:calc(100dvh - 66px)!important;min-height:640px!important;padding:24px 14px 18px!important;background:#fff!important;border-right:1px solid #e6e1ed!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-sidebar-title{padding:0 12px 14px!important;font-size:10px!important;font-weight:850!important;letter-spacing:.13em!important;color:#90899a!important}
+#app.app.oa-mode .oa-side-nav{display:grid!important;gap:5px!important}
+#app.app.oa-mode .oa-side-link{display:flex!important;align-items:center!important;gap:12px!important;width:100%!important;min-height:54px!important;padding:8px 11px!important;border:1px solid transparent!important;border-radius:11px!important;background:transparent!important;text-align:left!important;color:#655e70!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-side-link.on{background:#f1eafd!important;border-color:#e2d4f8!important;color:#5b32ad!important}
+#app.app.oa-mode .oa-side-icon{display:grid!important;place-items:center!important;flex:0 0 31px!important;width:31px!important;height:31px!important;border-radius:9px!important;background:#f5f2f9!important;font-size:17px!important;font-weight:700!important}
+#app.app.oa-mode .oa-side-link.on .oa-side-icon{background:#e5d9fb!important}
+#app.app.oa-mode .oa-side-link span:last-child{display:flex!important;flex-direction:column!important;gap:3px!important;min-width:0!important}
+#app.app.oa-mode .oa-side-link b{font-size:13px!important;font-weight:750!important}
+#app.app.oa-mode .oa-side-link small{font-size:10px!important;color:#8c8597!important;font-weight:500!important}
+#app.app.oa-mode .oa-sidebar-footer{display:flex!important;align-items:center!important;gap:8px!important;margin-top:auto!important;padding:14px 12px 0!important;border-top:1px solid #efebf3!important;color:#928b9b!important;font-size:11px!important}
+#app.app.oa-mode .oa-sidebar-dot{width:7px!important;height:7px!important;border-radius:50%!important;background:#24a778!important}
+#app.app.oa-mode .oa-main{display:block!important;width:100%!important;max-width:none!important;min-width:0!important;min-height:calc(100dvh - 66px)!important;height:auto!important;margin:0!important;padding:28px 34px 54px!important;overflow:visible!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-page-heading{display:flex!important;align-items:flex-end!important;justify-content:space-between!important;gap:18px!important;margin:0 0 22px!important}
+#app.app.oa-mode .oa-page-heading .oa-kicker{margin:0 0 5px!important;color:#898194!important;font-size:10px!important;letter-spacing:.13em!important;font-weight:850!important}
+#app.app.oa-mode .oa-page-heading h1{margin:0!important;font-size:24px!important;line-height:1.2!important;color:#24202d!important;letter-spacing:-.03em!important}
+#app.app.oa-mode .oa-page-heading>div>p:last-child{margin:6px 0 0!important;color:#827b8c!important;font-size:13px!important}
+#app.app.oa-mode .oa-head{margin:0 0 16px!important}
+#app.app.oa-mode .oa-head h1{font-size:21px!important}
+#app.app.oa-mode .oa-main>.oa-card,#app.app.oa-mode .oa-main>.oa-groups-workspace{width:100%!important;max-width:none!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-roster-builder{padding:22px!important;border-radius:16px!important}
+#app.app.oa-mode .oa-field-grid{display:grid!important;grid-template-columns:repeat(3,minmax(180px,280px))!important;align-items:end!important;gap:12px 16px!important;margin:16px 0 8px!important}
+#app.app.oa-mode .oa-field-grid>.field{width:100%!important;max-width:280px!important;min-width:0!important;margin:0!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-field-grid>.field input,#app.app.oa-mode .oa-field-grid>.field select{width:100%!important;max-width:100%!important;min-width:0!important;height:39px!important;padding:8px 11px!important;font-size:13px!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-field-grid>.field span{font-size:11px!important;margin-bottom:5px!important}
+#app.app.oa-mode .oa-builder-section{margin-top:18px!important;padding-top:16px!important}
+#app.app.oa-mode .oa-pgt-duty-table{width:100%!important;min-width:1120px!important;table-layout:fixed!important;font-size:11px!important}
+#app.app.oa-mode .oa-pgt-duty-table th{padding:9px 5px!important;font-size:11px!important;line-height:1.25!important}
+#app.app.oa-mode .oa-pgt-duty-table td{padding:5px 4px!important}
+#app.app.oa-mode .oa-pgt-duty-table td input{width:100%!important;min-width:0!important;height:32px!important;padding:5px 4px!important;font-size:12px!important}
+#app.app.oa-mode .oa-pgt-duty-table th:nth-child(1),#app.app.oa-mode .oa-pgt-duty-table td:nth-child(1){width:34px!important;min-width:34px!important}
+#app.app.oa-mode .oa-pgt-duty-table th:nth-child(2),#app.app.oa-mode .oa-pgt-duty-table td:nth-child(2){width:92px!important}
+#app.app.oa-mode .oa-pgt-duty-table th:nth-child(3),#app.app.oa-mode .oa-pgt-duty-table td:nth-child(3){width:105px!important}
+#app.app.oa-mode .oa-pgt-duty-table th:nth-child(10),#app.app.oa-mode .oa-pgt-duty-table td:nth-child(10){width:116px!important;min-width:116px!important}
+#app.app.oa-mode .oa-table-wrap{max-width:100%!important;overflow-x:auto!important}
+#app.app.oa-mode .oa-toolbar{gap:7px!important;margin:10px 0!important}
+#app.app.oa-mode .oa-toolbar .btn,#app.app.oa-mode .oa-actions .btn{min-height:36px!important;padding:8px 12px!important;font-size:12px!important}
+#app.app.oa-mode .oa-note-row input{height:38px!important;padding:8px 10px!important;font-size:12px!important}
+#app.app.oa-mode .oa-groups-workspace{display:grid!important;grid-template-columns:250px minmax(0,1fr)!important;gap:18px!important;align-items:start!important}
+#app.app.oa-mode .oa-saved-groups,#app.app.oa-mode .oa-group-editor{background:#fff!important;border:1px solid #e4deeb!important;border-radius:15px!important;padding:16px!important;box-shadow:0 4px 18px rgba(36,20,60,.035)!important;min-width:0!important}
+#app.app.oa-mode .oa-saved-groups-head{display:flex!important;align-items:center!important;justify-content:space-between!important;margin-bottom:10px!important;color:#30283c!important;font-size:13px!important}
+#app.app.oa-mode .oa-saved-groups-head span{padding:3px 8px!important;border-radius:20px!important;background:#f1ebfa!important;font-size:11px!important}
+#app.app.oa-mode .oa-saved-group-row{display:flex!important;align-items:center!important;gap:6px!important;padding:6px!important;border:1px solid transparent!important;border-radius:10px!important;margin:3px 0!important}
+#app.app.oa-mode .oa-saved-group-row.selected{background:#f4effc!important;border-color:#e5d9f7!important}
+#app.app.oa-mode .oa-saved-group-open{display:flex!important;flex:1!important;min-width:0!important;flex-direction:column!important;align-items:flex-start!important;gap:4px!important;padding:6px!important;border:0!important;background:transparent!important;text-align:left!important;color:#3a3344!important}
+#app.app.oa-mode .oa-saved-group-open b{font-size:12px!important}
+#app.app.oa-mode .oa-saved-group-open small{font-size:10px!important;color:#8c8496!important}
+#app.app.oa-mode .oa-group-editor-head{display:flex!important;justify-content:space-between!important;align-items:flex-end!important;gap:15px!important;margin-bottom:12px!important}
+#app.app.oa-mode .oa-group-editor-head .field{width:min(100%,340px)!important}
+#app.app.oa-mode .oa-group-editor-head input{height:38px!important;font-size:13px!important}
+#app.app.oa-mode .oa-groups-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;margin:12px 0!important}
+#app.app.oa-mode .oa-group-card{padding:12px!important;border-radius:12px!important;background:#fbfaff!important}
+#app.app.oa-mode .oa-group-card-head input,#app.app.oa-mode .oa-member-row input{height:35px!important;padding:7px 9px!important;font-size:12px!important}
+#app.app.oa-mode .oa-member-row{grid-template-columns:minmax(0,1fr) 72px 30px!important;gap:7px!important}
+#app.app.oa-mode .oa-member-row .field span{font-size:10px!important}
+#app.app.oa-mode .oa-member-row .oa-remove-member{min-height:32px!important;min-width:30px!important}
+#app.app.oa-mode .oa-pgt-suggestions{max-height:220px!important}
+#app.app.oa-mode .oa-group-editor-actions{display:flex!important;justify-content:flex-end!important;gap:8px!important;border-top:1px solid #eee9f3!important;padding-top:14px!important;margin-top:10px!important}
+#app.app.oa-mode .oa-roster-group-source{display:flex!important;align-items:flex-end!important;justify-content:space-between!important;gap:12px!important}
+#app.app.oa-mode .oa-group-source-row{display:flex!important;align-items:flex-end!important;gap:10px!important}
+#app.app.oa-mode .oa-group-source-row .field{width:280px!important;max-width:100%!important}
+#app.app.oa-mode .oa-group-source-row select{height:36px!important;padding:7px 10px!important;font-size:12px!important}
+#app.app.oa-mode .oa-status{font-size:11px!important}
+#app.app.oa-mode .oa-modal{z-index:1000!important}
+#app.app.oa-mode .oa-loading-state{display:flex!important;align-items:center!important;justify-content:center!important;flex-direction:column!important;gap:10px!important;min-height:260px!important;background:#fff!important;border:1px solid #e7e1ee!important;border-radius:16px!important;color:#4c435a!important}
+#app.app.oa-mode .oa-loader-ring{width:28px!important;height:28px!important;border:3px solid #ece5f7!important;border-top-color:#7c3aed!important;border-radius:50%!important;animation:oaSpin .9s linear infinite!important}
+#app.app.oa-mode .oa-loading-state b{font-size:13px!important}
+#app.app.oa-mode .oa-loading-state small{font-size:11px!important;color:#8b8494!important}
+@keyframes oaSpin{to{transform:rotate(360deg)}}
+/* The secure-session screen must be centered independently of the underlying app shell. */
+#app .login:has(.session-check-card){position:fixed!important;inset:0!important;z-index:99999!important;display:flex!important;align-items:center!important;justify-content:center!important;width:100vw!important;height:100dvh!important;min-height:100dvh!important;max-width:none!important;margin:0!important;padding:24px!important;box-sizing:border-box!important;overflow:hidden!important;transform:none!important}
+#app .login:has(.session-check-card) .session-check-card{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;transform:none!important;float:none!important;margin:0 auto!important;align-self:center!important;justify-self:center!important;flex:0 1 380px!important}
+@media(min-width:1600px){#app.app.oa-mode .oa-main{padding-left:42px!important;padding-right:42px!important}#app.app.oa-mode .oa-workspace{grid-template-columns:250px minmax(0,1fr)!important}#app.app.oa-mode .oa-sidebar{width:250px!important}}
+</style>
+
+
+<style id="oa-office-workspace-v7">
+/* Fixed desktop workbench: each Office Admin page scrolls inside the workspace. */
+html:has(#app.app.oa-mode),body:has(#app.app.oa-mode){height:100%!important;min-height:0!important;max-height:100%!important;overflow:hidden!important}
+#app.app.oa-mode{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;min-height:0!important;max-height:100dvh!important;overflow:hidden!important;margin:0!important;padding:0!important;box-sizing:border-box!important}
+#app.app.oa-mode>.oa-app{display:flex!important;flex-direction:column!important;width:100%!important;min-width:1160px!important;height:100%!important;min-height:0!important;max-height:100%!important;overflow:hidden!important;padding:0!important;background:#f6f5fa!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-top{position:relative!important;display:flex!important;flex:0 0 76px!important;height:76px!important;min-height:76px!important;justify-content:space-between!important;align-items:center!important;padding:10px 26px!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-department-title{position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;display:block!important;max-width:60%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;font-size:23px!important;line-height:1.2!important;font-weight:800!important;letter-spacing:-.025em!important;color:#292433!important;text-align:center!important;pointer-events:none!important}
+#app.app.oa-mode .oa-top-actions{margin-left:auto!important;position:relative!important;z-index:1!important}
+#app.app.oa-mode .oa-workspace{display:grid!important;grid-template-columns:238px minmax(0,1fr)!important;align-items:stretch!important;flex:1 1 auto!important;width:100%!important;height:calc(100dvh - 76px)!important;min-height:0!important;max-height:calc(100dvh - 76px)!important;overflow:hidden!important}
+#app.app.oa-mode .oa-sidebar{position:relative!important;top:auto!important;align-self:stretch!important;height:100%!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;scrollbar-gutter:stable!important}
+#app.app.oa-mode .oa-main{display:block!important;width:100%!important;max-width:none!important;min-width:0!important;height:100%!important;min-height:0!important;max-height:none!important;margin:0!important;padding:25px 32px 48px!important;overflow-y:scroll!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;scrollbar-gutter:stable!important;-webkit-overflow-scrolling:touch!important;box-sizing:border-box!important}
+#app.app.oa-mode .oa-main::-webkit-scrollbar,#app.app.oa-mode .oa-sidebar::-webkit-scrollbar{width:12px!important;height:12px!important}
+#app.app.oa-mode .oa-main::-webkit-scrollbar-track,#app.app.oa-mode .oa-sidebar::-webkit-scrollbar-track{background:#eeeaf3!important;border-radius:8px!important}
+#app.app.oa-mode .oa-main::-webkit-scrollbar-thumb,#app.app.oa-mode .oa-sidebar::-webkit-scrollbar-thumb{background:#b8aec7!important;border:3px solid #eeeaf3!important;border-radius:10px!important}
+#app.app.oa-mode .oa-main,#app.app.oa-mode .oa-sidebar{scrollbar-width:auto!important;scrollbar-color:#b8aec7 #eeeaf3!important}
+#app.app.oa-mode .oa-loading-state{width:min(460px,100%)!important;min-height:calc(100% - 50px)!important;margin:0 auto!important;display:flex!important;align-items:center!important;justify-content:center!important;flex-direction:column!important}
+#app.app.oa-mode .oa-main .oa-table-wrap{overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:auto!important;scrollbar-color:#a99eb8 #eeeaf3!important}
+#app.app.oa-mode .oa-main .oa-table-wrap::-webkit-scrollbar{height:12px!important}
+#app.app.oa-mode .oa-main .oa-table-wrap::-webkit-scrollbar-track{background:#eeeaf3!important;border-radius:8px!important}
+#app.app.oa-mode .oa-main .oa-table-wrap::-webkit-scrollbar-thumb{background:#a99eb8!important;border:3px solid #eeeaf3!important;border-radius:10px!important}
+
+/* Compact, centered roster-type picker. */
+#app.app.oa-mode .oa-roster-list-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:20px!important;margin:0 0 18px!important}
+#app.app.oa-mode .oa-roster-list-head h2{margin:3px 0!important;font-size:21px!important;color:#292433!important}
+#app.app.oa-mode .oa-roster-type-panel{width:min(720px,100%)!important;margin:8px auto 24px!important;padding:14px!important;background:#fff!important;border:1px solid #e4deeb!important;border-radius:16px!important;box-shadow:0 4px 18px rgba(36,20,60,.035)!important}
+#app.app.oa-mode .oa-roster-type-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+#app.app.oa-mode .oa-roster-type-card{display:flex!important;align-items:center!important;gap:12px!important;min-width:0!important;min-height:82px!important;padding:13px 15px!important;text-align:left!important;border:1px solid #e5dfed!important;border-radius:13px!important;background:#fff!important;color:#342d40!important;cursor:pointer!important;transition:background .15s,border-color .15s,box-shadow .15s!important}
+#app.app.oa-mode .oa-roster-type-card:hover{border-color:#c7b3e7!important;background:#fcfaff!important}
+#app.app.oa-mode .oa-roster-type-card.selected{border-color:#8b5ce4!important;background:#f5efff!important;box-shadow:inset 0 0 0 1px #8b5ce4!important}
+#app.app.oa-mode .oa-roster-type-icon{display:grid!important;place-items:center!important;flex:0 0 42px!important;width:42px!important;height:42px!important;border-radius:11px!important;background:#f0e9fb!important;color:#7543c5!important}
+#app.app.oa-mode .oa-roster-type-icon svg{width:23px!important;height:23px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.7!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+#app.app.oa-mode .oa-roster-type-copy{display:flex!important;flex-direction:column!important;gap:5px!important;min-width:0!important}
+#app.app.oa-mode .oa-roster-type-copy b{font-size:14px!important;font-weight:800!important}
+#app.app.oa-mode .oa-roster-type-copy small{font-size:11px!important;color:#81798d!important}
+#app.app.oa-mode .oa-roster-type-chevron{margin-left:auto!important;font-size:24px!important;color:#9688a8!important}
+#app.app.oa-mode .oa-roster-results-head{display:flex!important;justify-content:space-between!important;align-items:center!important;margin:0 0 10px!important;padding-bottom:9px!important;border-bottom:1px solid #e6e0ed!important}
+#app.app.oa-mode .oa-roster-results-head>div{display:flex!important;align-items:baseline!important;gap:9px!important}
+#app.app.oa-mode .oa-roster-results-head h3{margin:0!important;font-size:15px!important;color:#302a39!important}
+#app.app.oa-mode .oa-roster-results-head span{font-size:11px!important;color:#8a8294!important}
+#app.app.oa-mode .oa-roster-empty{padding:45px 16px!important;background:#fff!important;border:1px dashed #d9d1e4!important;border-radius:14px!important}
+
+/* User accounts grouped by role in a responsive multi-column card layout. */
+#app.app.oa-mode .oa-users-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:16px!important;margin:0 0 22px!important}
+#app.app.oa-mode .oa-users-head h1{margin:3px 0!important;font-size:23px!important}
+#app.app.oa-mode .oa-user-role-group{margin:0 0 26px!important}
+#app.app.oa-mode .oa-user-role-heading{display:flex!important;align-items:center!important;gap:9px!important;margin:0 0 10px!important;padding-bottom:8px!important;border-bottom:1px solid #e6e0ed!important}
+#app.app.oa-mode .oa-user-role-heading h3{margin:0!important;font-size:15px!important;color:#3a3345!important}
+#app.app.oa-mode .oa-user-role-heading span{display:grid!important;place-items:center!important;min-width:23px!important;height:23px!important;padding:0 7px!important;border-radius:20px!important;background:#eee8f8!important;color:#70509c!important;font-size:10px!important;font-weight:750!important}
+#app.app.oa-mode .oa-user-grid{display:grid!important;grid-template-columns:repeat(3,minmax(245px,1fr))!important;gap:12px!important;align-items:stretch!important}
+#app.app.oa-mode .oa-user-card{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:6px!important;min-width:0!important;padding:14px!important;background:#fff!important;border:1px solid #e3ddeb!important;border-radius:13px!important;box-shadow:0 3px 12px rgba(36,20,60,.03)!important}
+#app.app.oa-mode .oa-user-card-top{display:flex!important;align-items:center!important;justify-content:space-between!important;width:100%!important;margin-bottom:2px!important}
+#app.app.oa-mode .oa-user-avatar{display:grid!important;place-items:center!important;width:36px!important;height:36px!important;border-radius:11px!important;background:#f0e9fb!important;color:#7043b6!important;font-size:12px!important;font-weight:850!important}
+#app.app.oa-mode .oa-user-name{font-size:13px!important;color:#302a39!important;line-height:1.25!important}
+#app.app.oa-mode .oa-user-username,#app.app.oa-mode .oa-user-detail{margin:0!important;max-width:100%!important;overflow-wrap:anywhere!important;font-size:11px!important;color:#837b8d!important}
+#app.app.oa-mode .oa-user-card .btn{margin-top:5px!important;min-height:32px!important;padding:7px 11px!important;font-size:11px!important}
+
+/* Keep compact forms and groups visually balanced on wide displays. */
+#app.app.oa-mode .oa-roster-builder{width:100%!important;max-width:none!important}
+#app.app.oa-mode .oa-field-grid{grid-template-columns:repeat(3,minmax(190px,260px))!important;justify-content:start!important}
+#app.app.oa-mode .oa-groups-workspace{grid-template-columns:230px minmax(0,1fr)!important}
+#app.app.oa-mode .oa-groups-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+#app.app.oa-mode .oa-group-member-row button,#app.app.oa-mode .oa-group-card button{cursor:pointer!important}
+@media(max-width:1350px){#app.app.oa-mode .oa-user-grid{grid-template-columns:repeat(2,minmax(240px,1fr))!important}}
+@media(max-width:1180px){#app.app.oa-mode .oa-workspace{grid-template-columns:210px minmax(0,1fr)!important}#app.app.oa-mode .oa-sidebar{width:210px!important}#app.app.oa-mode .oa-main{padding-left:22px!important;padding-right:22px!important}#app.app.oa-mode .oa-department-title{font-size:19px!important}}
+</style>
+
+
+<style id="oa-roster-workflow-v8">
+#app.app.oa-mode .oa-workflow-note{margin:10px 0 0;padding:9px 12px;border:1px solid #e4deeb;border-radius:9px;background:#faf9fc;color:#71697d;font-size:12px;line-height:1.4}
+#app.app.oa-mode .oa-actions{display:flex;flex-wrap:wrap;align-items:center;gap:9px}
+#app.app.oa-mode .oa-actions .btn{min-width:140px}
+#app.app.oa-mode #oaRosterPreview{scroll-margin-top:18px}
+#app.app.oa-mode .oa-preview{width:100%;max-width:none;box-sizing:border-box}
+#app.app.oa-mode .oa-preview .oa-duty-preview{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse}
+#app.app.oa-mode .oa-preview .oa-duty-preview th,#app.app.oa-mode .oa-preview .oa-duty-preview td{padding:4px 3px;overflow-wrap:anywhere}
+@media print{
+ @page{size:A4 portrait;margin:8mm}
+ body:has(#app.app.oa-mode){background:#fff!important}
+ #app.app.oa-mode .oa-top,#app.app.oa-mode .oa-sidebar,.oa-toolbar,.oa-actions,.oa-page-heading{display:none!important}
+}
+</style>
+
 </body>
 </html>
+
 
