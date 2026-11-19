@@ -11074,8 +11074,9 @@ function snapView(){
   } else if(tab==="mse"){
     body=r16MsePage(p);
   } else if(tab==="results"){
-    body=`${wsResultsVitalsHtml(p)}
-    ${wsResultsReportsHtml(p)}`;
+    body=document.documentElement.classList.contains("ws-resident-tablet")
+      ? `${wsResultsVitalsHtml(p)}${wsResultsReportsHtml(p)}`
+      : `${vitalsCardHtml(p,false)}${labsCardHtml(p)}`;
   } else {
     body=`${scAlertHtml(p)}${scalesCardHtml(p,false)}`;
   }
