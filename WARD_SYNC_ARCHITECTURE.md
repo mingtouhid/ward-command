@@ -1,6 +1,6 @@
 # Ward Sync architecture
 
-This note describes the system as it exists in commit `381a4c412764677d217ca19d8c54a69cb9b4f929` (`fix(ect): record completed sessions to backend, advance schedule, match home card button styling with Ward Sync UI`, 2026-11-09). It is for a later implementer. It follows the code, SQL, and edge function in this tree. Where a file header and the client disagree, both are stated. Production apply status is not recorded here.
+This note describes the repository at GitHub main, commit `566a8d514c1ea3d0d0798b4db7535280f52a858f` (19 November 2026). It follows the current client, SQL files and included Edge Function source. It distinguishes checked-in source from production database/deployment state: a file or RPC call in the client does not prove that a migration has been applied.
 
 The app is an internal psychiatry ward duty board. Staff sign in, see occupied beds, and record admissions, observations, medicines, notes, MSE, vitals, rating scales, labs, ECT, handovers, tasks, and discharge. Bed-distribution (BDFT) assigns tomorrow's occupied beds across resident batches.
 
@@ -21,86 +21,88 @@ The client talks to Supabase with the JS client from `cdn.jsdelivr.net` (`@supab
 
 A publishable project URL and key ship inside `seed()` as `DEFAULT_SB_URL` and `DEFAULT_SB_KEY`. Admins can replace them on the Connection screen (`saveSb()`). Those values are credentials. They are not copied into this document.
 
-`privacy.html` (updated 19 October 2026) says the product is an internal staff tool, records stay in the ward database and the ward Drive, and the archive app can see only files it creates.
+`privacy.html` (updated 19 November 2026) describes the clinical, staff-account, roster and ward-configuration data handled by the app, including the separation between clinical and Office Administration workspaces.
 
 ## Frontend structure
 
-Almost all application code is `index.html` (about 1.58 MB at this commit). It is one document: CSS, then one script. There is no bundler step in `vercel.json` (`buildCommand` is null, `outputDirectory` is `.`).
+Almost all application code is in `index.html` (about 1.93 MB in the 19 November 2026 repository snapshot). It is one static HTML document containing markup, styles and client-side JavaScript. There is no frontend bundler or package-manager build step; `vercel.json` serves the repository root directly.
 
-`APP_VERSION` in the script is `R1.8`. The visible More page prints `Build ${APP_VERSION}`. Older release comments remain in the CSS and script (`R1.3.124` in the document head, many `R1.3.*` and `R1.5`/`R1.6`/`R1.7` markers). Treat those comments as history inside the file. Behaviour at this commit is what the functions do now.
+The HTML client reports `APP_VERSION = "R2.0.7"`. The inlined BDFT engine reports `BDFT_APP_VERSION = "7.0"`. Feature comments inside the file include later markers such as R2.0.10, R2.0.11, R2.0.14 and R2.0.15; these comments do not change the value printed by `APP_VERSION`.
 
-Other frontend files:
+The application has separate role surfaces:
+- The standard clinical shell is used by residents, admins and consultants with role-specific capabilities.
+- Interns use a reduced intern shell and a restricted RPC allow-list.
+- `office_admin` uses the isolated Office Administration workspace, not the clinical patient shell.
 
-- `sw.js` — cache name `ward-sync-pwa-r1.8`, separate OCR cache `ocr-assets-v7`, push display, fetch strategy.
-- `manifest.json` — PWA name "Ward Sync", portrait standalone. Its `version` field is still `1.3.20` / `R1.3.20 icons`. That string is older than `APP_VERSION`.
-- `ocr/` — Tesseract assets and `ocr/ward-ocr.js`. The scanner is a pilot: `labOcrOn()` is true only when `localStorage` `ws_ocr_pilot` is `1` (also toggled by `?ocr=1` / `?ocr=0`) and `WebAssembly` and `caches` exist.
-- Icons at the repo root and under `icons/` (including notification badge art).
-- `.github/workflows/assemble-index.yml` can rebuild `index.html` from `_b64/part*.b64`. This commit has no `_b64/` directory. The workflow is manual or path-triggered and is not how the current `index.html` was produced.
+Other frontend/runtime files:
+- `sw.js` — service worker cache `ward-sync-pwa-r2.0.0-3`; separate OCR cache `ocr-assets-v7`; install/activate, precache, offline/network strategy, push display and notification routing.
+- `manifest.json` — standalone Ward Sync PWA metadata. Icon declarations use the canonical `icons/` folder and distinct regular/maskable 192px and 512px assets. Custom metadata values `1.3.20` and `R1.3.20 icons` remain legacy values, not the HTML app label.
+- `icons/` — current install, favicon, Apple touch, notification and badge assets. Root-level icon PNGs remain as legacy paths and are still precached for compatibility.
+- `ocr/` — Tesseract assets and `ocr/ward-ocr.js`. The scanner pilot is controlled by local storage key `ws_ocr_pilot` and requires WebAssembly and Cache API support.
+- `.github/workflows/assemble-index.yml` — legacy/manual assembler for `_b64/part*.b64`. There is no `_b64/` directory in the current tree; manual index uploads are not performed by this workflow.
 
-Rendering is a full HTML string swapped into `#app` by `render()`. `go(page, id)` pushes a tab stack and `history.pushState`. `pages` maps route names to view functions (`homeView`, `patientsView`, `snapView`, `bdftView`, and so on). Interns replace that map: see Auth and roles.
-
-Local state object `S` is JSON in `localStorage` under `ward-command-html-v2-v8748-fresh`. It holds the ward the device last pulled or edited: unit, sections, beds, patients, assignments, snapshots, orders, doses, tasks, handovers, ECT, events, and similar lists. A fresh key copies only identity and preference fields from the previous key (`FRESH_CARRY`). It does not copy patient rows or the old outbox.
-
-`seed()` supplies a demo ward when that key is empty. Live sign-in replaces it from `ward_read_ward_state`. Do not treat the seed roster or seed patients as production data.
+Rendering remains a full HTML render into `#app`; hash routes are handled in the client. Application state is persisted in local storage and synchronised with Supabase through RPCs and the ward session token. Seeded demo data is fallback/demo content, not the production roster.
 
 ## Navigation and routes
 
-Staff who can write, and consultants, use `shell()`: Home, Patients, Handovers, More.
+Residents, admins and consultants use the standard clinical shell: Home, Patients, Handovers and More. Exact pages and actions depend on role.
 
-Hash pages and the tab they belong to (`PAGE_TAB`):
+The principal route groups are:
+- **Home:** ward overview, duty status, clinical flags and BDFT status.
+- **Patients:** patient list, snapshot, medication chart, notes, MSE, results, scales, vitals and discharge workflows.
+- **Handovers:** shift handovers.
+- **More:** census/admission-discharge register, observation, ECT, tasks, activity, broadcast, consultant advice, BDFT, profile, ward setup, user management, settings, connection and about.
 
-| Page | Tab | Role |
-| --- | --- | --- |
-| `home` | Home | Today board, duty, BDFT card, attention tiles |
-| `patients`, `snap`, `record`, `pedit`, `dcert`, `dedit`, `vchart`, `scale`, `srate` | Patients | List, patient page, history, edits, certificate, vitals chart, scales |
-| `handover` | Handovers | Shift handovers |
-| `more` and the pages below | More | Hub |
-| `census` | More | Admit / discharge register |
-| `observe` | More | Under observation |
-| `ect` | More | ECT list and schedule |
-| `tasks` | More | Shared task board |
-| `activity` | More | Activity log |
-| `broadcast` | More | Shift broadcast |
-| `myorders` | More | Consultant advice the consultant issued |
-| `bdft` | More | Bed distribution |
-| `profile` | More | Signed-in resident or admin: own username, display name, phone, BDFT short name, owned beds. No one else's row |
-| `ward`, `users` | More | Admin ward setup and users |
-| `setup` | More | Theme, density, accent, notifications |
-| `connection` | More | Sync status; admin project keys |
-| `about` | More | About |
+Interns do not use the standard shell. Their reduced shell exposes Home, Vitals (`ivitals`) and Reports (`ireports`), with its own page map and RPC allow-list.
 
-Patient page tabs (`R151_TABS`): summary, meds, notes, mse, results, scales.
+Office Admin does not enter the clinical shell. After an `office_admin` login, the isolated workspace has four primary areas: roster management, saved PGT groups, user management and ward setup. It has a horizontal desktop/landscape layout with its own sidebar and scrollable content area.
 
-Interns do not get that shell. `internShell` / `internNavHtml` are Home, Vitals (`ivitals`), Reports (`ireports`). Their `pages` map keeps `home` (`internHomeView`), `snap` (`internSnapView`), `ivitals`, `ireports`, and `ireport`.
+Published duty rosters are also available in a separate read-only staff roster library. The client calls `ward_list_published_rosters`; PGT monthly and Faculty weekly schedules are listed separately and opened in read-only detail views.
 
 ## Auth and roles
 
-Sign-in is `cloudLogin()` → `ward_login(p_username, p_password)`. The returned token is `sessionTok`, stored as `wc_tok` in both `sessionStorage` and `localStorage`. `ward_session_user` (described in the phone migration) joins `ward_sessions` to `residents`. Session-dead errors match "not signed in" / "invalid or expired" / "no active ward session" and call `expireSession()`.
+Clinical sign-in is `cloudLogin()` → `ward_login(p_username, p_password)`. The returned session token is held as `sessionTok` and stored as `wc_tok` in session and local storage. Session validation uses `ward_session_user`. The ward session token is the authority inside the RPCs; it is not a Supabase Auth user JWT.
 
-`normRole()`:
-
+`normRole()` recognises:
 - `admin` and legacy `SR` → `admin`
 - `consultant` / `Consultant` → `consultant`
 - `intern` / `Intern` → `intern`
-- anything else, including `JR` → `resident`
+- `office_admin` / `officeAdmin` → `office_admin`
+- Other ordinary resident roles → `resident`
 
-`canWrite()` is true for admin and resident. Consultants are view-only (`needWrite()` toasts). Interns are also not `canWrite()`, and a second guard limits their RPCs.
+The session login role is authoritative for intern and Office Admin routing. `canWrite()` excludes consultants, interns and Office Admin; the normal clinical write surface is for residents and admins. Office Admin is not a clinical user role and cannot use the normal patient workflow through its isolated workspace. The Office Admin ward-setup UI explicitly states that patient identity and occupancy are not available there. Client checks are not a substitute for server-side RPC/RLS enforcement.
 
-`INTERN_RPCS` is the only set `internGuardRpc` will send while an intern is signed in: `ward_login`, `ward_intern_read_state`, `ward_intern_save_lab_report`, `ward_save_vitals`, `ward_intern_save_scale`, `ward_complete_intern_task`, `ward_undo_intern_task`, `ward_link_intern_report_task`. The client comment says the server keeps intern tokens in `ward_intern_sessions`, which other `ward_*` functions do not accept. Interns do not subscribe to realtime (`cloudListen` returns immediately).
+Interns retain their reduced shell even when the read-state response omits a full resident profile. Their client RPC allow-list is `INTERN_RPCS`: `ward_login`, `ward_intern_read_state`, `ward_intern_save_lab_report`, `ward_save_vitals`, `ward_intern_save_scale`, `ward_complete_intern_task`, `ward_undo_intern_task`, and `ward_link_intern_report_task`. The client comment describes a corresponding server-side intern-session boundary. Interns do not subscribe to realtime.
 
-Other capability checks: `canAdmin()` for ward setup, users, and project keys; `canBroadcast()` for any signed-in user; `canAccessBdft()` for admin or a writing non-intern non-consultant (residents); `canDeleteRecords()` for resident or admin; monthly spreadsheet export for admin or consultant (`exportMonthly`).
+Other capability checks include `canAdmin()` for clinical admin-only controls, `canBroadcast()` for signed-in broadcast access, `canAccessBdft()` for BDFT, and `canDeleteRecords()` for eligible clinical roles. Duty sign-in remains separate from account login. Shifts use IST: morning 08:00–14:00, evening 14:00–22:00, night 22:00–08:00.
 
-Duty sign-in is separate from login: `ward_sign_duty`, `ward_set_duty_area`, `ward_end_duty`. Shifts in the client are morning 08:00–14:00, evening 14:00–22:00, night 22:00–08:00 (`currentShift`). Several server helpers use IST (UTC+5:30) explicitly (`istShift`, `r17IstDay`, BDFT date labels).
+The clinical user-management surface supports residents, consultants, interns and Office Admin accounts. The Office Admin user form offers resident, consultant, intern and office_admin roles; it does not offer creation of a top-level admin account.
 
-Phone numbers (R1.3.136) are not columns on `residents`, because `ward_session_user` returns that row. They live in `resident_phones` / `resident_phone_audit`. The client keeps them out of `S`, UI snapshots, the outbox, and the error log. RPCs: `ward_set_resident_phone`, `ward_get_my_phone`, `ward_phone_status` (admin, presence only), `ward_list_duty_phones` (consultant, numbers of residents with an open duty sign-in in the last 20 hours). The migration header still says "NOT APPLIED". The client treats a missing RPC as "feature not available".
+Phone numbers, profile photos and self-profile data use their dedicated RPCs and tables/keys as described in the data-model section. Do not add personal phone numbers or photos to broad ward-state payloads or logs.
 
-User administration (admin): `ward_invite_user`, `ward_update_user`, `ward_set_user_designation`, `ward_set_role`, `ward_deactivate_user`.
+## Office Administration and published rosters
 
-My profile (`profileView`, More) is the signed-in resident's or admin's own page. Phone still uses `ward_get_my_phone` and `ward_set_resident_phone` (the number is returned only to that session). BDFT short name and owned beds still use `ward_bdft_save_setup` (resident self-edit from `r18_1`). Username and display name use `ward_update_my_profile` in `migrations/r18_2_update_my_profile.sql`, which updates only the session's own `residents` row and rejects a duplicate username. That migration is not applied here. If the RPC is missing, the page keeps the previous name and still saves phone and BDFT. There is no password field. A profile photo, for the signed-in admin or resident only, is a 256×256 JPEG data URL in `ward_resident_photos` (`migrations/r18_5_profile_photo.sql`, not applied). RLS is forced and there are no policies. `ward_get_my_photo`, `ward_set_my_photo`, and `ward_clear_my_photo` touch only the session's own row. The browser keeps one copy in `localStorage` under `ws_my_photo_<id>` and overwrites that key. A save replaces the server row. Clear deletes the row and the key. There is no photo history and no Storage object. It is shown on My profile and in the shell header avatar.
+The Office Admin frontend is embedded in `index.html`, but it is a separate workspace. An `office_admin` session sets the role explicitly and enters the `OA` controller rather than the ordinary patient-care page map. The client excludes this role from `canWrite()`, the clinical resident directory and BDFT people lists. The workspace is designed as a desktop/landscape workbench (minimum layout width 1160px) with its own sidebar and independently scrollable main area.
 
-R1.9 adds `migrations/r19_0_monitoring_directory_ect.sql` (not applied). `ward_save_se_log` and `ward_list_se_logs` store one Lithium or Clozapine side-effect row per patient per day and do not overwrite it. `ward_list_pgts` returns active residents' names, phone numbers and photos to a signed-in session only. The ECT unique index is one session per patient per IST day. `ward_bdft_save_distribution` keeps the same arguments; a repeat finalise for the same date rewrites that plan's lines and leaves archived plans in place. If an RPC is missing, the screen keeps the local copy and does not pretend the server saved it. Discharge drafts stay in `localStorage` under `ws_dis_draft_<patient id>` and do not change the admission.
+### Roster management
 
-New residents can also get a BDFT batch, short name, and owned beds (`bdftSaveNewResidentSetup`). BDFT is not a block inside the users editor; it is the More tile and the settings screen. Consultants are managed with `ward_upsert_consultant`, `ward_list_faculty`, `ward_set_patient_consultant`.
+Two roster types are exposed:
+- `pgt_monthly` — monthly PGT duty roster, including the night-duty column (10 PM to 8 AM) in the default template.
+- `faculty_weekly` — weekly Faculty / VP / Resident Physician-GDMO roster.
+
+The roster builder stores editable structured content: dates, columns, rows, group assignments and notes. It can generate dates from the selected period, add/remove rows and columns, show an on-page preview and export an editable Word `.docx`. PGT rosters can select a saved group set; group membership and short abbreviations are copied into that month's roster. Group editing includes resident-name suggestions and reusable saved sets.
+
+The client lifecycle is draft → review/ready for publication → published. Office Admin has explicit save-draft, mark-ready and finalise-publish actions. A published roster can be restored as a new draft. Published rosters are shown to staff through `ward_list_published_rosters` and the read-only resident roster library; roster cards distinguish active, scheduled and archived periods.
+
+### User management and ward setup
+
+The Office Admin user page groups accounts by role and supports create/edit/deactivate flows for roles exposed by its form. Ward setup manages unit settings, sections, beds and consultant directory entries. The interface presents this as configuration work and does not expose patient identity or bed occupancy.
+
+### Client loading and backend contract
+
+The OA client uses short-lived in-memory caches: roster list about 20 seconds; saved groups and user list about 60 seconds; ward setup about 30 seconds. Mutating RPCs invalidate those caches. The frontend references an `office_admin_*` RPC family for session, roster lifecycle, groups, accounts, phone and ward-configuration operations. The published read-only library calls `ward_list_published_rosters`.
+
+No matching Office Admin SQL migration is present in the checked-in `migrations/` directory in this repository snapshot. The live Supabase database may have been configured outside this repository. Confirm its actual schema and export the authoritative migration/rollback before relying on or modifying these RPCs. The repository alone cannot prove production apply status.
 
 ## Sync, outbox, and realtime
 
@@ -254,7 +256,7 @@ Local keys: `bdft_configuration_v1`, `bdft_working_snapshot_v7`, `bdft_archives_
 
 ### Home card
 
-`bdftHomeCard` is on the Today column for residents and admins. Interns and consultants get nothing. It is a compact card: a date line and a small **Full BDFT** button. `bdftDateLabel` compares the distribution date to today in IST and prints today's beds, tomorrow's beds, or a dated fallback. When the signed-in resident matches a holder, occupied and empty beds render as small bed-number chips in a horizontal grid. A chip opens that patient (`bdftTapBedPatient` → `go('snap', id)`) or toasts that the bed is vacant. A holder with no beds shows a happy-day line. If the distribution cannot be matched to the user, the card shows only the date line and a count.
+`bdftHomeCard` is shown to eligible residents and admins; interns and consultants get nothing. The Home summary checks the active ward-wide distribution for today or tomorrow, rather than relying only on the signed-in resident's personal assignment. The Make BDFT prompt is suppressed when such a distribution already exists. Bed numbers are shown as tappable chips rather than repeated in a summary sentence. A resident with no personally assigned beds can still open the complete read-only distribution.
 
 Read-only mode hides the page title, shows the board, and offers **Export PNG** (`bdftExportPng`), which uses `html2canvas` (loaded from jsDelivr) on `#distribution-card`. The card subtitle is the hardcoded line "Department of Psychiatry, AMCH".
 
@@ -276,7 +278,7 @@ Clinical events go through `notifyServerEvent` → `ward_create_notification_eve
 - Provider env names, not values: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `FIREBASE_SERVICE_ACCOUNT_JSON` or `FCM_SERVER_KEY`, and `SUPABASE_URL` plus `SUPABASE_SECRET_KEYS`. If push is configured but the database role is missing, the function returns `dispatch: deferred`.
 - `ward_bdft_tick` is what pg_cron job `ward-bdft-dispatch` runs every two minutes. It reads the Vault secret inside the database and posts it as the header. See `supabase/functions/dispatch-bdft/SCHEDULE.md`. This repo does not apply that migration.
 
-The service worker `push` handler shows the notification (high priority vibrates longer). `notificationclick` focuses an open window and posts `{type:"ward-notif"}`, or opens the absolute `data.url` when no window exists. The page keeps one pending destination in `sessionStorage` (`ws_notif_nav`) and applies it with `go()` after the session and ward list are ready. The destination comes from the stored URL and ids, not from the title. A legacy payload with no route opens the notification list.
+The service worker `push` handler shows the notification (high priority vibrates longer). `notificationclick` focuses an open window and posts `{type:"ward-notif"}`, or opens the absolute `data.url` when no window exists. The page keeps one pending destination in `sessionStorage` (`ws_notif_nav`) and applies it with `go()` after the session and ward list are ready. The destination comes from the stored URL and ids, not from the title. BDFT notification payloads are normalised to the BDFT page with no distribution edit id; the page clears any previous edit id and explicitly selects read-only mode before navigating. A legacy payload with no route opens the notification list.
 
 The device registers with `ward_register_push_subscription` using the VAPID public key embedded in the page (`VAPID_PUBLIC_KEY`). Preferences: `ward_get_notification_preferences` / `ward_set_notification_preferences`, with a local fallback. The in-app inbox is `ward_list_notification_inbox` (BDFT rows are included for residents and admins by the R1.8 replacement of that function) and `ward_mark_notification_read`.
 
@@ -324,30 +326,44 @@ Assigned beds and Make BDFT sit inside the Bed Distribution card. Opinion stays 
 
 ## Deployment and caching
 
-Vercel serves the repo root as a static site (`vercel.json` version 2). `index.html` and `sw.js` are `Cache-Control: no-cache`. `sw.js` has `Service-Worker-Allowed: /`. OCR `manifest.json` is `no-cache`. OCR `.js` and `.bin` files are `public, max-age=86400` with `nosniff`. Other paths with a file extension are not rewritten. Everything else rewrites to `index.html`.
+Vercel serves the repository root as a static site (`vercel.json` version 2). No build command or output bundling is configured. `index.html` and `sw.js` are `Cache-Control: no-cache`; `sw.js` has `Service-Worker-Allowed: /`. OCR `manifest.json` is `no-cache`; OCR `.js` and `.bin` files have a one-day public cache and `nosniff`. Other extension-less paths rewrite to `index.html`.
 
-The service worker precaches `./`, `index.html`, `manifest.json`, and the main icons. Install uses `skipWaiting`; activate deletes caches other than `ward-sync-pwa-r1.8` and `ocr-assets-v7`, then `clients.claim()`. App-shell GETs are network-first (4 s timeout for navigations, 12 s otherwise) and fall back to the cached `index.html`. Same-origin non-shell GETs are also network-first. Cross-origin GETs that are not Supabase and not `/ocr/` are stale-while-revalidate. `/ocr/` is ignored so the page can fill `ocr-assets-v7` itself. Supabase is ignored so API and realtime stay live.
+The service worker uses:
+- App cache: `ward-sync-pwa-r2.0.0-3`
+- Separate OCR cache: `ocr-assets-v7` (kept during app-cache activation)
 
-`index.html` registers `./sw.js` on load when the protocol is not `file:`.
+The precache contains the app shell, manifest, legacy root icon paths, current `icons/` PWA assets, notification glyph and badge. Install calls `skipWaiting`; activate deletes older app caches while preserving the current app cache and OCR cache, then calls `clients.claim()`. Same-origin app-shell requests use network-first with a 4-second navigation timeout and a 12-second resource timeout, falling back to cached `index.html`. Same-origin non-shell GETs are network-first. Cross-origin GETs are stale-while-revalidate, except Supabase and `/ocr/`, which are not intercepted for caching.
 
-GitHub `main` is the branch this commit is on. Nothing in the repo auto-deploys from a workflow besides the unused assemble-index path. Hosting is whatever Vercel project is connected to the GitHub repo. This document does not change or trigger a deploy.
+The manifest points to `icons/icon-192.png` and `icons/icon-512.png` for regular installation icons, with separate `icons/icon-192-maskable.png` and `icons/icon-512-maskable.png` entries for maskable display. The HTML head links to the `icons/` favicons and Apple touch icons. Root-level PNGs are old compatibility paths, not the current manifest icon source.
 
-Version strings to bump together when shipping a client change: `APP_VERSION` (`R2.0.0`), `sw.js` `VERSION` (`ward-sync-pwa-r2.0.0`), and, if the manifest should match, `manifest.json` `version` (still `1.3.20`). OCR cache name changes only when OCR bytes change. The service worker activate step deletes caches other than the current `VERSION` and `ocr-assets-v7`.
+Version values in the current source snapshot are not aligned and must be read separately:
+- `APP_VERSION`: `R2.0.7` (HTML client label).
+- `BDFT_APP_VERSION`: `7.0` (BDFT engine).
+- `sw.js` `VERSION`: `ward-sync-pwa-r2.0.0-3` (cache invalidation key).
+- `manifest.json` custom `version` / `build`: `1.3.20` / `R1.3.20 icons` (legacy metadata).
+
+Do not infer that a cache suffix or CSS comment is an app release number. When shipping, intentionally choose and record the client label and service-worker cache version. OCR cache changes only when OCR asset bytes change.
 
 ## Related documents
 
-- `README.md` — one-line description.
-- `RELEASE-NOTES-R1.3.130.md` through `RELEASE-NOTES-R1.3.136.md`, `RELEASE-NOTES-R1.7.md`, `RELEASE-NOTES-R1.8.md` — historical release notes. They stop at R1.8 and do not describe the later BDFT client integration or the ECT completion RPC path in `381a4c4`.
-- `docs/superpowers/specs/2026-11-07-ward-sync-r17-design.md` and `docs/superpowers/plans/2026-11-07-ward-sync-r17.md` — R1.7 design. The SQL file matches that work; the client has since grown around it.
-- `docs/superpowers/specs/2026-11-07-ward-sync-r18-bdft-design.md` and `docs/superpowers/plans/2026-11-07-ward-sync-r18-bdft.md` — original server-computed BDFT. Read them as the R1.8 design, then read the BDFT section above for what the client does now.
-- `supabase/functions/dispatch-bdft/SCHEDULE.md` — cron and Vault header.
-- `CHANGELOG.md` — notes from 2026-11-10 onward. Older history stays in the release-note files.
+- `README.md` — project entry point and deployment overview.
+- `structure.md` — repository/file map and maintainer checklist.
+- `CHANGELOG.md` — dated changes from 2026-11-10 onward.
+- `privacy.html` — staff-facing privacy notice.
+- `RELEASE-NOTES-R1.3.130.md` through `RELEASE-NOTES-R1.3.136.md`, `RELEASE-NOTES-R1.7.md`, `RELEASE-NOTES-R1.8.md` — historical release notes.
+- `docs/superpowers/specs/2026-11-07-ward-sync-r17-design.md` and `docs/superpowers/plans/2026-11-07-ward-sync-r17.md` — R1.7 design and implementation plan.
+- `docs/superpowers/specs/2026-11-07-ward-sync-r18-bdft-design.md` and `docs/superpowers/plans/2026-11-07-ward-sync-r18-bdft.md` — original R1.8 BDFT design and plan.
+- `supabase/functions/dispatch-bdft/SCHEDULE.md` — BDFT cron and Vault header.
+- `.github/workflows/keepalive.yml` — scheduled keep-alive call.
 
 ## Gaps worth knowing
 
-- `monthly-archive` and `dispatch-notification` are invoked and have no source in this repo.
-- Many SQL headers still say the migration was not applied. The client assumes the RPCs exist and shows a local-only or pending-sync path when they do not. This tree cannot tell you which of those files have been run on the project.
-- The live BDFT publisher is the browser engine plus `ward_bdft_save_distribution`. The evening-duty and "server rebuilds the board" checks live on `ward_bdft_generate`, which the page does not call.
-- `ward_bdft_save_distribution` allows every resident session, while the terminal button is shown to admins and evening-duty residents.
-- Realtime does not include BDFT, MSE, labs, scales, vitals, or intern task tables. Those refresh on the next pull or on an explicit reload.
-- `manifest.json` version and the HTML release comment at the top of `index.html` lag `APP_VERSION`.
+- The frontend calls the `office_admin_*` RPC family and `ward_list_published_rosters`, but no matching Office Admin SQL migration is present in the checked-in `migrations/` directory. The live Supabase project may contain manual changes. Export and version the authoritative schema/RPC migration and rollback; do not infer production state from the frontend.
+- `monthly-archive` and `dispatch-notification` are invoked by the client and have no source in this repository.
+- The checked-in migration files do not provide a reliable production apply ledger. Some migration headers describe old not-applied states. Verify the target database before applying or reapplying a migration.
+- The live BDFT publisher remains the browser engine plus `ward_bdft_save_distribution`. The server-side `ward_bdft_generate` path is separate and is not the client generation path.
+- `ward_bdft_save_distribution` server-side role enforcement must be checked independently of client button visibility. Client-side access checks are not a security boundary.
+- Realtime does not include every clinical subsystem; BDFT, MSE, labs, scales, vitals and intern task data may refresh on the next pull or explicit reload rather than immediately through a table subscription.
+- Version identifiers are currently out of alignment: HTML `APP_VERSION` is `R2.0.7`, the service-worker cache is `ward-sync-pwa-r2.0.0-3`, and custom manifest metadata remains `1.3.20` / `R1.3.20 icons`. The top-of-file HTML release comment is historical. Coordinate a deliberate version clean-up rather than changing these values implicitly.
+- `.github/workflows/assemble-index.yml` expects `_b64/part*.b64`, but that directory is not in the current tree. The committed `index.html` is the current frontend source; the assembler is not the current index production path.
+

@@ -35,6 +35,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No change"
           else
-            git commit -m "v87.4.56 durable outbox + ward_admit_patient (assemble index.html)"
+            git commit -m "Assemble Ward Sync index.html from source parts"
             git push
           fi

@@ -2,6 +2,40 @@
 
 All notable changes from 2026-11-10 onward are recorded here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates are Asia/Calcutta. Older product history stays in `RELEASE-NOTES-*.md` and is not copied here.
 
+## 2026-11-19
+
+### Changed
+
+- The Home BDFT card now treats the active ward-wide distribution for today or tomorrow as the source of truth, rather than relying only on the signed-in resident's personal assignment. The Make BDFT prompt is hidden once an active distribution exists. Bed numbers are shown in bed chips instead of being repeated in a summary line, and the complete distribution remains available in read-only view.
+- BDFT push-notification taps are normalised to the published BDFT page. The notification route clears the distribution edit id and explicitly sets read-only mode, preventing a tap from opening the generation/edit terminal.
+- PWA icon declarations now point to the canonical `icons/` directory and use separate regular and maskable 192px/512px assets. The service worker cache is `ward-sync-pwa-r2.0.0-3`; its precache includes the refreshed app icons, Apple touch icon, favicon, notification glyph and badge while retaining legacy root icon paths for compatibility.
+
+### Documentation and maintenance
+
+- Repository documentation is being brought into alignment with the current source. The HTML client label is `R2.0.7`, the inlined BDFT engine is `7.0`, and the current service-worker cache is `ward-sync-pwa-r2.0.0-3`; these values are separate version identifiers, not interchangeable release numbers.
+
+## 2026-11-18
+
+### Added
+
+- Added the isolated `office_admin` workspace with PGT monthly and Faculty/VP/Resident Physician-GDMO weekly roster management, reusable PGT group sets, user management, and ward setup for unit settings, sections, beds and consultants.
+- Added roster-builder functions for editable date ranges, adjustable columns and rows, notes, on-page preview and editable Word (`.docx`) export. PGT group configurations can be saved and reused; roster copies retain the month's selected group members and abbreviations.
+- Added a published-roster library for staff. PGT monthly and Faculty weekly rosters are presented separately in a read-only view, with current, scheduled and archived status labels.
+
+### Changed
+
+- Office Admin uses an isolated desktop/landscape workbench with its own navigation and scrollable content area; it does not use the clinical mobile shell. The ward setup UI is configuration-only and states that patient identity and occupancy are not available in this workspace.
+- Office Admin roster, saved-group, user and ward-setup reads use short-lived in-memory caches to reduce repeated RPC requests.
+- The resident morning on-duty board groups sign-ins into OPD and IPD sections, displays resident photos with names/roles in a compact two-column layout, and collapses to one column on very narrow screens.
+- Added a compact quick-action strip above the existing bottom navigation without replacing the primary navigation.
+
+## 2026-11-17
+
+### Fixed
+
+- Intern role detection remains authoritative for the active session when the reduced intern read-state omits the full resident profile. This keeps interns in the reduced intern workspace instead of falling back to the standard patient shell.
+- Intern navigation is pinned to the bottom of the screen and keeps all three navigation labels visible on phone layouts.
+
 ## 2026-11-16
 
 ### Changed
@@ -12,7 +46,7 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 ### Fixed
 
-- Client version stays `R2.0.0`. Service worker cache is `ward-sync-pwa-r2.0.0-1` so installed phones pick up this layout pass. The bottom bar stays at the bottom of the screen on every phone and tablet-portrait page, including short ones, and the last card can scroll clear of it. In the day theme the bell is a light circle with a dark icon and the red count stays visible. The greeting is 18px so "Good evening, Dr Touhid" fits beside a photo and a badge at 360px and wider.
+- Client version stays `R2.0.0`. Service worker cache `ward-sync-pwa-r2.0.0-1` so installed phones pick up this layout pass. The bottom bar stays at the bottom of the screen on every phone and tablet-portrait page, including short ones, and the last card can scroll clear of it. In the day theme the bell is a light circle with a dark icon and the red count stays visible. The greeting is 18px so "Good evening, Dr Touhid" fits beside a photo and a badge at 360px and wider.
 
 ### Changed
 
@@ -49,7 +83,7 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 - Client version `R1.8.4`. The avatar header is 10% shorter, the sync chip sits above the bell, and admins and residents see that header on every page. The chip keeps a fixed width so a sync update does not move the avatar, name, or bell.
 - Patients Mine for a resident is the beds currently assigned to them on the BDFT distribution, the same list as the Home beds card. Beds redistributed to them are included. Owned beds given to someone else are not. With no current assignment, the Home card stays blank and Mine shows no patients.
 - Client version `R1.8.5`. Admins and residents can set, crop, and remove their own profile photo from My profile. The 256×256 JPEG replaces the single `ward_resident_photos` row (`migrations/r18_5_profile_photo.sql`, not applied) and the single `ws_my_photo_<id>` key. It is shown on My profile and in the header. Clear deletes that row. No photo history and no Storage.
-- Residents no longer have a BDFT tile on More. That slot is My profile (username, display name, own phone from `ward_get_my_phone`, BDFT short name, owned beds, photo placeholder). Edit is self-only. The My phone tile is removed. If `ward_update_my_profile` is missing, phone and BDFT still save.
+- Residents no longer have a BDFT tile on More. That slot is My profile (username, display name, own phone, BDFT short name, owned beds, photo placeholder). Edit is self-only. The My phone tile is removed. If `ward_update_my_profile` is missing, phone and BDFT still save.
 - Evening-duty residents see a Make BDFT card at the top of Home. It opens the existing generation terminal. Admins keep the BDFT tile and gain a BDFT settings tile that opens setup directly.
 - BDFT distribution chips use the accent for owned beds and a separate colour for redistributed beds. The home card button is See BDFT.
 
