@@ -10583,14 +10583,23 @@ function homeView(){
   const sh=currentShift(),d=new Date(),W=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const dateLine=`${W[d.getDay()]}, ${M[d.getMonth()]} ${d.getDate()}`;
   const dateStrong=`${W[d.getDay()]} ${d.getDate()} ${M[d.getMonth()]}`;
+  // Treat the finalized ward-wide distribution as the source of truth for
+  // whether BDFT has already been made. Do not base the prompt on whether
+  // this particular resident has matching personal bed assignments.
+  const activeBdft=bdftGetActiveDistribution();
+  const activeBdftDate=activeBdft&&activeBdft.tiers?activeBdft.dateStr:null;
+  const activeBdftOffset=activeBdftDate?bdftDayOffset(activeBdftDate):null;
+  const hasActiveBdft=!!(activeBdft&&activeBdft.tiers&&
+    Object.keys(activeBdft.tiers||{}).length&&
+    (activeBdftOffset===0||activeBdftOffset===1));
   const info=bdftGetMyAssignedBeds();
-  const offDay=info?bdftDayOffset(info.dateStr):null;
-  const current=offDay===0||offDay===1;
+  const offDay=hasActiveBdft?activeBdftOffset:(info?bdftDayOffset(info.dateStr):null);
+  const current=hasActiveBdft||(offDay===0||offDay===1);
   const bedList=!info||info.isGeneric?[]:(info.beds||[]);
   const bedCodes=bedList.map(b=>typeof b==="string"?b:(b&&(b.code||b.no)||"")).filter(Boolean);
   const bdftPill=current?(offDay===0?"Today":"Tomorrow"):"No BDFT today";
-  const bdftSub=current?(bedCodes.length?bedCodes.join(" · "):("No beds assigned "+(offDay===0?"today":"tomorrow"))):"BDFT status and View complete BDFT when available";
-  const showBdftPrompt=(canWrite()&&!isIntern()&&!isConsultant()&&isEveningDuty());
+  const bdftSub=current?(bedCodes.length?bedCodes.join(" · "):(info&&info.isGeneric?"Bed distribution is ready":"No beds assigned "+(offDay===0?"today":"tomorrow"))):"No bed distribution available";
+  const showBdftPrompt=(canWrite()&&!isIntern()&&!isConsultant()&&isEveningDuty()&&!hasActiveBdft);
   const make="";
   const dutyOn=!!dutyRecord();
   const tile=(n,l,fn,cls)=>`<button type="button" class="r2-tile ${cls||""}${Number(n)>0&&/today-(admitted|discharged)/.test(cls||"")?" has-dot":""}" onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
@@ -10601,7 +10610,7 @@ function homeView(){
     ${consHome?"":`<div class="r2-bdft" role="link" tabindex="0" onclick="bdftOpenReadOnly()">
       <div class="row"><span class="r2-kicker">BED DISTRIBUTION</span><span class="r2-pill ${current?"ok":"warn"}">${esc(bdftPill)}</span></div>
       <p class="r2-sub">${esc(bdftSub)}</p>
-      ${bedCodes.length?`<div class="r2-bedchips">${bedCodes.map(code=>`<button type="button" class="r2-pill" onclick="event.stopPropagation();bdftTapBedPatient('${esc(code)}')">${esc(code)}</button>`).join("")}</div>`:""}
+      ${bedCodes.length?`<div class="r2-bedchips">${bedCodes.map(code=>`<button type="button" class="r2-pill" onclick="event.stopPropagation();bdftTapBedPatient('${esc(code)}')">${esc(code)}</button>`).join("")}</div>`:hasActiveBdft?`<div class="tiny" style="margin-top:5px;font-weight:650;">View complete BDFT →</div>`:""}
     </div>`}
     ${showBdftPrompt&&!consHome?`<section class="card" data-home="make-bdft" style="margin:8px 0 10px;padding:12px 14px;border-left:3px solid var(--teal);">
       <div class="row" style="align-items:center;justify-content:space-between;gap:12px;">
