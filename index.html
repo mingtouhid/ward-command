@@ -26021,7 +26021,8 @@ function dropEmptySections(h){ // R1.3.145: a section header with nothing under 
 }
 function wardSyncApplyResidentTabletMode(){
   try{
-    const resident=!!(S.userId&&typeof roleOf==="function"&&roleOf()==="resident");
+    const activeRole=(S.userId&&typeof roleOf==="function")?roleOf():"";
+    const resident=!!(S.userId&&(activeRole==="resident"||activeRole==="admin")); // Admin accounts also retain the resident workspace.
     const tablet=!!(window.matchMedia&&window.matchMedia("(min-width:760px)").matches);
     document.documentElement.classList.toggle("ws-resident-tablet",resident&&tablet);
   }catch(e){
@@ -26029,7 +26030,7 @@ function wardSyncApplyResidentTabletMode(){
   }
 }
 function wardSyncIsResidentTabletWide(){
-  try{return !!(S.userId&&typeof roleOf==="function"&&roleOf()==="resident"&&window.matchMedia&&window.matchMedia("(min-width:900px) and (orientation:landscape)").matches)}catch(e){return false}
+  try{const activeRole=(S.userId&&typeof roleOf==="function")?roleOf():"";return !!(S.userId&&(activeRole==="resident"||activeRole==="admin")&&window.matchMedia&&window.matchMedia("(min-width:900px) and (orientation:landscape)").matches)}catch(e){return false}
 }
 window.addEventListener("resize",wardSyncApplyResidentTabletMode,{passive:true});
 window.addEventListener("orientationchange",wardSyncApplyResidentTabletMode,{passive:true});
