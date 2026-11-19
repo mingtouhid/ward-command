@@ -4766,6 +4766,14 @@ body:has(.oa-app){-webkit-overflow-scrolling:touch}
 .oa-nav{position:sticky;top:58px}
 .oa-modal.show{overscroll-behavior:contain}
 
+
+#app.app.oa-mode .oa-field-grid{grid-template-columns:repeat(3,minmax(180px,280px))!important;grid-auto-flow:row!important;}
+#app.app.oa-mode .oa-field-grid>.oa-period-start{grid-column:1!important;grid-row:2!important;}
+#app.app.oa-mode .oa-field-grid>.oa-period-end{grid-column:2!important;grid-row:2!important;}
+#app.app.oa-mode .oa-field-grid>.field:nth-child(1){grid-column:1!important;grid-row:1!important;}
+#app.app.oa-mode .oa-field-grid>.field:nth-child(2){grid-column:2!important;grid-row:1!important;}
+#app.app.oa-mode .oa-field-grid>.field:nth-child(3){grid-column:3!important;grid-row:1!important;}
+@media(max-width:700px){#app.app.oa-mode .oa-field-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}#app.app.oa-mode .oa-field-grid>.field:nth-child(1){grid-column:1!important;grid-row:1!important;}#app.app.oa-mode .oa-field-grid>.field:nth-child(2){grid-column:2!important;grid-row:1!important;}#app.app.oa-mode .oa-field-grid>.field:nth-child(3){grid-column:1 / -1!important;grid-row:2!important;}#app.app.oa-mode .oa-field-grid>.oa-period-start{grid-column:1!important;grid-row:3!important;}#app.app.oa-mode .oa-field-grid>.oa-period-end{grid-column:2!important;grid-row:3!important;}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
@@ -8800,7 +8808,7 @@ async function doCloudBoot(){
       S.userId=data.id;S.loginRole="office_admin";
       S.residents=[{id:data.id,username:data.username,displayName:data.display_name,role:"office_admin",active:true}];
       sessionVerified=true;cloudStatus="live";Sync.state="CONNECTED";OA.page="rosters";
-      oaLoad();return true;
+      await oaLoad();return true;
     }
     if(isIntern()){ // R1.3.139
       await flushPending();
@@ -8839,44 +8847,84 @@ async function doCloudBoot(){
 }
 
 /* WARD SYNC — Office Administration isolated frontend */
-const OA={page:"rosters",type:"pgt_monthly",rosters:[],users:[],pgtUsersLoaded:false,groupSets:[],groupSetsLoaded:false,activeGroupSetId:null,groupDraft:null,groupEditingId:null,groupDraftName:"",setup:null,editing:null,loading:false,error:"",notice:"",lastMarkup:"",renderVersion:0,preserveScrollTop:null,scrollReset:false};
-function oaRpc(name,args){if(!sb||!sessionTok)throw new Error("No active Office Administration session");return sb.rpc(name,{p_token:sessionTok,...(args||{})}).then(({data,error})=>{if(error)throw error;return data});}
+const OA={page:"rosters",type:"pgt_monthly",rosters:[],allRosters:[],allRostersAt:0,users:[],usersAt:0,pgtUsersLoaded:false,groupSets:[],groupSetsAt:0,groupSetsLoaded:false,activeGroupSetId:null,groupDraft:null,groupEditingId:null,groupDraftName:"",setup:null,setupAt:0,editing:null,loading:false,error:"",notice:"",lastMarkup:"",renderVersion:0,preserveScrollTop:null,scrollReset:false,_loadPromise:null,_loadKey:"",_loadSeq:0};
+function oaRpc(name,args){if(!sb||!sessionTok)throw new Error("No active Office Administration session");return sb.rpc(name,{p_token:sessionTok,...(args||{})}).then(({data,error})=>{if(error)throw error;return data}).then(data=>{if(/^(office_admin_save_roster_draft|office_admin_submit_roster_for_review|office_admin_publish_roster|office_admin_restore_roster_version|office_admin_save_pgt_group_set|office_admin_delete_pgt_group_set|office_admin_invite_user|office_admin_update_user|office_admin_upsert_|office_admin_set_user_phone)/.test(name)){OA.allRostersAt=0;OA.usersAt=0;OA.groupSetsAt=0;OA.setupAt=0;}return data});}
 function oaEsc(v){return esc(v==null?"":String(v))}
 function oaStatus(s){return ({draft:"Draft",review:"Ready to publish",published:"Published"})[s]||s||"—"}
+function oaRosterLifecycle(r){
+ if(!r||r.status!=="published")return oaStatus(r?.status);
+ const today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
+ if(r.is_current)return "Active now";
+ if(r.period_start&&String(r.period_start).slice(0,10)>today)return "Scheduled";
+ return "Archived";
+}
+function oaRosterLifecycleNote(r){
+ if(!r||r.status!=="published")return "";
+ const today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
+ if(r.is_current)return "· Active roster for residents";
+ if(r.period_start&&String(r.period_start).slice(0,10)>today)return `· Scheduled from ${oaDate(r.period_start)}; current roster remains active until then`;
+ return "· Retained in the resident archive";
+}
 function oaDate(v){if(!v)return "—";try{return new Date(v+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}catch(e){return v}}
-async function oaLoad(){
+async function oaLoad(force=false){
+ const key=OA.page+"|"+(OA.page==="rosters"?"all":"");
+ if(OA._loadPromise&&OA._loadKey===key)return OA._loadPromise;
+ const seq=++OA._loadSeq;
  const currentMain=document.querySelector(".oa-main");
  if(OA.preserveScrollTop===null) OA.preserveScrollTop=OA.scrollReset?0:(currentMain?.scrollTop||0);
- OA.loading=true;OA.error="";render({force:1});
- try{
-  if(OA.page==="rosters"){
-   const d=await oaRpc("office_admin_list_rosters",{p_roster_type:OA.type});OA.rosters=d.rosters||[];
-  } else if(OA.page==="groups"){
-   const [gd,ud]=await Promise.all([oaRpc("office_admin_list_pgt_group_sets",{}),oaRpc("office_admin_list_users",{})]);
-   OA.groupSets=gd.sets||[];OA.groupSetsLoaded=true;
-   OA.users=Array.isArray(ud?.users)?ud.users:[];OA.pgtUsersLoaded=true;
-   if(OA.groupDraft===null){
-    const chosen=OA.groupSets.find(x=>String(x.id)===String(OA.activeGroupSetId))||OA.groupSets[0]||null;
-    OA.groupEditingId=chosen?.id||null;OA.groupDraftName=chosen?.name||"Standard PGT Groups";
-    OA.groupDraft=chosen?JSON.parse(JSON.stringify(chosen.groups||[])):oaDefaultGroups();
-    if(chosen)OA.activeGroupSetId=chosen.id;
+ const now=Date.now();
+ const cacheReady=!force&&(
+  (OA.page==="rosters"&&OA.allRostersAt&&now-OA.allRostersAt<20000)||
+  (OA.page==="groups"&&OA.groupSetsAt&&now-OA.groupSetsAt<60000&&OA.usersAt&&now-OA.usersAt<60000)||
+  (OA.page==="users"&&OA.usersAt&&now-OA.usersAt<60000)||
+  (OA.page==="ward"&&OA.setupAt&&now-OA.setupAt<30000)
+ );
+ OA.loading=!cacheReady;OA.error="";if(!cacheReady)render({force:1});
+ const task=(async()=>{
+  try{
+   if(!sb||!sessionTok){cloudConnect();if(!sb||!sessionTok)throw new Error("Office Administration session is not ready. Please sign in again.");}
+   const fresh=(at,ttl)=>!force&&at&&Date.now()-at<ttl;
+   if(OA.page==="rosters"){
+    // Fetch both roster types in one request. Switching between PGT and Faculty
+    // is then an instant local filter rather than another network round trip.
+    if(!fresh(OA.allRostersAt,20000)){
+     const d=await oaRpc("office_admin_list_rosters",{});
+     if(!d||!Array.isArray(d.rosters))throw new Error("The roster service returned an unexpected response. Use Refresh to retry.");
+     OA.allRosters=d.rosters;
+     OA.allRostersAt=Date.now();
+    }
+    OA.rosters=OA.allRosters.filter(r=>r.roster_type===OA.type);
+   } else if(OA.page==="groups"){
+    const jobs=[];
+    if(!fresh(OA.groupSetsAt,60000))jobs.push(oaRpc("office_admin_list_pgt_group_sets",{}).then(d=>{OA.groupSets=Array.isArray(d?.sets)?d.sets:[];OA.groupSetsLoaded=true;OA.groupSetsAt=Date.now()}));
+    if(!fresh(OA.usersAt,60000))jobs.push(oaRpc("office_admin_list_users",{}).then(d=>{OA.users=Array.isArray(d?.users)?d.users:[];OA.pgtUsersLoaded=true;OA.usersAt=Date.now()}));
+    await Promise.all(jobs);
+    if(OA.groupDraft===null){
+     const chosen=OA.groupSets.find(x=>String(x.id)===String(OA.activeGroupSetId))||OA.groupSets[0]||null;
+     OA.groupEditingId=chosen?.id||null;OA.groupDraftName=chosen?.name||"Standard PGT Groups";
+     OA.groupDraft=chosen?JSON.parse(JSON.stringify(chosen.groups||[])):oaDefaultGroups();
+     if(chosen)OA.activeGroupSetId=chosen.id;
+    }
+   } else if(OA.page==="users"){
+    if(!fresh(OA.usersAt,60000)){const d=await oaRpc("office_admin_list_users",{});OA.users=Array.isArray(d?.users)?d.users:[];OA.pgtUsersLoaded=true;OA.usersAt=Date.now()}
+   } else if(OA.page==="ward"){
+    if(!fresh(OA.setupAt,30000)){OA.setup=await oaRpc("office_admin_read_ward_setup",{});OA.setupAt=Date.now()}
    }
-  } else if(OA.page==="users"){
-   const d=await oaRpc("office_admin_list_users",{});OA.users=d.users||[];OA.pgtUsersLoaded=true;
-  } else if(OA.page==="ward"){
-   const d=await oaRpc("office_admin_read_ward_setup",{});OA.setup=d;
-  }
- }catch(e){OA.error=e.message||String(e)}
- finally{OA.loading=false;OA.scrollReset=false;render({force:1})}
+  }catch(e){if(seq===OA._loadSeq)OA.error=e.message||String(e)}
+  finally{if(seq===OA._loadSeq){OA.loading=false;OA.scrollReset=false;render({force:1})}}
+ })();
+ OA._loadKey=key;OA._loadPromise=task;
+ try{await task}finally{if(OA._loadPromise===task){OA._loadPromise=null;OA._loadKey=""}}
 }
 function oaPage(p){OA.page=p;OA.editing=null;OA.notice="";OA.scrollReset=true;OA.preserveScrollTop=0;oaLoad()}
 async function oaNewRoster(){
  OA.scrollReset=true;OA.preserveScrollTop=0;
  if(OA.type==="pgt_monthly"){
   try{
-   const [ud,gd]=await Promise.all([oaRpc("office_admin_list_users",{}),oaRpc("office_admin_list_pgt_group_sets",{})]);
-   OA.users=Array.isArray(ud?.users)?ud.users:[];OA.pgtUsersLoaded=true;
-   OA.groupSets=gd.sets||[];OA.groupSetsLoaded=true;
+   const jobs=[];
+   if(!OA.pgtUsersLoaded||Date.now()-OA.usersAt>60000)jobs.push(oaRpc("office_admin_list_users",{}).then(ud=>{OA.users=Array.isArray(ud?.users)?ud.users:[];OA.pgtUsersLoaded=true;OA.usersAt=Date.now()}));
+   if(!OA.groupSetsLoaded||Date.now()-OA.groupSetsAt>60000)jobs.push(oaRpc("office_admin_list_pgt_group_sets",{}).then(gd=>{OA.groupSets=gd.sets||[];OA.groupSetsLoaded=true;OA.groupSetsAt=Date.now()}));
+   await Promise.all(jobs);
   }catch(e){OA.pgtUsersLoaded=false;OA.error="PGT suggestions or saved groups could not be loaded. You can still continue manually."}
  }
  const content=oaTemplateContent(OA.type);
@@ -8887,7 +8935,12 @@ async function oaNewRoster(){
  OA.editing={id:null,roster_type:OA.type,period_start:"",period_end:"",title:OA.type==="pgt_monthly"?"PGT Duty Roster":"Faculty Duty Roster",reference_number:"",issue_date:new Date().toISOString().slice(0,10),content};
  render({force:1})
 }
-async function oaEditRoster(id){OA.scrollReset=true;OA.preserveScrollTop=0;OA.loading=true;render({force:1});try{const d=await oaRpc("office_admin_get_roster",{p_roster_id:id});OA.editing=d.roster;if(typeof OA.editing.content==="string")OA.editing.content=JSON.parse(OA.editing.content||"{}");if((OA.editing.roster_type||OA.type)==="pgt_monthly"){const [u,g]=await Promise.all([oaRpc("office_admin_list_users",{}),oaRpc("office_admin_list_pgt_group_sets",{})]);OA.users=Array.isArray(u?.users)?u.users:[];OA.pgtUsersLoaded=true;OA.groupSets=g.sets||[];OA.groupSetsLoaded=true;}}catch(e){OA.error=e.message||String(e)}finally{OA.loading=false;render({force:1})}}
+async function oaEditRoster(id){OA.scrollReset=true;OA.preserveScrollTop=0;OA.loading=true;render({force:1});try{const d=await oaRpc("office_admin_get_roster",{p_roster_id:id});OA.editing=d.roster;if(typeof OA.editing.content==="string")OA.editing.content=JSON.parse(OA.editing.content||"{}");if((OA.editing.roster_type||OA.type)==="pgt_monthly"){
+ const jobs=[];
+ if(!OA.pgtUsersLoaded||Date.now()-OA.usersAt>60000)jobs.push(oaRpc("office_admin_list_users",{}).then(u=>{OA.users=Array.isArray(u?.users)?u.users:[];OA.pgtUsersLoaded=true;OA.usersAt=Date.now()}));
+ if(!OA.groupSetsLoaded||Date.now()-OA.groupSetsAt>60000)jobs.push(oaRpc("office_admin_list_pgt_group_sets",{}).then(g=>{OA.groupSets=g.sets||[];OA.groupSetsLoaded=true;OA.groupSetsAt=Date.now()}));
+ await Promise.all(jobs);
+ }}catch(e){OA.error=e.message||String(e)}finally{OA.loading=false;render({force:1})}}
 
 function oaTemplateContent(type){
  if(type==="pgt_monthly") return {
@@ -9013,6 +9066,9 @@ function oaPgtGroupsView(){
  const cards=groups.map((g,gi)=>`<section class="oa-group-card"><div class="oa-group-card-head"><label class="field"><span>Group name</span><input value="${oaEsc(g.name)}" oninput="oaGroupNameInput(${gi},this.value)"></label>${groups.length>1?`<button class="oa-iconbtn" title="Remove group" onclick="oaRemoveGroup(${gi})">×</button>`:""}</div><div class="oa-members-head"><b>PGT members</b><span>Name and short code</span></div><div class="oa-group-members">${(g.members||[]).map((m,mi)=>`<div class="oa-member-row" data-group="${gi}" data-member="${mi}"><div class="oa-pgt-name-wrap"><label class="field"><span>PGT name</span><input class="oa-pgt-name-input" autocomplete="off" placeholder="Search active staff or type name" value="${oaEsc(m.name)}" onfocus="oaShowPgtSuggestions(${gi},${mi})" onblur="oaHidePgtSuggestions(${gi},${mi})" oninput="oaGroupMemberNameInput(${gi},${mi},this.value)" onchange="oaGroupMemberNameChange(${gi},${mi},this.value)"></label><div class="oa-pgt-suggestions" id="oaPgtSuggest_${gi}_${mi}" role="listbox"></div></div><label class="field oa-abbr-field"><span>Short code</span><input maxlength="5" placeholder="e.g. TA" value="${oaEsc(m.abbr)}" oninput="oaGroupMemberAbbrInput(${gi},${mi},this.value)"></label><button class="oa-iconbtn oa-remove-member" title="Remove PGT" onclick="oaRemoveGroupMember(${gi},${mi})">×</button></div>`).join("")||`<p class="oa-empty-members">No members in this group.</p>`}</div><button type="button" class="btn secondary sm" onclick="event.preventDefault();event.stopPropagation();oaAddGroupMember(${gi})">+ Add PGT</button></section>`).join("");
  return `<div class="oa-head"><div><p class="oa-kicker">ROSTER CONFIGURATION</p><h1>PGT group settings</h1><p class="oa-muted">Maintain reusable PGT groups once. Select a saved group set when creating each monthly roster.</p></div><button type="button" class="btn" onclick="oaNewGroupSet()">+ New group set</button></div><div class="oa-groups-workspace"><aside class="oa-saved-groups"><div class="oa-saved-groups-head"><b>Saved group sets</b><span>${sets.length}</span></div>${sets.length?sets.map(x=>`<div class="oa-saved-group-row ${String(x.id)===String(OA.groupEditingId)?"selected":""}"><button class="oa-saved-group-open" onclick="oaOpenGroupSet('${oaEsc(x.id)}')"><b>${oaEsc(x.name)}</b><small>${(x.groups||[]).length} groups · Updated ${oaDate(String(x.updated_at||"").slice(0,10))}</small></button><button class="oa-iconbtn" title="Delete group set" onclick="oaDeleteGroupSet('${oaEsc(x.id)}')">×</button></div>`).join(""):`<p class="oa-muted">No group sets have been saved yet.</p>`}</aside><section class="oa-group-editor"><div class="oa-group-editor-head"><div><label class="field"><span>Group set name</span><input id="oaGroupSetName" maxlength="100" value="${oaEsc(OA.groupDraftName)}" oninput="OA.groupDraftName=this.value" placeholder="e.g. Psychiatry PGT groups"></label><p class="oa-help">${OA.groupEditingId?"Editing a saved configuration.":"New configuration — save it to reuse it in future months."}</p></div><span class="oa-count">${groups.length} groups</span></div>${oaPgtDatalist()}<div class="oa-groups-grid">${cards}</div><div class="oa-group-editor-actions"><button type="button" class="btn secondary" onclick="oaAddGroup()">+ Add group</button><button type="button" class="btn" onclick="oaSaveGroupSet()">Save group set</button></div></section></div>`;
 }
+function oaFormatDMY(value){const m=String(value||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:String(value||"");}
+function oaParseDMY(value){const v=String(value||"").trim();if(!v)return null;const m=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);if(!m)return null;const d=Number(m[1]),mo=Number(m[2]),y=Number(m[3]),dt=new Date(Date.UTC(y,mo-1,d));if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==mo-1||dt.getUTCDate()!==d)return null;return `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;}
+function oaRosterAutoTitle(type,start){const d=String(start||"").match(/^(\d{4})-(\d{2})-/);if(!d)return type==="pgt_monthly"?"PGT Duty Roster":"Faculty Duty Roster";const month=new Date(Number(d[1]),Number(d[2])-1,1).toLocaleDateString("en-GB",{month:"long",year:"numeric"});return `${type==="pgt_monthly"?"PGT Duty Roster":"Faculty Duty Roster"} – ${month}`;}
 function oaRosterForm(){
  const r=OA.editing||{},c=oaEnsureRosterContent(),editable=(r.status||"draft")==="draft",pgt=(r.roster_type||OA.type)==="pgt_monthly";
  const groupsHtml="";
@@ -9022,7 +9078,7 @@ function oaRosterForm(){
  const pgtHeaders=c.columns.map((col,j)=>{const fixed=j<2;return `<th><div class="oa-col-head"><input class="oa-colname" value="${oaEsc(col)}" ${editable&&!fixed?`oninput="oaColumnInput(${j},this.value)"`:'disabled'} aria-label="Column heading ${j+1}"><button type="button" class="oa-remove-col-btn" title="${fixed?'Date and day columns are required':'Remove '+oaEsc(col)}" ${editable&&!fixed?`onclick="oaRemoveRosterColumn(${j})"`:'disabled'} aria-label="Remove column ${j+1}">×</button></div></th>`}).join("");
  return `<div class="oa-card oa-roster-builder"><div class="oa-row"><button class="btn secondary" onclick="OA.editing=null;render({force:1})">← Back</button><span class="oa-status">${oaStatus(r.status||"draft")}</span></div>
  <h2>${r.id?"Edit roster":"Create duty roster"}</h2><p class="oa-help">${pgt?"Choose a saved PGT group set, then allocate group letters and PGT abbreviations in the daily duty table.":"Enter the roster details, then fill the duty table."}</p>
- <div class="oa-field-grid"><label class="field"><span>Roster title</span><input id="oaTitle" ${editable?"":"disabled"} value="${oaEsc(r.title||"")}"></label><label class="field"><span>Reference / dispatch no.</span><input id="oaRef" ${editable?"":"disabled"} value="${oaEsc(r.reference_number||"")}"></label><label class="field"><span>Period start</span><input id="oaStart" type="date" ${editable?"":"disabled"} value="${oaEsc(r.period_start||"")}"></label><label class="field"><span>Period end</span><input id="oaEnd" type="date" ${editable?"":"disabled"} value="${oaEsc(r.period_end||"")}"></label><label class="field"><span>Issue date</span><input id="oaIssue" type="date" ${editable?"":"disabled"} value="${oaEsc(r.issue_date||"")}"></label></div>
+ <div class="oa-field-grid"><label class="field"><span>Roster type</span><input value="${pgt?"PGT monthly duty roster":"Faculty weekly duty roster"}" disabled></label><label class="field"><span>Reference / dispatch no.</span><input id="oaRef" ${editable?"":"disabled"} value="${oaEsc(r.reference_number||"")}"></label><label class="field"><span>Issue date</span><input id="oaIssue" type="text" inputmode="numeric" placeholder="dd/mm/yyyy" maxlength="10" ${editable?"":"disabled"} value="${oaEsc(oaFormatDMY(r.issue_date||""))}"></label><label class="field oa-period-start"><span>Start date</span><input id="oaStart" type="text" inputmode="numeric" placeholder="dd/mm/yyyy" maxlength="10" ${editable?"":"disabled"} value="${oaEsc(oaFormatDMY(r.period_start||""))}"></label><label class="field oa-period-end"><span>End date</span><input id="oaEnd" type="text" inputmode="numeric" placeholder="dd/mm/yyyy" maxlength="10" ${editable?"":"disabled"} value="${oaEsc(oaFormatDMY(r.period_end||""))}"></label></div>
  ${pgt?oaRosterGroupSetSelector():groupsHtml}
  <datalist id="oaDutySuggestions">${suggestions.map(v=>`<option value="${oaEsc(v)}"></option>`).join("")}</datalist>
  <section class="oa-builder-section"><div class="oa-builder-heading"><div><h3>${pgt?"2. Daily duty allocation":"1. Duty allocation table"}</h3><p class="oa-help">${pgt?"Use group letters (A–D) or individual PGT short codes. Combined assignments such as MM+AS can be typed directly.":"Enter duty assignments directly into the cells."}</p></div><span class="oa-count">${c.rows.length} days</span></div>
@@ -9077,9 +9133,9 @@ function oaRemoveRosterColumn(j){
 function oaAddNote(){oaEnsureRosterContent().notes.push("");render({force:1})}
 function oaRemoveNote(i){oaEnsureRosterContent().notes.splice(i,1);render({force:1})}
 function oaGenerateDates(){
- const a=document.getElementById("oaStart")?.value,b=document.getElementById("oaEnd")?.value;
- if(!a||!b)return toast("Select both period start and end dates first","bad");
- const from=new Date(a+"T00:00:00"),to=new Date(b+"T00:00:00");if(to<from)return toast("Period end must be on or after period start","bad");
+ const a=oaParseDMY(document.getElementById("oaStart")?.value),b=oaParseDMY(document.getElementById("oaEnd")?.value);
+ if(!a||!b)return toast("Enter both dates in dd/mm/yyyy format","bad");
+ const from=new Date(a+"T00:00:00"),to=new Date(b+"T00:00:00");if(to<from)return toast("End date must be on or after start date","bad");
  const c=oaEnsureRosterContent();if(c.rows.length&&!confirm("Replace the existing duty rows with dates for this period?"))return;
  const dateCol=c.columns.findIndex(x=>/^date$/i.test(x)),dayCol=c.columns.findIndex(x=>/^day$/i.test(x));c.rows=[];
  for(let d=new Date(from);d<=to;d.setDate(d.getDate()+1)){
@@ -9098,12 +9154,12 @@ function oaPreviewRoster(){
 function oaSyncRosterMeta(){
  const r=OA.editing||{};
  const read=id=>{const el=document.getElementById(id);return el?String(el.value??""):null};
- const title=read("oaTitle"),ref=read("oaRef"),start=read("oaStart"),end=read("oaEnd"),issue=read("oaIssue");
- if(title!==null)r.title=title.trim();
+ const ref=read("oaRef"),start=read("oaStart"),end=read("oaEnd"),issue=read("oaIssue");
  if(ref!==null)r.reference_number=ref.trim();
- if(start!==null)r.period_start=start||null;
- if(end!==null)r.period_end=end||null;
- if(issue!==null)r.issue_date=issue||null;
+ if(start!==null){const parsed=oaParseDMY(start);r.period_start=parsed||(start.trim()?"__invalid_date__":null);}
+ if(end!==null){const parsed=oaParseDMY(end);r.period_end=parsed||(end.trim()?"__invalid_date__":null);}
+ if(issue!==null){const parsed=oaParseDMY(issue);r.issue_date=parsed||(issue.trim()?"__invalid_date__":null);}
+ r.title=oaRosterAutoTitle(r.roster_type||OA.type,r.period_start&&r.period_start!=="__invalid_date__"?r.period_start:null);
  OA.editing=r;return r;
 }
 function oaReadRosterForm(requireComplete=false){
@@ -9112,11 +9168,12 @@ function oaReadRosterForm(requireComplete=false){
  if(!content.columns.length)throw new Error("The duty table needs at least one column.");
  if(content.rows.some(row=>row.length!==content.columns.length))throw new Error("The duty table has inconsistent rows. Please review it.");
  if(type==="pgt_monthly"&&content.groups.some(g=>(g.members||[]).some(m=>m.name&&!m.abbr)))throw new Error("Add a short code for every PGT name in the group settings.");
+ if([r.period_start,r.period_end,r.issue_date].some(v=>v==="__invalid_date__"))throw new Error("Enter valid dates in dd/mm/yyyy format.");
  if(requireComplete){
-  if(!String(r.title||"").trim())throw new Error("Enter a roster title before submitting or publishing.");
-  if(!r.period_start||!r.period_end)throw new Error("Select both the period start and period end dates before submitting or publishing.");
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(r.period_start)||!/^\d{4}-\d{2}-\d{2}$/.test(r.period_end))throw new Error("The period dates are invalid. Re-select both dates.");
-  if(r.period_start>r.period_end)throw new Error("Period end cannot be earlier than period start.");
+  if(!r.period_start||!r.period_end)throw new Error("Enter both start date and end date in dd/mm/yyyy format.");
+  if(r.issue_date==="__invalid_date__")throw new Error("Enter a valid issue date in dd/mm/yyyy format.");
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(r.period_start)||!/^\d{4}-\d{2}-\d{2}$/.test(r.period_end))throw new Error("Invalid date. Use dd/mm/yyyy.");
+  if(r.period_start>r.period_end)throw new Error("End date cannot be earlier than start date.");
  }
  return {p_roster_type:type,p_roster_id:r.id||null,p_period_start:r.period_start||null,p_period_end:r.period_end||null,p_title:String(r.title||"").trim(),p_reference_number:r.reference_number||"",p_issue_date:r.issue_date||null,p_content:JSON.parse(JSON.stringify(content))};
 }
@@ -9152,7 +9209,10 @@ async function oaMoveReview(){
  }catch(e){toast(e.message||String(e),"bad")}
 }
 async function oaFinalizePublish(){
- if(!confirm("Finalize and publish this roster? This will replace the currently published roster of the same type."))return;
+ const _start=OA.editing?.period_start||document.getElementById("oaPeriodStart")?.value||"";
+ const _today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
+ const _msg=_start&&_start>_today?"Publish this future roster as scheduled? The currently active roster will remain in use until the new roster start date.":"Finalize and publish this roster? It will become the active roster from its start date; earlier rosters remain available in the archive.";
+ if(!confirm(_msg))return;
  try{
   const id=OA.editing?.status==="review"&&OA.editing?.id?OA.editing.id:await oaPersistCurrentDraft(true);
   await oaRpc("office_admin_publish_roster",{p_roster_id:id});
@@ -9162,7 +9222,7 @@ async function oaFinalizePublish(){
 }
 async function oaPublish(){
  if(OA.editing?.status==="draft")return oaFinalizePublish();
- if(!confirm("Publish this roster? It will replace the currently published roster of this type."))return;
+ if(!confirm("Publish this roster? If its start date is in the future, the existing roster will remain active until then."))return;
  try{await oaRpc("office_admin_publish_roster",{p_roster_id:OA.editing.id});OA.editing=null;OA.notice="Roster published";toast("Roster published","ok");await oaLoad()}
  catch(e){toast(e.message||String(e),"bad")}
 }
@@ -9270,13 +9330,13 @@ async function oaExportDocx(){
 function oaRosterList(){
  const rows=OA.rosters||[];
  const kind=OA.type==="faculty_weekly"?"Faculty weekly":"PGT monthly";
- return `<div class="oa-roster-list-head"><div><p class="oa-kicker">DUTY ROSTERS</p><h2>Roster management</h2><p class="oa-muted">Choose a roster type to view existing schedules or create a new draft.</p></div><button type="button" class="btn" onclick="oaNewRoster()">+ New draft</button></div>
+ return `<div class="oa-roster-list-head"><div><p class="oa-kicker">DUTY ROSTERS</p><h2>Roster management</h2><p class="oa-muted">Choose a roster type to view existing schedules or create a new draft.</p></div><div class="oa-actions"><button type="button" class="btn secondary" onclick="oaLoad(true)">Refresh</button><button type="button" class="btn" onclick="oaNewRoster()">+ New draft</button></div></div>
  <section class="oa-roster-type-panel"><div class="oa-roster-type-grid">
- <button type="button" class="oa-roster-type-card ${OA.type==="pgt_monthly"?"selected":""}" onclick="if(OA.type!=='pgt_monthly'){OA.type='pgt_monthly';oaLoad()}" aria-pressed="${OA.type==="pgt_monthly"}"><span class="oa-roster-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M7.5 3.5v3M16.5 3.5v3M4 9h16M8 12h3M8 16h3M14 12h2"/></svg></span><span class="oa-roster-type-copy"><b>PGT monthly</b><small>Monthly PGT duty allocation</small></span><span class="oa-roster-type-chevron">›</span></button>
- <button type="button" class="oa-roster-type-card ${OA.type==="faculty_weekly"?"selected":""}" onclick="if(OA.type!=='faculty_weekly'){OA.type='faculty_weekly';oaLoad()}" aria-pressed="${OA.type==="faculty_weekly"}"><span class="oa-roster-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.4-3.4 2.2-5.2 5.5-5.2s5.1 1.8 5.5 5.2M16 6.2a3 3 0 0 1 0 5.8M17 14c2.2.5 3.4 2.1 3.6 5"/></svg></span><span class="oa-roster-type-copy"><b>Faculty weekly</b><small>Faculty, VP and RP/GDMO duties</small></span><span class="oa-roster-type-chevron">›</span></button>
+ <button type="button" class="oa-roster-type-card ${OA.type==="pgt_monthly"?"selected":""}" onclick="if(OA.type!=='pgt_monthly'){OA.type='pgt_monthly';OA.rosters=OA.allRosters.filter(r=>r.roster_type===OA.type);render({force:1});if(!OA.allRostersAt)oaLoad()}" aria-pressed="${OA.type==="pgt_monthly"}"><span class="oa-roster-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M7.5 3.5v3M16.5 3.5v3M4 9h16M8 12h3M8 16h3M14 12h2"/></svg></span><span class="oa-roster-type-copy"><b>PGT monthly</b><small>Monthly PGT duty allocation</small></span><span class="oa-roster-type-chevron">›</span></button>
+ <button type="button" class="oa-roster-type-card ${OA.type==="faculty_weekly"?"selected":""}" onclick="if(OA.type!=='faculty_weekly'){OA.type='faculty_weekly';OA.rosters=OA.allRosters.filter(r=>r.roster_type===OA.type);render({force:1});if(!OA.allRostersAt)oaLoad()}" aria-pressed="${OA.type==="faculty_weekly"}"><span class="oa-roster-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.4-3.4 2.2-5.2 5.5-5.2s5.1 1.8 5.5 5.2M16 6.2a3 3 0 0 1 0 5.8M17 14c2.2.5 3.4 2.1 3.6 5"/></svg></span><span class="oa-roster-type-copy"><b>Faculty weekly</b><small>Faculty, VP and RP/GDMO duties</small></span><span class="oa-roster-type-chevron">›</span></button>
  </div></section>
  <div class="oa-roster-results-head"><div><h3>${oaEsc(kind)} rosters</h3><span>${rows.length} ${rows.length===1?"roster":"rosters"}</span></div></div>
- ${rows.length?rows.map(r=>`<div class="oa-card oa-roster"><div class="oa-row"><b>${oaEsc(r.title||"Untitled roster")}</b><span class="oa-status ${oaEsc(r.status)}">${oaStatus(r.status)}</span></div><p>${oaDate(r.period_start)} – ${oaDate(r.period_end)} · Version ${r.version||1}</p><p class="oa-muted">${oaEsc(r.reference_number||"No reference number")} ${r.is_current?"· Current published version":""}</p><div class="oa-actions"><button type="button" class="btn secondary" onclick="oaEditRoster('${r.id}')">${r.status==="draft"||r.status==="review"?"Open":"View"}</button>${r.status==="published"?`<button type="button" class="btn secondary" onclick="oaRestore('${r.id}')">Restore as draft</button>`:""}</div></div>`).join(""):`<div class="oa-empty oa-roster-empty">No ${OA.type==="pgt_monthly"?"PGT monthly":"Faculty weekly"} rosters yet.</div>`}`;
+ ${rows.length?rows.map(r=>`<div class="oa-card oa-roster"><div class="oa-row"><b>${oaEsc(r.title||"Untitled roster")}</b><span class="oa-status ${oaEsc(r.status)}">${oaEsc(oaRosterLifecycle(r))}</span></div><p>${oaDate(r.period_start)} – ${oaDate(r.period_end)} · Version ${r.version||1}</p><p class="oa-muted">${oaEsc(r.reference_number||"No reference number")} ${oaEsc(oaRosterLifecycleNote(r))}</p><div class="oa-actions"><button type="button" class="btn secondary" onclick="oaEditRoster('${r.id}')">${r.status==="draft"||r.status==="review"?"Open":"View"}</button>${r.status==="published"?`<button type="button" class="btn secondary" onclick="oaRestore('${r.id}')">Restore as draft</button>`:""}</div></div>`).join(""):OA.error?`<div class="oa-empty oa-roster-empty">Could not load rosters. Use Refresh to try again.</div>`:`<div class="oa-empty oa-roster-empty">No ${OA.type==="pgt_monthly"?"PGT monthly":"Faculty weekly"} rosters yet.</div>`}`;
 }
 function oaUsersView(){
  const all=(OA.users||[]).slice();
@@ -9325,16 +9385,54 @@ async function oaToggleConfig(kind,id,active){
  try{const arr=kind==="section"?OA.setup.sections:kind==="bed"?OA.setup.beds:OA.setup.consultants;const row={...arr.find(x=>x.id===id),active};const rpc=kind==="section"?"office_admin_upsert_section":kind==="bed"?"office_admin_upsert_bed":"office_admin_upsert_consultant";await oaRpc(rpc,{p_row:row});toast(active?"Activated":"Deactivated","ok");await oaLoad()}catch(e){toast(e.message||String(e),"bad")}
 }
 async function oaSaveUnit(){try{await oaRpc("office_admin_upsert_unit_settings",{p_row:{unit_name:document.getElementById("owName").value,ward_password:document.getElementById("owPass").value||null}});toast("Ward settings saved","ok");await oaLoad()}catch(e){toast(e.message||String(e),"bad")}}
-let wardPublishedRosters=[];let wardRosterLoading=false;let wardRosterLoaded=false;let wardRosterError="";
-async function wardLoadPublishedRosters(){if(wardRosterLoading)return;wardRosterLoading=true;wardRosterError="";try{const {data,error}=await sb.rpc("ward_list_published_rosters",{p_session_token:sessionTok});if(error)throw error;wardPublishedRosters=data&&data.rosters||[];wardRosterLoaded=true}catch(e){wardRosterError=e.message||String(e)}finally{wardRosterLoading=false;render({bg:1})}}
-
+let wardPublishedRosters=[];let wardRosterLoading=false;let wardRosterLoaded=false;let wardRosterError="";let wardRosterSelectedId=null;
+async function wardLoadPublishedRosters(){
+ if(wardRosterLoading)return;
+ wardRosterLoading=true;wardRosterError="";
+ try{
+  const {data,error}=await sb.rpc("ward_list_published_rosters",{p_session_token:sessionTok});
+  if(error)throw error;
+  wardPublishedRosters=data&&data.rosters||[];wardRosterLoaded=true;
+  if(wardRosterSelectedId&&!wardPublishedRosters.some(r=>String(r.id)===String(wardRosterSelectedId)))wardRosterSelectedId=null;
+ }catch(e){wardRosterError=e.message||String(e)}
+ finally{wardRosterLoading=false;render({bg:1})}
+}
+function wardRosterMonthLabel(r){
+ const raw=r&&(r.period_start||r.issue_date);
+ if(!raw)return String(r&&r.title||"Duty roster");
+ const d=new Date(String(raw).slice(0,10)+"T12:00:00");
+ return Number.isNaN(d.getTime())?String(raw):d.toLocaleDateString("en-IN",{month:"long",year:"numeric"});
+}
+function wardRosterKindLabel(r){return r.roster_type==="faculty_weekly"?"Faculty Duty Roster":"PGT Duty Roster"}
+function wardRosterBadge(r){
+ if(r.is_current)return `<span class="roster-library-badge current">Current</span>`;
+ if(r.is_upcoming)return `<span class="roster-library-badge upcoming">Upcoming</span>`;
+ return `<span class="roster-library-badge archived">Archived</span>`;
+}
+function wardOpenRoster(id){wardRosterSelectedId=String(id);render()}
 function wardRosterTable(r){
  const c=r.content||{},cols=Array.isArray(c.columns)?c.columns:[],rows=Array.isArray(c.rows)?c.rows:[];
  const cell=v=>esc(v==null?"":typeof v==="object"?JSON.stringify(v):v);
- return `<div class="roster-doc"><div style="text-align:center;font-weight:800">${cell(c.institution||"ASSAM MEDICAL COLLEGE & HOSPITAL, DIBRUGARH")}</div><div style="text-align:center;font-weight:800">${cell(c.department||"DEPARTMENT OF PSYCHIATRY")}</div><div style="text-align:center;font-weight:700;margin:4px 0 10px">${cell(c.subtitle||r.title||"DUTY ROSTER")}</div><div class="sm muted" style="text-align:center;margin-bottom:8px">Ref: ${cell(r.reference_number||"—")} · Issue date: ${cell(r.issue_date||"—")}</div><div style="overflow:auto"><table style="border-collapse:collapse;width:100%;min-width:520px;font-size:12px"><thead><tr>${cols.map(x=>`<th style="border:1px solid var(--line);padding:7px;background:var(--surface-2)">${cell(x)}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${(Array.isArray(row)?row:cols.map(k=>row&&row[k]||"")).map(v=>`<td style="border:1px solid var(--line);padding:7px;vertical-align:top">${cell(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${(r.roster_type==="pgt_monthly"&&c.groups||[]).length?`<div class="oa-group-preview-wrap"><table class="oa-group-preview"><thead><tr>${c.groups.map(g=>`<th>${cell(g.name||"Group")}</th>`).join("")}</tr></thead><tbody>${Array.from({length:Math.max(0,...c.groups.map(g=>(g.members||[]).length))},(_,i)=>`<tr>${c.groups.map(g=>{const m=(g.members||[])[i];return `<td>${m?cell(m.name)+(m.abbr?` (${cell(m.abbr)})`:""):""}</td>`}).join("")}</tr>`).join("")}</tbody></table></div>`:""}${(c.notes||[]).length?`<h4>Notes</h4><ol>${c.notes.map(n=>`<li class="sm">${cell(n)}</li>`).join("")}</ol>`:""}<div style="text-align:right;margin-top:22px;font-weight:700">Prof. &amp; HOD – Psychiatry<br>AMCH, Dibrugarh</div></div>`;
+ const dutyTable=`<div class="resident-roster-table-wrap"><table class="resident-roster-table"><thead><tr>${cols.map(x=>`<th>${cell(x)}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${(Array.isArray(row)?row:cols.map(k=>row&&row[k]||"")).map(v=>`<td>${cell(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+ const groups=(r.roster_type==="pgt_monthly"&&Array.isArray(c.groups))?c.groups:[];
+ const groupTable=groups.length?`<section class="resident-roster-groups"><h3>PGT Groups</h3><div class="resident-roster-table-wrap"><table class="resident-roster-group-table"><thead><tr>${groups.map(g=>`<th>${cell(g.name||"Group")}</th>`).join("")}</tr></thead><tbody>${Array.from({length:Math.max(0,...groups.map(g=>(g.members||[]).length))},(_,i)=>`<tr>${groups.map(g=>{const m=(g.members||[])[i];return `<td>${m?cell(m.name)+(m.abbr?` <span class="roster-short-code">(${cell(m.abbr)})</span>`:""):""}</td>`}).join("")}</tr>`).join("")}</tbody></table></div></section>`:"";
+ return `<div class="resident-roster-sheet">${dutyTable}${groupTable}</div>`;
 }
-function wardExportRoster(id){const r=(wardPublishedRosters||[]).find(x=>String(x.id)===String(id));if(!r)return;OA.editing=r;oaExportDocx()}
-function wardRostersView(){if(!wardRosterLoaded&&!wardRosterLoading)wardLoadPublishedRosters();return `<div class="page-head"><h1 class="page-title">Duty rosters</h1><p class="muted">Published duty schedules</p></div>${wardRosterError?`<div class="card"><p class="err">${esc(wardRosterError)}</p><button class="btn secondary" onclick="wardRosterLoaded=false;wardLoadPublishedRosters()">Retry</button></div>`:""}${wardRosterLoading?`<div class="card muted">Loading published rosters…</div>`:""}${(wardPublishedRosters||[]).map(r=>`<section class="card" style="margin-bottom:12px"><div class="published-roster-document">${wardRosterTable(r)}</div><div class="oa-toolbar"><button class="btn secondary sm" onclick="wardExportRoster('${r.id}')">Download editable Word (.docx)</button></div></section>`).join("")}${wardRosterLoaded&&!wardPublishedRosters.length?`<div class="card muted">No current rosters have been published.</div>`:""}`}
+function wardRostersView(){
+ if(!wardRosterLoaded&&!wardRosterLoading)wardLoadPublishedRosters();
+ const rows=(wardPublishedRosters||[]).slice().sort((a,b)=>String(b.period_start||"").localeCompare(String(a.period_start||""))||String(a.roster_type).localeCompare(String(b.roster_type)));
+ const selected=rows.find(r=>String(r.id)===String(wardRosterSelectedId));
+ const header=`<div class="page-head"><h1 class="page-title">Duty rosters</h1><p class="muted">Current schedules and the previous two months</p></div>`;
+ if(wardRosterError)return `${header}<div class="card"><p class="err">${esc(wardRosterError)}</p><button class="btn secondary" onclick="wardRosterLoaded=false;wardLoadPublishedRosters()">Retry</button></div>`;
+ if(wardRosterLoading&&!wardRosterLoaded)return `${header}<div class="card muted">Loading duty rosters…</div>`;
+ if(selected){
+  return `${header}<div class="resident-roster-detail-head"><button class="btn ghost sm" onclick="wardRosterSelectedId=null;render()">← All rosters</button><div class="resident-roster-detail-title"><div><span class="resident-roster-month">${esc(wardRosterMonthLabel(selected))}</span><h2>${esc(wardRosterKindLabel(selected))}</h2></div>${wardRosterBadge(selected)}</div></div>${wardRosterTable(selected)}`;
+ }
+ const card=(r)=>`<button type="button" class="resident-roster-card" onclick="wardOpenRoster('${r.id}')"><span class="resident-roster-card-top">${wardRosterBadge(r)}<span class="resident-roster-card-arrow">↗</span></span><span class="resident-roster-card-month">${esc(wardRosterMonthLabel(r))}</span><strong>${esc(wardRosterKindLabel(r))}</strong><span class="resident-roster-card-period">${oaRosterDateLabel(r.period_start)}${r.period_end?` – ${oaRosterDateLabel(r.period_end)}`:""}</span></button>`;
+ const pgt=rows.filter(r=>r.roster_type==="pgt_monthly"),faculty=rows.filter(r=>r.roster_type==="faculty_weekly");
+ return `${header}${rows.length?`<div class="resident-roster-library">${pgt.length?`<section class="resident-roster-library-section"><div class="resident-roster-library-heading"><h2>PGT monthly</h2><span>${pgt.length} ${pgt.length===1?"schedule":"schedules"}</span></div><div class="resident-roster-library-grid">${pgt.map(card).join("")}</div></section>`:""}${faculty.length?`<section class="resident-roster-library-section"><div class="resident-roster-library-heading"><h2>Faculty weekly</h2><span>${faculty.length} ${faculty.length===1?"schedule":"schedules"}</span></div><div class="resident-roster-library-grid">${faculty.map(card).join("")}</div></section>`:""}</div>`:`<div class="card muted">No published rosters are available for the current or previous two months.</div>`}`;
+}
+function oaRosterDateLabel(v){if(!v)return "";const d=new Date(String(v).slice(0,10)+"T12:00:00");return Number.isNaN(d.getTime())?String(v):d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})}
 
 
 function officeAdminView(){
@@ -9386,7 +9484,7 @@ async function doLogin(e){
           if(normRole(res.resident.role)==="office_admin"){
             S.residents=[{id:res.resident.id,username:res.resident.username||username,displayName:res.resident.display_name||username,role:"office_admin",active:true}];
             sessionVerified=true;cloudStatus="live";Sync.state="CONNECTED";OA.page="rosters";OA.editing=null;
-            ui.loginBusy=false;ui.loginErr="";save();render({force:1});oaLoad();return;
+            ui.loginBusy=false;ui.loginErr="";save();render({force:1});await oaLoad();return;
           }
           if(normRole(res.resident.role)==="intern"){
             internWipe();
@@ -10237,8 +10335,8 @@ function disPreviewOverlay(){
   </div></div>`;
 }
 function pgtPeople(){
-  if(Array.isArray(ui.pgtDir)&&ui.pgtDir.length) return ui.pgtDir.filter(r=>r&&r.active!==false);
-  return (S.residents||[]).filter(r=>r&&r.active!==false&&normRole(r.role)!=="intern"&&normRole(r.role)!=="consultant").map(r=>({id:r.id,name:r.displayName||r.username||"",phone:"",photo:String(r.id)===String(S.userId)?myPhotoData():"",active:true}));
+  if(Array.isArray(ui.pgtDir)&&ui.pgtDir.length){const officeIds=new Set((S.residents||[]).filter(x=>normRole(x.role)==="office_admin").map(x=>String(x.id)));return ui.pgtDir.filter(r=>r&&r.active!==false&&!officeIds.has(String(r.id)));}
+  return (S.residents||[]).filter(r=>r&&r.active!==false&&normRole(r.role)!=="intern"&&normRole(r.role)!=="consultant"&&normRole(r.role)!=="office_admin").map(r=>({id:r.id,name:r.displayName||r.username||"",phone:"",photo:String(r.id)===String(S.userId)?myPhotoData():"",active:true}));
 }
 function pgtFace(person,cls){
   const src=person&&person.photo||"";
@@ -10492,7 +10590,8 @@ function homeView(){
   const bedCodes=bedList.map(b=>typeof b==="string"?b:(b&&(b.code||b.no)||"")).filter(Boolean);
   const bdftPill=current?(offDay===0?"Today":"Tomorrow"):"No BDFT today";
   const bdftSub=current?(bedCodes.length?bedCodes.join(" · "):("No beds assigned "+(offDay===0?"today":"tomorrow"))):"BDFT status and View complete BDFT when available";
-  const make=(!canAdmin()&&!isIntern()&&!isConsultant()&&canWrite()&&isEveningDuty())?`<button type="button" class="r2-pill info" onclick="event.stopPropagation();bdftOpenGenerate()">Make BDFT</button>`:"";
+  const showBdftPrompt=(canWrite()&&!isIntern()&&!isConsultant()&&isEveningDuty());
+  const make="";
   const dutyOn=!!dutyRecord();
   const tile=(n,l,fn,cls)=>`<button type="button" class="r2-tile ${cls||""}${Number(n)>0&&/today-(admitted|discharged)/.test(cls||"")?" has-dot":""}" onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
   const consHome=isConsultant();
@@ -10503,8 +10602,13 @@ function homeView(){
       <div class="row"><span class="r2-kicker">BED DISTRIBUTION</span><span class="r2-pill ${current?"ok":"warn"}">${esc(bdftPill)}</span></div>
       <p class="r2-sub">${esc(bdftSub)}</p>
       ${bedCodes.length?`<div class="r2-bedchips">${bedCodes.map(code=>`<button type="button" class="r2-pill" onclick="event.stopPropagation();bdftTapBedPatient('${esc(code)}')">${esc(code)}</button>`).join("")}</div>`:""}
-      ${make}
     </div>`}
+    ${showBdftPrompt&&!consHome?`<section class="card" data-home="make-bdft" style="margin:8px 0 10px;padding:12px 14px;border-left:3px solid var(--teal);">
+      <div class="row" style="align-items:center;justify-content:space-between;gap:12px;">
+        <div style="min-width:0;"><div class="tiny" style="font-weight:750;color:var(--teal);letter-spacing:.04em;text-transform:uppercase;">Evening shift</div><div style="font-size:13px;font-weight:650;margin-top:3px;">Prepare tomorrow’s bed distribution</div></div>
+        <button type="button" class="btn sm" style="flex:none;" onclick="bdftOpenGenerate()">Make BDFT</button>
+      </div>
+    </section>`:""}
     <div class="r2-split"><section class="r2-overview" aria-label="Ward">
       <div class="row">
         <div><div class="r2-count">${list.length}<small>Total patients</small></div></div>
@@ -16449,6 +16553,7 @@ function moreView(){
     ${row("go('activity')",ico("activity"),"Activity log","slate")}
     ${!isIntern()?row("go('pgts')",ico("residentDir"),"Resident directory","indigo"):""}
     ${!isIntern()?row("go('rosters')",ico("activity"),"Duty rosters","teal"):""}
+    ${(canAdmin()||(!isIntern()&&!isConsultant()&&canWrite()&&isEveningDuty()))?row("bdftOpenSetup()",ico("setup"),"BDFT settings","teal"):""}
     </div>
     ${canAdmin()?`<p class="more-section">Administration</p>
     <div class="more-grid">
@@ -24085,7 +24190,7 @@ function syncWardResidentsWithBdft(){
     }
   });
 
-  const wardRes = (S.residents || []).filter(r => r && r.active !== false && normRole(r.role) !== "intern" && normRole(r.role) !== "consultant");
+  const wardRes = (S.residents || []).filter(r => r && r.active !== false && normRole(r.role) !== "intern" && normRole(r.role) !== "consultant" && normRole(r.role) !== "office_admin");
   if(wardRes.length === 0) return;
 
   const wardResMap = new Map();
@@ -24360,7 +24465,7 @@ async function bdftSyncSetupToSupabase(){
   if(!sb || !sessionTok) return { ok: false, error: "offline" };
   ensureConfiguration();
 
-  const wardRes = (S.residents || []).filter(r => r && r.active !== false && normRole(r.role) !== "intern" && normRole(r.role) !== "consultant");
+  const wardRes = (S.residents || []).filter(r => r && r.active !== false && normRole(r.role) !== "intern" && normRole(r.role) !== "consultant" && normRole(r.role) !== "office_admin");
   const payloadPeople = wardRes.map(r => {
     const bName = bdftGetResidentBatch(r);
     const sName = bdftGetResidentShort(r);
@@ -25165,7 +25270,7 @@ async function bdftFinaliseAndSave(){
         bedLookup.set(bdftCanonBed(b.no || b.id), b.id);
         bedLookup.set(String(b.id).toLowerCase(), b.id);
       });
-      const wardRes = (S.residents || []).filter(r => r && r.active !== false);
+      const wardRes = (S.residents || []).filter(r => r && r.active !== false && !["intern","consultant","office_admin"].includes(normRole(r.role)));
 
       Object.entries(dist.tiers || {}).forEach(([yr, docs]) => {
         Object.entries(docs || {}).forEach(([docName, beds]) => {
@@ -25276,7 +25381,7 @@ function bdftMountSetup(root){
   ensureConfiguration();
   const u=user()||{};
   const isAdmin=canAdmin();
-  const wardRes=(S.residents||[]).filter(r=>r.active!==false&&normRole(r.role)!=="intern"&&normRole(r.role)!=="consultant");
+  const wardRes=(S.residents||[]).filter(r=>r.active!==false&&normRole(r.role)!=="intern"&&normRole(r.role)!=="consultant"&&normRole(r.role)!=="office_admin");
   const matrix=configuration.fixedBedMatrix||{};
 
   let html=isAdmin
@@ -26681,6 +26786,54 @@ html:has(#app.app.oa-mode),body:has(#app.app.oa-mode){height:100%!important;min-
  body:has(#app.app.oa-mode){background:#fff!important}
  #app.app.oa-mode .oa-top,#app.app.oa-mode .oa-sidebar,.oa-toolbar,.oa-actions,.oa-page-heading{display:none!important}
 }
+</style>
+
+
+<style id="ward-resident-roster-library-v15">
+.resident-roster-library{display:flex;flex-direction:column;gap:22px;margin:10px 0 28px}
+.resident-roster-library-section{min-width:0}
+.resident-roster-library-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.resident-roster-library-heading h2{margin:0;font-size:16px;font-weight:800}
+.resident-roster-library-heading span{font-size:11px;color:var(--muted)}
+.resident-roster-library-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:12px}
+.resident-roster-card{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0;padding:15px 16px;border:1px solid var(--line);border-radius:15px;background:var(--panel);color:var(--ink);text-align:left;cursor:pointer;box-shadow:0 4px 16px rgba(25,20,40,.045);transition:transform .12s,border-color .12s,box-shadow .12s}
+.resident-roster-card:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 7px 18px rgba(25,20,40,.08)}
+.resident-roster-card-top{display:flex;align-items:center;justify-content:space-between;width:100%}
+.resident-roster-card-arrow{color:var(--muted);font-size:18px}
+.resident-roster-card-month{font-size:21px;font-weight:850;letter-spacing:-.025em;line-height:1.15}
+.resident-roster-card strong{font-size:13px;font-weight:750}
+.resident-roster-card-period{font-size:11px;color:var(--muted)}
+.roster-library-badge{display:inline-flex;align-items:center;padding:4px 8px;border-radius:20px;font-size:10px;font-weight:750}
+.roster-library-badge.current{background:color-mix(in srgb,var(--teal) 14%,var(--panel));color:var(--teal)}
+.roster-library-badge.upcoming{background:color-mix(in srgb,var(--accent) 13%,var(--panel));color:var(--accent)}
+.roster-library-badge.archived{background:var(--surface-2);color:var(--muted)}
+.resident-roster-detail-head{margin:0 0 12px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.resident-roster-detail-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
+.resident-roster-detail-title h2{margin:3px 0 0;font-size:18px}
+.resident-roster-month{font-size:12px;font-weight:750;color:var(--accent)}
+.resident-roster-sheet{padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 4px 18px rgba(25,20,40,.04)}
+.resident-roster-table-wrap{width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
+.resident-roster-table,.resident-roster-group-table{width:100%;min-width:780px;border-collapse:separate;border-spacing:0;font-size:12px}
+.resident-roster-table th{position:sticky;top:0;background:var(--surface-2);color:var(--ink);font-weight:800;text-align:center;padding:9px 7px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);white-space:nowrap}
+.resident-roster-table th:first-child{border-left:1px solid var(--line);border-top-left-radius:8px}
+.resident-roster-table th:last-child{border-right:1px solid var(--line);border-top-right-radius:8px}
+.resident-roster-table td{padding:8px 7px;border-bottom:1px solid var(--line);border-left:1px solid var(--line);vertical-align:middle;text-align:center;white-space:nowrap}
+.resident-roster-table td:last-child{border-right:1px solid var(--line)}
+.resident-roster-table tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--surface-2) 48%,var(--panel))}
+.resident-roster-groups{margin-top:16px}
+.resident-roster-groups h3{margin:0 0 8px;font-size:14px}
+.resident-roster-group-table{min-width:0;table-layout:fixed}
+.resident-roster-group-table th{padding:8px 6px;background:var(--surface-2);border:1px solid var(--line);font-size:12px}
+.resident-roster-group-table td{padding:7px 6px;border:1px solid var(--line);font-size:11px;text-align:center;overflow-wrap:anywhere}
+.roster-short-code{color:var(--muted);font-weight:700}
+@media(max-width:640px){.resident-roster-library-grid{grid-template-columns:1fr 1fr;gap:8px}.resident-roster-card{padding:12px}.resident-roster-card-month{font-size:18px}.resident-roster-sheet{padding:8px}}
+
+/* Office Admin performance: avoid layout churn and make loading states explicit */
+.oa-roster-list-head .oa-actions{margin-top:0;flex-wrap:nowrap}
+.oa-loading-state{min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.oa-loading-state small{color:var(--muted)}
+.oa-roster-empty{border:1px dashed var(--line);border-radius:14px;background:var(--panel);margin-top:14px}
+.oa-app .oa-card,.oa-app .oa-group-card,.oa-app .oa-user-card{contain:layout style}
 </style>
 
 </body>
