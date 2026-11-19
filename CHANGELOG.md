@@ -4,6 +4,13 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 ## 2026-11-19
 
+### Fixed
+
+- Landscape tablet Home now places duty/sign-in beside Clinical Flags when the resident is not signed in; when a Needs You Now card is present, the duty and needs cards share the first row, with flags and schedule below. The on-duty team remains full-width.
+- The Add Medication sheet now uses an explicit tablet-only class and docks as a narrow, vertically stacked panel on the right side of the landscape workspace. The patient list and clinical workflows are unchanged.
+- The existing BDFT left-aligned bed chips / See BDFT action and compact patient-detail tab layouts are retained.
+
+
 ### Changed
 
 - The Home BDFT card now treats the active ward-wide distribution for today or tomorrow as the source of truth, rather than relying only on the signed-in resident's personal assignment. The Make BDFT prompt is hidden once an active distribution exists. Bed numbers are shown in bed chips instead of being repeated in a summary line, and the complete distribution remains available in read-only view.
@@ -12,7 +19,7 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 ### Documentation and maintenance
 
-- Repository documentation was refreshed: `structure.md` was added; `README.md`, `WARD_SYNC_ARCHITECTURE.md`, `privacy.html` and this changelog were updated; and the obsolete example commit subject in `.github/workflows/assemble-index.yml` was replaced. The HTML client label is `R2.0.7`, the inlined BDFT engine is `7.0`, and the current service-worker cache is `ward-sync-pwa-r2.0.0-3`; these values are separate version identifiers, not interchangeable release numbers.
+- Repository documentation was refreshed: `structure.md` was added; `README.md`, `WARD_SYNC_ARCHITECTURE.md`, `privacy.html` and this changelog were updated; and the obsolete example commit subject in `.github/workflows/assemble-index.yml` was replaced. The HTML client label is `R2.0.8`, the inlined BDFT engine is `7.0`, and the current service-worker cache is `ward-sync-pwa-r2.0.0-4`; these values are separate version identifiers, not interchangeable release numbers.
 
 ## 2026-11-18
 
