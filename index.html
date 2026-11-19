@@ -10609,7 +10609,6 @@ function homeView(){
     <div class="r2-wardhead"><h2>${esc((canWrite()&&!consHome&&!isIntern())?((S.unit&&S.unit.name)||"Ward"):"Today")}</h2></div>
     ${consHome?"":`<div class="r2-bdft" role="link" tabindex="0" onclick="bdftOpenReadOnly()">
       <div class="row"><span class="r2-kicker">BED DISTRIBUTION</span><span class="r2-pill ${current?"ok":"warn"}">${esc(bdftPill)}</span></div>
-      <p class="r2-sub">${esc(bdftSub)}</p>
       ${bedCodes.length?`<div class="r2-bedchips">${bedCodes.map(code=>`<button type="button" class="r2-pill" onclick="event.stopPropagation();bdftTapBedPatient('${esc(code)}')">${esc(code)}</button>`).join("")}</div>`:hasActiveBdft?`<div class="tiny" style="margin-top:5px;font-weight:650;">View complete BDFT →</div>`:""}
     </div>`}
     ${showBdftPrompt&&!consHome?`<section class="card" data-home="make-bdft" style="margin:8px 0 10px;padding:12px 14px;border-left:3px solid var(--teal);">
@@ -16968,6 +16967,12 @@ function notifDest(raw){
   const entityId=raw.entity_id||raw.entityId||raw.task_id||raw.taskId||raw.handover_id||raw.handoverId||raw.ect_plan_id||raw.ectPlanId||null;
   let page=String(raw.destination||raw.page||(parsed&&parsed.page)||"").toLowerCase();
   let routeId=raw.routeId||(parsed&&parsed.id)||null;
+  // BDFT push notifications are for viewing the published distribution.
+  // Never route them to the generation/terminal workflow.
+  if(type==="bdft"){
+    page="bdft";
+    routeId=null;
+  }
   if(!page){
     if(type==="bdft") page="bdft";
     else if(type==="broadcast") page="broadcast";
@@ -17020,7 +17025,11 @@ function notifFlush(){
     return true;
   }
   try{sessionStorage.removeItem(NOTIF_NAV_KEY)}catch(e){}
-  if(dest.page==="bdft"&&dest.routeId) ui.bdftOpenId=dest.routeId;
+  if(dest.page==="bdft"){
+    ui.bdftOpenId=null;
+    ui.bdftEditMode=false;
+    ui.bdftMode="readonly";
+  }
   if(dest.missed) toast("That notification has no page for this sign-in.","info");
   if(dest.page==="setup") ui.setupTab="notify";
   go(dest.page, dest.page==="bdft"?null:dest.routeId);
