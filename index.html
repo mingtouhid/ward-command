@@ -11074,8 +11074,8 @@ function snapView(){
   } else if(tab==="mse"){
     body=r16MsePage(p);
   } else if(tab==="results"){
-    body=`${vitalsCardHtml(p,false)}
-    ${labsCardHtml(p)}`;
+    body=`${wsResultsVitalsHtml(p)}
+    ${wsResultsReportsHtml(p)}`;
   } else {
     body=`${scAlertHtml(p)}${scalesCardHtml(p,false)}`;
   }
@@ -23227,6 +23227,23 @@ function vitalsCardHtml(p,intern){ // R1.3.140: compact card, sits right under t
     ${intern?`<div class="vc-foot vc-ifoot"><button class="btn sm vit-open" type="button" onclick="vitalsOpen('${p.id}')">Update vitals</button>${vcChartBtn(p.id)}</div>`:""}
   </div>`;
 }
+function wsResultsVitalsHtml(p){
+  const all=vitalsOf(p.id);
+  if(!all.length)return `<div class="ws-results-column ws-results-vitals">${vitalsCardHtml(p,false)}<div class="card"><p class="sm muted">No vitals readings available for this admission.</p></div></div>`;
+  const rng=ui.vcRange||vcRangeAuto(all),def=VC_RANGES.find(r=>r[0]===rng)||VC_RANGES[3],now=Date.now();
+  const cnt=r=>r[2]?all.filter(v=>vcT(v)>now-r[2]*VC_H).length:all.length;
+  const list=def[2]?all.filter(v=>vcT(v)>now-def[2]*VC_H):all;
+  const dom=pts=>{const first=pts[0].t,last=pts[pts.length-1].t;if(def[2])return [Math.min(now-def[2]*VC_H,first),Math.max(now,last)];const end=Math.max(now,last);if(end-first<6*VC_H)return [end-12*VC_H,end];return [first-(end-first)*.04,end]};
+  const seg=`<div class="vc-seg" role="tablist" aria-label="Vitals chart range">${VC_RANGES.map(r=>`<button type="button" role="tab" aria-selected="${r[0]===def[0]}" class="${r[0]===def[0]?"on":""}" onclick="vcSetRange('${r[0]}')">${r[1]}<small>${cnt(r)}</small></button>`).join("")}</div>`;
+  const graphs=list.length?vcGraphCard("TEMPERATURE","°F",list,"temp",dom,"")+vcGraphCard("SpO₂","%",list,"spo2",dom,""):`<div class="card"><p class="sm">No readings in this range.</p><button class="btn sm ghost" type="button" onclick="vcSetRange('all')">Show all ${all.length}</button></div>`;
+  const table=list.length?`<div class="card vc-tcard"><div class="vc-ghead"><p class="tiny">READINGS · NEWEST FIRST</p><span class="tiny muted">${list.length}</span></div>${vcTable(list,all)}<p class="tiny muted vc-gnote">▲▼ change since the previous reading of that sign (BP: systolic).</p></div>`:"";
+  return `<div class="ws-results-column ws-results-vitals">${vitalsCardHtml(p,false)}<section class="ws-results-vitals-detail"><div class="ws-results-section-head"><b>VITALS TREND</b><span class="tiny muted">Recorded readings</span></div>${seg}<div class="ws-results-graphs">${graphs}</div>${table}</section></div>`;
+}
+function wsResultsReportsHtml(p){
+  const reps=labReports(p.id);
+  const all=reps.length?`<section class="ws-results-all"><div class="ws-results-section-head"><b>ALL REPORTS</b><span class="tiny muted">${reps.length} report${reps.length===1?"":"s"}</span></div>${reps.map(r=>`<article class="lab-rc${r.hasCritical?" crit":""}"><div class="lab-rc-h"><b>${esc(labPanelsLabel(r))}</b>${labChipsHtml(r)}</div><p class="lab-rc-m">${esc(labMetaLine(r))}</p>${labTableHtml(r)}</article>`).join("")}</section>`:`<div class="card"><p class="sm muted">No investigation reports recorded.</p></div>`;
+  return `<div class="ws-results-column ws-results-labs">${labsCardHtml(p)}${all}</div>`;
+}
 function vchartOpen(pid){if(!patient(pid))return;ui.vcRange=null;go("vchart",pid,1)}
 function vcRangeAuto(list){const now=Date.now();return list.some(v=>vcT(v)>now-168*VC_H)?"7d":"all"}
 function vcSetRange(r){ui.vcRange=r;render({force:1})}
@@ -27348,6 +27365,135 @@ html:not(.ws-resident-tablet) #app.app .main .r2-bdft-see{display:none!important
   }
 }
 
+</style>
+
+<!-- Resident tablet workspace correction v3: scrolling, rail-safe overlays, constrained forms and clinical Results workspace. -->
+<style id="ward-sync-tablet-workspace-fix-v3">
+@media (min-width:760px){
+  html.ws-resident-tablet #app.app>.main{
+    flex:1 1 0%!important;height:0!important;min-height:0!important;
+    overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;touch-action:pan-y!important;scrollbar-gutter:stable!important;
+  }
+  html.ws-resident-tablet #app.app>.main>*{min-height:0;max-width:100%!important}
+  html.ws-resident-tablet #app.app>.main .more-report-card,
+  html.ws-resident-tablet #app.app>.main .more-report-field{
+    width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;overflow:hidden!important;
+  }
+  html.ws-resident-tablet #app.app>.main .more-report-field input,
+  html.ws-resident-tablet #app.app>.main #rmon{
+    display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;margin:0!important;
+  }
+  html.ws-resident-tablet #app.app>.main .more-section{margin-top:16px!important;margin-bottom:8px!important}
+  html.ws-resident-tablet #app.app>.main .more-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+  html.ws-resident-tablet #app.app>.main .more-grid>.more-row{min-width:0!important;width:100%!important;min-height:76px!important}
+
+  html.ws-resident-tablet #app.app>.main:has(#ahosp),
+  html.ws-resident-tablet #app.app>.main:has(#disContinue),
+  html.ws-resident-tablet #app.app>.main:has(.dis-form){
+    display:flex!important;flex-direction:column!important;align-items:stretch!important;
+  }
+  html.ws-resident-tablet #app.app>.main:has(#ahosp)> .card,
+  html.ws-resident-tablet #app.app>.main:has(#disContinue)> .card,
+  html.ws-resident-tablet #app.app>.main:has(.dis-form)> .card,
+  html.ws-resident-tablet #app.app>.main:has(#disContinue)>.dis-form,
+  html.ws-resident-tablet #app.app>.main:has(.dis-form)>.dis-form{
+    width:min(100%,940px)!important;max-width:940px!important;margin-left:auto!important;margin-right:auto!important;
+  }
+  html.ws-resident-tablet #app.app>.main:has(#ahosp)>.page-title,
+  html.ws-resident-tablet #app.app>.main:has(#disContinue)>.page-title,
+  html.ws-resident-tablet #app.app>.main:has(.dis-form)>.page-title{
+    width:min(100%,940px)!important;max-width:940px!important;margin-left:auto!important;margin-right:auto!important;
+  }
+  html.ws-resident-tablet #app.app>.main:has(#disContinue)>#disContinue{
+    width:min(100%,940px)!important;max-width:940px!important;margin-left:auto!important;margin-right:auto!important;
+  }
+
+  html.ws-resident-tablet #app.app>.sheet:not(.ws-med-form-sheet){
+    left:var(--ws-tablet-rail)!important;right:0!important;width:auto!important;max-width:none!important;z-index:125!important;
+  }
+  html.ws-resident-tablet #app.app>.sheet:not(.ws-med-form-sheet)>.mask{
+    left:var(--ws-tablet-rail)!important;width:calc(100vw - var(--ws-tablet-rail))!important;
+  }
+
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .snap-cols[data-tab="results"]{
+    display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    grid-template-areas:none!important;gap:14px!important;height:calc(100dvh - 226px)!important;
+    min-height:440px!important;overflow:hidden!important;align-items:stretch!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .snap-cols[data-tab="results"]>.ws-results-column{
+    display:flex!important;flex-direction:column!important;gap:12px!important;grid-area:auto!important;grid-column:auto!important;
+    width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+    overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;scrollbar-gutter:stable!important;padding:0 5px 14px 0!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-column>.card{
+    flex:0 0 auto!important;width:100%!important;min-width:0!important;margin:0!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-vitals-detail,
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-all{
+    display:flex!important;flex-direction:column!important;gap:10px!important;min-width:0!important;width:100%!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-section-head{
+    display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;padding:4px 2px!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-section-head>b{
+    font-size:11px!important;letter-spacing:.08em!important;color:var(--muted)!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-graphs{
+    display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-column .vc-gcard,
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-column .vc-tcard{
+    width:100%!important;min-width:0!important;margin:0!important;box-sizing:border-box!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-column .vc-svg{
+    width:100%!important;height:auto!important;max-height:220px!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-column .vc-tbl-wrap,
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-column .lab-table-wrap{max-width:100%!important;overflow-x:auto!important}
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-labs .snap-labs{flex:0 0 auto!important}
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .ws-results-all .lab-rc{margin:0!important;min-width:0!important;max-width:100%!important}
+}
+@media (min-width:900px) and (orientation:landscape){
+  html.ws-resident-tablet .mse-layer{
+    left:var(--ws-tablet-rail,88px)!important;right:0!important;top:0!important;bottom:0!important;
+    width:calc(100vw - var(--ws-tablet-rail,88px))!important;max-width:none!important;height:100dvh!important;z-index:140!important;
+  }
+  html.ws-resident-tablet .mse-page{display:block!important;padding:18px 24px 30px!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important}
+  html.ws-resident-tablet .mse-page>*{width:100%!important;max-width:1120px!important;margin-left:auto!important;margin-right:auto!important}
+  html.ws-resident-tablet .mse-groups{
+    display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:start!important;
+    column-gap:24px!important;row-gap:4px!important;width:100%!important;max-width:1120px!important;margin:10px auto 0!important;
+  }
+  html.ws-resident-tablet .mse-groups>.mse-sec{grid-column:1/-1!important}
+  html.ws-resident-tablet .mse-groups>.mse-g{min-width:0!important}
+  html.ws-resident-tablet .mse-note,html.ws-resident-tablet .mse-quick,html.ws-resident-tablet .mse-ph{
+    max-width:1120px!important;margin-left:auto!important;margin-right:auto!important;
+  }
+  html.ws-resident-tablet .mse-scroll{width:min(1120px,100%)!important;margin:0 auto!important;-webkit-overflow-scrolling:touch!important}
+  html.ws-resident-tablet .mse-foot{padding-left:24px!important;padding-right:24px!important}
+  html.ws-resident-tablet .mse-foot>*{max-width:520px!important}
+}
+@media (min-width:760px) and (max-width:899px){
+  html.ws-resident-tablet .mse-layer{
+    left:var(--ws-tablet-rail,76px)!important;right:0!important;width:calc(100vw - var(--ws-tablet-rail,76px))!important;max-width:none!important;z-index:140!important;
+  }
+  html.ws-resident-tablet .mse-page{overflow-y:auto!important;-webkit-overflow-scrolling:touch!important}
+  html.ws-resident-tablet .mse-groups{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:4px!important}
+  html.ws-resident-tablet .mse-groups>.mse-sec{grid-column:1!important}
+}
+@media (min-width:760px) and (max-width:1023px) and (orientation:portrait){
+  html.ws-resident-tablet #app.app>.main:has(#ahosp)>.card,
+  html.ws-resident-tablet #app.app>.main:has(#disContinue)>.card,
+  html.ws-resident-tablet #app.app>.main:has(.dis-form)>.dis-form{max-width:720px!important}
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .snap-cols[data-tab="results"]{
+    height:auto!important;min-height:0!important;overflow:visible!important;grid-template-columns:minmax(0,1fr)!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .snap-cols[data-tab="results"]>.ws-results-column{
+    height:auto!important;max-height:none!important;overflow:visible!important;
+  }
+}
 </style>
 </body>
 </html>
