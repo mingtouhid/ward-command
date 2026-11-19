@@ -26019,8 +26019,23 @@ function bdftCloseUnavailableModal(){
 function dropEmptySections(h){ // R1.3.145: a section header with nothing under it is not shown (any role, any page)
   return h.replace(/<p class="(?:more-section|sec)">[^<]*<\/p>\s*<div class="more-grid">\s*<\/div>/g,"").replace(/<div class="more-grid">\s*<\/div>/g,"");
 }
+function wardSyncApplyResidentTabletMode(){
+  try{
+    const resident=!!(S.userId&&typeof roleOf==="function"&&roleOf()==="resident");
+    const tablet=!!(window.matchMedia&&window.matchMedia("(min-width:760px)").matches);
+    document.documentElement.classList.toggle("ws-resident-tablet",resident&&tablet);
+  }catch(e){
+    document.documentElement.classList.remove("ws-resident-tablet");
+  }
+}
+function wardSyncIsResidentTabletWide(){
+  try{return !!(S.userId&&typeof roleOf==="function"&&roleOf()==="resident"&&window.matchMedia&&window.matchMedia("(min-width:900px) and (orientation:landscape)").matches)}catch(e){return false}
+}
+window.addEventListener("resize",wardSyncApplyResidentTabletMode,{passive:true});
+window.addEventListener("orientationchange",wardSyncApplyResidentTabletMode,{passive:true});
 function render(opts){
   opts=opts||{};
+  wardSyncApplyResidentTabletMode();
   if(ui._sheetLeaving && !opts.forceLeave) return;
   const scroller=document.querySelector("main")||document.querySelector(".page");
   const keepY=scroller?scroller.scrollTop:0;
@@ -26069,7 +26084,21 @@ function render(opts){
   ui._overlayDepthWas=depth;
   ui._sheetWasOpen=sheetOpen;
   try{document.documentElement.classList.toggle("sheet-open", !!sheetOpen)}catch(e){}
-  let _html=route.page==="vchart"?vchartShell(vchartView()):(route.page==="scale"||route.page==="srate")?scShell(pages[route.page]()):isIntern()?internShell((pages[route.page]||internHomeView)()):shell((pages[route.page]||patientsView)()); // R1.3.140
+  let _html;
+  if(wardSyncIsResidentTabletWide()&&route.page==="snap"){
+    const listHtml=patientsView();
+    const selectedNeedle=`onclick="go('snap','${route.id}')"`;
+    const selectedListHtml=listHtml.replace(selectedNeedle,`data-ws-selected="true" ${selectedNeedle}`);
+    _html=shell(`<div class="ws-tablet-master-detail">
+      <section class="ws-tablet-patient-list" aria-label="Patients list">
+        <div class="ws-tablet-list-heading"><h2>Patients</h2><span>Ward census</span></div>
+        ${selectedListHtml}
+      </section>
+      <section class="ws-tablet-patient-detail" aria-label="Selected patient">${snapView()}</section>
+    </div>`);
+  }else{
+    _html=route.page==="vchart"?vchartShell(vchartView()):(route.page==="scale"||route.page==="srate")?scShell(pages[route.page]()):isIntern()?internShell((pages[route.page]||internHomeView)()):shell((pages[route.page]||patientsView)());
+  } // R1.3.140 + resident tablet master-detail
   if(ui._sheetEnter) _html=stampSheetEnter(_html);
   // R1.3.74: skip identical re-renders (realtime pulls, inbox refresh) so the page doesn't flash or replay animations.
   const _rk=routeKey(route.page,route.id);
@@ -26854,6 +26883,250 @@ html:has(#app.app.oa-mode),body:has(#app.app.oa-mode){height:100%!important;min-
 .oa-app .oa-card,.oa-app .oa-group-card,.oa-app .oa-user-card{contain:layout style}
 </style>
 
+
+<!-- WARD SYNC RESIDENT TABLET WORKSPACE V1: tablet-only, resident-role-gated presentation layer. -->
+<style id="ward-sync-resident-tablet-v1">
+@media (min-width:760px){
+  html.ws-resident-tablet,html.ws-resident-tablet body{
+    height:100%!important;max-height:100%!important;overflow:hidden!important;
+  }
+  html.ws-resident-tablet #app.app{
+    --ws-tablet-rail:88px;
+    position:relative!important;display:flex!important;flex-direction:column!important;
+    width:calc(100vw - var(--ws-tablet-rail))!important;max-width:none!important;
+    height:100dvh!important;min-height:0!important;max-height:100dvh!important;
+    margin:0 0 0 var(--ws-tablet-rail)!important;padding:0!important;overflow:hidden!important;
+  }
+  html.ws-resident-tablet #app.app>.side-nav{
+    position:fixed!important;inset:0 auto 0 0!important;z-index:100!important;
+    display:flex!important;flex-direction:column!important;align-items:stretch!important;
+    width:var(--ws-tablet-rail)!important;height:100dvh!important;min-height:0!important;
+    gap:6px!important;padding: max(16px,env(safe-area-inset-top)) 8px max(14px,env(safe-area-inset-bottom))!important;
+    overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;
+    background:var(--nav)!important;border-right:1px solid var(--line)!important;
+    box-sizing:border-box!important;
+  }
+  html.ws-resident-tablet #app.app>.side-nav .side-brand{
+    display:block!important;margin:0 0 10px!important;padding:7px 1px!important;
+    text-align:center!important;font-size:11px!important;line-height:1.15!important;
+    font-weight:800!important;white-space:normal!important;overflow-wrap:anywhere!important;
+  }
+  html.ws-resident-tablet #app.app>.side-nav button{
+    display:flex!important;flex:0 0 auto!important;flex-direction:column!important;
+    align-items:center!important;justify-content:center!important;gap:6px!important;
+    width:100%!important;min-width:0!important;min-height:62px!important;height:auto!important;
+    margin:0!important;padding:8px 3px!important;border:0!important;border-radius:13px!important;
+    background:transparent!important;color:var(--muted)!important;
+    text-align:center!important;font-size:10px!important;font-weight:650!important;
+    line-height:1.15!important;white-space:normal!important;
+  }
+  html.ws-resident-tablet #app.app>.side-nav button.on{
+    background:var(--teal)!important;color:#fff!important;
+  }
+  html.ws-resident-tablet #app.app>.side-nav button>.ico,
+  html.ws-resident-tablet #app.app>.side-nav button>span:first-child{
+    display:grid!important;place-items:center!important;width:24px!important;height:24px!important;
+    flex:0 0 24px!important;
+  }
+  html.ws-resident-tablet #app.app>.side-nav button svg{
+    display:block!important;width:23px!important;height:23px!important;
+  }
+  html.ws-resident-tablet #app.app>.side-nav button>span:last-child{
+    display:block!important;max-width:100%!important;font-size:10px!important;
+    line-height:1.15!important;font-weight:650!important;white-space:normal!important;
+  }
+  html.ws-resident-tablet #app.app>.top{
+    position:relative!important;z-index:20!important;display:flex!important;flex:0 0 auto!important;
+    align-items:center!important;width:100%!important;max-width:none!important;
+    min-width:0!important;min-height:68px!important;padding:10px 22px!important;
+    box-sizing:border-box!important;
+  }
+  html.ws-resident-tablet #app.app>.top.resident-home{padding:10px 22px!important;min-height:72px!important}
+  html.ws-resident-tablet #app.app>.main{
+    display:block!important;flex:1 1 auto!important;width:100%!important;max-width:none!important;
+    min-width:0!important;min-height:0!important;height:auto!important;margin:0!important;
+    padding:18px 22px max(24px,env(safe-area-inset-bottom))!important;
+    overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;
+    scrollbar-gutter:stable!important;box-sizing:border-box!important;
+  }
+  html.ws-resident-tablet #app.app>.main>*,
+  html.ws-resident-tablet #app.app .main .card,
+  html.ws-resident-tablet #app.app .main .row,
+  html.ws-resident-tablet #app.app .main .plist-block,
+  html.ws-resident-tablet #app.app .main .plist-grid,
+  html.ws-resident-tablet #app.app .main .snap-cols,
+  html.ws-resident-tablet #app.app .main .snap-cols>*{
+    min-width:0!important;max-width:100%!important;box-sizing:border-box!important;
+  }
+  html.ws-resident-tablet #app.app>.nav{display:none!important}
+  html.ws-resident-tablet #app.app .main .r2-home{
+    display:flex!important;flex-direction:column!important;gap:14px!important;
+    width:100%!important;min-width:0!important;min-height:0!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-wardhead h2{font-size:22px!important;font-weight:700!important}
+  html.ws-resident-tablet #app.app .main .r2-bdft{
+    display:flex!important;flex-direction:row!important;align-items:center!important;
+    justify-content:space-between!important;gap:14px!important;min-height:66px!important;
+    padding:14px 18px!important;overflow:hidden!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-bdft>.row{flex:0 0 auto!important;min-width:0!important}
+  html.ws-resident-tablet #app.app .main .r2-bedchips{
+    display:flex!important;flex:1 1 auto!important;justify-content:flex-end!important;
+    flex-wrap:wrap!important;margin:0!important;gap:7px!important;min-width:0!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-split{
+    display:grid!important;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr)!important;
+    gap:16px!important;align-items:start!important;flex:1 1 auto!important;min-width:0!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-overview{
+    display:flex!important;flex-direction:column!important;gap:12px!important;
+    min-width:0!important;min-height:0!important;padding:16px!important;
+    border:1px solid var(--line)!important;border-radius:18px!important;overflow:visible!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-side{
+    display:flex!important;flex-direction:column!important;align-items:stretch!important;
+    gap:12px!important;min-width:0!important;min-height:0!important;overflow:visible!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-side>*{
+    flex:0 0 auto!important;width:100%!important;max-width:100%!important;min-width:0!important;
+    height:auto!important;min-height:0!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-grid{
+    display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:10px!important;min-width:0!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-tile{
+    width:100%!important;height:auto!important;min-height:72px!important;
+    padding:12px 14px!important;gap:5px!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-tile b{font-size:clamp(22px,2vw,29px)!important}
+  html.ws-resident-tablet #app.app .main .r2-tile span{font-size:13px!important;line-height:1.2!important}
+  html.ws-resident-tablet #app.app .main .r2-count{font-size:30px!important}
+  html.ws-resident-tablet #app.app .main .r2-flags,
+  html.ws-resident-tablet #app.app .main .r2-team,
+  html.ws-resident-tablet #app.app .main .r2-duty,
+  html.ws-resident-tablet #app.app .main .r2-sched{
+    min-width:0!important;max-width:100%!important;padding:15px!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-team .pgt-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;
+  }
+  html.ws-resident-tablet #app.app .main .plist-block{width:100%!important;margin-bottom:18px!important}
+  html.ws-resident-tablet #app.app .main .plist-grid{
+    display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr))!important;
+    gap:14px!important;width:100%!important;
+  }
+  html.ws-resident-tablet #app.app .main .patient-card{
+    width:100%!important;min-width:0!important;padding:16px!important;margin:0!important;
+  }
+  html.ws-resident-tablet #app.app .main .patient-head{
+    grid-template-columns:54px minmax(0,1fr) auto!important;gap:12px!important;
+  }
+  html.ws-resident-tablet #app.app .main .patient-name{font-size:16px!important}
+  html.ws-resident-tablet #app.app .main .snap-cols{
+    display:grid!important;grid-template-columns:minmax(260px,.9fr) minmax(0,1.1fr)!important;
+    gap:16px!important;align-items:start!important;
+  }
+  html.ws-resident-tablet #app.app .main .snap-cols>.card{
+    width:100%!important;margin:0!important;padding:18px!important;
+  }
+  html.ws-resident-tablet #app.app .main .ect-grid{
+    display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))!important;
+    gap:16px!important;align-items:stretch!important;
+  }
+  html.ws-resident-tablet #app.app .main .ect-grid>.card{
+    display:flex!important;flex-direction:column!important;justify-content:space-between!important;
+    min-width:0!important;margin:0!important;padding:18px!important;
+  }
+  html.ws-resident-tablet #app.app .main .ect-card{gap:14px!important}
+  html.ws-resident-tablet #app.app .main .setup-split{
+    display:grid!important;grid-template-columns:minmax(240px,.8fr) minmax(0,1.2fr)!important;
+    gap:16px!important;align-items:start!important;
+  }
+  html.ws-resident-tablet #app.app .sheet{padding:24px!important}
+  html.ws-resident-tablet #app.app .sheet .box{
+    width:min(780px,calc(100vw - 140px))!important;max-width:780px!important;
+    max-height:90dvh!important;overflow:auto!important;
+  }
+}
+/* Portrait tablet: retain the resident rail, stack workspaces and use full-width patient details. */
+@media (min-width:760px) and (max-width:1023px) and (orientation:portrait){
+  html.ws-resident-tablet #app.app{--ws-tablet-rail:76px}
+  html.ws-resident-tablet #app.app>.side-nav{padding-left:6px!important;padding-right:6px!important;gap:5px!important}
+  html.ws-resident-tablet #app.app>.side-nav button{min-height:58px!important}
+  html.ws-resident-tablet #app.app>.main{padding:14px 16px 24px!important}
+  html.ws-resident-tablet #app.app .main .r2-split{grid-template-columns:minmax(0,1fr)!important;gap:12px!important}
+  html.ws-resident-tablet #app.app .main .r2-overview{padding:14px!important}
+  html.ws-resident-tablet #app.app .main .r2-side{
+    display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr))!important;
+    align-items:stretch!important;gap:12px!important;
+  }
+  html.ws-resident-tablet #app.app .main .r2-side>*{height:auto!important}
+  html.ws-resident-tablet #app.app .main .plist-grid{
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr))!important;
+  }
+  html.ws-resident-tablet #app.app .main .snap-cols{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:"id" "pgt" "vit" "mse" "labs" "crit" "med" "adv" "act"!important;
+  }
+  html.ws-resident-tablet #app.app .main .ect-grid{grid-template-columns:minmax(0,1fr)!important}
+  html.ws-resident-tablet #app.app .main .setup-split{grid-template-columns:minmax(0,1fr)!important}
+}
+/* Narrow tablet split-screen / landscape Stage Manager windows fall back to a single-column dashboard. */
+@media (min-width:760px) and (max-width:899px){
+  html.ws-resident-tablet #app.app .main .r2-split{grid-template-columns:minmax(0,1fr)!important}
+  html.ws-resident-tablet #app.app .main .r2-side{
+    display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))!important;
+  }
+  html.ws-resident-tablet #app.app .main .snap-cols{grid-template-columns:minmax(0,1fr)!important}
+}
+/* Landscape resident tablet patient master-detail workspace. */
+@media (min-width:900px) and (orientation:landscape){
+  html.ws-resident-tablet #app.app>.main{overflow:hidden!important;display:flex!important;flex-direction:column!important}
+  html.ws-resident-tablet #app.app .ws-tablet-master-detail{
+    display:grid!important;grid-template-columns:minmax(300px,.78fr) minmax(0,1.22fr)!important;
+    gap:16px!important;width:100%!important;height:100%!important;min-height:0!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-list,
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail{
+    min-width:0!important;min-height:0!important;height:100%!important;
+    overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;
+    scrollbar-gutter:stable!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-list{
+    padding:0 8px 18px 0!important;border-right:1px solid var(--line)!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-list-heading{
+    position:sticky!important;top:0!important;z-index:10!important;
+    display:flex!important;align-items:baseline!important;justify-content:space-between!important;
+    gap:10px!important;padding:4px 4px 12px!important;margin:0 0 10px!important;
+    background:var(--bg)!important;border-bottom:1px solid var(--line)!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-list-heading h2{font-size:20px!important;font-weight:800!important}
+  html.ws-resident-tablet #app.app .ws-tablet-list-heading span{font-size:11px!important;color:var(--muted)!important}
+  html.ws-resident-tablet #app.app .ws-tablet-patient-list>#pq{
+    position:sticky!important;top:47px!important;z-index:9!important;margin:0 0 9px!important;
+    font-size:14px!important;padding:11px 12px!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-list .pf-row{
+    position:sticky!important;top:100px!important;z-index:8!important;
+    padding:5px 0 8px!important;background:var(--bg)!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-list .plist-grid{
+    grid-template-columns:minmax(0,1fr)!important;gap:9px!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-list .patient-card{
+    padding:12px!important;border-radius:14px!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-list .patient-card[data-ws-selected="true"]{
+    border:2px solid var(--teal)!important;background:color-mix(in srgb,var(--teal) 7%,var(--panel))!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .snap-cols{
+    grid-template-columns:minmax(250px,.82fr) minmax(0,1.18fr)!important;gap:12px!important;
+  }
+  html.ws-resident-tablet #app.app .ws-tablet-patient-detail .pt-head{margin-top:0!important}
+}
+</style>
 </body>
 </html>
 
