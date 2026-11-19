@@ -1,6 +1,6 @@
 # Ward Sync architecture
 
-This note describes the repository at GitHub main, commit `566a8d514c1ea3d0d0798b4db7535280f52a858f` (19 November 2026). It follows the current client, SQL files and included Edge Function source. It distinguishes checked-in source from production database/deployment state: a file or RPC call in the client does not prove that a migration has been applied.
+This note describes the Ward Sync source and PWA assets as of 19 November 2026, including the application update in commit `566a8d514c1ea3d0d0798b4db7535280f52a858f` and the subsequent root icon-alias refresh in commit `f5c5e816a69d5da993a0694f33dca1d307c72ba4`. It follows the checked-in client, SQL files and included Edge Function source. It distinguishes repository state from production database/deployment state: a file or RPC call in the client does not prove that a migration has been applied.
 
 The app is an internal psychiatry ward duty board. Staff sign in, see occupied beds, and record admissions, observations, medicines, notes, MSE, vitals, rating scales, labs, ECT, handovers, tasks, and discharge. Bed-distribution (BDFT) assigns tomorrow's occupied beds across resident batches.
 

@@ -8,11 +8,11 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 - The Home BDFT card now treats the active ward-wide distribution for today or tomorrow as the source of truth, rather than relying only on the signed-in resident's personal assignment. The Make BDFT prompt is hidden once an active distribution exists. Bed numbers are shown in bed chips instead of being repeated in a summary line, and the complete distribution remains available in read-only view.
 - BDFT push-notification taps are normalised to the published BDFT page. The notification route clears the distribution edit id and explicitly sets read-only mode, preventing a tap from opening the generation/edit terminal.
-- PWA icon declarations now point to the canonical `icons/` directory and use separate regular and maskable 192px/512px assets. The service worker cache is `ward-sync-pwa-r2.0.0-3`; its precache includes the refreshed app icons, Apple touch icon, favicon, notification glyph and badge while while refreshing the four legacy root-level icon paths still used by the service-worker precache.
+- PWA icon declarations now point to the canonical `icons/` directory and use separate regular and maskable 192px/512px assets. The service worker cache is `ward-sync-pwa-r2.0.0-3`; its precache includes the refreshed app icons, Apple touch icon, favicon, notification glyph and badge. The four root-level compatibility assets also precached by the service worker (`icon-192.png`, `icon-512.png`, `apple-touch-icon.png` and `favicon-32.png`) were refreshed from their canonical copies under `icons/`.
 
 ### Documentation and maintenance
 
-- Repository documentation is being brought into alignment with the current source. The HTML client label is `R2.0.7`, the inlined BDFT engine is `7.0`, and the current service-worker cache is `ward-sync-pwa-r2.0.0-3`; these values are separate version identifiers, not interchangeable release numbers.
+- Repository documentation was refreshed: `structure.md` was added; `README.md`, `WARD_SYNC_ARCHITECTURE.md`, `privacy.html` and this changelog were updated; and the obsolete example commit subject in `.github/workflows/assemble-index.yml` was replaced. The HTML client label is `R2.0.7`, the inlined BDFT engine is `7.0`, and the current service-worker cache is `ward-sync-pwa-r2.0.0-3`; these values are separate version identifiers, not interchangeable release numbers.
 
 ## 2026-11-18
 
