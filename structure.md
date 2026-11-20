@@ -69,3 +69,10 @@ The repository also does not contain source for all external functions reference
 4. Keep HTML app label, service-worker cache name and manifest metadata deliberately coordinated; record intentional differences.
 5. Commit database migrations and rollbacks where possible, and record verified application status separately from file existence.
 6. Never commit patient data, session tokens, service-role keys, Vault values, VAPID private keys or FCM credentials.
+
+## PWA icon and splash configuration (2026-11-20)
+
+- The web manifest declares standard and maskable app icons separately under `icons/` and uses `#001c65` for `background_color` and `theme_color`.
+- The initial HTML `theme-color` matches `#001c65`; runtime theme selection may update the browser chrome colour when the user changes the in-app theme.
+- The service-worker app-shell cache is `ward-sync-pwa-r2.0.0-12`.
+- Root-level icon compatibility files and the PNG files under `icons/` must be updated together when publishing a new icon artwork set. Android's adaptive mask is applied by the launcher; PNG assets should not bake black corners into the square canvas.
