@@ -9599,7 +9599,10 @@ function wardRostersView(){
   const mode=isPgt?wardRosterViewMode:"all";
   const switcher=isPgt?'<div class="resident-roster-view-switch" role="group" aria-label="Roster view"><button type="button" class="'+(mode==="mine"?"active":"") + '" aria-pressed="'+(mode==="mine"?"true":"false") + '" onclick="wardSetRosterView(\'mine\')">My Duties</button><button type="button" class="'+(mode==="all"?"active":"") + '" aria-pressed="'+(mode==="all"?"true":"false") + '" onclick="wardSetRosterView(\'all\')">Entire Roster</button></div>':"";
   const body=isPgt&&mode==="mine"?wardRosterMyDuties(selected):wardRosterTable(selected);
-false
+  return header
+   + '<div class="resident-roster-detail-head"><button class="btn ghost sm" onclick="wardRosterSelectedId=null;wardRosterViewMode=\'mine\';render()">← All rosters</button>'
+   + '<div class="resident-roster-detail-title"><div><span class="resident-roster-month">'+esc(wardRosterMonthLabel(selected))+'</span><h2>'+esc(wardRosterKindLabel(selected))+'</h2></div>'+wardRosterBadge(selected)+'</div>'
+   + switcher + '</div>' + body;
  }
  const card=(r)=>`<button type="button" class="resident-roster-card" onclick="wardOpenRoster('${r.id}')"><span class="resident-roster-card-top">${wardRosterBadge(r)}<span class="resident-roster-card-arrow">↗</span></span><span class="resident-roster-card-month">${esc(wardRosterMonthLabel(r))}</span><strong>${esc(wardRosterKindLabel(r))}</strong><span class="resident-roster-card-period">${oaRosterDateLabel(r.period_start)}${r.period_end?` – ${oaRosterDateLabel(r.period_end)}`:""}</span></button>`;
  const pgt=rows.filter(r=>r.roster_type==="pgt_monthly"),faculty=rows.filter(r=>r.roster_type==="faculty_weekly");
