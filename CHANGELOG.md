@@ -1,3 +1,15 @@
+## 2026-11-20 — Android logo-only splash
+
+### Changed
+- Dedicated Android splash artwork is now present at `icons/icon-512-maskable.png`: white heart-ECG medical emblem on opaque `#001c65`, matching the manifest background so no separate square tile is visible.
+- Kept the 192px standard and maskable icons, 512px standard icon, iOS Apple touch icon, favicons and root compatibility launcher artwork unchanged.
+- Kept manifest `background_color` and `theme_color` at `#001c65`.
+- Bumped the app-shell service-worker cache to `ward-sync-pwa-r2.0.0-14` so clients fetch the updated splash artwork.
+
+### Preserved
+- Notification glyph and badge remain unchanged.
+- No clinical workflows, Supabase calls, roles, patient data handling or navigation code changed.
+
 ## 2026-11-20 — Heart ECG icon integration
 
 ### Changed
