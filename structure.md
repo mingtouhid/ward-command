@@ -74,10 +74,19 @@ The repository also does not contain source for all external functions reference
 
 - The web manifest declares standard and maskable app icons separately under `icons/` and uses `#001c65` for `background_color` and `theme_color`.
 - The initial HTML `theme-color` matches `#001c65`; runtime theme selection may update the browser chrome colour when the user changes the in-app theme.
-- The service-worker app-shell cache is `ward-sync-pwa-r2.0.0-12`.
+- The service-worker app-shell cache is `ward-sync-pwa-r2.0.0-14`.
 - Root-level icon compatibility files and the PNG files under `icons/` must be updated together when publishing a new icon artwork set. Android's adaptive mask is applied by the launcher; PNG assets should not bake black corners into the square canvas.
 
 
 ## 2026-11-20 icon artwork integration
 
 The approved Ward Sync heart-ECG icon PNGs are stored under `icons/`, with root-level compatibility copies for legacy PWA URLs. Standard and maskable icon declarations retain the existing manifest paths. The notification glyph and badge remain separate notification-specific assets and must not be replaced by the full app icon.
+
+
+## Android splash icon separation (2026-11-20)
+
+- `icons/icon-192.png` and `icons/icon-192-maskable.png` remain the full blue launcher artwork.
+- `icons/icon-512.png` remains the full blue square app artwork.
+- `icons/icon-512-maskable.png` is reserved for the Android splash artwork: a centred white medical emblem over an opaque `#001c65` background. This matches the PWA splash background so the tile is not visually distinguishable from the surrounding screen.
+- This is a dedicated larger maskable asset. Chromium WebAPKs can retain/select a splash image separately from the primary launcher icon; actual selection and the appearance must be confirmed on the installed Android WebAPK after its update.
+- iOS `apple-touch-icon.png`, root compatibility files, notification glyph and badge are not changed by this Android-specific adjustment.
