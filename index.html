@@ -9438,7 +9438,8 @@ function wardRosterBadge(r){
  return `<span class="roster-library-badge archived">Archived</span>`;
 }
 let wardRosterViewMode="mine";
-function wardOpenRoster(id){wardRosterSelectedId=String(id);wardRosterViewMode="mine";render()}
+function wardRosterCenterToday(){requestAnimationFrame(()=>{const row=document.querySelector(".resident-roster-my-duty-day.is-today"),scroller=document.querySelector(".main");if(!row||!scroller)return;const sr=scroller.getBoundingClientRect(),rr=row.getBoundingClientRect();const target=scroller.scrollTop+(rr.top-sr.top)-(scroller.clientHeight-row.offsetHeight)/2;scroller.scrollTo({top:Math.max(0,target),behavior:"smooth"});});}
+function wardOpenRoster(id){wardRosterSelectedId=String(id);wardRosterViewMode="mine";render();wardRosterCenterToday()}
 function wardSetRosterView(mode){wardRosterViewMode=mode==="all"?"all":"mine";render()}
 
 const WARD_ROSTER_ANNOTATION_COLORS = ["#F2CA66", "#78C69B", "#82AFE8", "#B69BE1", "#E58F98"];
@@ -9536,7 +9537,8 @@ function wardRosterMyDuties(r){
  });
  if(!count)return '<section class="resident-roster-my-duties"><div class="resident-roster-duty-summary">0 duties</div><div class="resident-roster-personal-empty">No duties assigned this month.</div></section>';
  const ordered=Array.from(buckets.values()).sort((a,b)=>a.sortValue-b.sortValue||a.firstRow-b.firstRow);
- const dayHtml=ordered.map(day=>'<div class="resident-roster-my-duty-day"><div class="resident-roster-duty-date"><strong>'+esc(day.dateLabel)+'</strong><span>'+esc(day.dayLabel)+'</span></div><div class="resident-roster-duty-items">'+day.items.map(item=>'<span class="resident-roster-duty-item">'+esc(item)+'</span>').join("")+'</div></div>').join("");
+ const today=new Date(),todayKey=String(today.getFullYear())+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+ const dayHtml=ordered.map(day=>'<div class="resident-roster-my-duty-day'+(day.dateKey===todayKey?' is-today':'')+'"'+(day.dateKey===todayKey?' data-ward-roster-today="true"':'')+'><div class="resident-roster-duty-date"><strong>'+esc(day.dateLabel)+'</strong><span>'+esc(day.dayLabel)+'</span></div><div class="resident-roster-duty-items">'+day.items.map(item=>'<span class="resident-roster-duty-item">'+esc(item)+'</span>').join("")+'</div></div>').join("");
  return '<section class="resident-roster-my-duties" aria-label="My monthly duties"><div class="resident-roster-duty-summary">'+count+' '+(count===1?'duty':'duties')+'</div><div class="resident-roster-personal-list">'+dayHtml+'</div></section>';
 }
 
@@ -9607,10 +9609,10 @@ function wardRostersView(){
   const mode=isPgt?wardRosterViewMode:"all";
   const switcher=isPgt?'<div class="resident-roster-view-switch" role="group" aria-label="Roster view"><button type="button" class="'+(mode==="mine"?"active":"") + '" aria-pressed="'+(mode==="mine"?"true":"false") + '" onclick="wardSetRosterView(\'mine\')">My Duties</button><button type="button" class="'+(mode==="all"?"active":"") + '" aria-pressed="'+(mode==="all"?"true":"false") + '" onclick="wardSetRosterView(\'all\')">Entire Roster</button></div>':"";
   const body=isPgt&&mode==="mine"?wardRosterMyDuties(selected):wardRosterTable(selected);
-  return header
-   + '<div class="resident-roster-detail-head"><button class="btn ghost sm" onclick="wardRosterSelectedId=null;wardRosterViewMode=\'mine\';render()">← All rosters</button>'
-   + '<div class="resident-roster-detail-title"><div><span class="resident-roster-month">'+esc(wardRosterMonthLabel(selected))+'</span><h2>'+esc(wardRosterKindLabel(selected))+'</h2></div>'+wardRosterBadge(selected)+'</div>'
-   + switcher + '</div>' + body;
+  return '<div class="resident-roster-detail-head">'
+   + '<div class="resident-roster-detail-top"><button class="btn ghost sm" onclick="wardRosterSelectedId=null;wardRosterViewMode=\'mine\';render()">← All rosters</button>'
+   + '<div class="resident-roster-detail-title"><span class="resident-roster-month">'+esc(wardRosterMonthLabel(selected))+'</span><h2>'+esc(wardRosterKindLabel(selected))+'</h2></div>'
+   + wardRosterBadge(selected) + '</div>' + switcher + '</div>' + body;
  }
  const card=(r)=>`<button type="button" class="resident-roster-card" onclick="wardOpenRoster('${r.id}')"><span class="resident-roster-card-top">${wardRosterBadge(r)}<span class="resident-roster-card-arrow">↗</span></span><span class="resident-roster-card-month">${esc(wardRosterMonthLabel(r))}</span><strong>${esc(wardRosterKindLabel(r))}</strong><span class="resident-roster-card-period">${oaRosterDateLabel(r.period_start)}${r.period_end?` – ${oaRosterDateLabel(r.period_end)}`:""}</span></button>`;
  const pgt=rows.filter(r=>r.roster_type==="pgt_monthly"),faculty=rows.filter(r=>r.roster_type==="faculty_weekly");
@@ -9968,7 +9970,7 @@ function shell(inner){
   const tools=isHome?`<div class="who-tools home-tools">${bell}</div>`:snapP?`<div class="who-tools compact-tools">${bell}</div>`:`<div class="who-tools compact-tools">${syncMini}${bell}</div>`;
   const sideIcon=name=>["home","patients","handover","more"].includes(name)?navIco(name):ico(name);
   const sideBtn=(page,label,icon,extra)=>`<button type="button" class="${on(page)}" onclick="${extra||`go('${page}')`}" aria-label="${label}">${sideIcon(icon)}<span>${label}</span></button>`;
-  return `<aside class="side-nav" aria-label="Ward"><p class="side-brand">Ward Sync</p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}</aside><header class="top${isHome?" resident-home":snapP?" patient-top":" compact-top"}">${left}${tools}</header>
+  return `<aside class="side-nav" aria-label="Ward"><p class="side-brand">Ward Sync</p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}</aside><header class="top${isHome?" resident-home":snapP?" patient-top":route.page==="rosters"?" compact-top roster-top":" compact-top"}">${left}${tools}</header>
     <main class="main">${inner}</main>${r151Dock()}${snapP&&isConsultant()&&snapP.status!=="discharged"?`<button type="button" class="snap-advice-fab" onclick="openAdviceForm('${snapP.id}')" aria-label="Give advice to ${esc(snapP.name)}"><span class="snap-advice-fab-ico">${ico("myorders")}</span><span>Give advice</span></button>`:""}
     <nav class="nav"><div class="nav-in">
       <button class="${on("home")}" onclick="go('home')" aria-label="Home">${navIco('home')}<span class="lbl">Home</span></button>
@@ -27058,10 +27060,17 @@ html:has(#app.app.oa-mode),body:has(#app.app.oa-mode){height:100%!important;min-
 .roster-library-badge.current{background:color-mix(in srgb,var(--teal) 14%,var(--panel));color:var(--teal)}
 .roster-library-badge.upcoming{background:color-mix(in srgb,var(--accent) 13%,var(--panel));color:var(--accent)}
 .roster-library-badge.archived{background:var(--surface-2);color:var(--muted)}
-.resident-roster-detail-head{margin:0 0 12px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
-.resident-roster-detail-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
-.resident-roster-detail-title h2{margin:3px 0 0;font-size:18px}
-.resident-roster-month{font-size:12px;font-weight:750;color:var(--accent)}
+.resident-roster-detail-head{margin:0 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.resident-roster-detail-top{display:flex;align-items:center;gap:10px;min-width:0}
+.resident-roster-detail-top>.btn{flex:0 0 auto;white-space:nowrap}
+.resident-roster-detail-title{display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:0;flex:1}
+.resident-roster-detail-title h2{margin:0;font-size:16px;line-height:1.2;white-space:nowrap}
+.resident-roster-month{font-size:11px;font-weight:750;color:var(--accent);line-height:1.2}
+.resident-roster-detail-top>.roster-library-badge{flex:0 0 auto;align-self:flex-start;margin-left:auto}
+.resident-roster-detail-head>.resident-roster-view-switch{margin-top:9px}
+.top.roster-top .compact-context{display:none}
+.top.roster-top{justify-content:flex-end}
+.top.roster-top .who-tools{margin-left:auto}
 .resident-roster-sheet{padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 4px 18px rgba(25,20,40,.04)}
 .resident-roster-table-wrap{width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
 .resident-roster-table,.resident-roster-group-table{width:100%;min-width:780px;border-collapse:separate;border-spacing:0;font-size:12px}
@@ -27084,15 +27093,17 @@ html:has(#app.app.oa-mode),body:has(#app.app.oa-mode){height:100%!important;min-
 .resident-roster-duty-summary{padding:10px 0;border-bottom:1px solid var(--line);font-size:12px;font-weight:750;color:var(--muted)}
 .resident-roster-my-duty-day{display:grid;grid-template-columns:100px minmax(0,1fr);gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
 .resident-roster-my-duty-day:last-child{border-bottom:0}
+.resident-roster-my-duty-day.is-today{margin:0 -7px;padding:13px 7px;border:1px solid color-mix(in srgb,var(--accent) 55%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--accent) 13%,var(--panel))}
+.resident-roster-my-duty-day.is-today .resident-roster-duty-date strong,.resident-roster-my-duty-day.is-today .resident-roster-duty-date span{color:var(--accent)}
 .resident-roster-duty-date{display:flex;flex-direction:column;gap:3px}
 .resident-roster-duty-date strong{font-size:14px;font-weight:800;color:var(--ink)}
 .resident-roster-duty-date span{font-size:11px;color:var(--muted)}
-.resident-roster-duty-items{display:flex;flex-wrap:wrap;gap:7px 14px;min-width:0}
+.resident-roster-duty-items{display:flex;flex-wrap:wrap;gap:7px 26px;min-width:0}
 .resident-roster-duty-item{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
 .resident-roster-personal-empty{padding:20px 4px;font-size:13px;color:var(--muted)}
 .resident-roster-personal-empty strong{display:block;color:var(--ink);font-size:13px}
 .resident-roster-personal-empty p{margin:6px 0 0;font-size:12px}
-@media(max-width:640px){.resident-roster-my-duties{padding:3px 10px}.resident-roster-my-duty-day{grid-template-columns:78px minmax(0,1fr);gap:9px;padding:12px 0}.resident-roster-duty-date strong{font-size:13px}.resident-roster-duty-item{font-size:12px}}
+@media(max-width:640px){.resident-roster-my-duties{padding:3px 10px}.resident-roster-my-duty-day{grid-template-columns:78px minmax(0,1fr);gap:9px;padding:12px 0}.resident-roster-my-duty-day.is-today{padding:12px 7px}.resident-roster-duty-items{column-gap:22px;row-gap:8px}.resident-roster-duty-date strong{font-size:13px}.resident-roster-duty-item{font-size:12px}.resident-roster-detail-top{gap:8px}.resident-roster-detail-top>.btn{padding-left:10px;padding-right:10px}.resident-roster-detail-title h2{font-size:14px}}
 
 .roster-short-code{color:var(--muted);font-weight:700}
 @media(max-width:640px){.resident-roster-library-grid{grid-template-columns:1fr 1fr;gap:8px}.resident-roster-card{padding:12px}.resident-roster-card-month{font-size:18px}.resident-roster-sheet{padding:8px}}
