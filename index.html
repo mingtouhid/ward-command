@@ -5982,7 +5982,14 @@ html[data-theme="ot"] .app>.pt-qbar{
 .ward-roster-annotation-private{margin:9px 0 0;color:var(--muted);font-size:10px;line-height:1.4}
 @media(hover:hover){.resident-roster-annotation-trigger:hover{outline:1px solid color-mix(in srgb,var(--teal) 45%,transparent)}}
 </style>
-</head>
+<style id="canonical-pgt-resident-identity">
+.oa-pgt-selected{display:flex;flex-direction:column;gap:3px;padding:7px 9px;margin-bottom:7px;border:1px solid #ded7e9;border-radius:9px;background:#f6f3fa;min-width:0}
+.oa-pgt-selected strong{font-size:12px;color:#262231;overflow-wrap:anywhere}
+.oa-pgt-selected small{font-size:10px;color:#777}
+.oa-canonical-code{display:block;padding:10px 5px;border:1px solid #ded7e9;border-radius:9px;background:#f1edf7;color:#493a61;text-align:center;font-size:13px}
+.oa-pgt-name-wrap .field input{font-size:12px}
+.resident-roster-identity-warning{margin:8px 0;padding:9px 11px;border:1px solid #d8b86e;border-radius:9px;background:#fff8e7;color:#74551c;font-size:12px;line-height:1.45}
+</style></head>
 <body>
 <svg id="ward-sync-icon-sprite" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
   <symbol id="icon-admit-patient" viewBox="0 0 24 24">
@@ -9009,21 +9016,17 @@ function oaEnsureRosterContent(){
  if(typeof c==="string"){try{c=JSON.parse(c||"{}")}catch(e){c={}}}
  const type=r.roster_type||OA.type;
  if(!Array.isArray(c.columns)||!c.columns.length)c=oaTemplateContent(type);
- // Keep the saved column configuration intact. Earlier versions forcibly reset
- // PGT columns to the nine defaults, which discarded user-added columns.
  c.columns=c.columns.map((x,i)=>String(x==null?`Duty ${i+1}`:x).trim()||`Duty ${i+1}`);
- c.rows=Array.isArray(c.rows)?c.rows:[];c.notes=Array.isArray(c.notes)?c.notes:[];c.groups=Array.isArray(c.groups)?c.groups:[];
- c.rows=c.rows.map(row=>{
-  const values=Array.isArray(row)?row:c.columns.map(k=>row&&row[k]||"");
-  return c.columns.map((_,i)=>values[i]??"");
- });
+ c.rows=Array.isArray(c.rows)?c.rows:[];c.notes=Array.isArray(c.notes)?c.notes:[];
+ c.groups=Array.isArray(c.groups)?c.groups:[];
+ c.rows=c.rows.map(row=>{const values=Array.isArray(row)?row:c.columns.map(k=>row&&row[k]||"");return c.columns.map((_,i)=>values[i]??"");});
  if(type==="pgt_monthly"){
   const defaults=["Group A","Group B","Group C","Group D"];
   c.groups=c.groups.map((g,i)=>{
    if(typeof g==="string")return {name:g,members:[]};
    let members=Array.isArray(g.members)?g.members:[];
-   if(typeof g.members==="string"&&g.members.trim())members=g.members.split(/[,;\n]+/).map(x=>({name:x.trim(),abbr:""}));
-   return {name:g.name||g.title||defaults[i]||`Group ${String.fromCharCode(65+i)}`,members:members.map(m=>typeof m==="string"?{name:m,abbr:""}:{name:m.name||m.display_name||"",abbr:m.abbr||m.abbreviation||""})};
+   if(typeof g.members==="string"&&g.members.trim())members=g.members.split(/[,;\\n]+/).map(x=>({name:x.trim(),abbr:"",residentId:""}));
+   return {name:g.name||g.title||defaults[i]||`Group ${String.fromCharCode(65+i)}`,members:members.map(m=>typeof m==="string"?{residentId:"",name:m,abbr:""}:{residentId:String(m.residentId||m.resident_id||""),name:m.name||m.display_name||"",abbr:m.abbr||m.abbreviation||""})};
   });
   while(c.groups.length<4)c.groups.push({name:defaults[c.groups.length],members:[]});
  }
@@ -9033,34 +9036,41 @@ function oaDefaultGroups(){return ["A","B","C","D"].map(x=>({name:"Group "+x,mem
 function oaActiveGroups(){return OA.page==="groups"&&Array.isArray(OA.groupDraft)?OA.groupDraft:oaEnsureRosterContent().groups;}
 function oaCloneGroups(groups){return JSON.parse(JSON.stringify(Array.isArray(groups)?groups:[]));}
 function oaPgtSuggestionUsers(){
- const eligibleRoles=new Set(["resident","admin","office_admin"]);
- return (OA.users||[]).filter(u=>u&&u.active!==false&&eligibleRoles.has(String(u.role||"").toLowerCase())&&(u.display_name||u.name||u.username)).sort((a,b)=>String(a.display_name||a.name||a.username).localeCompare(String(b.display_name||b.name||b.username)));
+ const eligibleRoles=new Set(["resident","admin"]);
+ return (OA.users||[]).filter(u=>u&&u.active!==false&&eligibleRoles.has(String(u.role||"").toLowerCase())&&String(u.bdft_short||"").trim()&&(u.display_name||u.username)).sort((a,b)=>String(a.display_name||a.username).localeCompare(String(b.display_name||b.username)));
 }
 function oaPgtDatalist(){
  const n=oaPgtSuggestionUsers().length;
- return `<div class="oa-pgt-suggestion-note">${n?`<b>${n} active accounts found.</b> Includes active residents and administrator accounts. Tap a name field to search, or type a name manually.`:`<b>No active PGT accounts were returned.</b> You can still type names manually; check User Management if suggestions should be available.`}</div>`;
+ return `<div class="oa-pgt-suggestion-note">${n?`<b>${n} active resident profiles available.</b> Select a registered account. Display name, batch and short code are read from the resident profile and cannot be manually overridden.`:`<b>No active PGT profiles with BDFT codes were returned.</b> Check resident status and BDFT setup before configuring groups.`}</div>`;
 }
 function oaPgtSuggestionName(u){return String(u?.display_name||u?.name||u?.username||"").trim()}
+function oaPgtMemberProfile(m){return m&&m.residentId?(OA.users||[]).find(u=>String(u.id)===String(m.residentId))||null:null}
+function oaPgtMemberName(m){const u=oaPgtMemberProfile(m);return String(u?.display_name||m?.name||m?.display_name||"").trim()}
+function oaPgtMemberCode(m){const u=oaPgtMemberProfile(m);return String(u?.bdft_short||m?.abbr||m?.abbreviation||"").trim()}
+function oaPgtMemberUsername(m){const u=oaPgtMemberProfile(m);return String(u?.username||"").trim()}
 function oaRenderPgtSuggestions(g,m,query=""){
  const box=document.getElementById(`oaPgtSuggest_${g}_${m}`);if(!box)return;
  const users=oaPgtSuggestionUsers(),q=String(query||"").trim().toLowerCase();
- const matches=users.filter(u=>!q||[u.display_name,u.name,u.username].some(v=>String(v||"").toLowerCase().includes(q))).slice(0,12);
- box.innerHTML=matches.length?`<div class="oa-pgt-suggestion-heading">${q?"Matching registered PGTs":"Active eligible accounts"} · ${matches.length}</div>${matches.map(u=>{const idx=users.indexOf(u);return `<button type="button" role="option" onpointerdown="event.preventDefault();oaChoosePgtSuggestion(${g},${m},${idx})"><span>${oaEsc(oaPgtSuggestionName(u))}</span><small>${oaEsc(u.username||"Resident")}</small></button>`}).join("")}</div>`:`<div class="oa-pgt-no-match">${users.length?"No matching account. You can keep typing a name manually.":"No active eligible account suggestions are available."}</div>`;
+ const matches=users.filter(u=>[u.display_name,u.username,u.bdft_short,u.bdft_batch].some(v=>String(v||"").toLowerCase().includes(q))).slice(0,20);
+ box.innerHTML=matches.length?`<div class="oa-pgt-suggestion-heading">${q?"Matching registered PGTs":"Active PGT accounts"} · ${matches.length}</div>${matches.map(u=>{const idx=users.indexOf(u);return `<button type="button" role="option" onpointerdown="event.preventDefault();oaChoosePgtSuggestion(${g},${m},${idx})"><span>${oaEsc(oaPgtSuggestionName(u))}</span><small>${oaEsc(u.bdft_short||"")} · ${oaEsc(u.bdft_batch||"")} · @${oaEsc(u.username||"")}</small></button>`}).join("")}`:`<div class="oa-pgt-no-match">${users.length?"No matching active resident profile.":"No active PGT profile is available."}</div>`;
  box.classList.add("show");
 }
-function oaShowPgtSuggestions(g,m){const groups=oaActiveGroups(),name=groups[g]?.members?.[m]?.name||"";oaRenderPgtSuggestions(g,m,name)}
+function oaShowPgtSuggestions(g,m){const input=document.querySelector(`.oa-member-row[data-group="${g}"][data-member="${m}"] .oa-pgt-name-input`);oaRenderPgtSuggestions(g,m,input?.value||"")}
 function oaHidePgtSuggestions(g,m){const box=document.getElementById(`oaPgtSuggest_${g}_${m}`);if(box)box.classList.remove("show")}
 function oaChoosePgtSuggestion(g,m,index){
- const groups=oaActiveGroups(),users=oaPgtSuggestionUsers(),u=users[index],item=groups[g]?.members?.[m];if(!u||!item)return;
- item.name=oaPgtSuggestionName(u);if(!item.abbr)item.abbr=oaMakePgtAbbr(item.name);
- const row=document.querySelector(`.oa-member-row[data-group="${g}"][data-member="${m}"]`);
- if(row){const name=row.querySelector(".oa-pgt-name-input"),abbr=row.querySelector(".oa-abbr-field input");if(name)name.value=item.name;if(abbr)abbr.value=item.abbr}
- oaHidePgtSuggestions(g,m);
+ const groups=oaActiveGroups(),users=oaPgtSuggestionUsers(),u=users[index],item=groups[g]?.members?.[m];
+ if(!u||!item||u.active===false||!u.bdft_short)return;
+ const duplicate=groups.some((group,gi)=>(group.members||[]).some((member,mi)=>!(gi===g&&mi===m)&&String(member.residentId||"")===String(u.id)));
+ if(duplicate){toast("This resident is already assigned to another PGT group in this set.","bad");return}
+ item.residentId=String(u.id);
+ delete item.name;delete item.abbr;delete item.display_name;delete item.abbreviation;
+ const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;
+ render({force:1});requestAnimationFrame(()=>{const main=document.querySelector(".oa-main");if(main&&Number.isFinite(OA.preserveScrollTop))main.scrollTop=OA.preserveScrollTop});
 }
-function oaGroupMemberDisplay(m){return `${m.name||""}${m.abbr?" ("+m.abbr+")":""}`}
+function oaGroupMemberDisplay(m){const name=oaPgtMemberName(m),code=oaPgtMemberCode(m);return `${name}${code?" ("+code+")":""}`}
 function oaRosterGroupSetSelector(){
  const sets=OA.groupSets||[];
- return `<section class="oa-builder-section oa-roster-group-source"><div class="oa-builder-heading"><div><h3>1. PGT group set</h3><p class="oa-help">Choose a saved group configuration. The selected names and abbreviations are copied into this roster and remain fixed for this month.</p></div><span class="oa-count">${oaEnsureRosterContent().groups.length} groups</span></div><div class="oa-group-source-row"><label class="field"><span>Saved PGT groups</span><select id="oaRosterGroupSet" onchange="oaApplyGroupSet(this.value)"><option value="">Use groups saved in this draft</option>${sets.map(x=>`<option value="${oaEsc(x.id)}" ${String(x.id)===String(OA.activeGroupSetId)?"selected":""}>${oaEsc(x.name)}</option>`).join("")}</select></label><button class="btn secondary sm" onclick="oaPage('groups')">Manage group sets</button></div>${sets.length?`<p class="oa-mini">${sets.length} reusable group set${sets.length===1?"":"s"} saved.</p>`:`<p class="oa-mini">No group sets saved yet. Configure and save one in PGT Groups.</p>`}</section>`;
+ return `<section class="oa-builder-section oa-roster-group-source"><div class="oa-builder-heading"><div><h3>1. PGT group set</h3><p class="oa-help">Choose a saved group configuration. Resident IDs are retained in the roster; profile names and BDFT codes are snapshotted when it is published.</p></div><span class="oa-count">${oaEnsureRosterContent().groups.length} groups</span></div><div class="oa-group-source-row"><label class="field"><span>Saved PGT groups</span><select id="oaRosterGroupSet" onchange="oaApplyGroupSet(this.value)"><option value="">Use groups saved in this draft</option>${sets.map(x=>`<option value="${oaEsc(x.id)}" ${String(x.id)===String(OA.activeGroupSetId)?"selected":""}>${oaEsc(x.name)}</option>`).join("")}</select></label><button class="btn secondary sm" onclick="oaPage('groups')">Manage group sets</button></div>${sets.length?`<p class="oa-mini">${sets.length} reusable group set${sets.length===1?"":"s"} saved.</p>`:`<p class="oa-mini">No group sets saved yet. Configure and save one in PGT Groups.</p>`}</section>`;
 }
 function oaApplyGroupSet(id){
  if(!id)return;
@@ -9073,10 +9083,21 @@ function oaOpenGroupSet(id){const set=(OA.groupSets||[]).find(x=>String(x.id)===
 function oaNewGroupSet(){OA.page="groups";OA.editing=null;OA.groupEditingId=null;OA.activeGroupSetId=null;OA.groupDraftName="New PGT Group Set";OA.groupDraft=oaDefaultGroups();OA.preserveScrollTop=0;OA.scrollReset=true;render({force:1});}
 async function oaSaveGroupSet(){
  try{
-  if(!String(OA.groupDraftName||"").trim())throw new Error("Enter a name for this group set.");
-  const invalid=(OA.groupDraft||[]).some(g=>!String(g.name||"").trim()||(g.members||[]).some(m=>m.name&&!m.abbr));
-  if(invalid)throw new Error("Give every group a name and every named PGT a short abbreviation.");
-  const d=await oaRpc("office_admin_save_pgt_group_set",{p_set_id:OA.groupEditingId||null,p_name:String(OA.groupDraftName).trim(),p_groups:OA.groupDraft});
+  if(!String(OA.groupDraftName||"").trim())throw new Error("Enter a group-set name.");
+  const groups=Array.isArray(OA.groupDraft)?OA.groupDraft:[];
+  if(!groups.length||groups.some(g=>!String(g.name||"").trim()))throw new Error("Give every group a name.");
+  const members=groups.flatMap(g=>Array.isArray(g.members)?g.members:[]);
+  if(members.some(m=>!String(m.residentId||"").trim()))throw new Error("Link every PGT member to a registered resident profile.");
+  const ids=new Set(),codes=new Set();
+  for(const m of members){
+   const u=oaPgtMemberProfile(m),id=String(m.residentId||""),code=oaPgtMemberCode(m).toUpperCase();
+   if(!u||u.active===false||!code)throw new Error("A selected resident is inactive or has no BDFT short code. Update the profile before saving.");
+   if(ids.has(id))throw new Error("A resident can appear only once in a PGT group set.");
+   if(codes.has(code))throw new Error("Duplicate BDFT short code: "+code);
+   ids.add(id);codes.add(code);
+  }
+  const payload=groups.map(g=>({name:String(g.name).trim(),members:(g.members||[]).map(m=>({residentId:String(m.residentId)}))}));
+  const d=await oaRpc("office_admin_save_pgt_group_set",{p_set_id:OA.groupEditingId||null,p_name:String(OA.groupDraftName).trim(),p_groups:payload});
   const id=d?.id;if(!id)throw new Error("The server did not return the saved group set ID.");
   toast("PGT group set saved","ok");OA.groupEditingId=id;OA.activeGroupSetId=id;
   const list=await oaRpc("office_admin_list_pgt_group_sets",{});OA.groupSets=list.sets||[];OA.groupSetsLoaded=true;
@@ -9091,8 +9112,28 @@ async function oaDeleteGroupSet(id){
 }
 function oaPgtGroupsView(){
  const sets=OA.groupSets||[],groups=Array.isArray(OA.groupDraft)?OA.groupDraft:oaDefaultGroups();
- const cards=groups.map((g,gi)=>`<section class="oa-group-card"><div class="oa-group-card-head"><label class="field"><span>Group name</span><input value="${oaEsc(g.name)}" oninput="oaGroupNameInput(${gi},this.value)"></label>${groups.length>1?`<button class="oa-iconbtn" title="Remove group" onclick="oaRemoveGroup(${gi})">×</button>`:""}</div><div class="oa-members-head"><b>PGT members</b><span>Name and short code</span></div><div class="oa-group-members">${(g.members||[]).map((m,mi)=>`<div class="oa-member-row" data-group="${gi}" data-member="${mi}"><div class="oa-pgt-name-wrap"><label class="field"><span>PGT name</span><input class="oa-pgt-name-input" autocomplete="off" placeholder="Search active staff or type name" value="${oaEsc(m.name)}" onfocus="oaShowPgtSuggestions(${gi},${mi})" onblur="oaHidePgtSuggestions(${gi},${mi})" oninput="oaGroupMemberNameInput(${gi},${mi},this.value)" onchange="oaGroupMemberNameChange(${gi},${mi},this.value)"></label><div class="oa-pgt-suggestions" id="oaPgtSuggest_${gi}_${mi}" role="listbox"></div></div><label class="field oa-abbr-field"><span>Short code</span><input maxlength="5" placeholder="e.g. TA" value="${oaEsc(m.abbr)}" oninput="oaGroupMemberAbbrInput(${gi},${mi},this.value)"></label><button class="oa-iconbtn oa-remove-member" title="Remove PGT" onclick="oaRemoveGroupMember(${gi},${mi})">×</button></div>`).join("")||`<p class="oa-empty-members">No members in this group.</p>`}</div><button type="button" class="btn secondary sm" onclick="event.preventDefault();event.stopPropagation();oaAddGroupMember(${gi})">+ Add PGT</button></section>`).join("");
- return `<div class="oa-head"><div><p class="oa-kicker">ROSTER CONFIGURATION</p><h1>PGT group settings</h1><p class="oa-muted">Maintain reusable PGT groups once. Select a saved group set when creating each monthly roster.</p></div><button type="button" class="btn" onclick="oaNewGroupSet()">+ New group set</button></div><div class="oa-groups-workspace"><aside class="oa-saved-groups"><div class="oa-saved-groups-head"><b>Saved group sets</b><span>${sets.length}</span></div>${sets.length?sets.map(x=>`<div class="oa-saved-group-row ${String(x.id)===String(OA.groupEditingId)?"selected":""}"><button class="oa-saved-group-open" onclick="oaOpenGroupSet('${oaEsc(x.id)}')"><b>${oaEsc(x.name)}</b><small>${(x.groups||[]).length} groups · Updated ${oaDate(String(x.updated_at||"").slice(0,10))}</small></button><button class="oa-iconbtn" title="Delete group set" onclick="oaDeleteGroupSet('${oaEsc(x.id)}')">×</button></div>`).join(""):`<p class="oa-muted">No group sets have been saved yet.</p>`}</aside><section class="oa-group-editor"><div class="oa-group-editor-head"><div><label class="field"><span>Group set name</span><input id="oaGroupSetName" maxlength="100" value="${oaEsc(OA.groupDraftName)}" oninput="OA.groupDraftName=this.value" placeholder="e.g. Psychiatry PGT groups"></label><p class="oa-help">${OA.groupEditingId?"Editing a saved configuration.":"New configuration — save it to reuse it in future months."}</p></div><span class="oa-count">${groups.length} groups</span></div>${oaPgtDatalist()}<div class="oa-groups-grid">${cards}</div><div class="oa-group-editor-actions"><button type="button" class="btn secondary" onclick="oaAddGroup()">+ Add group</button><button type="button" class="btn" onclick="oaSaveGroupSet()">Save group set</button></div></section></div>`;
+ const cards=groups.map((g,gi)=>`<section class="oa-group-card">
+  <div class="oa-group-card-head"><label class="field"><span>Group name</span><input value="${oaEsc(g.name)}" oninput="oaGroupNameInput(${gi},this.value)"></label>${groups.length>1?`<button class="oa-iconbtn" title="Remove group" onclick="oaRemoveGroup(${gi})">×</button>`:""}</div>
+  <div class="oa-members-head"><b>PGT members</b><span>Linked resident profiles</span></div>
+  <div class="oa-group-members">${(g.members||[]).map((m,mi)=>{
+   const profile=oaPgtMemberProfile(m),name=oaPgtMemberName(m),code=oaPgtMemberCode(m),username=oaPgtMemberUsername(m);
+   const status=m.residentId?(profile&&profile.active===false?"Inactive profile":profile?"Linked resident":"Resident record unavailable"):"No resident linked";
+   return `<div class="oa-member-row" data-group="${gi}" data-member="${mi}">
+    <div class="oa-pgt-name-wrap">
+     <div class="oa-pgt-selected"><strong>${oaEsc(name||"Choose a resident")}</strong><small>${oaEsc(m.residentId?(username?"@"+username+" · ":"")+status:"Select an active registered resident")}</small></div>
+     <label class="field"><span>Search registered resident</span><input class="oa-pgt-name-input" autocomplete="off" placeholder="Search by name, username or code" value="" onfocus="oaShowPgtSuggestions(${gi},${mi})" onblur="oaHidePgtSuggestions(${gi},${mi})" oninput="oaGroupMemberNameInput(${gi},${mi},this.value)"></label>
+     <div class="oa-pgt-suggestions" id="oaPgtSuggest_${gi}_${mi}" role="listbox"></div>
+    </div>
+    <div class="field oa-abbr-field"><span>BDFT short code</span><strong class="oa-canonical-code">${oaEsc(code||"—")}</strong></div>
+    <button class="oa-iconbtn oa-remove-member" title="Remove PGT" onclick="oaRemoveGroupMember(${gi},${mi})">×</button>
+   </div>`;
+  }).join("")||`<p class="oa-empty-members">No members in this group.</p>`}</div>
+  <button type="button" class="btn secondary sm" onclick="event.preventDefault();event.stopPropagation();oaAddGroupMember(${gi})">+ Add PGT</button>
+ </section>`).join("");
+ return `<div class="oa-head"><div><p class="oa-kicker">ROSTER CONFIGURATION</p><h1>PGT group settings</h1><p class="oa-muted">Maintain reusable groups using registered resident IDs. Names and short codes always come from the resident profile.</p></div><button type="button" class="btn" onclick="oaNewGroupSet()">+ New group set</button></div>
+ <div class="oa-groups-workspace"><aside class="oa-saved-groups"><div class="oa-saved-groups-head"><b>Saved group sets</b><span>${sets.length}</span></div>${sets.length?sets.map(x=>`<div class="oa-saved-group-row ${String(x.id)===String(OA.groupEditingId)?"selected":""}"><button class="oa-saved-group-open" onclick="oaOpenGroupSet('${oaEsc(x.id)}')"><b>${oaEsc(x.name)}</b><small>${(x.groups||[]).length} groups · Updated ${oaDate(String(x.updated_at||"").slice(0,10))}</small></button><button class="oa-iconbtn" title="Delete group set" onclick="oaDeleteGroupSet('${oaEsc(x.id)}')">×</button></div>`).join(""):`<p class="oa-muted">No group sets have been saved yet.</p>`}</aside>
+ <section class="oa-group-editor"><div class="oa-group-editor-head"><div><label class="field"><span>Group set name</span><input id="oaGroupSetName" maxlength="100" value="${oaEsc(OA.groupDraftName)}" oninput="OA.groupDraftName=this.value" placeholder="e.g. Psychiatry PGT groups"></label><p class="oa-help">${OA.groupEditingId?"Editing a saved configuration.":"New configuration — save it to reuse it in future months."}</p></div><span class="oa-count">${groups.length} groups</span></div>
+ ${oaPgtDatalist()}<div class="oa-groups-grid">${cards}</div><div class="oa-group-editor-actions"><button type="button" class="btn secondary" onclick="oaAddGroup()">+ Add group</button><button type="button" class="btn" onclick="oaSaveGroupSet()">Save group set</button></div></section></div>`;
 }
 function oaFormatDMY(value){const m=String(value||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:String(value||"");}
 function oaParseDMY(value){const v=String(value||"").trim();if(!v)return null;const m=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);if(!m)return null;const d=Number(m[1]),mo=Number(m[2]),y=Number(m[3]),dt=new Date(Date.UTC(y,mo-1,d));if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==mo-1||dt.getUTCDate()!==d)return null;return `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;}
@@ -9122,8 +9163,8 @@ function oaCellInput(i,j,v){const c=oaEnsureRosterContent();if(c.rows[i])c.rows[
 function oaColumnInput(j,v){oaEnsureRosterContent().columns[j]=v;}
 function oaNoteInput(i,v){oaEnsureRosterContent().notes[i]=v;}
 function oaGroupNameInput(g,v){const groups=oaActiveGroups();if(groups[g])groups[g].name=v;}
-function oaGroupMemberNameInput(g,m,v){const groups=oaActiveGroups(),item=groups[g]?.members?.[m];if(item)item.name=v;oaRenderPgtSuggestions(g,m,v);}
-function oaGroupMemberNameChange(g,m,v){const groups=oaActiveGroups(),item=groups[g]?.members?.[m];if(!item)return;item.name=v;if(!item.abbr)item.abbr=oaMakePgtAbbr(v);}
+function oaGroupMemberNameInput(g,m,v){oaRenderPgtSuggestions(g,m,v)}
+function oaGroupMemberNameChange(g,m,v){}
 function oaPgtMobileDutyTables(c,editable){
  const groups=[
   {title:"Daytime duties",indices:[0,1,2,3,4],remove:true},
@@ -9132,9 +9173,16 @@ function oaPgtMobileDutyTables(c,editable){
  if(!c.rows.length)return `<div class="oa-pgt-mobile-tables"><div class="oa-empty-cell">Set the period and generate the daily rows.</div></div>`;
  return `<div class="oa-pgt-mobile-tables">${groups.map((g,gi)=>`<section class="oa-pgt-mobile-table-group"><h4>${g.title}</h4><div class="oa-table-wrap"><table class="oa-pgt-mobile-duty-table"><thead><tr>${g.indices.map(i=>`<th>${oaEsc(c.columns[i]||"")}</th>`).join("")}${g.remove?"<th>Action</th>":""}</tr></thead><tbody>${c.rows.map((row,ri)=>`<tr>${g.indices.map(i=>`<td>${i===0?`<span class="oa-pgt-mobile-date">${oaEsc(row[i]||"")}</span>`:i===1?`<span class="oa-pgt-mobile-day">${oaEsc(row[i]||"")}</span>`:`<input aria-label="${oaEsc(c.columns[i])}, ${oaEsc(row[0]||`day ${ri+1}`)}" list="oaDutySuggestions" value="${oaEsc(row[i]??"")}" ${editable?`oninput="oaCellInput(${ri},${i},this.value)"`:'disabled'}>`}</td>`).join("")}${g.remove?`<td><button class="oa-iconbtn oa-mobile-remove-day" title="Remove day ${ri+1}" ${editable?`onclick="oaRemoveRosterRow(${ri})"`:"disabled"}>×</button></td>`:""}</tr>`).join("")}</tbody></table></div></section>`).join("")}</div>`;
 }
-function oaGroupMemberAbbrInput(g,m,v){const groups=oaActiveGroups(),item=groups[g]?.members?.[m];if(item)item.abbr=String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5);}
+function oaGroupMemberAbbrInput(g,m,v){}
 function oaMakePgtAbbr(name){const words=String(name||"").replace(/^(dr\.?|doctor)\s+/i,"").trim().split(/\s+/).filter(Boolean);if(words.length>1)return (words[0][0]+words[words.length-1][0]).toUpperCase();return words[0]?words[0].slice(0,2).toUpperCase():"";}
-function oaAddGroupMember(g){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft))return;const groups=OA.groupDraft;if(!groups[g])return;const nextIndex=groups[g].members.length;groups[g].members.push({name:"",abbr:""});const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});requestAnimationFrame(()=>document.querySelector(`.oa-member-row[data-group="${g}"][data-member="${nextIndex}"] .oa-pgt-name-input`)?.focus({preventScroll:true}));}
+function oaAddGroupMember(g){
+ if(OA.page!=="groups"||!Array.isArray(OA.groupDraft))return;
+ const groups=OA.groupDraft;if(!groups[g])return;
+ if(!Array.isArray(groups[g].members))groups[g].members=[];
+ const nextIndex=groups[g].members.length;groups[g].members.push({residentId:""});
+ const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;
+ render({force:1});requestAnimationFrame(()=>document.querySelector(`.oa-member-row[data-group="${g}"][data-member="${nextIndex}"] .oa-pgt-name-input`)?.focus({preventScroll:true}));
+}
 function oaRemoveGroupMember(g,m){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft)||!OA.groupDraft[g])return;OA.groupDraft[g].members.splice(m,1);const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});}
 function oaAddGroup(){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft))return;OA.groupDraft.push({name:`Group ${String.fromCharCode(65+OA.groupDraft.length)}`,members:[]});const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});}
 function oaRemoveGroup(g){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft)||!confirm("Remove this group and its member list?"))return;OA.groupDraft.splice(g,1);const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});}
@@ -9191,16 +9239,15 @@ function oaSyncRosterMeta(){
  OA.editing=r;return r;
 }
 function oaReadRosterForm(requireComplete=false){
- const content=oaEnsureRosterContent(),r=oaSyncRosterMeta();
- const type=r.roster_type||OA.type;
+ const content=oaEnsureRosterContent(),r=oaSyncRosterMeta(),type=r.roster_type||OA.type;
  if(!content.columns.length)throw new Error("The duty table needs at least one column.");
  if(content.rows.some(row=>row.length!==content.columns.length))throw new Error("The duty table has inconsistent rows. Please review it.");
- if(type==="pgt_monthly"&&content.groups.some(g=>(g.members||[]).some(m=>m.name&&!m.abbr)))throw new Error("Add a short code for every PGT name in the group settings.");
+ if(type==="pgt_monthly"&&content.groups.some(g=>(g.members||[]).some(m=>!String(m.residentId||"").trim())))throw new Error("Every PGT group member must be linked to a registered resident profile.");
  if([r.period_start,r.period_end,r.issue_date].some(v=>v==="__invalid_date__"))throw new Error("Enter valid dates in dd/mm/yyyy format.");
  if(requireComplete){
   if(!r.period_start||!r.period_end)throw new Error("Enter both start date and end date in dd/mm/yyyy format.");
   if(r.issue_date==="__invalid_date__")throw new Error("Enter a valid issue date in dd/mm/yyyy format.");
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(r.period_start)||!/^\d{4}-\d{2}-\d{2}$/.test(r.period_end))throw new Error("Invalid date. Use dd/mm/yyyy.");
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(r.period_start)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(r.period_end))throw new Error("Invalid date. Use dd/mm/yyyy.");
   if(r.period_start>r.period_end)throw new Error("End date cannot be earlier than start date.");
  }
  return {p_roster_type:type,p_roster_id:r.id||null,p_period_start:r.period_start||null,p_period_end:r.period_end||null,p_title:String(r.title||"").trim(),p_reference_number:r.reference_number||"",p_issue_date:r.issue_date||null,p_content:JSON.parse(JSON.stringify(content))};
@@ -9460,6 +9507,30 @@ function wardCloseRosterAnnotation(){const overlay=document.getElementById("ward
 function wardRosterNormalName(value){return typeof bdftNormDoctorName==="function"?bdftNormDoctorName(value):String(value||"").trim().replace(/^dr[\.\s]+/i,"").replace(/[\s\-_]+/g," ").toLowerCase();}
 function wardRosterMatchKey(value){return String(value||"").trim().toUpperCase().replace(/\s+/g," ");}
 function wardRosterPersonalIdentity(r){
+ const residentId=String(S&&S.userId||"");
+ const groups=r&&r.content&&Array.isArray(r.content.groups)?r.content.groups:[];
+ if(residentId){
+  const matched=[];
+  groups.forEach(g=>(Array.isArray(g.members)?g.members:[]).forEach(m=>{
+   if(String(m&&(m.residentId||m.resident_id)||"")===residentId)matched.push({group:g,member:m});
+  }));
+  if(matched.length){
+   const allMembers=groups.flatMap(g=>Array.isArray(g.members)?g.members:[]);
+   const codeCounts=new Map();
+   allMembers.forEach(m=>{const code=wardRosterMatchKey(m&&(m.abbr||m.abbreviation));if(code)codeCounts.set(code,(codeCounts.get(code)||0)+1);});
+   const keys=new Set(),ambiguousCodes=new Set(),groupNames=[];
+   matched.forEach(({group,member})=>{
+    const code=wardRosterMatchKey(member&&(member.abbr||member.abbreviation));
+    if(code){if((codeCounts.get(code)||0)>1)ambiguousCodes.add(code);else keys.add(code);}
+    const memberName=wardRosterMatchKey(member&&(member.name||member.display_name));if(memberName)keys.add(memberName);
+    const label=String(group.name||"").trim(),withoutPrefix=label.replace(/^group\\s*/i,"").trim();
+    if(label)groupNames.push(label);
+    [wardRosterMatchKey(label),wardRosterMatchKey(withoutPrefix)].filter(Boolean).forEach(k=>keys.add(k));
+   });
+   return {residentId,shortCode:Array.from(keys).find(k=>!groupNames.some(g=>wardRosterMatchKey(g)===k))||"",groups:groupNames,keys,ambiguousCodes:Array.from(ambiguousCodes)};
+  }
+ }
+ // Backward compatibility for rosters created before resident IDs were linked.
  const me=typeof user==="function"?user():null;if(!me)return null;
  const profileNames=[me.displayName,me.display_name,me.name,me.username].filter(Boolean);
  const nameKeys=new Set(profileNames.map(wardRosterNormalName).filter(Boolean));if(!nameKeys.size)return null;
@@ -9473,29 +9544,22 @@ function wardRosterPersonalIdentity(r){
   if(alias){const beds=String(matrix[alias]),canonical=docs.find(d=>d.abbreviation&&String(matrix[d.name]||"")===beds);if(canonical)shortCode=wardRosterMatchKey(canonical.abbreviation);}
  }
  if(shortCode){docs.forEach(d=>{if(wardRosterMatchKey(d.abbreviation)===shortCode)addName(d.name);});if(abbreviations)Object.keys(abbreviations).forEach(name=>{if(wardRosterMatchKey(abbreviations[name])===shortCode)addName(name);});}
- const groups=r&&r.content&&Array.isArray(r.content.groups)?r.content.groups:[];
  const matched=[],inferredCodes=new Set();
  const collectMatches=matcher=>groups.forEach(g=>{
   const members=Array.isArray(g.members)?g.members:[];
   const memberMatches=members.filter(m=>matcher(m));
   if(!memberMatches.length)return;
   memberMatches.forEach(m=>{const code=wardRosterMatchKey(m.abbr||m.abbreviation);if(code)inferredCodes.add(code);});
-  const label=String(g.name||"").trim(),withoutPrefix=label.replace(/^group\s*/i,"").trim();
+  const label=String(g.name||"").trim(),withoutPrefix=label.replace(/^group\\s*/i,"");
   matched.push({label:label,keys:[wardRosterMatchKey(label),wardRosterMatchKey(withoutPrefix)].filter(Boolean)});
  });
- // A verified full-name match is authoritative. A stale or missing account short
- // code must not veto it; the published roster's own code is added below.
  collectMatches(m=>{const name=wardRosterNormalName(m&&(m.name||m.display_name));return !!name&&nameKeys.has(name);});
- // If account naming differs, allow a short-code fallback only when no name matched.
- if(!matched.length&&shortCode){
-  collectMatches(m=>wardRosterMatchKey(m&&(m.abbr||m.abbreviation))===shortCode);
-  if(matched.length>1)return null;
- }
+ if(!matched.length&&shortCode){collectMatches(m=>wardRosterMatchKey(m&&(m.abbr||m.abbreviation))===shortCode);if(matched.length>1)return null;}
  if(!shortCode){if(inferredCodes.size!==1)return null;shortCode=Array.from(inferredCodes)[0];}
  if(!matched.length)return null;
  const groupKeys=new Set();matched.forEach(g=>g.keys.forEach(k=>groupKeys.add(k)));
  const keys=new Set([shortCode]);inferredCodes.forEach(k=>keys.add(k));groupKeys.forEach(k=>keys.add(k));
- return {shortCode:shortCode,groups:matched.map(g=>g.label),keys:keys};
+ return {shortCode:shortCode,groups:matched.map(g=>g.label),keys,ambiguousCodes:[]};
 }
 function wardRosterAssignmentMatches(value,identity){
  if(value==null||!identity)return false;
@@ -9524,7 +9588,9 @@ function wardRosterDutyLabel(columnName,isSunday){
 function wardRosterMyDuties(r){
  const c=r&&r.content||{},cols=Array.isArray(c.columns)?c.columns:[],rows=Array.isArray(c.rows)?c.rows:[];
  const identity=wardRosterPersonalIdentity(r);
- if(!identity)return '<section class="resident-roster-my-duties"><div class="resident-roster-personal-empty"><strong>Could not match your roster identity.</strong><p>Check that your full name and short code appear together in the PGT Groups section.</p></div></section>';
+ if(!identity)return '<section class="resident-roster-my-duties"><div class="resident-roster-personal-empty"><strong>Could not match your roster identity.</strong><p>This roster has no linked resident record for your account.</p></div></section>';
+ const ambiguous=(identity.ambiguousCodes||[]).filter(Boolean);
+ const ambiguityNote=ambiguous.length?`<div class="resident-roster-identity-warning">This saved roster contains a duplicate short code (${ambiguous.map(esc).join(", ")}). Assignments entered only with that code cannot be attributed to one resident reliably.</div>`:"";
  const dateFound=cols.findIndex(x=>/^date$/i.test(String(x||"").trim())),dayFound=cols.findIndex(x=>/^day$/i.test(String(x||"").trim()));
  const dateIndex=dateFound>=0?dateFound:0,dayIndex=dayFound>=0?dayFound:(dateIndex===0?1:0),buckets=new Map();let count=0;
  rows.forEach((row,rowIndex)=>{
@@ -9535,13 +9601,12 @@ function wardRosterMyDuties(r){
    buckets.get(key).items.push(wardRosterDutyLabel(cols[colIndex],dateInfo.isSunday));count++;
   }
  });
- if(!count)return '<section class="resident-roster-my-duties"><div class="resident-roster-duty-summary">0 duties</div><div class="resident-roster-personal-empty">No duties assigned this month.</div></section>';
+ if(!count)return `<section class="resident-roster-my-duties"><div class="resident-roster-duty-summary">0 duties</div>${ambiguityNote}<div class="resident-roster-personal-empty">No uniquely attributable duties assigned this month.</div></section>`;
  const ordered=Array.from(buckets.values()).sort((a,b)=>a.sortValue-b.sortValue||a.firstRow-b.firstRow);
  const today=new Date(),todayKey=String(today.getFullYear())+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
  const dayHtml=ordered.map(day=>'<div class="resident-roster-my-duty-day'+(day.dateKey===todayKey?' is-today':'')+'"'+(day.dateKey===todayKey?' data-ward-roster-today="true"':'')+'><div class="resident-roster-duty-date"><strong>'+esc(day.dateLabel)+'</strong><span>'+esc(day.dayLabel)+'</span></div><div class="resident-roster-duty-items">'+day.items.map(item=>'<span class="resident-roster-duty-item">'+esc(item)+'</span>').join("")+'</div></div>').join("");
- return '<section class="resident-roster-my-duties" aria-label="My monthly duties"><div class="resident-roster-duty-summary">'+count+' '+(count===1?'duty':'duties')+'</div><div class="resident-roster-personal-list">'+dayHtml+'</div></section>';
+ return '<section class="resident-roster-my-duties" aria-label="My monthly duties"><div class="resident-roster-duty-summary">'+count+' '+(count===1?'duty':'duties')+'</div>'+ambiguityNote+'<div class="resident-roster-personal-list">'+dayHtml+'</div></section>';
 }
-
 if(!window.__wardRosterAnnotationEscapeBound){window.__wardRosterAnnotationEscapeBound=true;document.addEventListener("keydown",function(event){if(event.key==="Escape")wardCloseRosterAnnotation();});}
 
 function wardRosterTable(r){
