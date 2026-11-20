@@ -10,6 +10,11 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 
 - Published PGT monthly rosters now open in a resident-specific **My Duties** view by default, with an **Entire Roster** switch preserving the existing full-table and annotation views. Duty matching uses the resident short code together with their PGT group and includes group, individual and combined (`+`) assignments. Multiple duties on one date remain separate and the monthly total counts assignments, not dates. Weekday OPD displays as OPD, Sunday OPD as Morning shift, 2–10 PM as Evening shift, and 10 PM–8 AM as Night shift; timings are not repeated in the personal list. Other duty types retain concise labels. The view is derived from the published roster and adds no Supabase writes or schema changes.
 
+### Changed
+
+- PGT group membership now uses a normalized resident-ID relationship with foreign keys to `public.residents.id`. The Office Admin picker selects registered active resident/admin profiles and derives names and BDFT short codes from the canonical account record; it no longer stores manually typed names or abbreviations. Active resident/admin BDFT short codes are unique.
+- New and republished PGT rosters snapshot `residentId`, display name and BDFT code at publication. Existing published roster labels and assignments are preserved while resident IDs are backfilled. **My Duties** now matches the signed-in resident ID first; legacy text matching remains as a fallback, and duplicate short codes in historical snapshots are flagged instead of being treated as unique.
+ 
 ## 2026-11-19
 
 ### Fixed

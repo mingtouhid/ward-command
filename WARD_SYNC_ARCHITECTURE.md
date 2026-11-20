@@ -94,6 +94,14 @@ The roster builder stores editable structured content: dates, columns, rows, gro
 
 The client lifecycle is draft → review/ready for publication → published. Office Admin has explicit save-draft, mark-ready and finalise-publish actions. A published roster can be restored as a new draft. Published rosters are shown to staff through `ward_list_published_rosters` and the read-only resident roster library; roster cards distinguish active, scheduled and archived periods.
 
+#### Canonical PGT resident identity
+
+PGT membership is stored in the private relational tables `office_admin_pgt_groups` and `office_admin_pgt_group_members`. Each member row references `public.residents.id` with a foreign key; a resident can occur only once in a saved group set. The JSON `office_admin_pgt_group_sets.groups` field is retained as an ID-only compatibility mirror, while `office_admin_list_pgt_group_sets` resolves the current display name, BDFT short code, username and batch from the resident profile. The picker accepts active resident/admin accounts with a configured BDFT short code; it does not accept free-text identity or abbreviation overrides.
+
+`office_admin_save_roster_draft` and `office_admin_publish_roster` validate resident IDs and snapshot each PGT member's `residentId`, `display_name` and `bdft_short` into the roster's `content.groups`. This is intentionally separate from the live group configuration: profile changes update future drafts/publications, while previously published roster labels remain historical snapshots. Existing recent/current published snapshots are linked by resident ID without rewriting their visible names or codes.
+
+The resident-facing **My Duties** view matches the signed-in session's `residents.id` to the published roster member's `residentId`. It then uses that roster snapshot's code, name and group label to interpret duty cells. Text/name matching remains only for older rosters without an ID link. Duplicate short codes in an old roster are excluded from code-only matching and shown as an attribution warning. Active resident/admin BDFT short codes are protected by a case-insensitive unique index; BDFT save reports a specific validation error if a collision is attempted.
+
 ### User management and ward setup
 
 The Office Admin user page groups accounts by role and supports create/edit/deactivate flows for roles exposed by its form. Ward setup manages unit settings, sections, beds and consultant directory entries. The interface presents this as configuration work and does not expose patient identity or bed occupancy.
@@ -102,7 +110,7 @@ The Office Admin user page groups accounts by role and supports create/edit/deac
 
 The OA client uses short-lived in-memory caches: roster list about 20 seconds; saved groups and user list about 60 seconds; ward setup about 30 seconds. Mutating RPCs invalidate those caches. The frontend references an `office_admin_*` RPC family for session, roster lifecycle, groups, accounts, phone and ward-configuration operations. The published read-only library calls `ward_list_published_rosters`.
 
-No matching Office Admin SQL migration is present in the checked-in `migrations/` directory in this repository snapshot. The live Supabase database may have been configured outside this repository. Confirm its actual schema and export the authoritative migration/rollback before relying on or modifying these RPCs. The repository alone cannot prove production apply status.
+The checked-in `migrations/r20_canonical_pgt_resident_identity.sql` versions the PGT group identity tables and the relevant Office Admin list/save/publish RPCs. Other Office Admin RPCs still have live database definitions not fully represented in this repository. The migration is applied separately to Supabase; file presence alone does not prove production apply status.
 
 ## Sync, outbox, and realtime
 
@@ -358,7 +366,7 @@ Do not infer that a cache suffix or CSS comment is an app release number. When s
 
 ## Gaps worth knowing
 
-- The frontend calls the `office_admin_*` RPC family and `ward_list_published_rosters`, but no matching Office Admin SQL migration is present in the checked-in `migrations/` directory. The live Supabase project may contain manual changes. Export and version the authoritative schema/RPC migration and rollback; do not infer production state from the frontend.
+- The frontend calls the `office_admin_*` RPC family and `ward_list_published_rosters`. The PGT identity and related group/roster RPC subset is now versioned in `migrations/r20_canonical_pgt_resident_identity.sql`; the rest of the Office Admin RPC family is not fully represented in this repository. Verify migration application against the target database; do not infer production state from the frontend.
 - `monthly-archive` and `dispatch-notification` are invoked by the client and have no source in this repository.
 - The checked-in migration files do not provide a reliable production apply ledger. Some migration headers describe old not-applied states. Verify the target database before applying or reapplying a migration.
 - The live BDFT publisher remains the browser engine plus `ward_bdft_save_distribution`. The server-side `ward_bdft_generate` path is separate and is not the client generation path.
