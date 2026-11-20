@@ -7,6 +7,11 @@
 All notable changes from 2026-11-10 onward are recorded here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates are Asia/Calcutta. Older product history stays in `RELEASE-NOTES-*.md` and is not copied here.
 
 ## 2026-11-20
+### Fixed
+
+- Corrected PGT group-allocation matching in **My Duties**. Group labels such as “Group A” through “Group D” are now reliably normalised to the single-letter allocation tokens stored in OPD and evening-duty cells. Individual short-code assignments continue to match independently.
+
+
 
 ### Added
 

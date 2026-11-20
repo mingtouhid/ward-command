@@ -7349,7 +7349,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R2.0.9";
+const APP_VERSION="R2.0.10";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -9523,7 +9523,7 @@ function wardRosterPersonalIdentity(r){
     const code=wardRosterMatchKey(member&&(member.abbr||member.abbreviation));
     if(code){if((codeCounts.get(code)||0)>1)ambiguousCodes.add(code);else keys.add(code);}
     const memberName=wardRosterMatchKey(member&&(member.name||member.display_name));if(memberName)keys.add(memberName);
-    const label=String(group.name||"").trim(),withoutPrefix=label.replace(/^group\\s*/i,"").trim();
+    const label=String(group.name||"").trim(),withoutPrefix=label.replace(/^group\s*/i,"").trim();
     if(label)groupNames.push(label);
     [wardRosterMatchKey(label),wardRosterMatchKey(withoutPrefix)].filter(Boolean).forEach(k=>keys.add(k));
    });
@@ -9550,7 +9550,7 @@ function wardRosterPersonalIdentity(r){
   const memberMatches=members.filter(m=>matcher(m));
   if(!memberMatches.length)return;
   memberMatches.forEach(m=>{const code=wardRosterMatchKey(m.abbr||m.abbreviation);if(code)inferredCodes.add(code);});
-  const label=String(g.name||"").trim(),withoutPrefix=label.replace(/^group\\s*/i,"");
+  const label=String(g.name||"").trim(),withoutPrefix=label.replace(/^group\s*/i,"");
   matched.push({label:label,keys:[wardRosterMatchKey(label),wardRosterMatchKey(withoutPrefix)].filter(Boolean)});
  });
  collectMatches(m=>{const name=wardRosterNormalName(m&&(m.name||m.display_name));return !!name&&nameKeys.has(name);});
