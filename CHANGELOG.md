@@ -7,6 +7,11 @@
 All notable changes from 2026-11-10 onward are recorded here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates are Asia/Calcutta. Older product history stays in `RELEASE-NOTES-*.md` and is not copied here.
 
 ## 2026-11-20
+### Changed
+
+- Updated the PWA manifest splash background and theme colour to `#001c65`, separated standard and maskable icon declarations, and aligned the initial HTML theme colour.
+- Updated the service-worker app-shell cache to `ward-sync-pwa-r2.0.0-12`. The new PNG artwork still needs to replace the existing files under `icons/` and the root compatibility paths; this configuration commit does not itself replace binary image assets.
+
 ### Fixed
 
 - Corrected PGT group-allocation matching in **My Duties**. Group labels such as “Group A” through “Group D” are now reliably normalised to the single-letter allocation tokens stored in OPD and evening-duty cells. Individual short-code assignments continue to match independently.
