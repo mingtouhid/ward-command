@@ -24,6 +24,12 @@ All notable changes from 2026-11-10 onward are recorded here. The format is base
 - PGT group membership now uses a normalized resident-ID relationship with foreign keys to `public.residents.id`. The Office Admin picker selects registered active resident/admin profiles and derives names and BDFT short codes from the canonical account record; it no longer stores manually typed names or abbreviations. Active resident/admin BDFT short codes are unique.
 - New and republished PGT rosters snapshot `residentId`, display name and BDFT code at publication. Existing published roster labels and assignments are preserved while resident IDs are backfilled. **My Duties** now matches the signed-in resident ID first; legacy text matching remains as a fallback, and duplicate short codes in historical snapshots are flagged instead of being treated as unique.
  
+### Changed
+
+- The resident PGT **My Duties** list now places the second duty item at the far edge of its row, reduces vertical spacing, and gives today's row a stronger accent-tinted background with a visible accent edge. This is presentation-only; date matching, resident attribution, duty ordering and the **Entire Roster** table are unchanged.
+- Bumped the service-worker app-shell cache from `ward-sync-pwa-r2.0.0-10` to `ward-sync-pwa-r2.0.0-11` so installed clients refresh the updated `index.html`. The separate OCR cache is preserved.
+
+
 ## 2026-11-19
 
 ### Fixed
