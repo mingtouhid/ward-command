@@ -1,3 +1,15 @@
+## 2026-11-20 — Heart ECG icon integration
+
+### Changed
+- Integrated the approved Ward Sync heart-ECG PNG icon assets at the existing canonical paths under `icons/` and the root compatibility paths.
+- Kept the manifest splash/theme background at `#001c65` to match the deep-blue icon artwork.
+- Bumped the app-shell service-worker cache to `ward-sync-pwa-r2.0.0-13` so installed clients refresh the icon assets and app shell.
+- Added legacy Apple touch and favicon paths to the service-worker precache.
+
+### Preserved
+- Notification glyph and badge assets remain separate and unchanged.
+- No clinical workflows, Supabase calls, roles, patient data handling or navigation code were changed.
+
 ### Fixed
 
 - Corrected the current November 2026 PGT roster's member short-code snapshots to match each linked resident's canonical BDFT code. This fixes My Duties attribution where duty cells used the updated codes (e.g. TA) but the preserved roster snapshot still held the old codes (e.g. TO). Historical names, duty assignments and non-current published rosters remain unchanged.
