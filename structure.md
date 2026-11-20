@@ -47,9 +47,9 @@ This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCH
 
 | Identifier | Value | Meaning |
 | --- | --- | --- |
-| HTML `APP_VERSION` | `R2.0.10` | Build label displayed by the app. |
+| HTML `APP_VERSION` | `R2.0.11` | Build label displayed by the app. |
 | BDFT `BDFT_APP_VERSION` | `7.0` | Inlined BDFT engine label. |
-| Service worker `VERSION` | `ward-sync-pwa-r2.0.0-10` | Cache name; changing it triggers app cache replacement. |
+| Service worker `VERSION` | `ward-sync-pwa-r2.0.0-15` | Cache name; changing it triggers app cache replacement. |
 | OCR cache | `ocr-assets-v7` | Separate OCR asset cache. |
 | Manifest `version` / `build` | `1.3.20` / `R1.3.20 icons` | Legacy custom manifest metadata, not the displayed HTML build. |
 
@@ -90,3 +90,11 @@ The approved Ward Sync heart-ECG icon PNGs are stored under `icons/`, with root-
 - `icons/icon-512-maskable.png` is the dedicated Android splash artwork: a centered white medical emblem on opaque `#001c65`, matching the manifest launch background.
 - Android WebAPK splash selection is platform-controlled; confirm the actual appearance after the updated WebAPK is installed.
 - iOS Apple touch icon, root compatibility files, notification glyph and badge remain unchanged.
+
+
+## Home hero tile layout (2026-11-20)
+
+- The ward-category grid contains only the six ward categories.
+- The final three-tile row is Observation, Admitted and Discharged. Beds free is intentionally hidden from this hero card.
+- The TODAY heading is removed. The final row is separated from the ward-category grid by a 70px top margin.
+- The Observation tile retains its existing Observation-page action and displays an orange status dot when its count is non-zero. Admission and Discharge retain their existing blue and red indicators.
