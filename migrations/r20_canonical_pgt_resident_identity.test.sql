@@ -10,6 +10,10 @@ DECLARE
   v_rls_groups boolean;
   v_rls_members boolean;
   v_index_exists boolean;
+  v_group_policy_count integer;
+  v_member_policy_count integer;
+  v_group_fk_index boolean;
+  v_resident_fk_index boolean;
 BEGIN
   SELECT count(*) INTO v_missing_config_links
   FROM private.office_admin_pgt_group_sets s
@@ -69,6 +73,22 @@ BEGIN
 
   IF coalesce(v_rls_groups, false) IS NOT TRUE OR coalesce(v_rls_members, false) IS NOT TRUE THEN
     RAISE EXCEPTION 'RLS is not enabled on the private PGT identity tables';
+  END IF;
+
+  SELECT count(*) INTO v_group_policy_count FROM pg_catalog.pg_policies
+  WHERE schemaname='private' AND tablename='office_admin_pgt_groups';
+  SELECT count(*) INTO v_member_policy_count FROM pg_catalog.pg_policies
+  WHERE schemaname='private' AND tablename='office_admin_pgt_group_members';
+  IF v_group_policy_count < 1 OR v_member_policy_count < 1 THEN
+    RAISE EXCEPTION 'Private PGT identity tables need explicit deny-by-default policies';
+  END IF;
+
+  SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_indexes WHERE schemaname='private'
+    AND indexname='office_admin_pgt_group_members_group_set_group_idx') INTO v_group_fk_index;
+  SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_indexes WHERE schemaname='private'
+    AND indexname='office_admin_pgt_group_members_resident_idx') INTO v_resident_fk_index;
+  IF NOT v_group_fk_index OR NOT v_resident_fk_index THEN
+    RAISE EXCEPTION 'Supporting indexes for PGT membership foreign keys are missing';
   END IF;
 
   SELECT EXISTS (
