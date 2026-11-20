@@ -9474,18 +9474,26 @@ function wardRosterPersonalIdentity(r){
  if(shortCode){docs.forEach(d=>{if(wardRosterMatchKey(d.abbreviation)===shortCode)addName(d.name);});if(abbreviations)Object.keys(abbreviations).forEach(name=>{if(wardRosterMatchKey(abbreviations[name])===shortCode)addName(name);});}
  const groups=r&&r.content&&Array.isArray(r.content.groups)?r.content.groups:[];
  const matched=[],inferredCodes=new Set();
- groups.forEach(g=>{
+ const collectMatches=matcher=>groups.forEach(g=>{
   const members=Array.isArray(g.members)?g.members:[];
-  const memberMatches=members.filter(m=>{const name=wardRosterNormalName(m&&(m.name||m.display_name)),code=wardRosterMatchKey(m&&(m.abbr||m.abbreviation));return !!name&&nameKeys.has(name)&&(!shortCode||code===shortCode);});
+  const memberMatches=members.filter(m=>matcher(m));
   if(!memberMatches.length)return;
   memberMatches.forEach(m=>{const code=wardRosterMatchKey(m.abbr||m.abbreviation);if(code)inferredCodes.add(code);});
-  const label=String(g.name||"").trim(),withoutPrefix=label.replace(/^group\s*/i,"").trim();
+  const label=String(g.name||"").trim(),withoutPrefix=label.replace(/^group\\s*/i,"").trim();
   matched.push({label:label,keys:[wardRosterMatchKey(label),wardRosterMatchKey(withoutPrefix)].filter(Boolean)});
  });
+ // A verified full-name match is authoritative. A stale or missing account short
+ // code must not veto it; the published roster's own code is added below.
+ collectMatches(m=>{const name=wardRosterNormalName(m&&(m.name||m.display_name));return !!name&&nameKeys.has(name);});
+ // If account naming differs, allow a short-code fallback only when no name matched.
+ if(!matched.length&&shortCode){
+  collectMatches(m=>wardRosterMatchKey(m&&(m.abbr||m.abbreviation))===shortCode);
+  if(matched.length>1)return null;
+ }
  if(!shortCode){if(inferredCodes.size!==1)return null;shortCode=Array.from(inferredCodes)[0];}
  if(!matched.length)return null;
  const groupKeys=new Set();matched.forEach(g=>g.keys.forEach(k=>groupKeys.add(k)));
- const keys=new Set([shortCode]);groupKeys.forEach(k=>keys.add(k));
+ const keys=new Set([shortCode]);inferredCodes.forEach(k=>keys.add(k));groupKeys.forEach(k=>keys.add(k));
  return {shortCode:shortCode,groups:matched.map(g=>g.label),keys:keys};
 }
 function wardRosterAssignmentMatches(value,identity){
