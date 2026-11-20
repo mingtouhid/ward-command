@@ -76,3 +76,8 @@ The repository also does not contain source for all external functions reference
 - The initial HTML `theme-color` matches `#001c65`; runtime theme selection may update the browser chrome colour when the user changes the in-app theme.
 - The service-worker app-shell cache is `ward-sync-pwa-r2.0.0-12`.
 - Root-level icon compatibility files and the PNG files under `icons/` must be updated together when publishing a new icon artwork set. Android's adaptive mask is applied by the launcher; PNG assets should not bake black corners into the square canvas.
+
+
+## 2026-11-20 icon artwork integration preparation
+
+The PWA manifest and service-worker paths are prepared for the approved full-bleed Ward Sync heart-ECG icon. Binary assets are uploaded separately by the maintainer using the exact paths in [ICON-ASSET-REPLACEMENT.md](ICON-ASSET-REPLACEMENT.md). The manifest background/theme colour remains `#001c65`. The notification glyph and badge are separate notification-specific assets and must not be replaced by the full app icon.
