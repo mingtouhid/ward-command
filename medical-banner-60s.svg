@@ -1,23 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg id="medicalSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 65" width="390" height="65" role="img" aria-label="60-second sequential medical banner animation: ECG wave, wheelchair caregiver, frantic woman, and ambulance">
   <defs>
-    <!-- Stage & Atmosphere Gradients -->
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#090F18"/>
-      <stop offset="70%" stop-color="#0F1826"/>
-      <stop offset="100%" stop-color="#0A101A"/>
-    </linearGradient>
-
-    <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#172436"/>
-      <stop offset="100%" stop-color="#070B11"/>
-    </linearGradient>
-
-    <!-- Fine Clinical Monitor Grid -->
-    <pattern id="ecgGrid" width="13" height="13" patternUnits="userSpaceOnUse">
-      <path d="M 13 0 L 0 0 0 13" fill="none" stroke="#1A2C42" stroke-width="0.5"/>
-    </pattern>
-
     <!-- ECG Phosphor Persistence Masks -->
     <linearGradient id="ecgTrailGrad" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#000000"/>
@@ -118,15 +101,6 @@
   </defs>
 
   <style>
-    .grid-layer {
-      animation: gridFade 60s linear infinite;
-    }
-    @keyframes gridFade {
-      0%, 23%   { opacity: 0.55; }
-      25%, 97%  { opacity: 0.16; }
-      100%      { opacity: 0.55; }
-    }
-
     /* ---------- ACT 1: ECG WAVEFORM ---------- */
     .ecg-group {
       animation: ecgVis 60s linear infinite;
@@ -463,11 +437,7 @@
   </style>
 
   <g clip-path="url(#stageClip)">
-    <rect x="0" y="0" width="390" height="65" fill="url(#bgGrad)"/>
-    <rect class="grid-layer" x="0" y="0" width="390" height="58" fill="url(#ecgGrid)"/>
-    <rect x="0" y="58" width="390" height="7" fill="url(#groundGrad)"/>
-    <line x1="0" y1="58" x2="390" y2="58" stroke="#263850" stroke-width="0.9"/>
-    <line x1="0" y1="0.5" x2="390" y2="0.5" stroke="#1E2D42" stroke-width="1"/>
+    <line x1="0" y1="58" x2="390" y2="58" stroke="#64748B" stroke-width="0.7" opacity="0.32"/>
 
     <!-- ACT 1: SLOW CLINICAL ECG WAVEFORM (0s - 14.8s) -->
     <g class="ecg-group">
