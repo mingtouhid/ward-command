@@ -2,6 +2,12 @@
 
 All notable changes from 2026-11-10 onward are recorded here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates are Asia/Calcutta. Older product history stays in `RELEASE-NOTES-*.md` and is not copied here.
 
+## 2026-11-20
+
+### Added
+
+- Published PGT monthly rosters now support resident-only personal notes (up to 300 characters) and muted colour highlights on individual duty cells through an anchored contextual popup. Annotations are stored locally per signed-in resident and roster in browser storage only. The published roster remains read-only; annotation data is not sent to Supabase or other devices.
+
 ## 2026-11-19
 
 ### Fixed

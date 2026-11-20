@@ -5954,6 +5954,34 @@ html[data-theme="ot"] .app>.pt-qbar{
 .oa-edit-table th:first-child,.oa-edit-table th:last-child{min-width:34px}
 .oa-toolbar .btn{white-space:nowrap}
 </style>
+<style id="resident-pgt-roster-personal-annotations-v1">
+.resident-roster-annotatable-cell{padding:5px 4px!important}
+.resident-roster-annotation-trigger{position:relative;display:block;width:100%;min-height:25px;padding:2px 13px 2px 3px;border:0;border-radius:5px;background:transparent;color:inherit;font:inherit;line-height:inherit;text-align:center;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.resident-roster-annotation-trigger.has-personal-highlight{background:color-mix(in srgb,var(--ward-roster-personal-highlight) 24%,transparent)}
+.resident-roster-annotation-indicator{position:absolute;right:3px;top:50%;width:6px;height:6px;border-radius:50%;background:var(--teal);transform:translateY(-50%);box-shadow:0 0 0 2px color-mix(in srgb,var(--panel) 75%,transparent)}
+.ward-roster-annotation-overlay{display:none;position:fixed;inset:0;z-index:2147483000;background:transparent}
+.ward-roster-annotation-overlay.is-open{display:block}
+.ward-roster-annotation-popover{position:fixed;width:min(300px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow-y:auto;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);box-shadow:0 14px 42px rgba(0,0,0,.28);font-family:inherit}
+.ward-roster-annotation-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.ward-roster-annotation-header strong{display:block;font-size:14px;font-weight:800}
+.ward-roster-annotation-header small{display:block;margin-top:3px;color:var(--muted);font-size:11px}
+.ward-roster-annotation-close{width:28px;height:28px;flex:0 0 28px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--ink);font-size:20px;line-height:1;cursor:pointer}
+.ward-roster-annotation-label{display:block;margin:0 0 8px;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.07em}
+.ward-roster-annotation-palette{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+.ward-roster-annotation-palette button{display:grid;place-items:center;width:29px;height:29px;padding:3px;border:1px solid transparent;border-radius:50%;background:transparent;cursor:pointer}
+.ward-roster-annotation-palette button.is-selected{border-color:var(--teal);box-shadow:0 0 0 2px color-mix(in srgb,var(--teal) 20%,transparent)}
+.ward-roster-annotation-palette button span{display:block;width:21px;height:21px;border-radius:50%}
+.ward-roster-no-colour{border:1px solid var(--line);color:var(--muted);font-size:16px;line-height:19px;text-align:center}
+#ward-roster-annotation-note{display:block;width:100%;min-height:72px;resize:vertical;padding:9px 10px;border:1px solid var(--line);border-radius:10px;outline:none;background:var(--surface-2);color:var(--ink);font:inherit;font-size:13px;line-height:1.45}
+#ward-roster-annotation-note:focus{border-color:var(--teal);box-shadow:0 0 0 2px color-mix(in srgb,var(--teal) 16%,transparent)}
+.ward-roster-annotation-status{min-height:16px;margin-top:5px;color:var(--danger);font-size:11px}
+.ward-roster-annotation-foot{display:flex;justify-content:space-between;gap:8px;margin-top:5px}
+.ward-roster-annotation-foot button{min-height:34px;padding:7px 13px;border:1px solid var(--line);border-radius:9px;font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+.ward-roster-annotation-clear{background:var(--surface-2);color:var(--muted)}
+.ward-roster-annotation-save{border-color:var(--teal)!important;background:var(--teal);color:#fff}
+.ward-roster-annotation-private{margin:9px 0 0;color:var(--muted);font-size:10px;line-height:1.4}
+@media(hover:hover){.resident-roster-annotation-trigger:hover{outline:1px solid color-mix(in srgb,var(--teal) 45%,transparent)}}
+</style>
 </head>
 <body>
 <svg id="ward-sync-icon-sprite" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
@@ -9410,13 +9438,75 @@ function wardRosterBadge(r){
  return `<span class="roster-library-badge archived">Archived</span>`;
 }
 function wardOpenRoster(id){wardRosterSelectedId=String(id);render()}
+
+const WARD_ROSTER_ANNOTATION_COLORS = ["#F2CA66", "#78C69B", "#82AFE8", "#B69BE1", "#E58F98"];
+let wardRosterAnnotationActive = null;
+function wardRosterAnnotationStorageKey(){try{const residentId=String(S&&S.userId||"");return residentId?"ward-sync-personal-roster-annotations-v1:"+encodeURIComponent(residentId):null;}catch(e){return null;}}
+function wardRosterAnnotationReadAll(){const key=wardRosterAnnotationStorageKey();if(!key)return {};try{const value=JSON.parse(localStorage.getItem(key)||"{}");return value&&typeof value==="object"&&!Array.isArray(value)?value:{};}catch(e){return {};}}
+function wardRosterAnnotationCellKey(rosterId,rowDate,rowIndex,colIndex,colName){return [String(rosterId||""),String(rowDate||("row-"+rowIndex)),String(colIndex),String(colName||"")].join("\u001f");}
+function wardRosterAnnotationValue(map,rosterId,rowDate,rowIndex,colIndex,colName){const raw=map[wardRosterAnnotationCellKey(rosterId,rowDate,rowIndex,colIndex,colName)]||{};return {note:typeof raw.note==="string"?raw.note.slice(0,300):"",color:WARD_ROSTER_ANNOTATION_COLORS.indexOf(raw.color)>=0?raw.color:""};}
+function wardRosterAnnotationUpdateCell(trigger,note,color){if(!trigger)return;if(color){trigger.style.setProperty("--ward-roster-personal-highlight",color);trigger.classList.add("has-personal-highlight");}else{trigger.style.removeProperty("--ward-roster-personal-highlight");trigger.classList.remove("has-personal-highlight");}let marker=trigger.querySelector(".resident-roster-annotation-indicator");if(note||color){if(!marker){marker=document.createElement("span");marker.className="resident-roster-annotation-indicator";marker.setAttribute("aria-hidden","true");trigger.appendChild(marker);}marker.title=note?"Personal note saved":"Personal highlight";}else if(marker){marker.remove();}const label="Personalise "+(trigger.dataset.colName||"duty")+" shift on "+(trigger.dataset.rowDate||"this date");trigger.setAttribute("aria-label",label+(note?", personal note saved":color?", highlighted":""));trigger.title=note?"Personal note saved":color?"Personal highlight":"Add a personal note or highlight";}
+function wardRosterAnnotationPosition(){if(!wardRosterAnnotationActive)return;const panel=document.getElementById("ward-roster-annotation-popover");const trigger=wardRosterAnnotationActive.trigger;if(!panel||!trigger)return;panel.style.visibility="hidden";panel.style.left="12px";panel.style.top="12px";requestAnimationFrame(function(){const overlay=document.getElementById("ward-roster-annotation-overlay");if(!wardRosterAnnotationActive||!overlay||!overlay.classList.contains("is-open"))return;const rect=trigger.getBoundingClientRect();const width=panel.offsetWidth;const height=panel.offsetHeight;const viewportWidth=document.documentElement.clientWidth||window.innerWidth;const viewportHeight=window.innerHeight;const left=Math.max(12,Math.min(rect.left,viewportWidth-width-12));let top=rect.bottom+7;if(top+height>viewportHeight-12)top=rect.top-height-7;top=Math.max(12,Math.min(top,viewportHeight-height-12));panel.style.left=Math.round(left)+"px";panel.style.top=Math.round(top)+"px";panel.style.visibility="visible";});}
+function wardOpenRosterAnnotation(event,trigger){if(event){event.preventDefault();event.stopPropagation();}if(!trigger||!wardRosterAnnotationStorageKey())return;const overlay=document.getElementById("ward-roster-annotation-overlay");const panel=document.getElementById("ward-roster-annotation-popover");const textarea=document.getElementById("ward-roster-annotation-note");if(!overlay||!panel||!textarea)return;const context={trigger:trigger,rosterId:trigger.dataset.rosterId||"",rowDate:trigger.dataset.rowDate||"",rowIndex:trigger.dataset.rowIndex||"0",colIndex:trigger.dataset.colIndex||"0",colName:trigger.dataset.colName||"",storeKey:wardRosterAnnotationStorageKey()};context.annotationKey=wardRosterAnnotationCellKey(context.rosterId,context.rowDate,context.rowIndex,context.colIndex,context.colName);const map=wardRosterAnnotationReadAll();const value=wardRosterAnnotationValue(map,context.rosterId,context.rowDate,context.rowIndex,context.colIndex,context.colName);wardRosterAnnotationActive=context;textarea.value=value.note;const title=document.getElementById("ward-roster-annotation-title");if(title)title.textContent=(context.rowDate?context.rowDate+" · ":"")+(context.colName||"Duty shift");const status=document.getElementById("ward-roster-annotation-status");if(status)status.textContent="";overlay.classList.add("is-open");overlay.setAttribute("aria-hidden","false");panel.querySelectorAll("button[data-color]").forEach(function(button){button.classList.toggle("is-selected",(button.dataset.color||"")===value.color);});wardRosterAnnotationActive.color=value.color;wardRosterAnnotationPosition();}
+function wardRosterAnnotationChooseColor(button){if(!wardRosterAnnotationActive||!button)return;const color=button.dataset.color||"";wardRosterAnnotationActive.color=WARD_ROSTER_ANNOTATION_COLORS.indexOf(color)>=0?color:"";const panel=document.getElementById("ward-roster-annotation-popover");if(panel)panel.querySelectorAll("button[data-color]").forEach(function(item){item.classList.toggle("is-selected",(item.dataset.color||"")===wardRosterAnnotationActive.color);});}
+function wardRosterAnnotationPersist(note,color,clear){const active=wardRosterAnnotationActive;if(!active)return;const map=wardRosterAnnotationReadAll();if(clear||(!note&&!color))delete map[active.annotationKey];else map[active.annotationKey]={note:note,color:color,updatedAt:new Date().toISOString()};try{localStorage.setItem(active.storeKey,JSON.stringify(map));wardRosterAnnotationUpdateCell(active.trigger,clear?"":note,clear?"":color);wardCloseRosterAnnotation();}catch(e){const status=document.getElementById("ward-roster-annotation-status");if(status)status.textContent="Could not save on this device. Check available browser storage.";}}
+function wardRosterAnnotationSave(){if(!wardRosterAnnotationActive)return;const textarea=document.getElementById("ward-roster-annotation-note");const note=String(textarea&&textarea.value||"").trim().slice(0,300);const color=WARD_ROSTER_ANNOTATION_COLORS.indexOf(wardRosterAnnotationActive.color)>=0?wardRosterAnnotationActive.color:"";wardRosterAnnotationPersist(note,color,false);}
+function wardRosterAnnotationClear(){wardRosterAnnotationPersist("","",true);}
+function wardCloseRosterAnnotation(){const overlay=document.getElementById("ward-roster-annotation-overlay");if(overlay){overlay.classList.remove("is-open");overlay.setAttribute("aria-hidden","true");}wardRosterAnnotationActive=null;}
+if(!window.__wardRosterAnnotationEscapeBound){window.__wardRosterAnnotationEscapeBound=true;document.addEventListener("keydown",function(event){if(event.key==="Escape")wardCloseRosterAnnotation();});}
+
 function wardRosterTable(r){
  const c=r.content||{},cols=Array.isArray(c.columns)?c.columns:[],rows=Array.isArray(c.rows)?c.rows:[];
+ const pgt=r.roster_type==="pgt_monthly";
+ const annotationMap=pgt?wardRosterAnnotationReadAll():{};
  const cell=v=>esc(v==null?"":typeof v==="object"?JSON.stringify(v):v);
- const dutyTable=`<div class="resident-roster-table-wrap"><table class="resident-roster-table"><thead><tr>${cols.map(x=>`<th>${cell(x)}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${(Array.isArray(row)?row:cols.map(k=>row&&row[k]||"")).map(v=>`<td>${cell(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
- const groups=(r.roster_type==="pgt_monthly"&&Array.isArray(c.groups))?c.groups:[];
- const groupTable=groups.length?`<section class="resident-roster-groups"><h3>PGT Groups</h3><div class="resident-roster-table-wrap"><table class="resident-roster-group-table"><thead><tr>${groups.map(g=>`<th>${cell(g.name||"Group")}</th>`).join("")}</tr></thead><tbody>${Array.from({length:Math.max(0,...groups.map(g=>(g.members||[]).length))},(_,i)=>`<tr>${groups.map(g=>{const m=(g.members||[])[i];return `<td>${m?cell(m.name)+(m.abbr?` <span class="roster-short-code">(${cell(m.abbr)})</span>`:""):""}</td>`}).join("")}</tr>`).join("")}</tbody></table></div></section>`:"";
- return `<div class="resident-roster-sheet">${dutyTable}${groupTable}</div>`;
+ const tableRows=rows.map((row,rowIndex)=>{
+  const values=Array.isArray(row)?row:cols.map(k=>row&&row[k]||"");
+  const cells=values.map((v,colIndex)=>{
+   if(!pgt||colIndex<2) return "<td>"+cell(v)+"</td>";
+   const rowDate=String(values[0]==null?"row-"+rowIndex:values[0]);
+   const colName=String(cols[colIndex]==null?"Duty":cols[colIndex]);
+   const annotation=wardRosterAnnotationValue(annotationMap,r.id,rowDate,rowIndex,colIndex,colName);
+   const style=annotation.color ? ' style="--ward-roster-personal-highlight:'+annotation.color+'"' : "";
+   const marker=(annotation.note||annotation.color) ? '<span class="resident-roster-annotation-indicator" aria-hidden="true"></span>' : "";
+   const label="Personalise "+colName+" shift on "+rowDate;
+   const classes="resident-roster-annotation-trigger"+(annotation.color?" has-personal-highlight":"");
+   return '<td class="resident-roster-annotatable-cell"><button type="button" class="'+classes+'" data-roster-id="'+esc(r.id)+'" data-row-date="'+esc(rowDate)+'" data-row-index="'+rowIndex+'" data-col-index="'+colIndex+'" data-col-name="'+esc(colName)+'" aria-label="'+esc(label)+'" title="Add a personal note or highlight"'+style+' onclick="wardOpenRosterAnnotation(event,this)">'+cell(v)+marker+'</button></td>';
+  }).join("");
+  return "<tr>"+cells+"</tr>";
+ }).join("");
+ const dutyTable='<div class="resident-roster-table-wrap"><table class="resident-roster-table"><thead><tr>'+cols.map(x=>"<th>"+cell(x)+"</th>").join("")+'</tr></thead><tbody>'+tableRows+"</tbody></table></div>";
+ const groups=(pgt&&Array.isArray(c.groups))?c.groups:[];
+ const groupRows=Array.from({length:Math.max(0,...groups.map(g=>(g.members||[]).length))},(_,i)=>{
+  return "<tr>"+groups.map(g=>{
+   const m=(g.members||[])[i];
+   return "<td>"+(m?cell(m.name)+(m.abbr?' <span class="roster-short-code">('+cell(m.abbr)+")</span>":""):"")+"</td>";
+  }).join("")+"</tr>";
+ }).join("");
+ const groupTable=groups.length
+  ? '<section class="resident-roster-groups"><h3>PGT Groups</h3><div class="resident-roster-table-wrap"><table class="resident-roster-group-table"><thead><tr>'+groups.map(g=>"<th>"+cell(g.name||"Group")+"</th>").join("")+'</tr></thead><tbody>'+groupRows+'</tbody></table></div></section>'
+  : "";
+ const popup=pgt ? [
+  '<div id="ward-roster-annotation-overlay" class="ward-roster-annotation-overlay" aria-hidden="true" onclick="if(event.target===this)wardCloseRosterAnnotation()">',
+  '<div id="ward-roster-annotation-popover" class="ward-roster-annotation-popover" role="dialog" aria-label="Personalise duty shift" onclick="event.stopPropagation()">',
+  '<div class="ward-roster-annotation-header"><div><strong>Personalise shift</strong><small id="ward-roster-annotation-title">Duty shift</small></div><button type="button" class="ward-roster-annotation-close" aria-label="Close" onclick="wardCloseRosterAnnotation()">×</button></div>',
+  '<div class="ward-roster-annotation-label">HIGHLIGHT</div>',
+  '<div class="ward-roster-annotation-palette" role="group" aria-label="Highlight colour">',
+  '<button type="button" data-color="" aria-label="No highlight" title="No highlight" onclick="wardRosterAnnotationChooseColor(this)"><span class="ward-roster-no-colour">×</span></button>',
+  '<button type="button" data-color="#F2CA66" aria-label="Yellow highlight" title="Yellow" onclick="wardRosterAnnotationChooseColor(this)"><span style="background:#F2CA66"></span></button>',
+  '<button type="button" data-color="#78C69B" aria-label="Green highlight" title="Green" onclick="wardRosterAnnotationChooseColor(this)"><span style="background:#78C69B"></span></button>',
+  '<button type="button" data-color="#82AFE8" aria-label="Blue highlight" title="Blue" onclick="wardRosterAnnotationChooseColor(this)"><span style="background:#82AFE8"></span></button>',
+  '<button type="button" data-color="#B69BE1" aria-label="Purple highlight" title="Purple" onclick="wardRosterAnnotationChooseColor(this)"><span style="background:#B69BE1"></span></button>',
+  '<button type="button" data-color="#E58F98" aria-label="Red highlight" title="Red" onclick="wardRosterAnnotationChooseColor(this)"><span style="background:#E58F98"></span></button>',
+  '</div>',
+  '<label class="ward-roster-annotation-label" for="ward-roster-annotation-note">PERSONAL NOTE</label>',
+  '<textarea id="ward-roster-annotation-note" maxlength="300" rows="3" placeholder="Add a reminder for this shift…"></textarea>',
+  '<div id="ward-roster-annotation-status" class="ward-roster-annotation-status" role="status"></div>',
+  '<div class="ward-roster-annotation-foot"><button type="button" class="ward-roster-annotation-clear" onclick="wardRosterAnnotationClear()">Clear</button><button type="button" class="ward-roster-annotation-save" onclick="wardRosterAnnotationSave()">Save</button></div>',
+  '<p class="ward-roster-annotation-private">Saved only on this device. Not part of the official roster.</p>',
+  '</div></div>'
+ ].join("") : "";
+ return '<div class="resident-roster-sheet">'+dutyTable+groupTable+popup+'</div>';
 }
 function wardRostersView(){
  if(!wardRosterLoaded&&!wardRosterLoading)wardLoadPublishedRosters();
