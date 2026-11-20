@@ -9437,7 +9437,9 @@ function wardRosterBadge(r){
  if(r.is_upcoming)return `<span class="roster-library-badge upcoming">Upcoming</span>`;
  return `<span class="roster-library-badge archived">Archived</span>`;
 }
-function wardOpenRoster(id){wardRosterSelectedId=String(id);render()}
+let wardRosterViewMode="mine";
+function wardOpenRoster(id){wardRosterSelectedId=String(id);wardRosterViewMode="mine";render()}
+function wardSetRosterView(mode){wardRosterViewMode=mode==="all"?"all":"mine";render()}
 
 const WARD_ROSTER_ANNOTATION_COLORS = ["#F2CA66", "#78C69B", "#82AFE8", "#B69BE1", "#E58F98"];
 let wardRosterAnnotationActive = null;
@@ -9453,6 +9455,83 @@ function wardRosterAnnotationPersist(note,color,clear){const active=wardRosterAn
 function wardRosterAnnotationSave(){if(!wardRosterAnnotationActive)return;const textarea=document.getElementById("ward-roster-annotation-note");const note=String(textarea&&textarea.value||"").trim().slice(0,300);const color=WARD_ROSTER_ANNOTATION_COLORS.indexOf(wardRosterAnnotationActive.color)>=0?wardRosterAnnotationActive.color:"";wardRosterAnnotationPersist(note,color,false);}
 function wardRosterAnnotationClear(){wardRosterAnnotationPersist("","",true);}
 function wardCloseRosterAnnotation(){const overlay=document.getElementById("ward-roster-annotation-overlay");if(overlay){overlay.classList.remove("is-open");overlay.setAttribute("aria-hidden","true");}wardRosterAnnotationActive=null;}
+
+function wardRosterNormalName(value){return typeof bdftNormDoctorName==="function"?bdftNormDoctorName(value):String(value||"").trim().replace(/^dr[\.\s]+/i,"").replace(/[\s\-_]+/g," ").toLowerCase();}
+function wardRosterMatchKey(value){return String(value||"").trim().toUpperCase().replace(/\s+/g," ");}
+function wardRosterPersonalIdentity(r){
+ const me=typeof user==="function"?user():null;if(!me)return null;
+ const profileNames=[me.displayName,me.display_name,me.name,me.username].filter(Boolean);
+ const nameKeys=new Set(profileNames.map(wardRosterNormalName).filter(Boolean));if(!nameKeys.size)return null;
+ const docs=(configuration&&Array.isArray(configuration.batches)?configuration.batches:[]).flatMap(b=>Array.isArray(b.doctors)?b.doctors:[]);
+ const addName=value=>{const key=wardRosterNormalName(value);if(key)nameKeys.add(key);};
+ let shortCode=wardRosterMatchKey(me.bdft_short||me.bdftShortName||me.short||(abbreviations&&(abbreviations[me.displayName||me.username]||""))||"");
+ if(!shortCode){const d=docs.find(x=>nameKeys.has(wardRosterNormalName(x.name))&&x.abbreviation);if(d)shortCode=wardRosterMatchKey(d.abbreviation);}
+ if(!shortCode&&abbreviations){const alias=Object.keys(abbreviations).find(name=>nameKeys.has(wardRosterNormalName(name))&&abbreviations[name]);if(alias)shortCode=wardRosterMatchKey(abbreviations[alias]);}
+ if(!shortCode&&configuration&&configuration.fixedBedMatrix){
+  const matrix=configuration.fixedBedMatrix,alias=Object.keys(matrix).find(name=>nameKeys.has(wardRosterNormalName(name))&&matrix[name]);
+  if(alias){const beds=String(matrix[alias]),canonical=docs.find(d=>d.abbreviation&&String(matrix[d.name]||"")===beds);if(canonical)shortCode=wardRosterMatchKey(canonical.abbreviation);}
+ }
+ if(shortCode){docs.forEach(d=>{if(wardRosterMatchKey(d.abbreviation)===shortCode)addName(d.name);});if(abbreviations)Object.keys(abbreviations).forEach(name=>{if(wardRosterMatchKey(abbreviations[name])===shortCode)addName(name);});}
+ const groups=r&&r.content&&Array.isArray(r.content.groups)?r.content.groups:[];
+ const matched=[],inferredCodes=new Set();
+ groups.forEach(g=>{
+  const members=Array.isArray(g.members)?g.members:[];
+  const memberMatches=members.filter(m=>{const name=wardRosterNormalName(m&&(m.name||m.display_name)),code=wardRosterMatchKey(m&&(m.abbr||m.abbreviation));return !!name&&nameKeys.has(name)&&(!shortCode||code===shortCode);});
+  if(!memberMatches.length)return;
+  memberMatches.forEach(m=>{const code=wardRosterMatchKey(m.abbr||m.abbreviation);if(code)inferredCodes.add(code);});
+  const label=String(g.name||"").trim(),withoutPrefix=label.replace(/^group\s*/i,"").trim();
+  matched.push({label:label,keys:[wardRosterMatchKey(label),wardRosterMatchKey(withoutPrefix)].filter(Boolean)});
+ });
+ if(!shortCode){if(inferredCodes.size!==1)return null;shortCode=Array.from(inferredCodes)[0];}
+ if(!matched.length)return null;
+ const groupKeys=new Set();matched.forEach(g=>g.keys.forEach(k=>groupKeys.add(k)));
+ const keys=new Set([shortCode]);groupKeys.forEach(k=>keys.add(k));
+ return {shortCode:shortCode,groups:matched.map(g=>g.label),keys:keys};
+}
+function wardRosterAssignmentMatches(value,identity){
+ if(value==null||!identity)return false;
+ const tokens=String(value).split(/[+,;\/&|\n]+/).map(wardRosterMatchKey).filter(Boolean);
+ return tokens.some(token=>identity.keys.has(token)||identity.keys.has(token.replace(/^GROUP\s+/,"")));
+}
+function wardRosterDateInfo(dateValue,dayValue,rowIndex){
+ const raw=String(dateValue==null?"":dateValue).trim();let date=null,m=raw.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/);
+ if(m){const year=Number(m[3])<100?2000+Number(m[3]):Number(m[3]);date=new Date(year,Number(m[2])-1,Number(m[1]),12);if(date.getFullYear()!==year||date.getMonth()!==Number(m[2])-1||date.getDate()!==Number(m[1]))date=null;}
+ else{m=raw.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m){date=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),12);if(date.getFullYear()!==Number(m[1])||date.getMonth()!==Number(m[2])-1||date.getDate()!==Number(m[3]))date=null;}else if(raw){const parsed=new Date(raw);if(!Number.isNaN(parsed.getTime()))date=parsed;}}
+ const dayText=String(dayValue||"").trim(),dayLabel=dayText||(date?date.toLocaleDateString("en-IN",{weekday:"long"}):"");
+ const dateLabel=date?date.toLocaleDateString("en-IN",{day:"2-digit",month:"short"}):(raw||"—");
+ const dateKey=date?String(date.getFullYear())+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0"):(raw.toLowerCase()||"row-"+rowIndex);
+ return {date:date,dateKey:dateKey,dateLabel:dateLabel,dayLabel:dayLabel,isSunday:/\bsun(day)?\b/i.test(dayLabel)||(!!date&&date.getDay()===0),sortValue:date?date.getTime():Number.MAX_SAFE_INTEGER+rowIndex};
+}
+function wardRosterDutyLabel(columnName,isSunday){
+ const heading=String(columnName||"").replace(/\s+/g," ").trim(),upper=heading.toUpperCase();
+ if(/\bOPD\b/.test(upper))return isSunday?"Morning shift":"OPD";
+ if(/\b10\s*PM\b/.test(upper)&&/\b8\s*AM\b/.test(upper))return "Night shift";
+ if(/\b2\s*[-–]\s*10\s*PM\b/.test(upper))return "Evening shift";
+ if(/\bECT\b/.test(upper))return "ECT";
+ if(/\bDTC\b/.test(upper))return "DTC";
+ if(/\bSUICIDE\b/.test(upper))return "Suicide duty";
+ return heading||"Duty";
+}
+function wardRosterMyDuties(r){
+ const c=r&&r.content||{},cols=Array.isArray(c.columns)?c.columns:[],rows=Array.isArray(c.rows)?c.rows:[];
+ const identity=wardRosterPersonalIdentity(r);
+ if(!identity)return '<section class="resident-roster-my-duties"><div class="resident-roster-personal-empty"><strong>Could not match your roster identity.</strong><p>Check that your full name and short code appear together in the PGT Groups section.</p></div></section>';
+ const dateFound=cols.findIndex(x=>/^date$/i.test(String(x||"").trim())),dayFound=cols.findIndex(x=>/^day$/i.test(String(x||"").trim()));
+ const dateIndex=dateFound>=0?dateFound:0,dayIndex=dayFound>=0?dayFound:(dateIndex===0?1:0),buckets=new Map();let count=0;
+ rows.forEach((row,rowIndex)=>{
+  const values=Array.isArray(row)?row:cols.map(k=>row&&row[k]||""),dateInfo=wardRosterDateInfo(values[dateIndex],values[dayIndex],rowIndex);
+  for(let colIndex=0;colIndex<cols.length;colIndex++){
+   if(colIndex===dateIndex||colIndex===dayIndex||!wardRosterAssignmentMatches(values[colIndex],identity))continue;
+   const key=dateInfo.dateKey;if(!buckets.has(key))buckets.set(key,{...dateInfo,items:[],firstRow:rowIndex});
+   buckets.get(key).items.push(wardRosterDutyLabel(cols[colIndex],dateInfo.isSunday));count++;
+  }
+ });
+ if(!count)return '<section class="resident-roster-my-duties"><div class="resident-roster-duty-summary">0 duties</div><div class="resident-roster-personal-empty">No duties assigned this month.</div></section>';
+ const ordered=Array.from(buckets.values()).sort((a,b)=>a.sortValue-b.sortValue||a.firstRow-b.firstRow);
+ const dayHtml=ordered.map(day=>'<div class="resident-roster-my-duty-day"><div class="resident-roster-duty-date"><strong>'+esc(day.dateLabel)+'</strong><span>'+esc(day.dayLabel)+'</span></div><div class="resident-roster-duty-items">'+day.items.map(item=>'<span class="resident-roster-duty-item">'+esc(item)+'</span>').join("")+'</div></div>').join("");
+ return '<section class="resident-roster-my-duties" aria-label="My monthly duties"><div class="resident-roster-duty-summary">'+count+' '+(count===1?'duty':'duties')+'</div><div class="resident-roster-personal-list">'+dayHtml+'</div></section>';
+}
+
 if(!window.__wardRosterAnnotationEscapeBound){window.__wardRosterAnnotationEscapeBound=true;document.addEventListener("keydown",function(event){if(event.key==="Escape")wardCloseRosterAnnotation();});}
 
 function wardRosterTable(r){
@@ -9515,8 +9594,12 @@ function wardRostersView(){
  const header=`<div class="page-head"><h1 class="page-title">Duty rosters</h1><p class="muted">Current schedules and the previous two months</p></div>`;
  if(wardRosterError)return `${header}<div class="card"><p class="err">${esc(wardRosterError)}</p><button class="btn secondary" onclick="wardRosterLoaded=false;wardLoadPublishedRosters()">Retry</button></div>`;
  if(wardRosterLoading&&!wardRosterLoaded)return `${header}<div class="card muted">Loading duty rosters…</div>`;
- if(selected){
-  return `${header}<div class="resident-roster-detail-head"><button class="btn ghost sm" onclick="wardRosterSelectedId=null;render()">← All rosters</button><div class="resident-roster-detail-title"><div><span class="resident-roster-month">${esc(wardRosterMonthLabel(selected))}</span><h2>${esc(wardRosterKindLabel(selected))}</h2></div>${wardRosterBadge(selected)}</div></div>${wardRosterTable(selected)}`;
+  if(selected){
+  const isPgt=selected.roster_type==="pgt_monthly";
+  const mode=isPgt?wardRosterViewMode:"all";
+  const switcher=isPgt?'<div class="resident-roster-view-switch" role="group" aria-label="Roster view"><button type="button" class="'+(mode==="mine"?"active":"") + '" aria-pressed="'+(mode==="mine"?"true":"false") + '" onclick="wardSetRosterView(\'mine\')">My Duties</button><button type="button" class="'+(mode==="all"?"active":"") + '" aria-pressed="'+(mode==="all"?"true":"false") + '" onclick="wardSetRosterView(\'all\')">Entire Roster</button></div>':"";
+  const body=isPgt&&mode==="mine"?wardRosterMyDuties(selected):wardRosterTable(selected);
+false
  }
  const card=(r)=>`<button type="button" class="resident-roster-card" onclick="wardOpenRoster('${r.id}')"><span class="resident-roster-card-top">${wardRosterBadge(r)}<span class="resident-roster-card-arrow">↗</span></span><span class="resident-roster-card-month">${esc(wardRosterMonthLabel(r))}</span><strong>${esc(wardRosterKindLabel(r))}</strong><span class="resident-roster-card-period">${oaRosterDateLabel(r.period_start)}${r.period_end?` – ${oaRosterDateLabel(r.period_end)}`:""}</span></button>`;
  const pgt=rows.filter(r=>r.roster_type==="pgt_monthly"),faculty=rows.filter(r=>r.roster_type==="faculty_weekly");
@@ -26982,6 +27065,24 @@ html:has(#app.app.oa-mode),body:has(#app.app.oa-mode){height:100%!important;min-
 .resident-roster-group-table{min-width:0;table-layout:fixed}
 .resident-roster-group-table th{padding:8px 6px;background:var(--surface-2);border:1px solid var(--line);font-size:12px}
 .resident-roster-group-table td{padding:7px 6px;border:1px solid var(--line);font-size:11px;text-align:center;overflow-wrap:anywhere}
+
+.resident-roster-view-switch{display:flex;gap:3px;width:max-content;max-width:100%;margin-top:12px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.resident-roster-view-switch button{min-height:34px;padding:6px 13px;border:0;border-radius:7px;background:transparent;color:var(--muted);font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+.resident-roster-view-switch button.active{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(15,23,42,.10)}
+.resident-roster-my-duties{margin:0;padding:4px 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.resident-roster-duty-summary{padding:10px 0;border-bottom:1px solid var(--line);font-size:12px;font-weight:750;color:var(--muted)}
+.resident-roster-my-duty-day{display:grid;grid-template-columns:100px minmax(0,1fr);gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.resident-roster-my-duty-day:last-child{border-bottom:0}
+.resident-roster-duty-date{display:flex;flex-direction:column;gap:3px}
+.resident-roster-duty-date strong{font-size:14px;font-weight:800;color:var(--ink)}
+.resident-roster-duty-date span{font-size:11px;color:var(--muted)}
+.resident-roster-duty-items{display:flex;flex-wrap:wrap;gap:7px 14px;min-width:0}
+.resident-roster-duty-item{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
+.resident-roster-personal-empty{padding:20px 4px;font-size:13px;color:var(--muted)}
+.resident-roster-personal-empty strong{display:block;color:var(--ink);font-size:13px}
+.resident-roster-personal-empty p{margin:6px 0 0;font-size:12px}
+@media(max-width:640px){.resident-roster-my-duties{padding:3px 10px}.resident-roster-my-duty-day{grid-template-columns:78px minmax(0,1fr);gap:9px;padding:12px 0}.resident-roster-duty-date strong{font-size:13px}.resident-roster-duty-item{font-size:12px}}
+
 .roster-short-code{color:var(--muted);font-weight:700}
 @media(max-width:640px){.resident-roster-library-grid{grid-template-columns:1fr 1fr;gap:8px}.resident-roster-card{padding:12px}.resident-roster-card-month{font-size:18px}.resident-roster-sheet{padding:8px}}
 
