@@ -9479,7 +9479,7 @@ function wardRosterPersonalIdentity(r){
   const memberMatches=members.filter(m=>matcher(m));
   if(!memberMatches.length)return;
   memberMatches.forEach(m=>{const code=wardRosterMatchKey(m.abbr||m.abbreviation);if(code)inferredCodes.add(code);});
-  const label=String(g.name||"").trim(),withoutPrefix=label.replace(/^group\\s*/i,"").trim();
+  const label=String(g.name||"").trim(),withoutPrefix=label.replace(/^group\s*/i,"").trim();
   matched.push({label:label,keys:[wardRosterMatchKey(label),wardRosterMatchKey(withoutPrefix)].filter(Boolean)});
  });
  // A verified full-name match is authoritative. A stale or missing account short
