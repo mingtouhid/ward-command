@@ -1,3 +1,17 @@
+## 2026-11-20 — Home hero tile layout
+
+### Changed
+- Moved the Observation tile from the ward-category grid into the final three-tile row, replacing Beds free. Its existing action still opens the Observation page.
+- Removed the TODAY section label above the final row.
+- Added a 70px separation before the final row to distinguish it from the two ward-category rows.
+- Added an orange status dot to the Observation tile when its count is greater than zero; the existing blue Admission and red Discharge indicators are unchanged.
+- Updated the displayed client build to `R2.0.11`, manifest metadata to `1.3.24`, and service-worker cache to `ward-sync-pwa-r2.0.0-15`.
+
+### Preserved
+- Ward-category counts and actions remain unchanged.
+- Admission and discharge counts, actions and indicators remain unchanged.
+- No patient data, database schema, Supabase calls, access control or clinical workflow logic changed.
+
 ## 2026-11-20 — Android logo-only splash
 
 ### Changed

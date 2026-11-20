@@ -7350,7 +7350,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R2.0.10";
+const APP_VERSION="R2.0.11";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -10855,7 +10855,7 @@ function homeView(){
   const showBdftPrompt=(canWrite()&&!isIntern()&&!isConsultant()&&isEveningDuty()&&!hasActiveBdft);
   const make="";
   const dutyOn=!!dutyRecord();
-  const tile=(n,l,fn,cls)=>`<button type="button" class="r2-tile ${cls||""}${Number(n)>0&&/today-(admitted|discharged)/.test(cls||"")?" has-dot":""}" onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
+  const tile=(n,l,fn,cls)=>`<button type="button" class="r2-tile ${cls||""}${Number(n)>0&&/today-(observation|admitted|discharged)/.test(cls||"")?" has-dot":""}" onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
   const consHome=isConsultant();
   return `<div class="r2-home">
     ${r17AuditMissHtml()}
@@ -10877,9 +10877,9 @@ function homeView(){
         <div class="r2-shift">${esc(shiftLabel(sh))} shift<b>${esc(dateStrong)}</b></div>
       </div>
       <p class="r2-h r2-h-spacer" aria-hidden="true"></p>
-      <div class="r2-grid r2-where">${wards.map(w=>tile(w.n,w.name.charAt(0).toUpperCase()+w.name.slice(1),`openWardSection('${esc(w.id)}')`)).join("")}${tile(obsN,"Observation","go('observe')")}</div>
-      <p class="r2-h">TODAY</p>
-      <div class="r2-grid r2-today">${tile(free,"Beds free","","free")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')","today-admitted")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()","today-discharged")}</div>
+      <div class="r2-grid r2-where">${wards.map(w=>tile(w.n,w.name.charAt(0).toUpperCase()+w.name.slice(1),`openWardSection('${esc(w.id)}')`)).join("")}</div>
+      
+      <div class="r2-grid r2-today">${tile(obsN,"Observation","go('observe')","today-observation")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')","today-admitted")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()","today-discharged")}</div>
     </section><div class="r2-side">
     ${consHome?"":`<section class="r2-duty r2-duty-compact" aria-label="Duty status">
       <span class="r2-duty-message">${dutyOn?"You are already signed in":"You are not signed in"}</span>${canWrite()?`<button type="button" class="r2-signin" onclick="${dutyOn?"endDuty()":"signDuty()"}">${dutyOn?"Sign out":"Sign in"}</button>`:""}
@@ -26616,6 +26616,28 @@ html[data-theme="ot"] #app.app .r162-nav.r16-nav.pt-nav button:not(:disabled){
 }
 #app.app .r2-tile.today-discharged.has-dot:after{
   box-shadow:0 0 0 2px rgba(239,68,68,.15)!important;
+}
+#app.app .r2-today{
+  margin-top:70px!important;
+}
+#app.app .r2-tile.today-observation{
+  position:relative;
+  padding-right:26px;
+}
+#app.app .r2-tile.today-observation.has-dot:after{
+  content:"";
+  position:absolute;
+  right:10px;
+  top:10px;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#f59e0b;
+  box-shadow:0 0 0 2px rgba(245,158,11,.16)!important;
+  animation:r201DotPulse 1.8s ease-in-out infinite;
+}
+@media(prefers-reduced-motion:reduce){
+  #app.app .r2-tile.today-observation.has-dot:after{animation:none!important}
 }
 </style>
 
