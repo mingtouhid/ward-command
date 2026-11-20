@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r2.0.0-12";
+const VERSION = "ward-sync-pwa-r2.0.0-13";
 // R1.3.134: the on-device scanner engine lives in its own cache, filled and verified by the page; never deleted on update.
 const OCR_CACHE = "ocr-assets-v7";
 const PRECACHE = [
@@ -7,10 +7,14 @@ const PRECACHE = [
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
+  "./icon-180.png",
+  "./favicon-16.png",
   "./apple-touch-icon.png",
   "./favicon-32.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
+  "./icons/icon-180.png",
+  "./icons/favicon-16.png",
   "./icons/icon-192-maskable.png",
   "./icons/icon-512-maskable.png",
   "./icons/apple-touch-icon.png",
