@@ -2,7 +2,7 @@
 
 **Repository:** `mingtouhid/ward-command`  
 **Branch:** `main`  
-**Snapshot:** 19 November 2026  
+**Snapshot:** 20 November 2026  
 **Application:** Static, single-document progressive web app (PWA)
 
 This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCHITECTURE.md) for runtime, role, backend and deployment behaviour, and [CHANGELOG.md](CHANGELOG.md) for dated product changes.
@@ -30,7 +30,7 @@ This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCH
 | `icons/` | Canonical current PWA icons: regular 192/512, maskable 192/512, Apple touch icon, favicons, notification glyph and badge. |
 | Root `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` and `favicon-32.png` | Compatibility aliases refreshed from the canonical `icons/` assets because the service worker also precaches these root paths. Current HTML and manifest use `icons/`. Other historical root PNGs are not referenced by the current manifest or HTML head. |
 | `ocr/` | Tesseract.js runtime, trained data, workers/wasm, OCR manifest and Ward Sync OCR integration. |
-| `migrations/` | Supabase SQL migrations, rollback scripts and test/precheck files. Presence in Git does not establish production apply status. |
+| `migrations/` | Supabase SQL migrations, rollback scripts and test/precheck files, including the canonical PGT resident-identity migration and verification script. Presence in Git does not establish production apply status. |
 | `supabase/functions/dispatch-bdft/` | BDFT push-dispatch Edge Function, worker module, Deno config and schedule notes. |
 | `docs/superpowers/specs/` | Historical design specifications for R1.7 and R1.8 work. |
 | `docs/superpowers/plans/` | Historical implementation plans associated with those specifications. |
@@ -40,16 +40,16 @@ This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCH
 
 - `index.html` is the frontend source of truth in this repository. The current project has no frontend package/bundler build step; Vercel serves the repository root.
 - Residents, admins and consultants use the clinical shell with role-specific capabilities. Interns use a reduced shell. `office_admin` uses an isolated Office Administration workspace rather than the patient-care shell.
-- Office Admin covers PGT monthly and Faculty weekly roster administration, reusable PGT group sets, account management, and ward configuration. The published staff roster library is read-only.
+- Office Admin covers PGT monthly and Faculty weekly roster administration, reusable PGT group sets, account management, and ward configuration. PGT group membership is keyed by `residents.id`; roster snapshots retain that ID alongside historical display name/code. The published staff roster library is read-only.
 - Supabase provides Postgres, RLS and RPCs. Vercel serves the static PWA. The source for BDFT dispatch is in this repository; some other server functions invoked by the client are not included.
 
 ## Version identifiers in the 19 November 2026 source snapshot
 
 | Identifier | Value | Meaning |
 | --- | --- | --- |
-| HTML `APP_VERSION` | `R2.0.8` | Build label displayed by the app. |
+| HTML `APP_VERSION` | `R2.0.9` | Build label displayed by the app. |
 | BDFT `BDFT_APP_VERSION` | `7.0` | Inlined BDFT engine label. |
-| Service worker `VERSION` | `ward-sync-pwa-r2.0.0-4` | Cache name; changing it triggers app cache replacement. |
+| Service worker `VERSION` | `ward-sync-pwa-r2.0.0-9` | Cache name; changing it triggers app cache replacement. |
 | OCR cache | `ocr-assets-v7` | Separate OCR asset cache. |
 | Manifest `version` / `build` | `1.3.20` / `R1.3.20 icons` | Legacy custom manifest metadata, not the displayed HTML build. |
 
@@ -57,7 +57,7 @@ These identifiers have different purposes and are not interchangeable. Current C
 
 ## Backend and migration caveats
 
-The frontend calls an `office_admin_*` RPC family for Office Admin login/session, roster lifecycle, saved PGT groups, account changes and ward configuration. The read-only roster library calls `ward_list_published_rosters`. No matching Office Admin SQL migration is present in the checked-in `migrations/` folder in this repository snapshot. The live Supabase database may contain manual changes; export/version its authoritative schema and rollback before changing this area. Do not infer production schema or migration status from frontend code.
+The frontend calls an `office_admin_*` RPC family for Office Admin login/session, roster lifecycle, saved PGT groups, account changes and ward configuration. The read-only roster library calls `ward_list_published_rosters`. The checked-in `migrations/r20_canonical_pgt_resident_identity.sql` versions PGT group membership and the relevant Office Admin PGT group/roster RPCs. Other Office Admin RPCs remain partly external to the checked-in migrations; verify live schema and migration status before changing them. Do not infer production schema or migration status from frontend code.
 
 The repository also does not contain source for all external functions referenced by the frontend, including `dispatch-notification` and `monthly-archive`. See the architecture document's gaps section.
 
