@@ -18,6 +18,7 @@ Ward Sync brings together patient lists and snapshots, medication and observatio
 - [Repository structure](structure.md)
 - [System architecture and backend contracts](WARD_SYNC_ARCHITECTURE.md)
 - [Changelog](CHANGELOG.md)
+- [Icon asset replacement guide](ICON-ASSET-REPLACEMENT.md)
 - [Privacy notice](privacy.html)
 - [Historical design specifications and plans](docs/superpowers/)
 
