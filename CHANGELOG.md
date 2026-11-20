@@ -1,3 +1,7 @@
+### Fixed
+
+- Corrected the current November 2026 PGT roster's member short-code snapshots to match each linked resident's canonical BDFT code. This fixes My Duties attribution where duty cells used the updated codes (e.g. TA) but the preserved roster snapshot still held the old codes (e.g. TO). Historical names, duty assignments and non-current published rosters remain unchanged.
+
 # Changelog
 
 All notable changes from 2026-11-10 onward are recorded here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates are Asia/Calcutta. Older product history stays in `RELEASE-NOTES-*.md` and is not copied here.
