@@ -10878,6 +10878,7 @@ function homeView(){
       </div>
       <p class="r2-h r2-h-spacer" aria-hidden="true"></p>
       <div class="r2-grid r2-where">${wards.map(w=>tile(w.n,w.name.charAt(0).toUpperCase()+w.name.slice(1),`openWardSection('${esc(w.id)}')`)).join("")}</div>
+      <div class="r2-medical-strip" aria-hidden="true"><img src="./medical-banner-60s.svg" alt="" width="390" height="65" decoding="async" fetchpriority="high"></div>
       
       <div class="r2-grid r2-today">${tile(obsN,"Observation","go('observe')","today-observation")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')","today-admitted")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()","today-discharged")}</div>
     </section><div class="r2-side">
@@ -26617,8 +26618,26 @@ html[data-theme="ot"] #app.app .r162-nav.r16-nav.pt-nav button:not(:disabled){
 #app.app .r2-tile.today-discharged.has-dot:after{
   box-shadow:0 0 0 2px rgba(239,68,68,.15)!important;
 }
+#app.app .r2-medical-strip{
+  box-sizing:border-box;
+  width:100%;
+  height:65px;
+  max-height:65px;
+  margin:2px 0 3px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+#app.app .r2-medical-strip img{
+  display:block;
+  width:100%;
+  height:65px;
+  max-height:65px;
+  object-fit:contain;
+}
 #app.app .r2-today{
-  margin-top:70px!important;
+  margin-top:0!important;
 }
 #app.app .r2-tile.today-observation{
   position:relative;

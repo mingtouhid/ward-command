@@ -1,3 +1,15 @@
+## 2026-11-20 — Home medical animation
+
+### Changed
+- Added the supplied `medical-banner-60s.svg` unchanged between the ward-category tiles and the Observation/Admitted/Discharged row on the Home hero card.
+- Constrained the display area to 65px maximum height while preserving the SVG's 390:65 aspect ratio.
+- Replaced the previous 70px empty row gap with the animation strip; the existing hero tiles and their actions remain unchanged.
+- Added the SVG to the service-worker precache and advanced the cache version to `ward-sync-pwa-r2.0.0-16`.
+
+### Preserved
+- The uploaded SVG source was committed without editing its contents.
+- No patient data, database schema, Supabase calls, access control or clinical workflow logic changed.
+
 ## 2026-11-20 — Home hero tile layout
 
 ### Changed

@@ -11,7 +11,7 @@ This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCH
 
 | Path | Purpose |
 | --- | --- |
-| `index.html` | Main application source: markup, CSS, client-side state, hash routing, clinical screens, resident/admin/consultant/intern surfaces, Office Admin workspace and read-only published-roster library. |
+| `medical-banner-60s.svg` | Supplied 60-second animated medical banner displayed between the Home hero tile rows; source retained unchanged. |\n| `index.html` | Main application source: markup, CSS, client-side state, hash routing, clinical screens, resident/admin/consultant/intern surfaces, Office Admin workspace and read-only published-roster library. |
 | `sw.js` | Service worker: app/OCR caches, precache, offline/network strategy, push display and notification-click routing. |
 | `manifest.json` | PWA name, install/display settings, theme/background colours and app icon declarations. |
 | `README.md` | Project entry point and links to project documentation. |
@@ -98,3 +98,11 @@ The approved Ward Sync heart-ECG icon PNGs are stored under `icons/`, with root-
 - The final three-tile row is Observation, Admitted and Discharged. Beds free is intentionally hidden from this hero card.
 - The TODAY heading is removed. The final row is separated from the ward-category grid by a 70px top margin.
 - The Observation tile retains its existing Observation-page action and displays an orange status dot when its count is non-zero. Admission and Discharge retain their existing blue and red indicators.
+
+
+## Home medical animation (2026-11-20)
+
+- `medical-banner-60s.svg` is the supplied 390×65 SVG, retained unchanged.
+- The Home hero card renders it between the six ward-category tiles and the Observation/Admitted/Discharged row, constrained to a maximum display height of 65px.
+- The service worker precaches the SVG for offline use. Cache version: `ward-sync-pwa-r2.0.0-16`.
+- No clinical data, database, Supabase, role, or workflow logic is changed.
