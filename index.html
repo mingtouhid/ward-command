@@ -9609,10 +9609,11 @@ function wardRostersView(){
   const mode=isPgt?wardRosterViewMode:"all";
   const switcher=isPgt?'<div class="resident-roster-view-switch" role="group" aria-label="Roster view"><button type="button" class="'+(mode==="mine"?"active":"") + '" aria-pressed="'+(mode==="mine"?"true":"false") + '" onclick="wardSetRosterView(\'mine\')">My Duties</button><button type="button" class="'+(mode==="all"?"active":"") + '" aria-pressed="'+(mode==="all"?"true":"false") + '" onclick="wardSetRosterView(\'all\')">Entire Roster</button></div>':"";
   const body=isPgt&&mode==="mine"?wardRosterMyDuties(selected):wardRosterTable(selected);
-  return '<div class="resident-roster-detail-head">'
+  if(isPgt&&mode==="mine")requestAnimationFrame(()=>{const todayRow=document.querySelector(".resident-roster-my-duty-day.is-today");if(todayRow)todayRow.scrollIntoView({block:"center",behavior:"auto"});});
+  return '<div class="resident-roster-detail-page"><div class="resident-roster-detail-head">'
    + '<div class="resident-roster-detail-top"><button class="btn ghost sm" onclick="wardRosterSelectedId=null;wardRosterViewMode=\'mine\';render()">← All rosters</button>'
    + '<div class="resident-roster-detail-title"><span class="resident-roster-month">'+esc(wardRosterMonthLabel(selected))+'</span><h2>'+esc(wardRosterKindLabel(selected))+'</h2></div>'
-   + wardRosterBadge(selected) + '</div>' + switcher + '</div>' + body;
+   + wardRosterBadge(selected) + '</div>' + switcher + '</div>' + body + '</div>';
  }
  const card=(r)=>`<button type="button" class="resident-roster-card" onclick="wardOpenRoster('${r.id}')"><span class="resident-roster-card-top">${wardRosterBadge(r)}<span class="resident-roster-card-arrow">↗</span></span><span class="resident-roster-card-month">${esc(wardRosterMonthLabel(r))}</span><strong>${esc(wardRosterKindLabel(r))}</strong><span class="resident-roster-card-period">${oaRosterDateLabel(r.period_start)}${r.period_end?` – ${oaRosterDateLabel(r.period_end)}`:""}</span></button>`;
  const pgt=rows.filter(r=>r.roster_type==="pgt_monthly"),faculty=rows.filter(r=>r.roster_type==="faculty_weekly");
@@ -27061,6 +27062,17 @@ html:has(#app.app.oa-mode),body:has(#app.app.oa-mode){height:100%!important;min-
 .roster-library-badge.upcoming{background:color-mix(in srgb,var(--accent) 13%,var(--panel));color:var(--accent)}
 .roster-library-badge.archived{background:var(--surface-2);color:var(--muted)}
 .resident-roster-detail-head{margin:0 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+/* Compact published-roster detail header */
+body:has(.resident-roster-detail-page) .page-head{display:none}
+.resident-roster-detail-page .resident-roster-detail-head{margin:0 0 8px;padding:8px 10px}
+.resident-roster-detail-page .resident-roster-detail-top{display:grid;grid-template-columns:max-content minmax(0,1fr) max-content;align-items:center;gap:9px}
+.resident-roster-detail-page .resident-roster-detail-top>.btn{padding:7px 9px;font-size:12px}
+.resident-roster-detail-page .resident-roster-detail-title{gap:2px}
+.resident-roster-detail-page .resident-roster-detail-title h2{font-size:14px;line-height:1.15;white-space:normal}
+.resident-roster-detail-page .resident-roster-month{font-size:10px}
+.resident-roster-detail-page .resident-roster-detail-top>.roster-library-badge{margin:0;align-self:center}
+.resident-roster-detail-page .resident-roster-view-switch{margin-top:7px}
+
 .resident-roster-detail-top{display:flex;align-items:center;gap:10px;min-width:0}
 .resident-roster-detail-top>.btn{flex:0 0 auto;white-space:nowrap}
 .resident-roster-detail-title{display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:0;flex:1}
@@ -27098,12 +27110,12 @@ html:has(#app.app.oa-mode),body:has(#app.app.oa-mode){height:100%!important;min-
 .resident-roster-duty-date{display:flex;flex-direction:column;gap:3px}
 .resident-roster-duty-date strong{font-size:14px;font-weight:800;color:var(--ink)}
 .resident-roster-duty-date span{font-size:11px;color:var(--muted)}
-.resident-roster-duty-items{display:flex;flex-wrap:wrap;gap:7px 26px;min-width:0}
+.resident-roster-duty-items{display:flex;flex-wrap:wrap;gap:9px 38px;min-width:0}
 .resident-roster-duty-item{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
 .resident-roster-personal-empty{padding:20px 4px;font-size:13px;color:var(--muted)}
 .resident-roster-personal-empty strong{display:block;color:var(--ink);font-size:13px}
 .resident-roster-personal-empty p{margin:6px 0 0;font-size:12px}
-@media(max-width:640px){.resident-roster-my-duties{padding:3px 10px}.resident-roster-my-duty-day{grid-template-columns:78px minmax(0,1fr);gap:9px;padding:12px 0}.resident-roster-my-duty-day.is-today{padding:12px 7px}.resident-roster-duty-items{column-gap:22px;row-gap:8px}.resident-roster-duty-date strong{font-size:13px}.resident-roster-duty-item{font-size:12px}.resident-roster-detail-top{gap:8px}.resident-roster-detail-top>.btn{padding-left:10px;padding-right:10px}.resident-roster-detail-title h2{font-size:14px}}
+@media(max-width:640px){.resident-roster-my-duties{padding:3px 10px}.resident-roster-my-duty-day{grid-template-columns:78px minmax(0,1fr);gap:9px;padding:12px 0}.resident-roster-my-duty-day.is-today{padding:12px 7px}.resident-roster-duty-items{column-gap:30px;row-gap:9px}.resident-roster-duty-date strong{font-size:13px}.resident-roster-duty-item{font-size:12px}.resident-roster-detail-top{gap:8px}.resident-roster-detail-top>.btn{padding-left:10px;padding-right:10px}.resident-roster-detail-title h2{font-size:14px}}
 
 .roster-short-code{color:var(--muted);font-weight:700}
 @media(max-width:640px){.resident-roster-library-grid{grid-template-columns:1fr 1fr;gap:8px}.resident-roster-card{padding:12px}.resident-roster-card-month{font-size:18px}.resident-roster-sheet{padding:8px}}
