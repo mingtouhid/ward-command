@@ -27786,6 +27786,48 @@ html:not(.ws-resident-tablet) #app.app .main .r2-bdft-see{display:none!important
   }
 }
 </style>
+<!-- Ward Sync resident PGT roster: compact personal-duty presentation. -->
+<style id="ward-sync-resident-roster-polish-v1">
+/* Keep the first duty anchored and place the second duty at the far edge. */
+.resident-roster-duty-item:nth-child(2) {
+  margin-left: auto !important;
+}
+
+/* Tighten the list while retaining comfortable tap/read spacing. */
+.resident-roster-my-duty-day {
+  gap: 10px !important;
+  padding: 8px 0 !important;
+}
+.resident-roster-duty-summary {
+  padding: 8px 0 !important;
+}
+.resident-roster-duty-items {
+  column-gap: 24px !important;
+  row-gap: 6px !important;
+}
+
+/* Make the current date clearly identifiable without changing its content. */
+.resident-roster-my-duty-day.is-today {
+  padding: 8px 7px !important;
+  border-color: color-mix(in srgb, var(--accent) 78%, var(--line)) !important;
+  background: color-mix(in srgb, var(--accent) 19%, var(--panel)) !important;
+  box-shadow: inset 3px 0 0 var(--accent) !important;
+}
+
+@media (max-width: 640px) {
+  .resident-roster-my-duty-day {
+    padding: 7px 0 !important;
+  }
+  .resident-roster-my-duty-day.is-today {
+    padding: 7px 7px !important;
+  }
+  .resident-roster-duty-items {
+    column-gap: 20px !important;
+    row-gap: 5px !important;
+  }
+}
+</style>
+
 </body>
 </html>
 
