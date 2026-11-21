@@ -28325,10 +28325,10 @@ html.ws-intern .snap-cols>.card{
 }
 #app.app.oa-mode .oa-member-row .oa-pgt-selected{grid-area:picked;min-width:0;margin:0!important;background:#eff6ff!important;border-color:#bfdbfe!important}
 #app.app.oa-mode .oa-pgt-selected strong,
-#app.app.oa-mode .oa-pgt-selected small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#app.app.oa-mode .oa-members-head{gap:6px;min-width:0}
+#app.app.oa-mode .oa-pgt-selected small{display:block;overflow:visible;white-space:normal;overflow-wrap:break-word}
+#app.app.oa-mode .oa-members-head{gap:6px;min-width:0;align-items:baseline}
 #app.app.oa-mode .oa-members-head b,
-#app.app.oa-mode .oa-members-head span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#app.app.oa-mode .oa-members-head span{min-width:0;overflow:visible;white-space:normal}
 #app.app.oa-mode .oa-pgt-add{position:relative;margin-top:8px}
 #app.app.oa-mode .oa-pgt-add .oa-pgt-suggestions{left:0;right:0}
 #app.app.oa-mode .oa-member-row .oa-canonical-code{grid-area:code;width:auto!important;min-width:44px;height:36px!important;padding:0 10px!important}
@@ -28355,20 +28355,14 @@ html.ws-intern .snap-cols>.card{
 #app.app.oa-mode .oa-date-dow span,#app.app.oa-mode .oa-date-grid>span{font-size:11px;color:#64748b;line-height:28px}
 @media (max-width:900px){
   #app.app.oa-mode .oa-groups-workspace{grid-template-columns:1fr!important}
-  #app.app.oa-mode .oa-groups-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
   #app.app.oa-mode .oa-group-editor-head{flex-wrap:wrap!important}
   #app.app.oa-mode .oa-group-editor-head .field{width:100%!important}
 }
-@media (max-width:480px){
-  #app.app.oa-mode .oa-sidebar{display:none!important}
+@media (max-width:700px){
   #app.app.oa-mode .oa-workspace{grid-template-columns:minmax(0,1fr)!important}
-  #app.app.oa-mode .oa-department-title{display:none!important}
-  #app.app.oa-mode .oa-main{padding:12px!important}
-  #app.app.oa-mode .oa-group-card{padding:8px!important}
-  #app.app.oa-mode .oa-member-row{gap:4px!important}
-  #app.app.oa-mode .oa-member-row .oa-canonical-code{min-width:0!important;height:28px!important;padding:0 6px!important;font-size:12px!important}
-  #app.app.oa-mode .oa-member-row .oa-remove-member{width:28px!important;height:28px!important}
-  #app.app.oa-mode .oa-pgt-selected strong{font-size:13px!important}
+  #app.app.oa-mode .oa-sidebar{position:relative!important;top:auto!important;width:100%!important;height:auto!important;min-height:0!important;border-right:0!important;border-bottom:1px solid #e2e8f0!important}
+  #app.app.oa-mode .oa-main{padding:16px 12px 48px!important}
+  #app.app.oa-mode .oa-groups-grid{grid-template-columns:minmax(0,1fr)!important}
 }
 </style>
 
