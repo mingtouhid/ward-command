@@ -1,5 +1,5 @@
 -- R2.0.12 office admin resident year.
--- NOT APPLIED. Apply only after review.
+-- Applied to production 2026-11-21 ~20:05 IST.
 -- Drops the live signatures and replaces them with the same functions plus a
 -- defaulted p_year argument. Callers that omit p_year keep the previous behaviour.
 -- Live signatures this replaces:

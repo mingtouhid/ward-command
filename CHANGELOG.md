@@ -1,8 +1,14 @@
+## 2026-11-21 — Resident year migration applied
+
+### Changed
+- Client version stays `R2.0.12`. Service worker cache `ward-sync-pwa-r2.0.0-26`.
+- `migrations/r20_14_office_admin_resident_year.sql` was applied to production on 2026-11-21 at about 20:05 IST. `office_admin_invite_user` and `office_admin_update_user` accept `p_year`. Anon and authenticated can execute them. Public cannot. Both still call `private.require_office_admin`.
+
 ## 2026-11-21 — BDFT year choices and PGT group rows
 
 ### Changed
 - Client version stays `R2.0.12`. Service worker cache `ward-sync-pwa-r2.0.0-25`.
-- The Office Admin Year field is a choice of `3rd Year`, `2nd Year`, or `1st Year`, the same labels as BDFT settings. It is prefilled from `residents.bdft_batch`. `migrations/r20_14_office_admin_resident_year.sql` now accepts only those three values and is still not applied.
+- The Office Admin Year field is a choice of `3rd Year`, `2nd Year`, or `1st Year`, the same labels as BDFT settings. It is prefilled from `residents.bdft_batch`. `migrations/r20_14_office_admin_resident_year.sql` accepts only those three values and was applied to production on 2026-11-21 at about 20:05 IST.
 - A PGT group shows the name and BDFT short code on one row. Searching for a resident adds that person to the group, so the separate Add PGT button is gone. Below 700px each group card is its own row so the name, username, and search stay readable. The office sidebar stays visible. Below 430px the department title sits on its own header line, and the short-code chip matches the name chip height.
 
 ## 2026-11-21 — Office admin roster dates, faculty phones, and resident year
@@ -16,7 +22,7 @@
 - Roster issue, start, and end dates keep dd/mm/yyyy typing and add the existing calendar button. The picker and the typed date stay on the same value.
 - A faculty roster has a phone line under each faculty name. The phone is stored in the roster content and printed under that name. No schema change.
 - New faculty rosters use the printable name Faculty Roster. A roster that already has another name keeps it.
-- The Office Admin account form shows Year for residents only. It reads `residents.bdft_batch`. Saving it needs `migrations/r20_14_office_admin_resident_year.sql`, which is not applied. Until then the account still saves and the screen says the year was not stored.
+- The Office Admin account form shows Year for residents only. It reads `residents.bdft_batch`. `migrations/r20_14_office_admin_resident_year.sql` was applied to production on 2026-11-21 at about 20:05 IST.
 - On Home, the Total patients number is 1.5 times its previous size for residents and consultants. The label, colours, and other roles stay the same.
 
 ## 2026-11-21 — Permanent delete of inactive office accounts
