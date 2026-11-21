@@ -2,8 +2,8 @@
 
 ### Changed
 - Client version `R2.0.12`. Service worker cache `ward-sync-pwa-r2.0.0-20`.
-- Office Administration uses a plain blue-and-white desktop theme. Account search and ward-setup search filter on the page. The header shows Online or Offline from the device connection. Ward setup, user management, PGT groups and roster editing stay on the existing office-admin RPCs.
-- Intern pages on a wide desktop stay inside a centred column and no longer reserve the resident sidebar. A connection line with colour and text is shown on desktop only. The phone intern layout is unchanged.
+- Office Administration is plain blue and white (`#1D4ED8`, `#EFF6FF`, `#F8FAFC`). Account lists are a compact table with search and a role filter. Ward setup and rosters use compact tables. Edits stay in the existing modal or roster editor, and a Saved toast appears only after the server returns. A save refreshes only the list it changed.
+- Intern pages on a wide desktop stay inside a centred column. The bottom bar matches that column, shows an icon and a label on every tab, and uses a modest selected highlight. A connection line with colour and text is shown on desktop only. The phone intern layout is unchanged.
 
 ## 2026-11-21 — Session loader logo alignment
 
