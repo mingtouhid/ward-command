@@ -6,6 +6,9 @@
 --   public.office_admin_invite_user(uuid, text, text, text, text, text, text, text)
 --   public.office_admin_update_user(uuid, text, text, text, text, text, boolean, text, text, text)
 -- p_year writes public.residents.bdft_batch, and only when the role is resident.
+-- A non-empty year must be 1st Year, 2nd Year, or 3rd Year, the same labels
+-- as the BDFT settings batch buttons. Other spellings of those three are stored
+-- in that canonical form.
 -- It does not add a column. Roster membership stays on resident id.
 
 BEGIN;
@@ -59,8 +62,16 @@ begin
   v_year := nullif(btrim(coalesce(p_year,'')), '');
   if v_role <> 'resident' then
     v_year := null;
-  elsif v_year is not null and char_length(v_year) > 32 then
-    raise exception 'Year must be 32 characters or fewer' using errcode='23514';
+  elsif v_year is not null then
+    v_year := case lower(v_year)
+      when '1st year' then '1st Year'
+      when '2nd year' then '2nd Year'
+      when '3rd year' then '3rd Year'
+      else v_year
+    end;
+    if v_year not in ('1st Year','2nd Year','3rd Year') then
+      raise exception 'Year must be 1st Year, 2nd Year, or 3rd Year' using errcode='23514';
+    end if;
   end if;
 
   select id,active,role into v_id,v_active,v_existing_role
@@ -167,8 +178,16 @@ begin
   v_year := nullif(btrim(coalesce(p_year,'')), '');
   if v_new_role <> 'resident' then
     v_year := null;
-  elsif v_year is not null and char_length(v_year) > 32 then
-    raise exception 'Year must be 32 characters or fewer' using errcode='23514';
+  elsif v_year is not null then
+    v_year := case lower(v_year)
+      when '1st year' then '1st Year'
+      when '2nd year' then '2nd Year'
+      when '3rd year' then '3rd Year'
+      else v_year
+    end;
+    if v_year not in ('1st Year','2nd Year','3rd Year') then
+      raise exception 'Year must be 1st Year, 2nd Year, or 3rd Year' using errcode='23514';
+    end if;
   end if;
 
   update public.residents set
