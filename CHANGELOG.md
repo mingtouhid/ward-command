@@ -1,3 +1,17 @@
+## 2026-11-21 — Office admin roster dates, faculty phones, and resident year
+
+### Fixed
+- Client version stays `R2.0.12`. Service worker cache `ward-sync-pwa-r2.0.0-24`.
+- A valid roster date such as 21/11/2026 was rejected on review and publish. The check used a doubled backslash, so it looked for the characters `\d` instead of a real date. The check now accepts `YYYY-MM-DD`.
+- PGT group setup lines up the resident search, BDFT short code, and remove button on one row. The group-set count sits on the name field, and the editor stacks to one column on a narrow window.
+
+### Added
+- Roster issue, start, and end dates keep dd/mm/yyyy typing and add the existing calendar button. The picker and the typed date stay on the same value.
+- A faculty roster has a phone line under each faculty name. The phone is stored in the roster content and printed under that name. No schema change.
+- New faculty rosters use the printable name Faculty Roster. A roster that already has another name keeps it.
+- The Office Admin account form shows Year for residents only. It reads `residents.bdft_batch`. Saving it needs `migrations/r20_14_office_admin_resident_year.sql`, which is not applied. Until then the account still saves and the screen says the year was not stored.
+- On Home, the Total patients number is 1.5 times its previous size for residents and consultants. The label, colours, and other roles stay the same.
+
 ## 2026-11-21 — Permanent delete of inactive office accounts
 
 ### Added
