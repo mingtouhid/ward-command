@@ -1,182 +1,194 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="medicalSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 50" width="390" height="50" role="img" aria-label="60-second sequential medical banner animation: ECG wave, wheelchair caregiver, frantic woman, and ambulance">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 50" width="390" height="50" role="img" aria-label="120-second sequential transparent medical banner animation: ECG wave, wheelchair caregiver, frantic woman, ambulance, and seizure stretcher rescue">
   <defs>
-    <!-- Stage & Atmosphere Gradients -->
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#090F18"/>
-      <stop offset="70%" stop-color="#0F1826"/>
-      <stop offset="100%" stop-color="#0A101A"/>
-    </linearGradient>
-
-    <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#172436"/>
-      <stop offset="100%" stop-color="#070B11"/>
-    </linearGradient>
-
-    <!-- Fine Clinical Monitor Grid -->
-    <pattern id="ecgGrid" width="13" height="13" patternUnits="userSpaceOnUse">
-      <path d="M 13 0 L 0 0 0 13" fill="none" stroke="#1A2C42" stroke-width="0.5"/>
-    </pattern>
-
     <!-- ECG Phosphor Persistence Masks -->
     <linearGradient id="ecgTrailGrad" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#000000"/>
-      <stop offset="22%" stop-color="#2E2E2E"/>
-      <stop offset="68%" stop-color="#CFCFCF"/>
-      <stop offset="95%" stop-color="#FFFFFF"/>
-      <stop offset="100%" stop-color="#FFFFFF"/>
+      <stop offset="0%" stop-color="#000000" />
+      <stop offset="22%" stop-color="#2E2E2E" />
+      <stop offset="68%" stop-color="#CFCFCF" />
+      <stop offset="95%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FFFFFF" />
     </linearGradient>
 
     <linearGradient id="ecgTipGrad" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#000000"/>
-      <stop offset="55%" stop-color="#FFFFFF"/>
-      <stop offset="100%" stop-color="#FFFFFF"/>
+      <stop offset="0%" stop-color="#000000" />
+      <stop offset="55%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FFFFFF" />
     </linearGradient>
 
     <mask id="ecgTrailMask">
-      <rect class="ecg-sweep" x="-148" y="0" width="148" height="65" fill="url(#ecgTrailGrad)"/>
+      <rect class="ecg-sweep" x="-148" y="0" width="148" height="50" fill="url(#ecgTrailGrad)" />
     </mask>
 
     <mask id="ecgTipMask">
-      <rect class="ecg-sweep" x="-7" y="0" width="7" height="65" fill="url(#ecgTipGrad)"/>
+      <rect class="ecg-sweep" x="-7" y="0" width="7" height="50" fill="url(#ecgTipGrad)" />
     </mask>
 
-    <!-- Reusable Authentic 5-Beat P-QRS-T Waveform -->
-    <path id="ecgWavePath" d="M 0 38&#10;         L 12 38 C 14.5 38 15.5 33.5 18 33.5 C 20.5 33.5 21.5 38 24 38 L 29 38 L 31.5 41.5 L 35 14 L 38.5 48 L 41.5 38 L 47 38 C 50 38 52 30.5 56.5 30.5 C 60.5 30.5 62 38 65 38 L 78 38&#10;         L 90 38 C 92.5 38 93.5 33.5 96 33.5 C 98.5 33.5 99.5 38 102 38 L 107 38 L 109.5 41.8 L 113 12.5 L 116.5 49 L 119.5 38 L 125 38 C 128 38 130 30 134.5 30 C 138.5 30 140 38 143 38 L 156 38&#10;         L 168 38 C 170.5 38 171.5 33.5 174 33.5 C 176.5 33.5 177.5 38 180 38 L 185 38 L 187.5 41.5 L 191 13.5 L 194.5 48.5 L 197.5 38 L 203 38 C 206 38 208 30.5 212.5 30.5 C 216.5 30.5 218 38 221 38 L 234 38&#10;         L 246 38 C 248.5 38 249.5 33.2 252 33.2 C 254.5 33.2 255.5 38 258 38 L 263 38 L 265.5 42 L 269 12 L 272.5 49 L 275.5 38 L 281 38 C 284 38 286 30.2 290.5 30.2 C 294.5 30.2 296 38 299 38 L 312 38&#10;         L 324 38 C 326.5 38 327.5 33.5 330 33.5 C 332.5 33.5 333.5 38 336 38 L 341 38 L 343.5 41.5 L 347 14.2 L 350.5 48 L 353.5 38 L 359 38 C 362 38 364 30.8 368.5 30.8 C 372.5 30.8 374 38 377 38 L 390 38"/>
+    <!-- Reusable Authentic 5-Beat P-QRS-T Waveform calibrated for 50px height -->
+    <path id="ecgWavePath"
+      d="M 0 30
+         L 12 30 C 14.5 30 15.5 26.5 18 26.5 C 20.5 26.5 21.5 30 24 30 L 29 30 L 31.5 33 L 35 10.5 L 38.5 38.5 L 41.5 30 L 47 30 C 50 30 52 24 56.5 24 C 60.5 24 62 30 65 30 L 78 30
+         L 90 30 C 92.5 30 93.5 26.5 96 26.5 C 98.5 26.5 99.5 30 102 30 L 107 30 L 109.5 33.2 L 113 9.5 L 116.5 39.2 L 119.5 30 L 125 30 C 128 30 130 23.6 134.5 23.6 C 138.5 23.6 140 30 143 30 L 156 30
+         L 168 30 C 170.5 30 171.5 26.5 174 26.5 C 176.5 26.5 177.5 30 180 30 L 185 30 L 187.5 33 L 191 10.2 L 194.5 38.8 L 197.5 30 L 203 30 C 206 30 208 24 212.5 24 C 216.5 24 218 30 221 30 L 234 30
+         L 246 30 C 248.5 30 249.5 26.2 252 26.2 C 254.5 26.2 255.5 30 258 30 L 263 30 L 265.5 33.4 L 269 9.2 L 272.5 39.2 L 275.5 30 L 281 30 C 284 30 286 23.8 290.5 23.8 C 294.5 23.8 296 30 299 30 L 312 30
+         L 324 30 C 326.5 30 327.5 26.5 330 26.5 C 332.5 26.5 333.5 30 336 30 L 341 30 L 343.5 33 L 347 10.6 L 350.5 38.5 L 353.5 30 L 359 30 C 362 30 364 24.2 368.5 24.2 C 372.5 24.2 374 30 377 30 L 390 30" />
 
     <!-- Glow Filters -->
-    <filter id="ecgGlow" x="-10%" y="-30%" width="120%" height="160%">
-      <feGaussianBlur stdDeviation="2.2" result="blur"/>
+    <filter id="ecgGlow" x="-10%" y="-35%" width="120%" height="170%">
+      <feGaussianBlur stdDeviation="1.9" result="blur" />
       <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
       </feMerge>
     </filter>
 
-    <filter id="tipGlow" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="2.6" result="blur"/>
+    <filter id="tipGlow" x="-45%" y="-45%" width="190%" height="190%">
+      <feGaussianBlur stdDeviation="2.2" result="blur" />
       <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
       </feMerge>
     </filter>
 
-    <!-- Character & Vehicle Material Gradients -->
+    <!-- Character, Stretcher & Vehicle Material Gradients -->
     <linearGradient id="scrubGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#48B2B8"/>
-      <stop offset="100%" stop-color="#256D78"/>
+      <stop offset="0%" stop-color="#48B2B8" />
+      <stop offset="100%" stop-color="#256D78" />
     </linearGradient>
 
     <linearGradient id="blanketGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#CBD5E1"/>
-      <stop offset="100%" stop-color="#7D8FA3"/>
+      <stop offset="0%" stop-color="#CBD5E1" />
+      <stop offset="100%" stop-color="#7D8FA3" />
     </linearGradient>
 
     <linearGradient id="dressGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#5B3256"/>
-      <stop offset="100%" stop-color="#261325"/>
+      <stop offset="0%" stop-color="#5B3256" />
+      <stop offset="100%" stop-color="#261325" />
+    </linearGradient>
+
+    <linearGradient id="pedJacketGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4A77A3" />
+      <stop offset="100%" stop-color="#284664" />
+    </linearGradient>
+
+    <linearGradient id="emsUniformGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#234870" />
+      <stop offset="100%" stop-color="#142942" />
+    </linearGradient>
+
+    <linearGradient id="stretcherBedGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F43F5E" />
+      <stop offset="100%" stop-color="#BE123C" />
     </linearGradient>
 
     <linearGradient id="ambBodyGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#F8FAFC"/>
-      <stop offset="55%" stop-color="#E2E8F0"/>
-      <stop offset="100%" stop-color="#B9C6D6"/>
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="55%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#B9C6D6" />
     </linearGradient>
 
     <linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#3B5570"/>
-      <stop offset="45%" stop-color="#1E2D3D"/>
-      <stop offset="100%" stop-color="#0F172A"/>
+      <stop offset="0%" stop-color="#3B5570" />
+      <stop offset="45%" stop-color="#1E2D3D" />
+      <stop offset="100%" stop-color="#0F172A" />
     </linearGradient>
 
     <linearGradient id="headlightGrad" x1="0" y1="0.5" x2="1" y2="0.5">
-      <stop offset="0%" stop-color="#FEF9C3" stop-opacity="0.38"/>
-      <stop offset="60%" stop-color="#FEF08A" stop-opacity="0.12"/>
-      <stop offset="100%" stop-color="#FEF08A" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#FDE047" stop-opacity="0.34" />
+      <stop offset="60%" stop-color="#FEF08A" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#FEF08A" stop-opacity="0" />
     </linearGradient>
 
     <radialGradient id="redHalo" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#FF3B3B" stop-opacity="0.95"/>
-      <stop offset="32%" stop-color="#EF4444" stop-opacity="0.45"/>
-      <stop offset="100%" stop-color="#EF4444" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#FF3B3B" stop-opacity="0.92" />
+      <stop offset="35%" stop-color="#EF4444" stop-opacity="0.42" />
+      <stop offset="100%" stop-color="#EF4444" stop-opacity="0" />
     </radialGradient>
 
     <radialGradient id="blueHalo" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.95"/>
-      <stop offset="32%" stop-color="#2563EB" stop-opacity="0.48"/>
-      <stop offset="100%" stop-color="#2563EB" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.92" />
+      <stop offset="35%" stop-color="#2563EB" stop-opacity="0.44" />
+      <stop offset="100%" stop-color="#2563EB" stop-opacity="0" />
     </radialGradient>
 
-    <radialGradient id="eerieShadow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#000000" stop-opacity="0.7"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="softShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.42" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
     </radialGradient>
 
     <clipPath id="stageClip">
-      <rect x="0" y="0" width="390" height="65"/>
+      <rect x="0" y="0" width="390" height="50" />
     </clipPath>
   </defs>
 
-  <style>
-    .grid-layer {
-      animation: gridFade 60s linear infinite;
-    }
-    @keyframes gridFade {
-      0%, 23%   { opacity: 0.55; }
-      25%, 97%  { opacity: 0.16; }
-      100%      { opacity: 0.55; }
-    }
+  <style><![CDATA[
+    /* =====================================================================
+       120-SECOND MASTER CHOREOGRAPHY (30% SLOWER SPEED + SEIZURE RESCUE)
+       Transparent Background | 390x50px | Strictly Sequential Acts
+       ---------------------------------------------------------------------
+       Act 1 ( 0.0s -  21.0s |  0.00% - 17.50%): Clinical ECG Waveform
+       Act 2 (21.6s -  44.4s | 18.00% - 37.00%): Caregiver & Wheelchair
+       Act 3 (45.0s -  62.6s | 37.50% - 52.17%): Crazy Figure -> Shake -> Run Left
+       Act 4 (63.2s -  83.2s | 52.67% - 69.33%): Ambulance w/ Pulsating Lights
+       Act 5 (84.0s - 119.4s | 70.00% - 99.50%): Pedestrian Walk -> Convulsion
+                                                 & Collapse -> 2 Stretcher Medics
+                                                 Enter Right -> Load -> Carry Away
+       All local loop periods divide 120s evenly for zero phase drift.
+       ===================================================================== */
 
-    /* ---------- ACT 1: ECG WAVEFORM ---------- */
+    /* ---------- ACT 1: ECG WAVEFORM (0.0s - 21.0s) ---------- */
     .ecg-group {
-      animation: ecgVis 60s linear infinite;
+      animation: ecgVis 120s linear infinite;
     }
     @keyframes ecgVis {
-      0%, 24.8%  { opacity: 1; }
-      25%, 100%  { opacity: 0; }
+      0%, 17.6%  { opacity: 1; }
+      17.8%, 100% { opacity: 0; }
     }
 
     .ecg-sweep {
-      animation: ecgSweep 60s linear infinite;
+      animation: ecgSweep 120s linear infinite;
     }
     @keyframes ecgSweep {
       0%     { transform: translateX(0px); }
-      18.33% { transform: translateX(390px); }
-      24.67% { transform: translateX(545px); }
+      13.0%  { transform: translateX(390px); }
+      17.5%  { transform: translateX(545px); }
       100%   { transform: translateX(545px); }
     }
 
-    /* ---------- ACT 2: CAREGIVER &amp; WHEELCHAIR ---------- */
+    /* ---------- ACT 2: CAREGIVER & WHEELCHAIR (21.6s - 44.4s) ---------- */
     .act2-travel {
-      animation: wcTravel 60s linear infinite;
+      opacity: 0;
+      animation: wcTravel 120s linear infinite;
     }
     @keyframes wcTravel {
-      0%, 25.6%   { opacity: 0; transform: translateX(-78px); }
-      25.83%      { opacity: 1; transform: translateX(-78px); }
-      52.5%       { opacity: 1; transform: translateX(412px); }
-      52.8%, 100% { opacity: 0; transform: translateX(412px); }
+      0%, 17.85%   { opacity: 0; transform: translateX(-70px); }
+      18.00%       { opacity: 1; transform: translateX(-70px); }
+      37.00%       { opacity: 1; transform: translateX(410px); }
+      37.20%, 100% { opacity: 0; transform: translateX(410px); }
     }
 
+    /* Exact rolling rotation (scaled 0.80): 480px / (2*pi*9.6) = 7.958 turns = 2865deg */
     .wc-rear-spin {
       transform-origin: 0px 0px;
-      animation: wcRearSpin 60s linear infinite;
+      animation: wcRearSpin 120s linear infinite;
     }
     @keyframes wcRearSpin {
-      0%, 25.83%  { transform: rotate(0deg); }
-      52.5%, 100% { transform: rotate(2340deg); }
+      0%, 18.00%   { transform: rotate(0deg); }
+      37.00%, 100% { transform: rotate(2865deg); }
     }
 
+    /* Front caster (scaled 0.80): 480px / (2*pi*3.2) = 23.873 turns = 8594deg */
     .wc-caster-spin {
       transform-origin: 0px 0px;
-      animation: wcCasterSpin 60s linear infinite;
+      animation: wcCasterSpin 120s linear infinite;
     }
     @keyframes wcCasterSpin {
-      0%, 25.83%  { transform: rotate(0deg); }
-      52.5%, 100% { transform: rotate(7020deg); }
+      0%, 18.00%   { transform: rotate(0deg); }
+      37.00%, 100% { transform: rotate(8594deg); }
     }
 
+    /* Caregiver walk cycle slowed ~30% (2.0s = 60 exact cycles/120s) */
     .cg-torso-bob {
-      animation: cgBob 0.75s ease-in-out infinite;
+      animation: cgBob 1.0s ease-in-out infinite;
     }
     @keyframes cgBob {
       0%, 100% { transform: translateY(0px); }
@@ -185,7 +197,7 @@
 
     .cg-arm-counter {
       transform-origin: 0px 0px;
-      animation: cgArmCounter 0.75s ease-in-out infinite;
+      animation: cgArmCounter 1.0s ease-in-out infinite;
     }
     @keyframes cgArmCounter {
       0%, 100% { transform: rotate(0deg); }
@@ -194,21 +206,20 @@
 
     .cg-thigh-front {
       transform-origin: 0px 0px;
-      animation: cgThigh 1.5s linear infinite;
+      animation: cgThigh 2.0s linear infinite;
     }
     .cg-knee-front {
       transform-origin: 0px 0px;
-      animation: cgKnee 1.5s linear infinite;
+      animation: cgKnee 2.0s linear infinite;
     }
     .cg-thigh-back {
       transform-origin: 0px 0px;
-      animation: cgThigh 1.5s linear infinite -0.75s;
+      animation: cgThigh 2.0s linear infinite -1.0s;
     }
     .cg-knee-back {
       transform-origin: 0px 0px;
-      animation: cgKnee 1.5s linear infinite -0.75s;
+      animation: cgKnee 2.0s linear infinite -1.0s;
     }
-
     @keyframes cgThigh {
       0%   { transform: rotate(-19deg); }
       25%  { transform: rotate(0deg); }
@@ -226,143 +237,148 @@
 
     .patient-breathe {
       transform-origin: 0px 0px;
-      animation: patientBreathe 3s ease-in-out infinite;
+      animation: patientBreathe 4.0s ease-in-out infinite;
     }
     @keyframes patientBreathe {
       0%, 100% { transform: translateY(0px) rotate(0deg); }
       50%      { transform: translateY(-0.55px) rotate(-1.2deg); }
     }
 
-    /* ---------- ACT 3: CRAZY FEMALE FIGURE ---------- */
+    /* ---------- ACT 3: CRAZY FEMALE FIGURE (45.0s - 62.6s) ---------- */
     .act3-stand {
-      animation: crazyStand 60s linear infinite;
+      opacity: 0;
+      animation: crazyStand 120s linear infinite;
     }
     @keyframes crazyStand {
-      0%, 54.0%   { opacity: 0; transform: translate(195px, 6px) scale(0.92); }
-      54.17%      { opacity: 0; transform: translate(195px, 5px) scale(0.93); }
-      56.5%       { opacity: 1; transform: translate(195px, 0px) scale(1); }
-      64.8%       { opacity: 1; transform: translate(195px, 0px) scale(1); }
-      65.15%      { opacity: 0; transform: translate(193px, 0px) scale(1); }
-      100%        { opacity: 0; transform: translate(193px, 0px) scale(1); }
+      0%, 37.35%   { opacity: 0; transform: translate(195px, 5px) scale(0.92); }
+      37.50%       { opacity: 0; transform: translate(195px, 4px) scale(0.93); }
+      39.17%       { opacity: 1; transform: translate(195px, 0px) scale(1); }
+      45.10%       { opacity: 1; transform: translate(195px, 0px) scale(1); }
+      45.35%       { opacity: 0; transform: translate(193px, 0px) scale(1); }
+      100%         { opacity: 0; transform: translate(193px, 0px) scale(1); }
     }
 
+    /* Odd arrhythmic head shake (47.8s - 54.2s | 39.83% - 45.17%) */
     .crazy-head {
       transform-origin: 0px 0px;
-      animation: oddHeadShake 60s linear infinite;
+      animation: oddHeadShake 120s linear infinite;
     }
     @keyframes oddHeadShake {
-      0%, 57.3%   { transform: rotate(0deg) translate(0px, 0px); }
-      57.9%       { transform: rotate(-27deg) translate(-1px, 0.5px); }
-      58.7%       { transform: rotate(-25deg) translate(-0.8px, 0.5px); }
-      59.1%       { transform: rotate(31deg) translate(1.2px, -0.4px); }
-      59.4%       { transform: rotate(21deg) translate(0.6px, 0px); }
-      59.75%      { transform: rotate(34deg) translate(1.4px, 0.3px); }
-      60.2%       { transform: rotate(-19deg) translate(-0.9px, 0px); }
-      60.5%       { transform: rotate(17deg) translate(0.8px, -0.3px); }
-      60.8%       { transform: rotate(-23deg) translate(-1px, 0.3px); }
-      61.1%       { transform: rotate(25deg) translate(1px, -0.2px); }
-      61.4%       { transform: rotate(-16deg) translate(-0.7px, 0.2px); }
-      61.7%       { transform: rotate(14deg) translate(0.6px, 0px); }
-      62.1%       { transform: rotate(-32deg) translate(-1.3px, 0.7px); }
-      63.1%       { transform: rotate(-30deg) translate(-1.2px, 0.6px); }
-      63.6%       { transform: rotate(15deg) translate(0.6px, -0.3px); }
-      64.2%       { transform: rotate(-10deg) translate(-0.5px, 0px); }
-      65.2%, 100% { transform: rotate(0deg) translate(0px, 0px); }
+      0%, 39.75%   { transform: rotate(0deg) translate(0px, 0px); }
+      40.20%       { transform: rotate(-27deg) translate(-1px, 0.5px); }
+      40.75%       { transform: rotate(-25deg) translate(-0.8px, 0.5px); }
+      41.05%       { transform: rotate(31deg) translate(1.2px, -0.4px); }
+      41.28%       { transform: rotate(21deg) translate(0.6px, 0px); }
+      41.52%       { transform: rotate(34deg) translate(1.4px, 0.3px); }
+      41.85%       { transform: rotate(-19deg) translate(-0.9px, 0px); }
+      42.08%       { transform: rotate(17deg) translate(0.8px, -0.3px); }
+      42.30%       { transform: rotate(-23deg) translate(-1px, 0.3px); }
+      42.52%       { transform: rotate(25deg) translate(1px, -0.2px); }
+      42.75%       { transform: rotate(-16deg) translate(-0.7px, 0.2px); }
+      42.98%       { transform: rotate(14deg) translate(0.6px, 0px); }
+      43.28%       { transform: rotate(-32deg) translate(-1.3px, 0.7px); }
+      44.00%       { transform: rotate(-30deg) translate(-1.2px, 0.6px); }
+      44.35%       { transform: rotate(15deg) translate(0.6px, -0.3px); }
+      44.78%       { transform: rotate(-10deg) translate(-0.5px, 0px); }
+      45.40%, 100% { transform: rotate(0deg) translate(0px, 0px); }
     }
 
     .crazy-hair-l {
       transform-origin: 0px 0px;
-      animation: hairWhipL 60s linear infinite;
+      animation: hairWhipL 120s linear infinite;
     }
     @keyframes hairWhipL {
-      0%, 57.4%   { transform: rotate(0deg); }
-      58.1%       { transform: rotate(-16deg); }
-      59.3%       { transform: rotate(22deg); }
-      60.4%       { transform: rotate(-18deg); }
-      61.2%       { transform: rotate(19deg); }
-      62.3%       { transform: rotate(-20deg); }
-      63.8%       { transform: rotate(14deg); }
-      65.2%, 100% { transform: rotate(0deg); }
+      0%, 39.85%   { transform: rotate(0deg); }
+      40.35%       { transform: rotate(-16deg); }
+      41.20%       { transform: rotate(22deg); }
+      42.00%       { transform: rotate(-18deg); }
+      42.60%       { transform: rotate(19deg); }
+      43.40%       { transform: rotate(-20deg); }
+      44.45%       { transform: rotate(14deg); }
+      45.40%, 100% { transform: rotate(0deg); }
     }
 
     .crazy-hair-r {
       transform-origin: 0px 0px;
-      animation: hairWhipR 60s linear infinite;
+      animation: hairWhipR 120s linear infinite;
     }
     @keyframes hairWhipR {
-      0%, 57.5%   { transform: rotate(0deg); }
-      58.2%       { transform: rotate(14deg); }
-      59.4%       { transform: rotate(-20deg); }
-      60.5%       { transform: rotate(16deg); }
-      61.3%       { transform: rotate(-17deg); }
-      62.4%       { transform: rotate(18deg); }
-      63.9%       { transform: rotate(-12deg); }
-      65.2%, 100% { transform: rotate(0deg); }
+      0%, 39.90%   { transform: rotate(0deg); }
+      40.42%       { transform: rotate(14deg); }
+      41.28%       { transform: rotate(-20deg); }
+      42.08%       { transform: rotate(16deg); }
+      42.68%       { transform: rotate(-17deg); }
+      43.48%       { transform: rotate(18deg); }
+      44.52%       { transform: rotate(-12deg); }
+      45.40%, 100% { transform: rotate(0deg); }
     }
 
     .crazy-twitch-body {
       transform-origin: 0px 0px;
-      animation: bodyTwitch 60s linear infinite;
+      animation: bodyTwitch 120s linear infinite;
     }
     @keyframes bodyTwitch {
-      0%, 57.5%   { transform: rotate(0deg) translateY(0px); }
-      58.0%       { transform: rotate(-2.5deg) translateY(0.5px); }
-      59.1%       { transform: rotate(3deg) translateY(-0.4px); }
-      60.5%       { transform: rotate(-2deg) translateY(0.4px); }
-      61.2%       { transform: rotate(2.5deg) translateY(-0.3px); }
-      62.2%       { transform: rotate(-3.5deg) translateY(0.8px); }
-      63.7%       { transform: rotate(1.5deg) translateY(0px); }
-      64.5%       { transform: rotate(-5deg) translateY(1px); }
-      65.2%, 100% { transform: rotate(0deg) translateY(0px); }
+      0%, 39.90%   { transform: rotate(0deg) translateY(0px); }
+      40.28%       { transform: rotate(-2.5deg) translateY(0.5px); }
+      41.05%       { transform: rotate(3deg) translateY(-0.4px); }
+      42.05%       { transform: rotate(-2deg) translateY(0.4px); }
+      42.60%       { transform: rotate(2.5deg) translateY(-0.3px); }
+      43.35%       { transform: rotate(-3.5deg) translateY(0.8px); }
+      44.40%       { transform: rotate(1.5deg) translateY(0px); }
+      44.95%       { transform: rotate(-5deg) translateY(1px); }
+      45.40%, 100% { transform: rotate(0deg) translateY(0px); }
     }
 
     .crazy-pupils {
-      animation: pupilDart 60s linear infinite;
+      animation: pupilDart 120s linear infinite;
     }
     @keyframes pupilDart {
-      0%, 57.8%   { transform: translate(0px, 0px); }
-      58.2%       { transform: translate(-0.5px, -0.2px); }
-      59.3%       { transform: translate(0.5px, 0.2px); }
-      60.8%       { transform: translate(-0.4px, 0.2px); }
-      62.2%       { transform: translate(0.4px, -0.3px); }
-      63.8%       { transform: translate(-0.6px, 0px); }
-      65.2%, 100% { transform: translate(0px, 0px); }
+      0%, 40.10%   { transform: translate(0px, 0px); }
+      40.40%       { transform: translate(-0.5px, -0.2px); }
+      41.20%       { transform: translate(0.5px, 0.2px); }
+      42.30%       { transform: translate(-0.4px, 0.2px); }
+      43.35%       { transform: translate(0.4px, -0.3px); }
+      44.45%       { transform: translate(-0.6px, 0px); }
+      45.40%, 100% { transform: translate(0px, 0px); }
     }
 
+    /* Phase 3C: Sprints away toward LEFT (54.2s - 62.6s | 45.17% - 52.17%) */
     .act3-run {
-      animation: crazyRunTravel 60s linear infinite;
+      opacity: 0;
+      animation: crazyRunTravel 120s linear infinite;
     }
     @keyframes crazyRunTravel {
-      0%, 64.75%  { opacity: 0; transform: translateX(195px); }
-      65.05%      { opacity: 1; transform: translateX(194px); }
-      66.5%       { opacity: 1; transform: translateX(162px); }
-      74.5%       { opacity: 1; transform: translateX(-46px); }
-      74.8%, 100% { opacity: 0; transform: translateX(-46px); }
+      0%, 45.05%   { opacity: 0; transform: translateX(195px); }
+      45.28%       { opacity: 1; transform: translateX(194px); }
+      46.30%       { opacity: 1; transform: translateX(162px); }
+      52.10%       { opacity: 1; transform: translateX(-44px); }
+      52.30%, 100% { opacity: 0; transform: translateX(-44px); }
     }
 
+    /* Sprinting stride slowed ~30% (0.75s = 160 exact cycles/120s) */
     .run-bounce {
-      animation: runBounce 0.25s ease-in-out infinite;
+      animation: runBounce 0.375s ease-in-out infinite;
     }
     @keyframes runBounce {
       0%, 100% { transform: translateY(0.4px); }
-      50%      { transform: translateY(-2.7px); }
+      50%      { transform: translateY(-2.5px); }
     }
 
     .run-thigh-front {
       transform-origin: 0px 0px;
-      animation: runThigh 0.5s linear infinite;
+      animation: runThigh 0.75s linear infinite;
     }
     .run-knee-front {
       transform-origin: 0px 0px;
-      animation: runKnee 0.5s linear infinite;
+      animation: runKnee 0.75s linear infinite;
     }
     .run-thigh-back {
       transform-origin: 0px 0px;
-      animation: runThigh 0.5s linear infinite -0.25s;
+      animation: runThigh 0.75s linear infinite -0.375s;
     }
     .run-knee-back {
       transform-origin: 0px 0px;
-      animation: runKnee 0.5s linear infinite -0.25s;
+      animation: runKnee 0.75s linear infinite -0.375s;
     }
     @keyframes runThigh {
       0%   { transform: rotate(35deg); }
@@ -381,11 +397,11 @@
 
     .run-arm-front {
       transform-origin: 0px 0px;
-      animation: runArm 0.5s linear infinite;
+      animation: runArm 0.75s linear infinite;
     }
     .run-arm-back {
       transform-origin: 0px 0px;
-      animation: runArm 0.5s linear infinite -0.25s;
+      animation: runArm 0.75s linear infinite -0.375s;
     }
     @keyframes runArm {
       0%   { transform: rotate(-38deg); }
@@ -395,7 +411,7 @@
 
     .run-hair-stream {
       transform-origin: 0px 0px;
-      animation: hairStream 0.25s ease-in-out infinite;
+      animation: hairStream 0.375s ease-in-out infinite;
     }
     @keyframes hairStream {
       0%, 100% { transform: rotate(-4deg); }
@@ -404,35 +420,38 @@
 
     .run-dress-flutter {
       transform-origin: 0px 0px;
-      animation: dressFlutter 0.25s ease-in-out infinite;
+      animation: dressFlutter 0.375s ease-in-out infinite;
     }
     @keyframes dressFlutter {
       0%, 100% { transform: rotate(-3deg); }
       50%      { transform: rotate(6deg); }
     }
 
-    /* ---------- ACT 4: AMBULANCE W/ PULSATING LIGHTS ---------- */
+    /* ---------- ACT 4: AMBULANCE W/ PULSATING LIGHTS (63.2s - 83.2s) ---------- */
     .act4-travel {
-      animation: ambTravel 60s linear infinite;
+      opacity: 0;
+      animation: ambTravel 120s linear infinite;
     }
     @keyframes ambTravel {
-      0%, 75.6%   { opacity: 0; transform: translateX(-140px); }
-      75.83%      { opacity: 1; transform: translateX(-140px); }
-      99.17%      { opacity: 1; transform: translateX(420px); }
-      99.5%, 100% { opacity: 0; transform: translateX(420px); }
+      0%, 52.50%   { opacity: 0; transform: translateX(-120px); }
+      52.67%       { opacity: 1; transform: translateX(-120px); }
+      69.33%       { opacity: 1; transform: translateX(415px); }
+      69.55%, 100% { opacity: 0; transform: translateX(415px); }
     }
 
+    /* Exact rolling rotation (scaled 0.80): 535px / (2*pi*6.8) = 12.522 turns = 4508deg */
     .amb-wheel-spin {
       transform-origin: 0px 0px;
-      animation: ambWheelSpin 60s linear infinite;
+      animation: ambWheelSpin 120s linear infinite;
     }
     @keyframes ambWheelSpin {
-      0%, 75.83%   { transform: rotate(0deg); }
-      99.17%, 100% { transform: rotate(3775deg); }
+      0%, 52.67%   { transform: rotate(0deg); }
+      69.33%, 100% { transform: rotate(4508deg); }
     }
 
+    /* Suspension bounce & emergency strobe slowed ~30% (0.8s = 150 exact cycles/120s) */
     .amb-suspension {
-      animation: ambBounce 0.6s ease-in-out infinite;
+      animation: ambBounce 0.8s ease-in-out infinite;
     }
     @keyframes ambBounce {
       0%, 100% { transform: translateY(0px); }
@@ -440,7 +459,7 @@
     }
 
     .strobe-red {
-      animation: strobeRed 0.6s linear infinite;
+      animation: strobeRed 0.8s linear infinite;
     }
     @keyframes strobeRed {
       0%, 4%    { opacity: 0.15; }
@@ -451,7 +470,7 @@
     }
 
     .strobe-blue {
-      animation: strobeBlue 0.6s linear infinite;
+      animation: strobeBlue 0.8s linear infinite;
     }
     @keyframes strobeBlue {
       0%, 50%   { opacity: 0.12; }
@@ -460,311 +479,1436 @@
       71%, 79%  { opacity: 1; }
       85%, 100% { opacity: 0.12; }
     }
-  </style>
 
-  <g clip-path="url(#stageClip)"><g transform="translate(45,0) scale(0.7692307692)">
-    <line x1="0" y1="58" x2="390" y2="58" stroke="#94A3B8" stroke-width="0.7" opacity="0.35"/>
+    /* =====================================================================
+       ACT 5: PEDESTRIAN -> CONVULSION & COLLAPSE -> STRETCHER RESCUE
+       (84.0s - 119.4s | 70.00% - 99.50%)
+       ===================================================================== */
 
-    <!-- ACT 1: SLOW CLINICAL ECG WAVEFORM (0s - 14.8s) -->
+    /* --- Phase 5A: Person walks slowly from LEFT to center (84.0s - 92.4s) --- */
+    .act5-walk {
+      opacity: 0;
+      animation: pedWalkTravel 120s linear infinite;
+    }
+    @keyframes pedWalkTravel {
+      0%, 69.85%   { opacity: 0; transform: translateX(-24px); }
+      70.00%       { opacity: 1; transform: translateX(-24px); }
+      76.30%       { opacity: 1; transform: translateX(182px); }
+      76.95%       { opacity: 1; transform: translateX(195px); }
+      77.12%       { opacity: 0; transform: translateX(195px); }
+      100%         { opacity: 0; transform: translateX(195px); }
+    }
+
+    /* Pedestrian gait cycle (1.6s = 75 exact cycles/120s) */
+    .ped-bob {
+      animation: pedBob 0.8s ease-in-out infinite;
+    }
+    @keyframes pedBob {
+      0%, 100% { transform: translateY(0px); }
+      50%      { transform: translateY(-0.9px); }
+    }
+
+    .ped-thigh-front { transform-origin: 0px 0px; animation: pedThigh 1.6s linear infinite; }
+    .ped-knee-front  { transform-origin: 0px 0px; animation: pedKnee  1.6s linear infinite; }
+    .ped-thigh-back  { transform-origin: 0px 0px; animation: pedThigh 1.6s linear infinite -0.8s; }
+    .ped-knee-back   { transform-origin: 0px 0px; animation: pedKnee  1.6s linear infinite -0.8s; }
+    @keyframes pedThigh {
+      0%   { transform: rotate(-20deg); }
+      25%  { transform: rotate(0deg); }
+      50%  { transform: rotate(20deg); }
+      75%  { transform: rotate(-4deg); }
+      100% { transform: rotate(-20deg); }
+    }
+    @keyframes pedKnee {
+      0%   { transform: rotate(5deg); }
+      25%  { transform: rotate(4deg); }
+      50%  { transform: rotate(15deg); }
+      75%  { transform: rotate(38deg); }
+      100% { transform: rotate(5deg); }
+    }
+
+    .ped-arm-front { transform-origin: 0px 0px; animation: pedArm 1.6s ease-in-out infinite; }
+    .ped-arm-back  { transform-origin: 0px 0px; animation: pedArm 1.6s ease-in-out infinite -0.8s; }
+    @keyframes pedArm {
+      0%, 100% { transform: rotate(22deg); }
+      50%      { transform: rotate(-20deg); }
+    }
+
+    /* --- Phase 5B: Convulsion & Collapse at Center (92.4s - 103.8s | 77.00% - 86.50%) --- */
+    .act5-collapse {
+      opacity: 0;
+      animation: collapseVis 120s linear infinite;
+    }
+    @keyframes collapseVis {
+      0%, 76.92%   { opacity: 0; }
+      77.08%       { opacity: 1; }
+      86.45%       { opacity: 1; }
+      86.62%, 100% { opacity: 0; }
+    }
+
+    /* Ground shadow widens horizontally as person collapses */
+    .col-shadow {
+      transform-origin: 195px 47.4px;
+      animation: colShadow 120s linear infinite;
+    }
+    @keyframes colShadow {
+      0%, 77.9%    { transform: scaleX(0.42); opacity: 0.45; }
+      79.5%, 86.6% { transform: scaleX(1.18); opacity: 0.58; }
+      100%         { transform: scaleX(0.42); opacity: 0.45; }
+    }
+
+    /* Whole body hip-anchored collapse + clonic ground convulsions */
+    .col-root {
+      transform-origin: 0px 0px;
+      animation: colRoot 120s linear infinite;
+    }
+    @keyframes colRoot {
+      /* Upright stagger & tonic stiffening (77.0% - 78.0%) */
+      0%, 77.00%   { transform: translate(195px, 29.5px) rotate(0deg); }
+      77.35%       { transform: translate(196px, 29.8px) rotate(-6deg); }
+      77.65%       { transform: translate(194.5px, 30.2px) rotate(8deg); }
+      77.95%       { transform: translate(195.5px, 31.2px) rotate(-10deg); }
+      /* Knees buckle & fall onto ground (78.0% - 79.5%) */
+      78.40%       { transform: translate(196px, 34.5px) rotate(-26deg); }
+      78.90%       { transform: translate(197px, 40.5px) rotate(-62deg); }
+      79.35%       { transform: translate(198px, 44.8px) rotate(-88deg); }
+      79.55%       { transform: translate(198px, 44.0px) rotate(-85deg); }
+      79.75%       { transform: translate(198px, 44.7px) rotate(-88deg); }
+      /* Rhythmic clonic convulsions on the ground (79.75% - 84.30%) */
+      80.00%       { transform: translate(197.2px, 43.9px) rotate(-84deg); }
+      80.25%       { transform: translate(198.8px, 44.8px) rotate(-91deg); }
+      80.50%       { transform: translate(197.1px, 43.8px) rotate(-83deg); }
+      80.75%       { transform: translate(198.9px, 44.8px) rotate(-91deg); }
+      81.00%       { transform: translate(197.3px, 44.0px) rotate(-84deg); }
+      81.25%       { transform: translate(198.7px, 44.8px) rotate(-90deg); }
+      81.50%       { transform: translate(197.4px, 44.0px) rotate(-84deg); }
+      81.75%       { transform: translate(198.6px, 44.7px) rotate(-90deg); }
+      82.00%       { transform: translate(197.5px, 44.1px) rotate(-85deg); }
+      82.25%       { transform: translate(198.5px, 44.7px) rotate(-90deg); }
+      82.55%       { transform: translate(197.6px, 44.2px) rotate(-86deg); }
+      82.85%       { transform: translate(198.4px, 44.7px) rotate(-89.5deg); }
+      83.20%       { transform: translate(197.8px, 44.3px) rotate(-87deg); }
+      83.60%       { transform: translate(198.2px, 44.7px) rotate(-89deg); }
+      /* Post-ictal stillness as medics reach him (84.2% - 86.6%) */
+      84.20%, 100% { transform: translate(198px, 44.7px) rotate(-88.5deg); }
+    }
+
+    /* Upper torso + head tonic arch & clonic jerking */
+    .col-torso {
+      transform-origin: 0px 0px;
+      animation: colTorso 120s linear infinite;
+    }
+    @keyframes colTorso {
+      0%, 77.00%   { transform: rotate(0deg); }
+      77.45%       { transform: rotate(-10deg); }
+      77.85%       { transform: rotate(12deg); }
+      78.80%       { transform: rotate(-14deg); }
+      79.55%       { transform: rotate(4deg); }
+      80.00%       { transform: rotate(-10deg); }
+      80.25%       { transform: rotate(7deg); }
+      80.50%       { transform: rotate(-11deg); }
+      80.75%       { transform: rotate(7deg); }
+      81.00%       { transform: rotate(-9deg); }
+      81.25%       { transform: rotate(6deg); }
+      81.50%       { transform: rotate(-8deg); }
+      81.75%       { transform: rotate(5deg); }
+      82.00%       { transform: rotate(-7deg); }
+      82.25%       { transform: rotate(4deg); }
+      82.85%       { transform: rotate(-4deg); }
+      83.60%       { transform: rotate(2deg); }
+      84.20%, 100% { transform: rotate(0deg); }
+    }
+
+    /* Head jerking during convulsion */
+    .col-head {
+      transform-origin: 0px 0px;
+      animation: colHead 120s linear infinite;
+    }
+    @keyframes colHead {
+      0%, 77.15%   { transform: rotate(0deg); }
+      77.50%       { transform: rotate(-18deg); }
+      77.85%       { transform: rotate(15deg); }
+      79.55%       { transform: rotate(-12deg); }
+      80.00%       { transform: rotate(18deg); }
+      80.25%       { transform: rotate(-20deg); }
+      80.50%       { transform: rotate(19deg); }
+      80.75%       { transform: rotate(-18deg); }
+      81.00%       { transform: rotate(16deg); }
+      81.25%       { transform: rotate(-16deg); }
+      81.50%       { transform: rotate(14deg); }
+      81.75%       { transform: rotate(-13deg); }
+      82.25%       { transform: rotate(10deg); }
+      82.85%       { transform: rotate(-8deg); }
+      83.60%       { transform: rotate(4deg); }
+      84.20%, 100% { transform: rotate(-3deg); }
+    }
+
+    /* Convulsing arms (flexed jerking) */
+    .col-arm-f {
+      transform-origin: 0px 0px;
+      animation: colArmF 120s linear infinite;
+    }
+    @keyframes colArmF {
+      0%, 77.00%   { transform: rotate(8deg); }
+      77.45%       { transform: rotate(-62deg); }
+      77.85%       { transform: rotate(-88deg); }
+      79.50%       { transform: rotate(-45deg); }
+      80.00%       { transform: rotate(-92deg); }
+      80.25%       { transform: rotate(-38deg); }
+      80.50%       { transform: rotate(-95deg); }
+      80.75%       { transform: rotate(-40deg); }
+      81.00%       { transform: rotate(-86deg); }
+      81.25%       { transform: rotate(-42deg); }
+      81.50%       { transform: rotate(-80deg); }
+      81.75%       { transform: rotate(-44deg); }
+      82.25%       { transform: rotate(-70deg); }
+      82.85%       { transform: rotate(-42deg); }
+      83.60%       { transform: rotate(-25deg); }
+      84.20%, 100% { transform: rotate(-10deg); }
+    }
+
+    .col-arm-b {
+      transform-origin: 0px 0px;
+      animation: colArmB 120s linear infinite;
+    }
+    @keyframes colArmB {
+      0%, 77.00%   { transform: rotate(-6deg); }
+      77.50%       { transform: rotate(-48deg); }
+      77.90%       { transform: rotate(-72deg); }
+      79.50%       { transform: rotate(-32deg); }
+      80.00%       { transform: rotate(-75deg); }
+      80.25%       { transform: rotate(-25deg); }
+      80.50%       { transform: rotate(-78deg); }
+      80.75%       { transform: rotate(-28deg); }
+      81.00%       { transform: rotate(-70deg); }
+      81.25%       { transform: rotate(-30deg); }
+      81.50%       { transform: rotate(-64deg); }
+      81.75%       { transform: rotate(-32deg); }
+      82.25%       { transform: rotate(-54deg); }
+      82.85%       { transform: rotate(-30deg); }
+      83.60%       { transform: rotate(-18deg); }
+      84.20%, 100% { transform: rotate(-6deg); }
+    }
+
+    /* Convulsing legs (buckling on fall, then clonic flexion/extension) */
+    .col-thigh-f {
+      transform-origin: 0px 0px;
+      animation: colThighF 120s linear infinite;
+    }
+    @keyframes colThighF {
+      0%, 77.00%   { transform: rotate(-4deg); }
+      77.90%       { transform: rotate(-24deg); }
+      78.80%       { transform: rotate(-42deg); }
+      79.55%       { transform: rotate(-8deg); }
+      80.00%       { transform: rotate(-32deg); }
+      80.25%       { transform: rotate(-4deg); }
+      80.50%       { transform: rotate(-34deg); }
+      80.75%       { transform: rotate(-5deg); }
+      81.00%       { transform: rotate(-28deg); }
+      81.25%       { transform: rotate(-6deg); }
+      81.50%       { transform: rotate(-25deg); }
+      81.75%       { transform: rotate(-6deg); }
+      82.25%       { transform: rotate(-18deg); }
+      82.85%       { transform: rotate(-7deg); }
+      84.20%, 100% { transform: rotate(-3deg); }
+    }
+
+    .col-knee-f {
+      transform-origin: 0px 0px;
+      animation: colKneeF 120s linear infinite;
+    }
+    @keyframes colKneeF {
+      0%, 77.00%   { transform: rotate(4deg); }
+      77.90%       { transform: rotate(36deg); }
+      78.80%       { transform: rotate(74deg); }
+      79.55%       { transform: rotate(18deg); }
+      80.00%       { transform: rotate(54deg); }
+      80.25%       { transform: rotate(10deg); }
+      80.50%       { transform: rotate(58deg); }
+      80.75%       { transform: rotate(12deg); }
+      81.00%       { transform: rotate(48deg); }
+      81.25%       { transform: rotate(12deg); }
+      81.50%       { transform: rotate(40deg); }
+      81.75%       { transform: rotate(12deg); }
+      82.25%       { transform: rotate(28deg); }
+      82.85%       { transform: rotate(10deg); }
+      84.20%, 100% { transform: rotate(5deg); }
+    }
+
+    .col-thigh-b {
+      transform-origin: 0px 0px;
+      animation: colThighB 120s linear infinite;
+    }
+    @keyframes colThighB {
+      0%, 77.00%   { transform: rotate(4deg); }
+      77.90%       { transform: rotate(-14deg); }
+      78.80%       { transform: rotate(-30deg); }
+      79.55%       { transform: rotate(-14deg); }
+      80.00%       { transform: rotate(-4deg); }
+      80.25%       { transform: rotate(-28deg); }
+      80.50%       { transform: rotate(-5deg); }
+      80.75%       { transform: rotate(-30deg); }
+      81.00%       { transform: rotate(-6deg); }
+      81.25%       { transform: rotate(-24deg); }
+      81.50%       { transform: rotate(-6deg); }
+      81.75%       { transform: rotate(-20deg); }
+      82.25%       { transform: rotate(-8deg); }
+      82.85%       { transform: rotate(-14deg); }
+      84.20%, 100% { transform: rotate(-2deg); }
+    }
+
+    .col-knee-b {
+      transform-origin: 0px 0px;
+      animation: colKneeB 120s linear infinite;
+    }
+    @keyframes colKneeB {
+      0%, 77.00%   { transform: rotate(4deg); }
+      77.90%       { transform: rotate(28deg); }
+      78.80%       { transform: rotate(60deg); }
+      79.55%       { transform: rotate(24deg); }
+      80.00%       { transform: rotate(10deg); }
+      80.25%       { transform: rotate(48deg); }
+      80.50%       { transform: rotate(12deg); }
+      80.75%       { transform: rotate(52deg); }
+      81.00%       { transform: rotate(14deg); }
+      81.25%       { transform: rotate(42deg); }
+      81.50%       { transform: rotate(14deg); }
+      81.75%       { transform: rotate(34deg); }
+      82.25%       { transform: rotate(16deg); }
+      82.85%       { transform: rotate(22deg); }
+      84.20%, 100% { transform: rotate(4deg); }
+    }
+
+    /* --- Phase 5C: 2 Medics w/ Empty Stretcher Enter from RIGHT (96.6s - 103.8s) --- */
+    .act5-medics-in {
+      opacity: 0;
+      animation: medicsInTravel 120s linear infinite;
+    }
+    @keyframes medicsInTravel {
+      0%, 80.35%   { opacity: 0; transform: translateX(436px); }
+      80.50%       { opacity: 1; transform: translateX(436px); }
+      86.45%       { opacity: 1; transform: translateX(195px); }
+      86.62%, 100% { opacity: 0; transform: translateX(195px); }
+    }
+
+    /* Stretcher-team walk cycle facing LEFT (1.5s = 80 exact cycles/120s) */
+    .med-bob-a { animation: medBob 0.75s ease-in-out infinite; }
+    .med-bob-b { animation: medBob 0.75s ease-in-out infinite -0.375s; }
+    @keyframes medBob {
+      0%, 100% { transform: translateY(0px); }
+      50%      { transform: translateY(-0.85px); }
+    }
+
+    /* Facing LEFT: positive deg = drive forward-left, negative knee = bend back-right */
+    .med-thigh-fa { transform-origin: 0px 0px; animation: medThighL 1.5s linear infinite; }
+    .med-knee-fa  { transform-origin: 0px 0px; animation: medKneeL  1.5s linear infinite; }
+    .med-thigh-ba { transform-origin: 0px 0px; animation: medThighL 1.5s linear infinite -0.75s; }
+    .med-knee-ba  { transform-origin: 0px 0px; animation: medKneeL  1.5s linear infinite -0.75s; }
+
+    /* Second medic slightly offset in phase for authentic human cadence */
+    .med-thigh-fb { transform-origin: 0px 0px; animation: medThighL 1.5s linear infinite -0.375s; }
+    .med-knee-fb  { transform-origin: 0px 0px; animation: medKneeL  1.5s linear infinite -0.375s; }
+    .med-thigh-bb { transform-origin: 0px 0px; animation: medThighL 1.5s linear infinite -1.125s; }
+    .med-knee-bb  { transform-origin: 0px 0px; animation: medKneeL  1.5s linear infinite -1.125s; }
+
+    @keyframes medThighL {
+      0%   { transform: rotate(21deg); }
+      25%  { transform: rotate(0deg); }
+      50%  { transform: rotate(-21deg); }
+      75%  { transform: rotate(5deg); }
+      100% { transform: rotate(21deg); }
+    }
+    @keyframes medKneeL {
+      0%   { transform: rotate(-5deg); }
+      25%  { transform: rotate(-4deg); }
+      50%  { transform: rotate(-15deg); }
+      75%  { transform: rotate(-38deg); }
+      100% { transform: rotate(-5deg); }
+    }
+
+    /* --- Phase 5D: Stop, Crouch, Put Patient on Stretcher, Stand Up (103.8s - 110.4s) --- */
+    .act5-transfer {
+      opacity: 0;
+      animation: transferVis 120s linear infinite;
+    }
+    @keyframes transferVis {
+      0%, 86.42%   { opacity: 0; }
+      86.58%       { opacity: 1; }
+      91.95%       { opacity: 1; }
+      92.12%, 100% { opacity: 0; }
+    }
+
+    /* Stretcher lowers to ground (86.5%->87.5%), stays while loading (87.5%->90.0%), rises to carry height (90.0%->91.2%) */
+    .xfer-stretcher {
+      animation: xferStretcher 120s ease-in-out infinite;
+    }
+    @keyframes xferStretcher {
+      0%, 86.50%   { transform: translateY(0px); }
+      87.50%       { transform: translateY(10.2px); }
+      90.00%       { transform: translateY(10.2px); }
+      91.20%       { transform: translateY(0px); }
+      100%         { transform: translateY(0px); }
+    }
+
+    /* Patient lies on ground (86.5%->88.5%), gets lifted onto stretcher (88.5%->89.8%), rides stretcher up (90.0%->91.2%) */
+    .xfer-patient {
+      animation: xferPatient 120s ease-in-out infinite;
+    }
+    @keyframes xferPatient {
+      0%, 88.50%   { transform: translate(0px, 11.2px); }
+      89.20%       { transform: translate(-1.5px, 6.2px); }
+      89.80%       { transform: translate(-2.0px, 8.6px); }
+      90.00%       { transform: translate(-2.0px, 8.6px); }
+      91.20%       { transform: translate(-2.0px, -1.6px); }
+      100%         { transform: translate(-2.0px, -1.6px); }
+    }
+
+    /* Safety strap appears once patient is placed on stretcher */
+    .xfer-strap {
+      opacity: 0;
+      animation: xferStrap 120s linear infinite;
+    }
+    @keyframes xferStrap {
+      0%, 89.65%   { opacity: 0; }
+      89.95%, 100% { opacity: 1; }
+    }
+
+    /* Left medic crouch & lift ergonomics (hip-anchored at local 0,0 -> ground-locked feet) */
+    .xfer-m1-upper {
+      transform-origin: 0px 0px;
+      animation: xferUpperL 120s ease-in-out infinite;
+    }
+    @keyframes xferUpperL {
+      0%, 86.50%   { transform: translate(0px, 0px) rotate(0deg); }
+      87.50%       { transform: translate(0px, 5.2px) rotate(14deg); }
+      88.50%       { transform: translate(0px, 6.8px) rotate(24deg); }
+      89.25%       { transform: translate(0px, 4.4px) rotate(16deg); }
+      90.00%       { transform: translate(0px, 5.6px) rotate(14deg); }
+      91.20%       { transform: translate(0px, 0px) rotate(0deg); }
+      100%         { transform: translate(0px, 0px) rotate(0deg); }
+    }
+    .xfer-m1-thigh {
+      transform-origin: 0px 0px;
+      animation: xferThighL 120s ease-in-out infinite;
+    }
+    @keyframes xferThighL {
+      0%, 86.50%   { transform: translateY(0px) rotate(-5deg); }
+      87.50%       { transform: translateY(5.2px) rotate(-52deg); }
+      88.50%       { transform: translateY(6.8px) rotate(-62deg); }
+      89.25%       { transform: translateY(4.4px) rotate(-46deg); }
+      90.00%       { transform: translateY(5.6px) rotate(-54deg); }
+      91.20%       { transform: translateY(0px) rotate(-5deg); }
+      100%         { transform: translateY(0px) rotate(-5deg); }
+    }
+    .xfer-m1-knee {
+      transform-origin: 0px 0px;
+      animation: xferKneeL 120s ease-in-out infinite;
+    }
+    @keyframes xferKneeL {
+      0%, 86.50%   { transform: rotate(7deg); }
+      87.50%       { transform: rotate(92deg); }
+      88.50%       { transform: rotate(106deg); }
+      89.25%       { transform: rotate(82deg); }
+      90.00%       { transform: rotate(94deg); }
+      91.20%       { transform: rotate(7deg); }
+      100%         { transform: rotate(7deg); }
+    }
+    .xfer-m1-arm {
+      transform-origin: 0px 0px;
+      animation: xferArmL 120s ease-in-out infinite;
+    }
+    @keyframes xferArmL {
+      0%, 86.50%   { transform: rotate(0deg); }
+      87.50%       { transform: rotate(-10deg); }
+      88.50%       { transform: rotate(-24deg); }
+      89.25%       { transform: rotate(-32deg); }
+      90.00%       { transform: rotate(-12deg); }
+      91.20%       { transform: rotate(0deg); }
+      100%         { transform: rotate(0deg); }
+    }
+
+    /* Right medic crouch & lift ergonomics (hip-anchored, facing left toward patient) */
+    .xfer-m2-upper {
+      transform-origin: 0px 0px;
+      animation: xferUpperR 120s ease-in-out infinite;
+    }
+    @keyframes xferUpperR {
+      0%, 86.50%   { transform: translate(0px, 0px) rotate(0deg); }
+      87.50%       { transform: translate(0px, 5.2px) rotate(-14deg); }
+      88.50%       { transform: translate(0px, 6.8px) rotate(-24deg); }
+      89.25%       { transform: translate(0px, 4.4px) rotate(-16deg); }
+      90.00%       { transform: translate(0px, 5.6px) rotate(-14deg); }
+      91.20%       { transform: translate(0px, 0px) rotate(0deg); }
+      100%         { transform: translate(0px, 0px) rotate(0deg); }
+    }
+    .xfer-m2-thigh {
+      transform-origin: 0px 0px;
+      animation: xferThighR 120s ease-in-out infinite;
+    }
+    @keyframes xferThighR {
+      0%, 86.50%   { transform: translateY(0px) rotate(5deg); }
+      87.50%       { transform: translateY(5.2px) rotate(52deg); }
+      88.50%       { transform: translateY(6.8px) rotate(62deg); }
+      89.25%       { transform: translateY(4.4px) rotate(46deg); }
+      90.00%       { transform: translateY(5.6px) rotate(54deg); }
+      91.20%       { transform: translateY(0px) rotate(5deg); }
+      100%         { transform: translateY(0px) rotate(5deg); }
+    }
+    .xfer-m2-knee {
+      transform-origin: 0px 0px;
+      animation: xferKneeR 120s ease-in-out infinite;
+    }
+    @keyframes xferKneeR {
+      0%, 86.50%   { transform: rotate(-7deg); }
+      87.50%       { transform: rotate(-92deg); }
+      88.50%       { transform: rotate(-106deg); }
+      89.25%       { transform: rotate(-82deg); }
+      90.00%       { transform: rotate(-94deg); }
+      91.20%       { transform: rotate(-7deg); }
+      100%         { transform: rotate(-7deg); }
+    }
+    .xfer-m2-arm {
+      transform-origin: 0px 0px;
+      animation: xferArmR 120s ease-in-out infinite;
+    }
+    @keyframes xferArmR {
+      0%, 86.50%   { transform: rotate(0deg); }
+      87.50%       { transform: rotate(10deg); }
+      88.50%       { transform: rotate(24deg); }
+      89.25%       { transform: rotate(32deg); }
+      90.00%       { transform: rotate(12deg); }
+      91.20%       { transform: rotate(0deg); }
+      100%         { transform: rotate(0deg); }
+    }
+
+    /* --- Phase 5E: Medics Carry Patient Away to LEFT (110.4s - 119.4s) --- */
+    .act5-carry-out {
+      opacity: 0;
+      animation: carryOutTravel 120s linear infinite;
+    }
+    @keyframes carryOutTravel {
+      0%, 91.92%   { opacity: 0; transform: translateX(195px); }
+      92.08%       { opacity: 1; transform: translateX(195px); }
+      99.50%       { opacity: 1; transform: translateX(-48px); }
+      99.75%, 100% { opacity: 0; transform: translateX(-48px); }
+    }
+
+    /* Subtle stretcher sway while carrying patient */
+    .stretcher-sway {
+      animation: stretcherSway 0.75s ease-in-out infinite;
+    }
+    @keyframes stretcherSway {
+      0%, 100% { transform: translateY(0px); }
+      50%      { transform: translateY(-0.65px); }
+    }
+  ]]></style>
+
+  <!-- Fully Transparent Stage (no background rect, no grid, no border) -->
+  <g clip-path="url(#stageClip)">
+
+    <!-- ============================================================
+         ACT 1: SLOW CLINICAL ECG WAVEFORM (0.0s - 21.0s)
+         ============================================================ -->
     <g class="ecg-group">
-      <use href="#ecgWavePath" fill="none" stroke="#10B981" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.35" filter="url(#ecgGlow)" mask="url(#ecgTrailMask)"/>
-      <use href="#ecgWavePath" fill="none" stroke="#34F5B5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" mask="url(#ecgTrailMask)"/>
-      <use href="#ecgWavePath" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" filter="url(#tipGlow)" mask="url(#ecgTipMask)"/>
+      <!-- Outer emerald glow for legibility on dark & light backgrounds -->
+      <use href="#ecgWavePath" fill="none" stroke="#059669" stroke-width="3.2"
+           stroke-linecap="round" stroke-linejoin="round" opacity="0.45"
+           filter="url(#ecgGlow)" mask="url(#ecgTrailMask)" />
+      <!-- Vivid clinical green trace -->
+      <use href="#ecgWavePath" fill="none" stroke="#10B981" stroke-width="1.65"
+           stroke-linecap="round" stroke-linejoin="round"
+           mask="url(#ecgTrailMask)" />
+      <!-- Crisp bright mint inner core -->
+      <use href="#ecgWavePath" fill="none" stroke="#6EE7B7" stroke-width="0.75"
+           stroke-linecap="round" stroke-linejoin="round"
+           mask="url(#ecgTrailMask)" />
+      <!-- Incandescent leading scan spark -->
+      <use href="#ecgWavePath" fill="none" stroke="#FFFFFF" stroke-width="2.4"
+           stroke-linecap="round" stroke-linejoin="round"
+           filter="url(#tipGlow)" mask="url(#ecgTipMask)" />
     </g>
 
-    <!-- ACT 2: CAREGIVER PUSHING PATIENT IN WHEELCHAIR (15.5s - 31.5s) -->
+    <!-- ============================================================
+         ACT 2: CAREGIVER PUSHING PATIENT IN WHEELCHAIR (21.6s - 44.4s)
+         ============================================================ -->
     <g class="act2-travel">
-      <ellipse cx="30" cy="58.5" rx="31" ry="2.2" fill="#000000" opacity="0.45"/>
-      <g transform="translate(34, 45.5)" opacity="0.45">
-        <g class="wc-rear-spin">
-          <circle cx="0" cy="0" r="11.5" fill="none" stroke="#334155" stroke-width="1.8"/>
-          <line x1="-10.5" y1="0" x2="10.5" y2="0" stroke="#475569" stroke-width="0.6"/>
-          <line x1="0" y1="-10.5" x2="0" y2="10.5" stroke="#475569" stroke-width="0.6"/>
-        </g>
-      </g>
-      <g transform="translate(8, 36)">
-        <g class="cg-thigh-back">
-          <path d="M 0 0 L 0 10.5" stroke="#263547" stroke-width="3.4" stroke-linecap="round"/>
-          <g transform="translate(0, 10.5)">
-            <g class="cg-knee-back">
-              <path d="M 0 0 L 0 10.2" stroke="#1E2B3A" stroke-width="2.9" stroke-linecap="round"/>
-              <path d="M -1.2 10.2 L 3.8 10.2 C 4.6 10.2 4.8 11.4 3.6 11.4 L -1.6 11.4 Z" fill="#94A3B8"/>
-            </g>
-          </g>
-        </g>
-      </g>
-      <g class="cg-torso-bob">
-        <g transform="translate(11.5, 22.5)">
-          <g class="cg-arm-counter">
-            <path d="M 0 0 L 5.2 2.4 L 10.2 2.2" fill="none" stroke="#1E555E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </g>
-        </g>
-      </g>
-      <g>
-        <path d="M 21 25 L 25.5 25 L 29.5 43.5 L 47 43.5 L 53.5 52.5 L 59.5 53.2" fill="none" stroke="#64748B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M 26.2 28 L 29.3 42.5" stroke="#1E293B" stroke-width="3.2" stroke-linecap="round"/>
-        <line x1="29.5" y1="42.2" x2="46.5" y2="42.2" stroke="#334155" stroke-width="2.6" stroke-linecap="round"/>
-        <path d="M 46.5 42.5 L 52.2 51.2" stroke="#475569" stroke-width="3.4" stroke-linecap="round"/>
-        <path d="M 52 51.2 L 57.5 51.8 C 58.5 51.9 58.3 53.2 56.8 53.1 L 51.5 52.6 Z" fill="#CBD5E1"/>
-        <g transform="translate(32, 41)">
-          <g class="patient-breathe">
-            <path d="M -3.5 -1 C -4 -6 -3 -11 -0.5 -13.5 C 2.2 -13.5 4.2 -10.5 4.5 -5.5 L 3.8 0 Z" fill="#7D96AE"/>
-            <path d="M -0.5 -13 L 2 -11.2" stroke="#CBD5E1" stroke-width="0.9" stroke-linecap="round"/>
-            <rect x="0.2" y="-15.5" width="2.2" height="2.6" rx="0.8" fill="#DFB39A"/>
-            <g transform="translate(2.4, -18.5)">
-              <circle cx="0" cy="0" r="3.4" fill="#E6B89C"/>
-              <path d="M 3.1 -0.5 L 4.1 0.4 L 3.1 1.2" fill="#E6B89C"/>
-              <path d="M -3.5 0.2 C -3.8 -2.8 -1.2 -4.2 1.8 -3.4 C 3 -3 3.4 -1.8 2.8 -1.2 C 0.8 -1.6 -0.8 -0.8 -1.8 1.2 Z" fill="#CBD5E1"/>
-            </g>
-            <path d="M 1.2 -10.5 L 3.6 -6.2 L 10.2 -5.8" fill="none" stroke="#9BB2C7" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="11.2" cy="-5.8" r="1.2" fill="#E6B89C"/>
-          </g>
-        </g>
-        <path d="M 30 39.5 C 35 38.2 44.5 38.5 48.2 41 C 50.5 43.2 51.8 46.8 52.8 49.8 L 48.2 49.8 C 46.8 46.5 45.2 43.8 42.5 43.4 L 30.5 43.2 Z" fill="url(#blanketGrad)"/>
-        <path d="M 35 41.2 Q 41 40.5 46.5 42.2" fill="none" stroke="#E2E8F0" stroke-width="0.6" opacity="0.7"/>
-      </g>
-      <g>
-        <path d="M 27.8 34.8 L 45.8 34.8 L 45.8 43.5" fill="none" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <line x1="28.5" y1="34.2" x2="44.5" y2="34.2" stroke="#1E293B" stroke-width="2" stroke-linecap="round"/>
-        <line x1="32" y1="46" x2="48" y2="46" stroke="#94A3B8" stroke-width="1.3"/>
-        <line x1="48" y1="45" x2="51" y2="54" stroke="#CBD5E1" stroke-width="1.3" stroke-linecap="round"/>
-        <line x1="19.5" y1="25" x2="23.5" y2="25" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
-        <g transform="translate(51, 54)">
-          <g class="wc-caster-spin">
-            <circle cx="0" cy="0" r="3.6" fill="#0F172A" stroke="#1E293B" stroke-width="0.8"/>
-            <circle cx="0" cy="0" r="2.2" fill="none" stroke="#94A3B8" stroke-width="0.7"/>
-            <line x1="-2.2" y1="0" x2="2.2" y2="0" stroke="#CBD5E1" stroke-width="0.6"/>
-            <line x1="0" y1="-2.2" x2="0" y2="2.2" stroke="#CBD5E1" stroke-width="0.6"/>
-            <circle cx="0" cy="0" r="0.8" fill="#E2E8F0"/>
-          </g>
-        </g>
-        <g transform="translate(32, 46)">
+      <g transform="translate(0, 47) scale(0.80) translate(0, -58)">
+        <!-- Soft translucent ground contact shadow -->
+        <ellipse cx="30" cy="58.5" rx="31" ry="2.2" fill="url(#softShadow)" />
+
+        <!-- Far-side rear wheelchair wheel -->
+        <g transform="translate(34, 45.5)" opacity="0.42">
           <g class="wc-rear-spin">
-            <circle cx="0" cy="0" r="11.2" fill="none" stroke="#0F172A" stroke-width="1.8"/>
-            <circle cx="0" cy="0" r="10.2" fill="none" stroke="#94A3B8" stroke-width="0.9"/>
-            <circle cx="0" cy="0" r="8.6" fill="none" stroke="#CBD5E1" stroke-width="0.55" opacity="0.85"/>
-            <g stroke="#CBD5E1" stroke-width="0.55" opacity="0.78">
-              <line x1="-10" y1="0" x2="10" y2="0"/>
-              <line x1="0" y1="-10" x2="0" y2="10"/>
-              <line x1="-7.1" y1="-7.1" x2="7.1" y2="7.1"/>
-              <line x1="-7.1" y1="7.1" x2="7.1" y2="-7.1"/>
-            </g>
-            <circle cx="0" cy="0" r="1.9" fill="#334155" stroke="#E2E8F0" stroke-width="0.7"/>
+            <circle cx="0" cy="0" r="11.5" fill="none" stroke="#334155" stroke-width="1.8" />
+            <line x1="-10.5" y1="0" x2="10.5" y2="0" stroke="#475569" stroke-width="0.6" />
+            <line x1="0" y1="-10.5" x2="0" y2="10.5" stroke="#475569" stroke-width="0.6" />
           </g>
         </g>
-      </g>
-      <g transform="translate(8, 36)">
-        <g class="cg-thigh-front">
-          <path d="M 0 0 L 0 10.5" stroke="#3B4F68" stroke-width="3.6" stroke-linecap="round"/>
-          <g transform="translate(0, 10.5)">
-            <g class="cg-knee-front">
-              <path d="M 0 0 L 0 10.2" stroke="#33445B" stroke-width="3.0" stroke-linecap="round"/>
-              <path d="M -1.2 10.2 L 4.0 10.2 C 4.9 10.2 5.0 11.4 3.8 11.4 L -1.6 11.4 Z" fill="#E2E8F0"/>
+
+        <!-- CAREGIVER: Back Leg & Back Arm -->
+        <g transform="translate(8, 36)">
+          <g class="cg-thigh-back">
+            <path d="M 0 0 L 0 10.5" stroke="#263547" stroke-width="3.4" stroke-linecap="round" />
+            <g transform="translate(0, 10.5)">
+              <g class="cg-knee-back">
+                <path d="M 0 0 L 0 10.2" stroke="#1E2B3A" stroke-width="2.9" stroke-linecap="round" />
+                <path d="M -1.2 10.2 L 3.8 10.2 C 4.6 10.2 4.8 11.4 3.6 11.4 L -1.6 11.4 Z" fill="#64748B" />
+              </g>
             </g>
           </g>
         </g>
-      </g>
-      <g class="cg-torso-bob">
-        <path d="M 4.8 36.8 L 6.2 21.5 C 6.6 19.8 12.2 19.6 13.0 21.8 L 12.2 36.8 Z" fill="url(#scrubGrad)"/>
-        <path d="M 10.2 20.4 L 11.8 23.2 L 12.8 20.8" fill="none" stroke="#E2E8F0" stroke-width="0.8"/>
-        <rect x="9.6" y="25.2" width="2.2" height="2.6" rx="0.4" fill="#E2E8F0" opacity="0.85"/>
-        <rect x="8.8" y="17.5" width="2.4" height="3.2" rx="1" fill="#E6B89C"/>
-        <g transform="translate(10.8, 14.2)">
-          <circle cx="0" cy="0" r="3.6" fill="#E6B89C"/>
-          <path d="M 3.3 -0.4 L 4.3 0.5 L 3.3 1.3" fill="#E6B89C"/>
-          <path d="M -3.6 0.6 C -4.0 -2.6 -1.5 -4.4 2.0 -3.4 C 3.1 -3.0 3.5 -1.8 2.8 -1.3 C 0.8 -1.8 -1.0 -0.8 -1.8 1.4 Z" fill="#1E293B"/>
-          <circle cx="-3.6" cy="0.2" r="1.7" fill="#1E293B"/>
+
+        <g class="cg-torso-bob">
+          <g transform="translate(11.5, 22.5)">
+            <g class="cg-arm-counter">
+              <path d="M 0 0 L 5.2 2.4 L 10.2 2.2" fill="none" stroke="#1E555E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            </g>
+          </g>
         </g>
-        <g transform="translate(10.5, 22.8)">
-          <g class="cg-arm-counter">
-            <path d="M 0 0 L 4.8 2.8 L 10.6 2.2" fill="none" stroke="#3BA5AC" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="10.8" cy="2.2" r="1.4" fill="#E6B89C"/>
+
+        <!-- PATIENT IN WHEELCHAIR -->
+        <g>
+          <path d="M 21 25 L 25.5 25 L 29.5 43.5 L 47 43.5 L 53.5 52.5 L 59.5 53.2"
+                fill="none" stroke="#64748B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M 26.2 28 L 29.3 42.5" stroke="#1E293B" stroke-width="3.2" stroke-linecap="round" />
+          <line x1="29.5" y1="42.2" x2="46.5" y2="42.2" stroke="#334155" stroke-width="2.6" stroke-linecap="round" />
+
+          <path d="M 46.5 42.5 L 52.2 51.2" stroke="#475569" stroke-width="3.4" stroke-linecap="round" />
+          <path d="M 52 51.2 L 57.5 51.8 C 58.5 51.9 58.3 53.2 56.8 53.1 L 51.5 52.6 Z" fill="#94A3B8" stroke="#475569" stroke-width="0.4" />
+
+          <g transform="translate(32, 41)">
+            <g class="patient-breathe">
+              <path d="M -3.5 -1 C -4 -6 -3 -11 -0.5 -13.5 C 2.2 -13.5 4.2 -10.5 4.5 -5.5 L 3.8 0 Z" fill="#6483A1" stroke="#334155" stroke-width="0.35" />
+              <path d="M -0.5 -13 L 2 -11.2" stroke="#CBD5E1" stroke-width="0.9" stroke-linecap="round" />
+              <rect x="0.2" y="-15.5" width="2.2" height="2.6" rx="0.8" fill="#DFB39A" />
+              <g transform="translate(2.4, -18.5)">
+                <circle cx="0" cy="0" r="3.4" fill="#E6B89C" stroke="#8C624C" stroke-width="0.3" />
+                <path d="M 3.1 -0.5 L 4.1 0.4 L 3.1 1.2" fill="#E6B89C" />
+                <path d="M -3.5 0.2 C -3.8 -2.8 -1.2 -4.2 1.8 -3.4 C 3 -3 3.4 -1.8 2.8 -1.2 C 0.8 -1.6 -0.8 -0.8 -1.8 1.2 Z" fill="#94A3B8" />
+              </g>
+              <path d="M 1.2 -10.5 L 3.6 -6.2 L 10.2 -5.8" fill="none" stroke="#85A1BA" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="11.2" cy="-5.8" r="1.2" fill="#E6B89C" />
+            </g>
+          </g>
+
+          <path d="M 30 39.5 C 35 38.2 44.5 38.5 48.2 41 C 50.5 43.2 51.8 46.8 52.8 49.8 L 48.2 49.8 C 46.8 46.5 45.2 43.8 42.5 43.4 L 30.5 43.2 Z"
+                fill="url(#blanketGrad)" stroke="#64748B" stroke-width="0.4" />
+          <path d="M 35 41.2 Q 41 40.5 46.5 42.2" fill="none" stroke="#F1F5F9" stroke-width="0.6" opacity="0.7" />
+        </g>
+
+        <!-- WHEELCHAIR NEAR-SIDE FRAME & WHEELS -->
+        <g>
+          <path d="M 27.8 34.8 L 45.8 34.8 L 45.8 43.5" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          <line x1="28.5" y1="34.2" x2="44.5" y2="34.2" stroke="#1E293B" stroke-width="2" stroke-linecap="round" />
+          <line x1="32" y1="46" x2="48" y2="46" stroke="#64748B" stroke-width="1.3" />
+          <line x1="48" y1="45" x2="51" y2="54" stroke="#94A3B8" stroke-width="1.3" stroke-linecap="round" />
+          <line x1="19.5" y1="25" x2="23.5" y2="25" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round" />
+
+          <!-- Front Caster Wheel -->
+          <g transform="translate(51, 54)">
+            <g class="wc-caster-spin">
+              <circle cx="0" cy="0" r="3.6" fill="#0F172A" stroke="#334155" stroke-width="0.8" />
+              <circle cx="0" cy="0" r="2.2" fill="none" stroke="#94A3B8" stroke-width="0.7" />
+              <line x1="-2.2" y1="0" x2="2.2" y2="0" stroke="#CBD5E1" stroke-width="0.6" />
+              <line x1="0" y1="-2.2" x2="0" y2="2.2" stroke="#CBD5E1" stroke-width="0.6" />
+              <circle cx="0" cy="0" r="0.8" fill="#E2E8F0" />
+            </g>
+          </g>
+
+          <!-- Large Rear Spoked Drive Wheel -->
+          <g transform="translate(32, 46)">
+            <g class="wc-rear-spin">
+              <circle cx="0" cy="0" r="11.2" fill="none" stroke="#0F172A" stroke-width="1.8" />
+              <circle cx="0" cy="0" r="10.2" fill="none" stroke="#64748B" stroke-width="0.9" />
+              <circle cx="0" cy="0" r="8.6" fill="none" stroke="#94A3B8" stroke-width="0.55" opacity="0.85" />
+              <g stroke="#94A3B8" stroke-width="0.55" opacity="0.82">
+                <line x1="-10" y1="0" x2="10" y2="0" />
+                <line x1="0" y1="-10" x2="0" y2="10" />
+                <line x1="-7.1" y1="-7.1" x2="7.1" y2="7.1" />
+                <line x1="-7.1" y1="7.1" x2="7.1" y2="-7.1" />
+              </g>
+              <circle cx="0" cy="0" r="1.9" fill="#334155" stroke="#CBD5E1" stroke-width="0.7" />
+            </g>
+          </g>
+        </g>
+
+        <!-- CAREGIVER: Front Leg, Torso, Head & Front Arm -->
+        <g transform="translate(8, 36)">
+          <g class="cg-thigh-front">
+            <path d="M 0 0 L 0 10.5" stroke="#3B4F68" stroke-width="3.6" stroke-linecap="round" />
+            <g transform="translate(0, 10.5)">
+              <g class="cg-knee-front">
+                <path d="M 0 0 L 0 10.2" stroke="#33445B" stroke-width="3.0" stroke-linecap="round" />
+                <path d="M -1.2 10.2 L 4.0 10.2 C 4.9 10.2 5.0 11.4 3.8 11.4 L -1.6 11.4 Z" fill="#CBD5E1" stroke="#475569" stroke-width="0.4" />
+              </g>
+            </g>
+          </g>
+        </g>
+
+        <g class="cg-torso-bob">
+          <path d="M 4.8 36.8 L 6.2 21.5 C 6.6 19.8 12.2 19.6 13.0 21.8 L 12.2 36.8 Z" fill="url(#scrubGrad)" stroke="#164E57" stroke-width="0.4" />
+          <path d="M 10.2 20.4 L 11.8 23.2 L 12.8 20.8" fill="none" stroke="#E2E8F0" stroke-width="0.8" />
+          <rect x="9.6" y="25.2" width="2.2" height="2.6" rx="0.4" fill="#E2E8F0" opacity="0.9" />
+          <rect x="8.8" y="17.5" width="2.4" height="3.2" rx="1" fill="#E6B89C" />
+          <g transform="translate(10.8, 14.2)">
+            <circle cx="0" cy="0" r="3.6" fill="#E6B89C" stroke="#8C624C" stroke-width="0.3" />
+            <path d="M 3.3 -0.4 L 4.3 0.5 L 3.3 1.3" fill="#E6B89C" />
+            <path d="M -3.6 0.6 C -4.0 -2.6 -1.5 -4.4 2.0 -3.4 C 3.1 -3.0 3.5 -1.8 2.8 -1.3 C 0.8 -1.8 -1.0 -0.8 -1.8 1.4 Z" fill="#1E293B" />
+            <circle cx="-3.6" cy="0.2" r="1.7" fill="#1E293B" />
+          </g>
+          <g transform="translate(10.5, 22.8)">
+            <g class="cg-arm-counter">
+              <path d="M 0 0 L 4.8 2.8 L 10.6 2.2" fill="none" stroke="#3BA5AC" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="10.8" cy="2.2" r="1.4" fill="#E6B89C" />
+            </g>
           </g>
         </g>
       </g>
     </g>
 
-    <!-- ACT 3: CRAZY FEMALE FIGURE (32.5s - 44.8s) -->
+    <!-- ============================================================
+         ACT 3: CRAZY FEMALE FIGURE (45.0s - 62.6s)
+         ============================================================ -->
+    <!-- PHASE 3A & 3B: Center appearance & odd erratic head shake -->
     <g class="act3-stand">
-      <ellipse cx="0" cy="58.3" rx="11" ry="2.2" fill="url(#eerieShadow)"/>
-      <path d="M -2.8 45 L -3.6 56.8 L -5.5 57.6" fill="none" stroke="#D1C7BE" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M 2.6 45 L 3.2 56.8 L 5.0 57.6" fill="none" stroke="#DDD6CE" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"/>
-      <g transform="translate(0, 38)">
-        <g class="crazy-twitch-body">
-          <path d="M -4.2 -15.5 C -5.5 -10 -7.2 2 -9.5 11.5 L -5.5 9.8 L -2.5 12.2 L 1 9.5 L 4.5 12.5 L 8.8 10.2 C 7.0 2 5.2 -10 4.2 -15.5 Z" fill="url(#dressGrad)"/>
-          <path d="M -2.8 -15.2 Q 0 -12.8 2.8 -15.2" fill="none" stroke="#A68BA3" stroke-width="0.9"/>
-          <path d="M -2 -8 L -4 8 M 1.5 -6 L 3.2 9" stroke="#1A0C19" stroke-width="0.6" opacity="0.65"/>
-          <path d="M -4.5 -14.5 L -8.8 -7.8 L -6.0 -3.2" fill="none" stroke="#DDD6CE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M -6.0 -3.2 L -7.4 -1.4 M -6.0 -3.2 L -5.6 -1.0 M -6.0 -3.2 L -4.4 -1.8" stroke="#DDD6CE" stroke-width="0.65" stroke-linecap="round"/>
-          <path d="M 4.5 -14.2 L 9.2 -8.2 L 6.4 -3.8" fill="none" stroke="#DDD6CE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M 6.4 -3.8 L 7.8 -1.8 M 6.4 -3.8 L 6.2 -1.4 M 6.4 -3.8 L 4.8 -2.2" stroke="#DDD6CE" stroke-width="0.65" stroke-linecap="round"/>
-          <rect x="-1.1" y="-18.5" width="2.2" height="3.5" fill="#CFC6BD"/>
-          <g transform="translate(0, -18.5)">
-            <g class="crazy-head">
-              <path d="M -4.5 -1.5 L -10.5 -4.2 L -7.5 -6.5 L -11.8 -9.5 L -6.2 -9.8 L -8.2 -13.8 L -2.8 -11.5 L 0.5 -14.5 L 3.2 -11.2 L 8.5 -13.4 L 6.8 -9.2 L 11.8 -8.8 L 7.6 -5.8 L 10.4 -2.8 L 5.2 -1.2 L 6.5 2.4 L 2.2 0.2 L -2.5 0.5 L -6.2 2.2 Z" fill="#141418"/>
-              <g transform="translate(-4.5, -5.5)">
-                <g class="crazy-hair-l">
-                  <path d="M 0 0 C -4 -2 -7 0 -8.5 3.5 M -1 -1.5 C -4.5 -4 -7.5 -3.5 -9 -1 M -0.5 1.5 C -3.5 2.5 -5.5 5.2 -4.8 8.2" fill="none" stroke="#222229" stroke-width="1.15" stroke-linecap="round"/>
-                  <path d="M -1.5 -2.2 C -4 -5 -5.5 -6.2 -7.2 -5.8" fill="none" stroke="#454552" stroke-width="0.65" stroke-linecap="round"/>
+      <g transform="translate(0, 47) scale(0.80) translate(0, -58)">
+        <ellipse cx="0" cy="58.3" rx="11" ry="2.2" fill="url(#softShadow)" />
+
+        <path d="M -2.8 45 L -3.6 56.8 L -5.5 57.6" fill="none" stroke="#C5B9AE" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M 2.6 45 L 3.2 56.8 L 5.0 57.6" fill="none" stroke="#D8CEC4" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" />
+
+        <g transform="translate(0, 38)">
+          <g class="crazy-twitch-body">
+            <path d="M -4.2 -15.5 C -5.5 -10 -7.2 2 -9.5 11.5 L -5.5 9.8 L -2.5 12.2 L 1 9.5 L 4.5 12.5 L 8.8 10.2 C 7.0 2 5.2 -10 4.2 -15.5 Z"
+                  fill="url(#dressGrad)" stroke="#1A0C19" stroke-width="0.4" />
+            <path d="M -2.8 -15.2 Q 0 -12.8 2.8 -15.2" fill="none" stroke="#A68BA3" stroke-width="0.9" />
+            <path d="M -2 -8 L -4 8 M 1.5 -6 L 3.2 9" stroke="#1A0C19" stroke-width="0.6" opacity="0.65" />
+
+            <path d="M -4.5 -14.5 L -8.8 -7.8 L -6.0 -3.2" fill="none" stroke="#D8CEC4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M -6.0 -3.2 L -7.4 -1.4 M -6.0 -3.2 L -5.6 -1.0 M -6.0 -3.2 L -4.4 -1.8" stroke="#D8CEC4" stroke-width="0.65" stroke-linecap="round" />
+
+            <path d="M 4.5 -14.2 L 9.2 -8.2 L 6.4 -3.8" fill="none" stroke="#D8CEC4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 6.4 -3.8 L 7.8 -1.8 M 6.4 -3.8 L 6.2 -1.4 M 6.4 -3.8 L 4.8 -2.2" stroke="#D8CEC4" stroke-width="0.65" stroke-linecap="round" />
+
+            <rect x="-1.1" y="-18.5" width="2.2" height="3.5" fill="#C9BEB4" />
+
+            <g transform="translate(0, -18.5)">
+              <g class="crazy-head">
+                <path d="M -4.5 -1.5 L -10.5 -4.2 L -7.5 -6.5 L -11.8 -9.5 L -6.2 -9.8 L -8.2 -13.8 L -2.8 -11.5 L 0.5 -14.5 L 3.2 -11.2 L 8.5 -13.4 L 6.8 -9.2 L 11.8 -8.8 L 7.6 -5.8 L 10.4 -2.8 L 5.2 -1.2 L 6.5 2.4 L 2.2 0.2 L -2.5 0.5 L -6.2 2.2 Z"
+                      fill="#18181F" />
+                <g transform="translate(-4.5, -5.5)">
+                  <g class="crazy-hair-l">
+                    <path d="M 0 0 C -4 -2 -7 0 -8.5 3.5 M -1 -1.5 C -4.5 -4 -7.5 -3.5 -9 -1 M -0.5 1.5 C -3.5 2.5 -5.5 5.2 -4.8 8.2"
+                          fill="none" stroke="#252530" stroke-width="1.15" stroke-linecap="round" />
+                    <path d="M -1.5 -2.2 C -4 -5 -5.5 -6.2 -7.2 -5.8"
+                          fill="none" stroke="#525263" stroke-width="0.65" stroke-linecap="round" />
+                  </g>
                 </g>
-              </g>
-              <g transform="translate(4.5, -5.5)">
-                <g class="crazy-hair-r">
-                  <path d="M 0 0 C 4 -1.8 7 0.5 8.5 4.0 M 1 -1.8 C 4.5 -4.2 7.5 -3.2 8.8 -0.5 M 0.5 1.5 C 3.8 2.8 5.2 5.8 4.4 8.4" fill="none" stroke="#222229" stroke-width="1.15" stroke-linecap="round"/>
-                  <path d="M 1.5 -2.2 C 4.2 -5.2 6 -5.8 7.5 -5.2" fill="none" stroke="#454552" stroke-width="0.65" stroke-linecap="round"/>
+                <g transform="translate(4.5, -5.5)">
+                  <g class="crazy-hair-r">
+                    <path d="M 0 0 C 4 -1.8 7 0.5 8.5 4.0 M 1 -1.8 C 4.5 -4.2 7.5 -3.2 8.8 -0.5 M 0.5 1.5 C 3.8 2.8 5.2 5.8 4.4 8.4"
+                          fill="none" stroke="#252530" stroke-width="1.15" stroke-linecap="round" />
+                    <path d="M 1.5 -2.2 C 4.2 -5.2 6 -5.8 7.5 -5.2"
+                          fill="none" stroke="#525263" stroke-width="0.65" stroke-linecap="round" />
+                  </g>
                 </g>
+
+                <ellipse cx="0" cy="-4.8" rx="4.0" ry="4.7" fill="#E2DBD3" stroke="#7A6C64" stroke-width="0.3" />
+                <ellipse cx="-1.5" cy="-4.5" rx="1.5" ry="1.35" fill="#7D6B7D" opacity="0.55" />
+                <ellipse cx="1.6" cy="-4.9" rx="1.65" ry="1.5" fill="#7D6B7D" opacity="0.55" />
+                <circle cx="-1.5" cy="-4.9" r="1.15" fill="#FFFFFF" stroke="#3F3F46" stroke-width="0.2" />
+                <circle cx="1.6" cy="-5.2" r="1.35" fill="#FFFFFF" stroke="#3F3F46" stroke-width="0.2" />
+                <g class="crazy-pupils">
+                  <circle cx="-1.5" cy="-4.9" r="0.45" fill="#09090B" />
+                  <circle cx="1.6" cy="-5.2" r="0.48" fill="#09090B" />
+                </g>
+                <path d="M -1.5 -2.1 Q 0.2 -2.8 1.8 -1.8" fill="none" stroke="#3B2135" stroke-width="0.8" stroke-linecap="round" />
+                <path d="M -4.2 -7.2 C -2.2 -9.8 1.5 -10.2 4.2 -7.2 M -3.2 -8.2 L -1.2 -5.2 M 0.8 -9.2 L 2.2 -6.2 M 2.6 -8.4 L 4.0 -4.8"
+                      fill="none" stroke="#18181F" stroke-width="1.05" stroke-linecap="round" />
               </g>
-              <ellipse cx="0" cy="-4.8" rx="4.0" ry="4.7" fill="#E2DBD3"/>
-              <ellipse cx="-1.5" cy="-4.5" rx="1.5" ry="1.35" fill="#7D6B7D" opacity="0.55"/>
-              <ellipse cx="1.6" cy="-4.9" rx="1.65" ry="1.5" fill="#7D6B7D" opacity="0.55"/>
-              <circle cx="-1.5" cy="-4.9" r="1.15" fill="#FFFFFF"/>
-              <circle cx="1.6" cy="-5.2" r="1.35" fill="#FFFFFF"/>
-              <g class="crazy-pupils">
-                <circle cx="-1.5" cy="-4.9" r="0.45" fill="#09090B"/>
-                <circle cx="1.6" cy="-5.2" r="0.48" fill="#09090B"/>
-              </g>
-              <path d="M -1.5 -2.1 Q 0.2 -2.8 1.8 -1.8" fill="none" stroke="#3B2135" stroke-width="0.8" stroke-linecap="round"/>
-              <path d="M -4.2 -7.2 C -2.2 -9.8 1.5 -10.2 4.2 -7.2 M -3.2 -8.2 L -1.2 -5.2 M 0.8 -9.2 L 2.2 -6.2 M 2.6 -8.4 L 4.0 -4.8" fill="none" stroke="#18181E" stroke-width="1.05" stroke-linecap="round"/>
             </g>
           </g>
         </g>
       </g>
     </g>
 
+    <!-- PHASE 3C: Pivots & Sprints Away Toward LEFT -->
     <g class="act3-run">
-      <ellipse cx="0" cy="58.4" rx="12" ry="2.0" fill="url(#eerieShadow)"/>
-      <g class="run-bounce">
-        <g transform="translate(-3.2, 23.5)">
-          <g class="run-arm-back">
-            <path d="M 0 0 L 1.2 6.8 L -4.8 9.2" fill="none" stroke="#BFB5AC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <g transform="translate(0, 47) scale(0.80) translate(0, -58)">
+        <ellipse cx="0" cy="58.4" rx="12" ry="2.0" fill="url(#softShadow)" />
+
+        <g class="run-bounce">
+          <g transform="translate(-3.2, 23.5)">
+            <g class="run-arm-back">
+              <path d="M 0 0 L 1.2 6.8 L -4.8 9.2" fill="none" stroke="#BFB5AC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </g>
           </g>
-        </g>
-        <g transform="translate(0, 37)">
-          <g class="run-thigh-back">
-            <path d="M 0 0 L 0 10" stroke="#BFB5AC" stroke-width="2.4" stroke-linecap="round"/>
-            <g transform="translate(0, 10)">
-              <g class="run-knee-back">
-                <path d="M 0 0 L 0 9.8 L -2.6 10.6" fill="none" stroke="#BFB5AC" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <g transform="translate(0, 37)">
+            <g class="run-thigh-back">
+              <path d="M 0 0 L 0 10" stroke="#BFB5AC" stroke-width="2.4" stroke-linecap="round" />
+              <g transform="translate(0, 10)">
+                <g class="run-knee-back">
+                  <path d="M 0 0 L 0 9.8 L -2.6 10.6" fill="none" stroke="#BFB5AC" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" />
+                </g>
               </g>
             </g>
           </g>
-        </g>
-        <g transform="translate(0, 34)">
-          <g class="run-dress-flutter">
-            <path d="M -3.5 -2 L 3.5 -2 L 13.5 11.5 L 8.2 10.2 L 5.2 13.2 L 0.5 10.8 L -4.2 12.2 Z" fill="url(#dressGrad)"/>
+
+          <g transform="translate(0, 34)">
+            <g class="run-dress-flutter">
+              <path d="M -3.5 -2 L 3.5 -2 L 13.5 11.5 L 8.2 10.2 L 5.2 13.2 L 0.5 10.8 L -4.2 12.2 Z" fill="url(#dressGrad)" />
+            </g>
           </g>
-        </g>
-        <g transform="translate(0, 37)">
-          <g class="run-thigh-front">
-            <path d="M 0 0 L 0 10" stroke="#E2DBD3" stroke-width="2.5" stroke-linecap="round"/>
-            <g transform="translate(0, 10)">
-              <g class="run-knee-front">
-                <path d="M 0 0 L 0 9.8 L -2.8 10.6" fill="none" stroke="#E2DBD3" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <g transform="translate(0, 37)">
+            <g class="run-thigh-front">
+              <path d="M 0 0 L 0 10" stroke="#DFD6CE" stroke-width="2.5" stroke-linecap="round" />
+              <g transform="translate(0, 10)">
+                <g class="run-knee-front">
+                  <path d="M 0 0 L 0 9.8 L -2.8 10.6" fill="none" stroke="#DFD6CE" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" />
+                </g>
               </g>
             </g>
           </g>
-        </g>
-        <g transform="translate(0, 35) rotate(-16)">
-          <path d="M -3.4 0 L -3.8 -13.5 C -3.8 -15.2 2.4 -15.4 3.2 -13.2 L 4.0 0 Z" fill="url(#dressGrad)"/>
-          <rect x="-1.2" y="-17.5" width="2.2" height="3.2" fill="#D5CCC3"/>
-          <g transform="translate(-0.8, -20.5)">
-            <g transform="translate(2.5, -1)">
-              <g class="run-hair-stream">
-                <path d="M -2 -3 C 4 -6 10 -4 15.5 -6.5 C 12 -2 15.5 -0.5 18 1.5 C 12.5 1.8 14.5 4.8 11.5 6.2 C 8 3.8 5.5 5.2 1.5 4.5 Z" fill="#141418"/>
-                <path d="M 0 -2 C 6 -4.5 12 -2.5 17 -4 M 1 1 C 7 0.5 12 2.8 16.5 2.5 M 0 3 C 5 4.2 9.5 6.8 13.5 6" fill="none" stroke="#363642" stroke-width="0.8" stroke-linecap="round"/>
+
+          <g transform="translate(0, 35) rotate(-16)">
+            <path d="M -3.4 0 L -3.8 -13.5 C -3.8 -15.2 2.4 -15.4 3.2 -13.2 L 4.0 0 Z" fill="url(#dressGrad)" />
+            <rect x="-1.2" y="-17.5" width="2.2" height="3.2" fill="#D5CCC3" />
+            <g transform="translate(-0.8, -20.5)">
+              <g transform="translate(2.5, -1)">
+                <g class="run-hair-stream">
+                  <path d="M -2 -3 C 4 -6 10 -4 15.5 -6.5 C 12 -2 15.5 -0.5 18 1.5 C 12.5 1.8 14.5 4.8 11.5 6.2 C 8 3.8 5.5 5.2 1.5 4.5 Z" fill="#18181F" />
+                  <path d="M 0 -2 C 6 -4.5 12 -2.5 17 -4 M 1 1 C 7 0.5 12 2.8 16.5 2.5 M 0 3 C 5 4.2 9.5 6.8 13.5 6"
+                        fill="none" stroke="#454552" stroke-width="0.8" stroke-linecap="round" />
+                </g>
               </g>
+              <circle cx="0" cy="0" r="3.6" fill="#E2DBD3" stroke="#7A6C64" stroke-width="0.3" />
+              <path d="M -3.3 -0.4 L -4.4 0.4 L -3.3 1.2" fill="#E2DBD3" />
+              <ellipse cx="-1.8" cy="-0.6" rx="1.05" ry="1.15" fill="#FFFFFF" />
+              <circle cx="-2.2" cy="-0.6" r="0.42" fill="#09090B" />
+              <ellipse cx="-2.2" cy="1.8" rx="0.85" ry="0.6" fill="#3B2135" />
+              <path d="M -3.2 -1.8 C -2.8 -4.4 1.2 -5.2 3.8 -2.8 L 5.8 -4.5 L 3.8 -0.5 L 2.2 2.5 C 1.2 0.2 -0.8 -1.2 -3.2 -1.8 Z" fill="#18181F" />
             </g>
-            <circle cx="0" cy="0" r="3.6" fill="#E2DBD3"/>
-            <path d="M -3.3 -0.4 L -4.4 0.4 L -3.3 1.2" fill="#E2DBD3"/>
-            <ellipse cx="-1.8" cy="-0.6" rx="1.05" ry="1.15" fill="#FFFFFF"/>
-            <circle cx="-2.2" cy="-0.6" r="0.42" fill="#09090B"/>
-            <ellipse cx="-2.2" cy="1.8" rx="0.85" ry="0.6" fill="#3B2135"/>
-            <path d="M -3.2 -1.8 C -2.8 -4.4 1.2 -5.2 3.8 -2.8 L 5.8 -4.5 L 3.8 -0.5 L 2.2 2.5 C 1.2 0.2 -0.8 -1.2 -3.2 -1.8 Z" fill="#141418"/>
           </g>
-        </g>
-        <g transform="translate(-2.2, 23.5)">
-          <g class="run-arm-front">
-            <path d="M 0 0 L 1.2 6.8 L -5.0 9.0" fill="none" stroke="#E2DBD3" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <g transform="translate(-2.2, 23.5)">
+            <g class="run-arm-front">
+              <path d="M 0 0 L 1.2 6.8 L -5.0 9.0" fill="none" stroke="#E2DBD3" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" />
+            </g>
           </g>
         </g>
       </g>
     </g>
 
-    <!-- ACT 4: AMBULANCE WITH PULSATING LIGHTS (45.5s - 59.5s) -->
+    <!-- ============================================================
+         ACT 4: AMBULANCE WITH PULSATING LIGHTS (63.2s - 83.2s)
+         ============================================================ -->
     <g class="act4-travel">
-      <ellipse cx="56" cy="58.4" rx="56" ry="2.5" fill="#000000" opacity="0.58"/>
-      <ellipse class="strobe-red" cx="84" cy="58.5" rx="22" ry="2.0" fill="#EF4444" opacity="0.28"/>
-      <ellipse class="strobe-blue" cx="26" cy="58.5" rx="22" ry="2.0" fill="#3B82F6" opacity="0.28"/>
-      <polygon points="107,40.5 168,31 168,58 107,48.5" fill="url(#headlightGrad)"/>
-      <g class="amb-suspension">
-        <circle class="strobe-red" cx="83" cy="17" r="24" fill="url(#redHalo)"/>
-        <circle class="strobe-blue" cx="76" cy="17" r="24" fill="url(#blueHalo)"/>
-        <circle class="strobe-blue" cx="8.5" cy="17.5" r="16" fill="url(#blueHalo)"/>
-        <path d="M 4 50.5 L 4 21.5 C 4 19.6 5.5 18.5 7.5 18.5 L 74 18.5 L 74 20.5 L 79.5 20.5 C 82 20.5 84.5 22 87 25.5 L 93.8 33.8 L 105.5 36.2 C 107.2 36.6 108 38 108 40 L 108 48.5 L 105.5 50.5 Z" fill="url(#ambBodyGrad)"/>
-        <line x1="7" y1="19.3" x2="73" y2="19.3" stroke="#FFFFFF" stroke-width="0.9" opacity="0.9"/>
-        <line x1="74" y1="18.8" x2="74" y2="50.5" stroke="#94A3B8" stroke-width="0.9"/>
-        <line x1="58" y1="20" x2="58" y2="50.5" stroke="#CBD5E1" stroke-width="0.6"/>
-        <path d="M 4 38.6 L 107.8 38.6 L 107.8 42.6 L 4 42.6 Z" fill="#E11D48"/>
-        <line x1="4" y1="37.6" x2="107" y2="37.6" stroke="#FBBF24" stroke-width="1.0"/>
-        <path d="M 5.5 39 L 8 42.2 M 9 39 L 11.5 42.2" stroke="#FDE047" stroke-width="1.1" opacity="0.85"/>
-        <rect x="12" y="23.5" width="16.5" height="9.5" rx="1.6" fill="url(#glassGrad)" stroke="#475569" stroke-width="0.7"/>
-        <line x1="14.5" y1="32.2" x2="21.5" y2="24.2" stroke="#94A3B8" stroke-width="0.9" opacity="0.35"/>
-        <circle cx="46" cy="28.8" r="6.4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="0.7"/>
-        <path d="M 44.3 24.6 H 47.7 V 27.1 H 50.2 V 30.5 H 47.7 V 33.0 H 44.3 V 30.5 H 41.8 V 27.1 H 44.3 Z" fill="#DC2626"/>
-        <path d="M 76.2 22.8 L 82.8 22.8 L 91.5 33.5 L 76.2 33.5 Z" fill="url(#glassGrad)" stroke="#334155" stroke-width="0.7"/>
-        <circle cx="81.2" cy="27.2" r="2.1" fill="#0F172A" opacity="0.8"/>
-        <path d="M 78.6 33.2 C 78.8 30.2 83.2 30.2 83.8 33.2 Z" fill="#0F172A" opacity="0.8"/>
-        <line x1="82.5" y1="23.5" x2="88.5" y2="32.8" stroke="#E2E8F0" stroke-width="1.1" opacity="0.35"/>
-        <rect x="90.8" y="31.2" width="2.2" height="3.2" rx="0.6" fill="#334155"/>
-        <rect x="76.5" y="36.0" width="3.2" height="1.1" rx="0.5" fill="#475569"/>
-        <rect x="59.8" y="36.0" width="3.0" height="1.1" rx="0.5" fill="#475569"/>
-        <rect x="104.2" y="39.5" width="3.6" height="3.2" rx="0.8" fill="#FEF9C3"/>
-        <rect x="105.5" y="43.5" width="2.5" height="3.5" rx="0.4" fill="#334155"/>
-        <rect x="3.5" y="40.2" width="2.2" height="4.8" rx="0.5" fill="#EF4444"/>
-        <rect x="102.5" y="47.8" width="7.0" height="3.2" rx="1.2" fill="#334155"/>
-        <rect x="1.8" y="47.8" width="5.2" height="3.2" rx="1.0" fill="#334155"/>
-        <path d="M 14 50.8 A 10 10 0 0 1 34 50.8 Z" fill="#090F18"/>
-        <path d="M 79 50.8 A 10 10 0 0 1 99 50.8 Z" fill="#090F18"/>
-        <path d="M 13.5 50.5 A 10.5 10.5 0 0 1 34.5 50.5" fill="none" stroke="#64748B" stroke-width="1.0"/>
-        <path d="M 78.5 50.5 A 10.5 10.5 0 0 1 99.5 50.5" fill="none" stroke="#64748B" stroke-width="1.0"/>
-        <rect x="73.2" y="15.5" width="12.5" height="3.2" rx="1.3" fill="#1E293B" stroke="#475569" stroke-width="0.5"/>
-        <rect x="73.8" y="15.8" width="5.4" height="2.6" rx="0.9" fill="#1D4ED8"/>
-        <rect class="strobe-blue" x="73.8" y="15.8" width="5.4" height="2.6" rx="0.9" fill="#60A5FA"/>
-        <rect x="79.8" y="15.8" width="5.4" height="2.6" rx="0.9" fill="#B91C1C"/>
-        <rect class="strobe-red" x="79.8" y="15.8" width="5.4" height="2.6" rx="0.9" fill="#FF5C5C"/>
-        <rect x="6" y="16" width="4.8" height="2.6" rx="0.8" fill="#1E3A8A"/>
-        <rect class="strobe-blue" x="6" y="16" width="4.8" height="2.6" rx="0.8" fill="#60A5FA"/>
-        <rect class="strobe-red" x="106.2" y="44.2" width="2.2" height="1.8" rx="0.5" fill="#FF4D4D"/>
-      </g>
-      <g transform="translate(24, 49.5)">
-        <g class="amb-wheel-spin">
-          <circle cx="0" cy="0" r="8.2" fill="#0F172A" stroke="#1E293B" stroke-width="0.8"/>
-          <circle cx="0" cy="0" r="5.0" fill="#334155" stroke="#CBD5E1" stroke-width="1.1"/>
-          <g stroke="#E2E8F0" stroke-width="1.1" stroke-linecap="round">
-            <line x1="0" y1="-4.4" x2="0" y2="0"/>
-            <line x1="4.2" y1="-1.4" x2="0" y2="0"/>
-            <line x1="2.6" y1="3.6" x2="0" y2="0"/>
-            <line x1="-2.6" y1="3.6" x2="0" y2="0"/>
-            <line x1="-4.2" y1="-1.4" x2="0" y2="0"/>
-          </g>
-          <circle cx="0" cy="0" r="1.5" fill="#1E293B" stroke="#94A3B8" stroke-width="0.6"/>
+      <g transform="translate(0, 47) scale(0.80) translate(0, -58)">
+        <ellipse cx="56" cy="58.4" rx="56" ry="2.5" fill="url(#softShadow)" />
+        <ellipse class="strobe-red" cx="84" cy="58.5" rx="22" ry="2.0" fill="#EF4444" opacity="0.25" />
+        <ellipse class="strobe-blue" cx="26" cy="58.5" rx="22" ry="2.0" fill="#3B82F6" opacity="0.25" />
+
+        <polygon points="107,40.5 164,31 164,58 107,48.5" fill="url(#headlightGrad)" />
+
+        <g class="amb-suspension">
+          <!-- Pulsating Volumetric Roof Halos -->
+          <circle class="strobe-red" cx="83" cy="17" r="22" fill="url(#redHalo)" />
+          <circle class="strobe-blue" cx="76" cy="17" r="22" fill="url(#blueHalo)" />
+          <circle class="strobe-blue" cx="8.5" cy="17.5" r="15" fill="url(#blueHalo)" />
+
+          <!-- Main Patient Compartment & Cab with crisp border for light/dark transparency -->
+          <path d="M 4 50.5
+                   L 4 21.5 C 4 19.6 5.5 18.5 7.5 18.5
+                   L 74 18.5 L 74 20.5 L 79.5 20.5
+                   C 82 20.5 84.5 22 87 25.5
+                   L 93.8 33.8 L 105.5 36.2
+                   C 107.2 36.6 108 38 108 40
+                   L 108 48.5 L 105.5 50.5 Z"
+                fill="url(#ambBodyGrad)" stroke="#64748B" stroke-width="0.9" stroke-linejoin="round" />
+
+          <line x1="7" y1="19.5" x2="73" y2="19.5" stroke="#FFFFFF" stroke-width="0.9" opacity="0.9" />
+          <line x1="74" y1="18.8" x2="74" y2="50.5" stroke="#94A3B8" stroke-width="0.9" />
+          <line x1="58" y1="20" x2="58" y2="50.5" stroke="#CBD5E1" stroke-width="0.6" />
+
+          <path d="M 4.4 38.6 L 107.6 38.6 L 107.6 42.6 L 4.4 42.6 Z" fill="#E11D48" />
+          <line x1="4.4" y1="37.6" x2="106.8" y2="37.6" stroke="#FBBF24" stroke-width="1.0" />
+          <path d="M 5.5 39 L 8 42.2 M 9 39 L 11.5 42.2" stroke="#FDE047" stroke-width="1.1" opacity="0.85" />
+
+          <rect x="12" y="23.5" width="16.5" height="9.5" rx="1.6" fill="url(#glassGrad)" stroke="#475569" stroke-width="0.7" />
+          <line x1="14.5" y1="32.2" x2="21.5" y2="24.2" stroke="#94A3B8" stroke-width="0.9" opacity="0.35" />
+
+          <circle cx="46" cy="28.8" r="6.4" fill="#FFFFFF" stroke="#94A3B8" stroke-width="0.7" />
+          <path d="M 44.3 24.6 H 47.7 V 27.1 H 50.2 V 30.5 H 47.7 V 33.0 H 44.3 V 30.5 H 41.8 V 27.1 H 44.3 Z" fill="#DC2626" />
+
+          <path d="M 76.2 22.8 L 82.8 22.8 L 91.5 33.5 L 76.2 33.5 Z" fill="url(#glassGrad)" stroke="#334155" stroke-width="0.7" />
+          <circle cx="81.2" cy="27.2" r="2.1" fill="#0F172A" opacity="0.85" />
+          <path d="M 78.6 33.2 C 78.8 30.2 83.2 30.2 83.8 33.2 Z" fill="#0F172A" opacity="0.85" />
+          <line x1="82.5" y1="23.5" x2="88.5" y2="32.8" stroke="#E2E8F0" stroke-width="1.1" opacity="0.35" />
+          <rect x="90.8" y="31.2" width="2.2" height="3.2" rx="0.6" fill="#334155" />
+          <rect x="76.5" y="36.0" width="3.2" height="1.1" rx="0.5" fill="#475569" />
+          <rect x="59.8" y="36.0" width="3.0" height="1.1" rx="0.5" fill="#475569" />
+
+          <rect x="104.2" y="39.5" width="3.6" height="3.2" rx="0.8" fill="#FEF08A" stroke="#CA8A04" stroke-width="0.4" />
+          <rect x="105.5" y="43.5" width="2.5" height="3.5" rx="0.4" fill="#334155" />
+          <rect x="3.5" y="40.2" width="2.2" height="4.8" rx="0.5" fill="#EF4444" />
+          <rect x="102.5" y="47.8" width="7.0" height="3.2" rx="1.2" fill="#334155" />
+          <rect x="1.8" y="47.8" width="5.2" height="3.2" rx="1.0" fill="#334155" />
+
+          <path d="M 14 50.8 A 10 10 0 0 1 34 50.8 Z" fill="#0F172A" />
+          <path d="M 79 50.8 A 10 10 0 0 1 99 50.8 Z" fill="#0F172A" />
+          <path d="M 13.5 50.5 A 10.5 10.5 0 0 1 34.5 50.5" fill="none" stroke="#64748B" stroke-width="1.0" />
+          <path d="M 78.5 50.5 A 10.5 10.5 0 0 1 99.5 50.5" fill="none" stroke="#64748B" stroke-width="1.0" />
+
+          <!-- Roof Lightbar & Beacons -->
+          <rect x="73.2" y="15.5" width="12.5" height="3.2" rx="1.3" fill="#1E293B" stroke="#475569" stroke-width="0.5" />
+          <rect x="73.8" y="15.8" width="5.4" height="2.6" rx="0.9" fill="#1D4ED8" />
+          <rect class="strobe-blue" x="73.8" y="15.8" width="5.4" height="2.6" rx="0.9" fill="#60A5FA" />
+          <rect x="79.8" y="15.8" width="5.4" height="2.6" rx="0.9" fill="#B91C1C" />
+          <rect class="strobe-red" x="79.8" y="15.8" width="5.4" height="2.6" rx="0.9" fill="#FF5C5C" />
+          <rect x="6" y="16" width="4.8" height="2.6" rx="0.8" fill="#1E3A8A" />
+          <rect class="strobe-blue" x="6" y="16" width="4.8" height="2.6" rx="0.8" fill="#60A5FA" />
+          <rect class="strobe-red" x="106.2" y="44.2" width="2.2" height="1.8" rx="0.5" fill="#FF4D4D" />
         </g>
-      </g>
-      <g transform="translate(89, 49.5)">
-        <g class="amb-wheel-spin">
-          <circle cx="0" cy="0" r="8.2" fill="#0F172A" stroke="#1E293B" stroke-width="0.8"/>
-          <circle cx="0" cy="0" r="5.0" fill="#334155" stroke="#CBD5E1" stroke-width="1.1"/>
-          <g stroke="#E2E8F0" stroke-width="1.1" stroke-linecap="round">
-            <line x1="0" y1="-4.4" x2="0" y2="0"/>
-            <line x1="4.2" y1="-1.4" x2="0" y2="0"/>
-            <line x1="2.6" y1="3.6" x2="0" y2="0"/>
-            <line x1="-2.6" y1="3.6" x2="0" y2="0"/>
-            <line x1="-4.2" y1="-1.4" x2="0" y2="0"/>
+
+        <!-- Rear Alloy Wheel -->
+        <g transform="translate(24, 49.5)">
+          <g class="amb-wheel-spin">
+            <circle cx="0" cy="0" r="8.2" fill="#0F172A" stroke="#1E293B" stroke-width="0.8" />
+            <circle cx="0" cy="0" r="5.0" fill="#334155" stroke="#CBD5E1" stroke-width="1.1" />
+            <g stroke="#E2E8F0" stroke-width="1.1" stroke-linecap="round">
+              <line x1="0" y1="-4.4" x2="0" y2="0" />
+              <line x1="4.2" y1="-1.4" x2="0" y2="0" />
+              <line x1="2.6" y1="3.6" x2="0" y2="0" />
+              <line x1="-2.6" y1="3.6" x2="0" y2="0" />
+              <line x1="-4.2" y1="-1.4" x2="0" y2="0" />
+            </g>
+            <circle cx="0" cy="0" r="1.5" fill="#1E293B" stroke="#94A3B8" stroke-width="0.6" />
           </g>
-          <circle cx="0" cy="0" r="1.5" fill="#1E293B" stroke="#94A3B8" stroke-width="0.6"/>
+        </g>
+
+        <!-- Front Alloy Wheel -->
+        <g transform="translate(89, 49.5)">
+          <g class="amb-wheel-spin">
+            <circle cx="0" cy="0" r="8.2" fill="#0F172A" stroke="#1E293B" stroke-width="0.8" />
+            <circle cx="0" cy="0" r="5.0" fill="#334155" stroke="#CBD5E1" stroke-width="1.1" />
+            <g stroke="#E2E8F0" stroke-width="1.1" stroke-linecap="round">
+              <line x1="0" y1="-4.4" x2="0" y2="0" />
+              <line x1="4.2" y1="-1.4" x2="0" y2="0" />
+              <line x1="2.6" y1="3.6" x2="0" y2="0" />
+              <line x1="-2.6" y1="3.6" x2="0" y2="0" />
+              <line x1="-4.2" y1="-1.4" x2="0" y2="0" />
+            </g>
+            <circle cx="0" cy="0" r="1.5" fill="#1E293B" stroke="#94A3B8" stroke-width="0.6" />
+          </g>
         </g>
       </g>
     </g>
+
+    <!-- ============================================================
+         ACT 5: WALKING -> CONVULSION & FALL -> 2-MEDIC STRETCHER RESCUE
+         (84.0s - 119.4s | Native 50px Height Coordinates, Ground y=47)
+         ============================================================ -->
+
+    <!-- PHASE 5A: Person Walks Slowly from LEFT to Center (84.0s - 92.4s) -->
+    <g class="act5-walk">
+      <ellipse cx="0" cy="47.4" rx="8.5" ry="1.6" fill="url(#softShadow)" />
+
+      <!-- Back Arm -->
+      <g class="ped-bob">
+        <g transform="translate(0.5, 19.2)">
+          <g class="ped-arm-back">
+            <path d="M 0 0 L 0.5 5.2 L 1.8 9.6" fill="none" stroke="#223D57" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="2.0" cy="10.0" r="0.95" fill="#D5A68A" />
+          </g>
+        </g>
+      </g>
+
+      <!-- Back Leg (hip at y=29.5, touches y=47) -->
+      <g transform="translate(0, 29.5)">
+        <g class="ped-thigh-back">
+          <path d="M 0 0 L 0 8.3" stroke="#253242" stroke-width="2.7" stroke-linecap="round" />
+          <g transform="translate(0, 8.3)">
+            <g class="ped-knee-back">
+              <path d="M 0 0 L 0 8.1" stroke="#1E293B" stroke-width="2.3" stroke-linecap="round" />
+              <path d="M -0.9 8.1 L 3.0 8.1 C 3.7 8.1 3.8 9.1 2.8 9.1 L -1.2 9.1 Z" fill="#475569" />
+            </g>
+          </g>
+        </g>
+      </g>
+
+      <!-- Front Leg -->
+      <g transform="translate(0, 29.5)">
+        <g class="ped-thigh-front">
+          <path d="M 0 0 L 0 8.3" stroke="#3B4D63" stroke-width="2.8" stroke-linecap="round" />
+          <g transform="translate(0, 8.3)">
+            <g class="ped-knee-front">
+              <path d="M 0 0 L 0 8.1" stroke="#334155" stroke-width="2.4" stroke-linecap="round" />
+              <path d="M -0.9 8.1 L 3.2 8.1 C 3.9 8.1 4.0 9.1 3.0 9.1 L -1.2 9.1 Z" fill="#1E293B" stroke="#64748B" stroke-width="0.3" />
+            </g>
+          </g>
+        </g>
+      </g>
+
+      <!-- Torso, Head & Front Arm -->
+      <g class="ped-bob">
+        <path d="M -2.7 30.0 L -2.3 18.2 C -2.1 17.0 2.4 17.0 2.8 18.4 L 2.5 30.0 Z" fill="url(#pedJacketGrad)" stroke="#1B344D" stroke-width="0.35" />
+        <!-- Crisp shirt collar detail -->
+        <path d="M 1.0 17.4 L 2.2 19.6" stroke="#E2E8F0" stroke-width="0.7" stroke-linecap="round" />
+        <!-- Belt -->
+        <line x1="-2.5" y1="29.4" x2="2.4" y2="29.4" stroke="#0F172A" stroke-width="0.9" />
+        <!-- Neck & Head (facing RIGHT) -->
+        <rect x="-0.8" y="15.5" width="1.9" height="2.4" rx="0.7" fill="#E6B89C" />
+        <g transform="translate(0.6, 13.0)">
+          <circle cx="0" cy="0" r="2.9" fill="#E6B89C" stroke="#8C624C" stroke-width="0.25" />
+          <path d="M 2.6 -0.3 L 3.4 0.4 L 2.6 1.0" fill="#E6B89C" />
+          <path d="M -2.9 0.4 C -3.2 -2.2 -1.0 -3.5 1.7 -2.7 C 2.6 -2.4 2.9 -1.4 2.3 -1.0 C 0.6 -1.4 -0.8 -0.6 -1.5 1.1 Z" fill="#1E2430" />
+        </g>
+        <!-- Front Arm -->
+        <g transform="translate(0, 19.2)">
+          <g class="ped-arm-front">
+            <path d="M 0 0 L 0.5 5.2 L 1.8 9.6" fill="none" stroke="#3F6B96" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="2.0" cy="10.0" r="1.0" fill="#E6B89C" />
+          </g>
+        </g>
+      </g>
     </g>
+
+    <!-- PHASE 5B: Mid-Frame Convulsion & Collapse onto Ground (92.4s - 103.8s) -->
+    <g class="act5-collapse">
+      <ellipse class="col-shadow" cx="195" cy="47.4" rx="16" ry="1.8" fill="url(#softShadow)" />
+
+      <!-- Root anchored at hip (starts upright at 195, 29.5 -> falls supine onto ground) -->
+      <g class="col-root">
+        <!-- Back Leg -->
+        <g class="col-thigh-b">
+          <path d="M 0 0 L 0 8.3" stroke="#253242" stroke-width="2.7" stroke-linecap="round" />
+          <g transform="translate(0, 8.3)">
+            <g class="col-knee-b">
+              <path d="M 0 0 L 0 8.1" stroke="#1E293B" stroke-width="2.3" stroke-linecap="round" />
+              <path d="M -0.9 8.1 L 3.0 8.1 C 3.7 8.1 3.8 9.1 2.8 9.1 L -1.2 9.1 Z" fill="#475569" />
+            </g>
+          </g>
+        </g>
+
+        <!-- Upper Body Pivot at Hip (0,0) -->
+        <g class="col-torso">
+          <!-- Back Arm -->
+          <g transform="translate(0.5, -10.3)">
+            <g class="col-arm-b">
+              <path d="M 0 0 L 1.2 5.0 L 4.5 7.4" fill="none" stroke="#223D57" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="4.8" cy="7.5" r="0.95" fill="#D5A68A" />
+            </g>
+          </g>
+
+          <!-- Jacket Torso -->
+          <path d="M -2.7 0.5 L -2.3 -11.3 C -2.1 -12.5 2.4 -12.5 2.8 -11.1 L 2.5 0.5 Z" fill="url(#pedJacketGrad)" stroke="#1B344D" stroke-width="0.35" />
+          <path d="M 1.0 -12.1 L 2.2 -9.9" stroke="#E2E8F0" stroke-width="0.7" stroke-linecap="round" />
+          <line x1="-2.5" y1="-0.1" x2="2.4" y2="-0.1" stroke="#0F172A" stroke-width="0.9" />
+
+          <!-- Neck & Convulsing Head -->
+          <g transform="translate(0.2, -12.2)">
+            <g class="col-head">
+              <rect x="-1.0" y="-2.1" width="1.9" height="2.4" rx="0.7" fill="#E6B89C" />
+              <g transform="translate(0.4, -4.4)">
+                <circle cx="0" cy="0" r="2.9" fill="#E6B89C" stroke="#8C624C" stroke-width="0.25" />
+                <path d="M 2.6 -0.3 L 3.4 0.4 L 2.6 1.0" fill="#E6B89C" />
+                <path d="M -2.9 0.4 C -3.2 -2.2 -1.0 -3.5 1.7 -2.7 C 2.6 -2.4 2.9 -1.4 2.3 -1.0 C 0.6 -1.4 -0.8 -0.6 -1.5 1.1 Z" fill="#1E2430" />
+              </g>
+            </g>
+          </g>
+
+          <!-- Front Arm -->
+          <g transform="translate(0, -10.3)">
+            <g class="col-arm-f">
+              <path d="M 0 0 L 1.6 4.8 L 5.2 6.8" fill="none" stroke="#3F6B96" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="5.5" cy="7.0" r="1.0" fill="#E6B89C" />
+            </g>
+          </g>
+        </g>
+
+        <!-- Front Leg -->
+        <g class="col-thigh-f">
+          <path d="M 0 0 L 0 8.3" stroke="#3B4D63" stroke-width="2.8" stroke-linecap="round" />
+          <g transform="translate(0, 8.3)">
+            <g class="col-knee-f">
+              <path d="M 0 0 L 0 8.1" stroke="#334155" stroke-width="2.4" stroke-linecap="round" />
+              <path d="M -0.9 8.1 L 3.2 8.1 C 3.9 8.1 4.0 9.1 3.0 9.1 L -1.2 9.1 Z" fill="#1E293B" stroke="#64748B" stroke-width="0.3" />
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
+
+    <!-- PHASE 5C: Two Medics Carrying Empty Stretcher Enter from RIGHT (96.6s - 103.8s) -->
+    <g class="act5-medics-in">
+      <ellipse cx="-24" cy="47.4" rx="8.5" ry="1.5" fill="url(#softShadow)" />
+      <ellipse cx="24" cy="47.4" rx="8.5" ry="1.5" fill="url(#softShadow)" />
+
+      <!-- FRONT MEDIC (Left side, x=-24, facing LEFT) -->
+      <g transform="translate(-24, 0)">
+        <!-- Back Leg -->
+        <g transform="translate(0, 29.5)">
+          <g class="med-thigh-ba">
+            <path d="M 0 0 L 0 8.3" stroke="#162233" stroke-width="2.7" stroke-linecap="round" />
+            <g transform="translate(0, 8.3)">
+              <g class="med-knee-ba">
+                <path d="M 0 0 L 0 8.1" stroke="#0F172A" stroke-width="2.3" stroke-linecap="round" />
+                <path d="M 1.0 8.1 L -3.1 8.1 C -3.8 8.1 -3.9 9.1 -2.9 9.1 L 1.2 9.1 Z" fill="#334155" />
+              </g>
+            </g>
+          </g>
+        </g>
+        <!-- Front Leg -->
+        <g transform="translate(0, 29.5)">
+          <g class="med-thigh-fa">
+            <path d="M 0 0 L 0 8.3" stroke="#24354C" stroke-width="2.8" stroke-linecap="round" />
+            <g transform="translate(0, 8.3)">
+              <g class="med-knee-fa">
+                <path d="M 0 0 L 0 8.1" stroke="#1E293B" stroke-width="2.4" stroke-linecap="round" />
+                <path d="M 1.0 8.1 L -3.3 8.1 C -4.0 8.1 -4.1 9.1 -3.1 9.1 L 1.2 9.1 Z" fill="#0F172A" stroke="#475569" stroke-width="0.3" />
+              </g>
+            </g>
+          </g>
+        </g>
+        <!-- Torso & Head -->
+        <g class="med-bob-a">
+          <path d="M -2.7 30.0 L -2.9 18.4 C -2.5 17.0 2.0 17.0 2.5 18.4 L 2.7 30.0 Z" fill="url(#emsUniformGrad)" stroke="#0F1D30" stroke-width="0.35" />
+          <!-- High-Vis Reflective EMS Stripes -->
+          <line x1="-2.7" y1="24.5" x2="2.6" y2="24.5" stroke="#FBBF24" stroke-width="1.0" />
+          <line x1="-2.7" y1="26.0" x2="2.6" y2="26.0" stroke="#E2E8F0" stroke-width="0.55" />
+          <rect x="-1.1" y="15.5" width="1.9" height="2.4" rx="0.7" fill="#E6B89C" />
+          <g transform="translate(-0.6, 13.0)">
+            <circle cx="0" cy="0" r="2.9" fill="#E6B89C" stroke="#8C624C" stroke-width="0.25" />
+            <path d="M -2.6 -0.3 L -3.4 0.4 L -2.6 1.0" fill="#E6B89C" />
+            <!-- Paramedic Cap (facing left) -->
+            <path d="M -3.0 -1.2 C -2.6 -3.5 1.5 -3.6 2.9 -1.2 Z" fill="#1E3A5F" />
+            <line x1="-4.2" y1="-1.1" x2="-1.2" y2="-1.1" stroke="#0F172A" stroke-width="0.9" stroke-linecap="round" />
+          </g>
+          <!-- Arm reaching slightly back to grip front stretcher handle -->
+          <path d="M 0.2 19.2 L 1.8 26.2 L 4.5 32.8" fill="none" stroke="#1E3F63" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />
+          <line x1="2.2" y1="27.2" x2="3.4" y2="29.6" stroke="#FBBF24" stroke-width="0.9" />
+          <circle cx="4.8" cy="33.1" r="1.15" fill="#38BDF8" stroke="#0369A1" stroke-width="0.3" />
+        </g>
+      </g>
+
+      <!-- EMPTY ALUMINUM RESCUE STRETCHER (spanning x=-19 to +19 at y=33.2) -->
+      <g class="stretcher-sway">
+        <!-- Folded undercarriage struts & small transport wheels -->
+        <path d="M -13 34.4 L -10 37.6 L 10 37.6 L 13 34.4" fill="none" stroke="#64748B" stroke-width="1.0" stroke-linejoin="round" />
+        <circle cx="-10" cy="38.2" r="1.2" fill="#1E293B" stroke="#94A3B8" stroke-width="0.4" />
+        <circle cx="10" cy="38.2" r="1.2" fill="#1E293B" stroke="#94A3B8" stroke-width="0.4" />
+        <!-- Stretcher bed canvas -->
+        <rect x="-17.5" y="31.5" width="35" height="2.4" rx="0.9" fill="url(#stretcherBedGrad)" stroke="#881337" stroke-width="0.4" />
+        <!-- Tubular aluminum side rail & front/rear ergonomic handles -->
+        <line x1="-20.5" y1="33.2" x2="20.5" y2="33.2" stroke="#CBD5E1" stroke-width="1.6" stroke-linecap="round" />
+        <line x1="-20.5" y1="33.2" x2="-17.5" y2="33.2" stroke="#1E293B" stroke-width="2.0" stroke-linecap="round" />
+        <line x1="17.5" y1="33.2" x2="20.5" y2="33.2" stroke="#1E293B" stroke-width="2.0" stroke-linecap="round" />
+      </g>
+
+      <!-- REAR MEDIC (Right side, x=+24, facing LEFT) -->
+      <g transform="translate(24, 0)">
+        <g transform="translate(0, 29.5)">
+          <g class="med-thigh-bb">
+            <path d="M 0 0 L 0 8.3" stroke="#162233" stroke-width="2.7" stroke-linecap="round" />
+            <g transform="translate(0, 8.3)">
+              <g class="med-knee-bb">
+                <path d="M 0 0 L 0 8.1" stroke="#0F172A" stroke-width="2.3" stroke-linecap="round" />
+                <path d="M 1.0 8.1 L -3.1 8.1 C -3.8 8.1 -3.9 9.1 -2.9 9.1 L 1.2 9.1 Z" fill="#334155" />
+              </g>
+            </g>
+          </g>
+        </g>
+        <g transform="translate(0, 29.5)">
+          <g class="med-thigh-fb">
+            <path d="M 0 0 L 0 8.3" stroke="#24354C" stroke-width="2.8" stroke-linecap="round" />
+            <g transform="translate(0, 8.3)">
+              <g class="med-knee-fb">
+                <path d="M 0 0 L 0 8.1" stroke="#1E293B" stroke-width="2.4" stroke-linecap="round" />
+                <path d="M 1.0 8.1 L -3.3 8.1 C -4.0 8.1 -4.1 9.1 -3.1 9.1 L 1.2 9.1 Z" fill="#0F172A" stroke="#475569" stroke-width="0.3" />
+              </g>
+            </g>
+          </g>
+        </g>
+        <g class="med-bob-b">
+          <path d="M -2.7 30.0 L -2.9 18.4 C -2.5 17.0 2.0 17.0 2.5 18.4 L 2.7 30.0 Z" fill="url(#emsUniformGrad)" stroke="#0F1D30" stroke-width="0.35" />
+          <line x1="-2.7" y1="24.5" x2="2.6" y2="24.5" stroke="#FBBF24" stroke-width="1.0" />
+          <line x1="-2.7" y1="26.0" x2="2.6" y2="26.0" stroke="#E2E8F0" stroke-width="0.55" />
+          <rect x="-1.1" y="15.5" width="1.9" height="2.4" rx="0.7" fill="#D5A68A" />
+          <g transform="translate(-0.6, 13.0)">
+            <circle cx="0" cy="0" r="2.9" fill="#D5A68A" stroke="#7A523D" stroke-width="0.25" />
+            <path d="M -2.6 -0.3 L -3.4 0.4 L -2.6 1.0" fill="#D5A68A" />
+            <path d="M 2.9 0.4 C 3.2 -2.2 1.0 -3.5 -1.7 -2.7 C -2.6 -2.4 -2.9 -1.4 -2.3 -1.0 C -0.6 -1.4 0.8 -0.6 1.5 1.1 Z" fill="#1C1917" />
+          </g>
+          <!-- Arm reaching slightly forward to grip rear stretcher handle -->
+          <path d="M -0.4 19.2 L -2.2 26.2 L -4.8 32.8" fill="none" stroke="#1E3F63" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />
+          <line x1="-2.6" y1="27.2" x2="-3.8" y2="29.6" stroke="#FBBF24" stroke-width="0.9" />
+          <circle cx="-5.0" cy="33.1" r="1.15" fill="#38BDF8" stroke="#0369A1" stroke-width="0.3" />
+        </g>
+      </g>
+    </g>
+
+    <!-- PHASE 5D: Stop at Center, Crouch, Place Patient on Stretcher, Stand Up (103.8s - 110.4s) -->
+    <g class="act5-transfer" transform="translate(195, 0)">
+      <ellipse cx="0" cy="47.4" rx="34" ry="1.8" fill="url(#softShadow)" />
+
+      <!-- STRETCHER LOWERING TO GROUND & RISING BACK TO CARRY HEIGHT -->
+      <g class="xfer-stretcher">
+        <path d="M -13 34.4 L -10 37.6 L 10 37.6 L 13 34.4" fill="none" stroke="#64748B" stroke-width="1.0" stroke-linejoin="round" />
+        <circle cx="-10" cy="38.2" r="1.2" fill="#1E293B" stroke="#94A3B8" stroke-width="0.4" />
+        <circle cx="10" cy="38.2" r="1.2" fill="#1E293B" stroke="#94A3B8" stroke-width="0.4" />
+        <rect x="-17.5" y="31.5" width="35" height="2.4" rx="0.9" fill="url(#stretcherBedGrad)" stroke="#881337" stroke-width="0.4" />
+        <!-- Small headrest pad -->
+        <rect x="-17.2" y="30.2" width="4.8" height="1.5" rx="0.6" fill="#E2E8F0" stroke="#94A3B8" stroke-width="0.3" />
+        <line x1="-20.5" y1="33.2" x2="20.5" y2="33.2" stroke="#CBD5E1" stroke-width="1.6" stroke-linecap="round" />
+        <line x1="-20.5" y1="33.2" x2="-17.5" y2="33.2" stroke="#1E293B" stroke-width="2.0" stroke-linecap="round" />
+        <line x1="17.5" y1="33.2" x2="20.5" y2="33.2" stroke="#1E293B" stroke-width="2.0" stroke-linecap="round" />
+      </g>
+
+      <!-- PATIENT LIFTED FROM GROUND ONTO STRETCHER & CARRIED UP -->
+      <g class="xfer-patient">
+        <g transform="translate(3, 33.4) rotate(-88.5)">
+          <!-- Legs -->
+          <path d="M 0 0 L -0.4 8.3 L -0.2 16.4" fill="none" stroke="#334155" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M -0.8 16.4 L 3.0 16.4 C 3.7 16.4 3.8 17.4 2.8 17.4 L -1.1 17.4 Z" fill="#1E293B" />
+          <!-- Jacket Torso -->
+          <path d="M -2.7 0.5 L -2.3 -11.3 C -2.1 -12.5 2.4 -12.5 2.8 -11.1 L 2.5 0.5 Z" fill="url(#pedJacketGrad)" stroke="#1B344D" stroke-width="0.35" />
+          <line x1="-2.5" y1="-0.1" x2="2.4" y2="-0.1" stroke="#0F172A" stroke-width="0.9" />
+          <!-- Resting Arm across chest -->
+          <path d="M 0 -10.0 L 2.2 -5.8 L 1.6 -1.8" fill="none" stroke="#3F6B96" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="1.6" cy="-1.4" r="0.95" fill="#E6B89C" />
+          <!-- Head -->
+          <rect x="-0.8" y="-14.3" width="1.9" height="2.4" rx="0.7" fill="#E6B89C" />
+          <g transform="translate(0.5, -16.6)">
+            <circle cx="0" cy="0" r="2.9" fill="#E6B89C" stroke="#8C624C" stroke-width="0.25" />
+            <path d="M 2.6 -0.3 L 3.4 0.4 L 2.6 1.0" fill="#E6B89C" />
+            <path d="M -2.9 0.4 C -3.2 -2.2 -1.0 -3.5 1.7 -2.7 C 2.6 -2.4 2.9 -1.4 2.3 -1.0 C 0.6 -1.4 -0.8 -0.6 -1.5 1.1 Z" fill="#1E2430" />
+          </g>
+        </g>
+        <!-- Rescue safety strap cinched over patient once placed -->
+        <g class="xfer-strap">
+          <rect x="-4.5" y="29.5" width="1.6" height="5.2" rx="0.4" fill="#FBBF24" stroke="#92400E" stroke-width="0.3" />
+          <rect x="4.5" y="30.2" width="1.5" height="4.5" rx="0.4" fill="#FBBF24" stroke="#92400E" stroke-width="0.3" />
+        </g>
+      </g>
+
+      <!-- LEFT MEDIC (x=-24, facing RIGHT toward patient during transfer) -->
+      <g transform="translate(-24, 0)">
+        <!-- Back Leg -->
+        <g transform="translate(-1.5, 29.5)">
+          <g class="xfer-m1-thigh">
+            <path d="M 0 0 L 0 8.3" stroke="#162233" stroke-width="2.6" stroke-linecap="round" />
+            <g transform="translate(0, 8.3)">
+              <g class="xfer-m1-knee">
+                <path d="M 0 0 L 0 8.1" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round" />
+                <path d="M -1.0 8.1 L 3.1 8.1 C 3.8 8.1 3.9 9.1 2.9 9.1 L -1.2 9.1 Z" fill="#334155" />
+              </g>
+            </g>
+          </g>
+        </g>
+        <!-- Front Leg -->
+        <g transform="translate(0.5, 29.5)">
+          <g class="xfer-m1-thigh">
+            <path d="M 0 0 L 0 8.3" stroke="#24354C" stroke-width="2.8" stroke-linecap="round" />
+            <g transform="translate(0, 8.3)">
+              <g class="xfer-m1-knee">
+                <path d="M 0 0 L 0 8.1" stroke="#1E293B" stroke-width="2.4" stroke-linecap="round" />
+                <path d="M -1.0 8.1 L 3.3 8.1 C 4.0 8.1 4.1 9.1 3.1 9.1 L -1.2 9.1 Z" fill="#0F172A" stroke="#475569" stroke-width="0.3" />
+              </g>
+            </g>
+          </g>
+        </g>
+        <!-- Upper Body Squatting & Lifting (pivoted cleanly at hip y=29.5) -->
+        <g transform="translate(0, 29.5)">
+          <g class="xfer-m1-upper">
+            <path d="M -2.7 0.5 L -2.5 -11.1 C -2.0 -12.5 2.5 -12.5 2.9 -11.1 L 2.7 0.5 Z" fill="url(#emsUniformGrad)" stroke="#0F1D30" stroke-width="0.35" />
+            <line x1="-2.6" y1="-5.0" x2="2.7" y2="-5.0" stroke="#FBBF24" stroke-width="1.0" />
+            <line x1="-2.6" y1="-3.5" x2="2.7" y2="-3.5" stroke="#E2E8F0" stroke-width="0.55" />
+            <rect x="-0.8" y="-14.0" width="1.9" height="2.4" rx="0.7" fill="#E6B89C" />
+            <g transform="translate(0.6, -16.5)">
+              <circle cx="0" cy="0" r="2.9" fill="#E6B89C" stroke="#8C624C" stroke-width="0.25" />
+              <path d="M 2.6 -0.3 L 3.4 0.4 L 2.6 1.0" fill="#E6B89C" />
+              <path d="M 3.0 -1.2 C 2.6 -3.5 -1.5 -3.6 -2.9 -1.2 Z" fill="#1E3A5F" />
+              <line x1="1.2" y1="-1.1" x2="4.2" y2="-1.1" stroke="#0F172A" stroke-width="0.9" stroke-linecap="round" />
+            </g>
+            <g transform="translate(0.6, -10.1)">
+              <g class="xfer-m1-arm">
+                <path d="M 0 0 L 2.8 6.8 L 4.6 13.4" fill="none" stroke="#1E3F63" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />
+                <line x1="2.9" y1="7.8" x2="3.8" y2="10.2" stroke="#FBBF24" stroke-width="0.9" />
+                <circle cx="4.8" cy="13.7" r="1.15" fill="#38BDF8" stroke="#0369A1" stroke-width="0.3" />
+              </g>
+            </g>
+          </g>
+        </g>
+      </g>
+
+      <!-- RIGHT MEDIC (x=+24, facing LEFT toward patient during transfer) -->
+      <g transform="translate(24, 0)">
+        <g transform="translate(1.5, 29.5)">
+          <g class="xfer-m2-thigh">
+            <path d="M 0 0 L 0 8.3" stroke="#162233" stroke-width="2.6" stroke-linecap="round" />
+            <g transform="translate(0, 8.3)">
+              <g class="xfer-m2-knee">
+                <path d="M 0 0 L 0 8.1" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round" />
+                <path d="M 1.0 8.1 L -3.1 8.1 C -3.8 8.1 -3.9 9.1 -2.9 9.1 L 1.2 9.1 Z" fill="#334155" />
+              </g>
+            </g>
+          </g>
+        </g>
+        <g transform="translate(-0.5, 29.5)">
+          <g class="xfer-m2-thigh">
+            <path d="M 0 0 L 0 8.3" stroke="#24354C" stroke-width="2.8" stroke-linecap="round" />
+            <g transform="translate(0, 8.3)">
+              <g class="xfer-m2-knee">
+                <path d="M 0 0 L 0 8.1" stroke="#1E293B" stroke-width="2.4" stroke-linecap="round" />
+                <path d="M 1.0 8.1 L -3.3 8.1 C -4.0 8.1 -4.1 9.1 -3.1 9.1 L 1.2 9.1 Z" fill="#0F172A" stroke="#475569" stroke-width="0.3" />
+              </g>
+            </g>
+          </g>
+        </g>
+        <g transform="translate(0, 29.5)">
+          <g class="xfer-m2-upper">
+            <path d="M -2.7 0.5 L -2.9 -11.1 C -2.5 -12.5 2.0 -12.5 2.5 -11.1 L 2.7 0.5 Z" fill="url(#emsUniformGrad)" stroke="#0F1D30" stroke-width="0.35" />
+            <line x1="-2.7" y1="-5.0" x2="2.6" y2="-5.0" stroke="#FBBF24" stroke-width="1.0" />
+            <line x1="-2.7" y1="-3.5" x2="2.6" y2="-3.5" stroke="#E2E8F0" stroke-width="0.55" />
+            <rect x="-1.1" y="-14.0" width="1.9" height="2.4" rx="0.7" fill="#D5A68A" />
+            <g transform="translate(-0.6, -16.5)">
+              <circle cx="0" cy="0" r="2.9" fill="#D5A68A" stroke="#7A523D" stroke-width="0.25" />
+              <path d="M -2.6 -0.3 L -3.4 0.4 L -2.6 1.0" fill="#D5A68A" />
+              <path d="M 2.9 0.4 C 3.2 -2.2 1.0 -3.5 -1.7 -2.7 C -2.6 -2.4 -2.9 -1.4 -2.3 -1.0 C -0.6 -1.4 0.8 -0.6 1.5 1.1 Z" fill="#1C1917" />
+            </g>
+            <g transform="translate(-0.6, -10.1)">
+              <g class="xfer-m2-arm">
+                <path d="M 0 0 L -2.8 6.8 L -4.6 13.4" fill="none" stroke="#1E3F63" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />
+                <line x1="-2.9" y1="7.8" x2="-3.8" y2="10.2" stroke="#FBBF24" stroke-width="0.9" />
+                <circle cx="-4.8" cy="13.7" r="1.15" fill="#38BDF8" stroke="#0369A1" stroke-width="0.3" />
+              </g>
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
+
+    <!-- PHASE 5E: Medics Carry Patient Away on Stretcher Toward LEFT (110.4s - 119.4s) -->
+    <g class="act5-carry-out">
+      <ellipse cx="-24" cy="47.4" rx="8.5" ry="1.5" fill="url(#softShadow)" />
+      <ellipse cx="24" cy="47.4" rx="8.5" ry="1.5" fill="url(#softShadow)" />
+
+      <!-- FRONT MEDIC (x=-24, facing LEFT) -->
+      <g transform="translate(-24, 0)">
+        <g transform="translate(0, 29.5)">
+          <g class="med-thigh-ba">
+            <path d="M 0 0 L 0 8.3" stroke="#162233" stroke-width="2.7" stroke-linecap="round" />
+            <g transform="translate(0, 8.3)">
+              <g class="med-knee-ba">
+                <path d="M 0 0 L 0 8.1" stroke="#0F172A" stroke-width="2.3" stroke-linecap="round" />
+                <path d="M 1.0 8.1 L -3.1 8.1 C -3.8 8.1 -3.9 9.1 -2.9 9.1 L 1.2 9.1 Z" fill="#334155" />
+              </g>
+            </g>
+          </g>
+        </g>
+        <g transform="translate(0, 29.5)">
+          <g class="med-thigh-fa">
+            <path d="M 0 0 L 0 8.3" stroke="#24354C" stroke-width="2.8" stroke-linecap="round" />
+            <g transform="translate(0, 8.3)">
+              <g class="med-knee-fa">
+                <path d="M 0 0 L 0 8.1" stroke="#1E293B" stroke-width="2.4" stroke-linecap="round" />
+                <path d="M 1.0 8.1 L -3.3 8.1 C -4.0 8.1 -4.1 9.1 -3.1 9.1 L 1.2 9.1 Z" fill="#0F172A" stroke="#475569" stroke-width="0.3" />
+              </g>
+            </g>
+          </g>
+        </g>
+        <g class="med-bob-a">
+          <path d="M -2.7 30.0 L -2.9 18.4 C -2.5 17.0 2.0 17.0 2.5 18.4 L 2.7 30.0 Z" fill="url(#emsUniformGrad)" stroke="#0F1D30" stroke-width="0.35" />
+          <line x1="-2.7" y1="24.5" x2="2.6" y2="24.5" stroke="#FBBF24" stroke-width="1.0" />
+          <line x1="-2.7" y1="26.0" x2="2.6" y2="26.0" stroke="#E2E8F0" stroke-width="0.55" />
+          <rect x="-1.1" y="15.5" width="1.9" height="2.4" rx="0.7" fill="#E6B89C" />
+          <g transform="translate(-0.6, 13.0)">
+            <circle cx="0" cy="0" r="2.9" fill="#E6B89C" stroke="#8C624C" stroke-width="0.25" />
+            <path d="M -2.6 -0.3 L -3.4 0.4 L -2.6 1.0" fill="#E6B89C" />
+            <path d="M -3.0 -1.2 C -2.6 -3.5 1.5 -3.6 2.9 -1.2 Z" fill="#1E3A5F" />
+            <line x1="-4.2" y1="-1.1" x2="-1.2" y2="-1.1" stroke="#0F172A" stroke-width="0.9" stroke-linecap="round" />
+          </g>
+          <path d="M 0.2 19.2 L 1.8 26.2 L 4.5 32.8" fill="none" stroke="#1E3F63" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />
+          <line x1="2.2" y1="27.2" x2="3.4" y2="29.6" stroke="#FBBF24" stroke-width="0.9" />
+          <circle cx="4.8" cy="33.1" r="1.15" fill="#38BDF8" stroke="#0369A1" stroke-width="0.3" />
+        </g>
+      </g>
+
+      <!-- LOADED STRETCHER WITH PATIENT SECURED ON TOP -->
+      <g class="stretcher-sway">
+        <!-- Stretcher Frame & Wheels -->
+        <path d="M -13 34.4 L -10 37.6 L 10 37.6 L 13 34.4" fill="none" stroke="#64748B" stroke-width="1.0" stroke-linejoin="round" />
+        <circle cx="-10" cy="38.2" r="1.2" fill="#1E293B" stroke="#94A3B8" stroke-width="0.4" />
+        <circle cx="10" cy="38.2" r="1.2" fill="#1E293B" stroke="#94A3B8" stroke-width="0.4" />
+        <rect x="-17.5" y="31.5" width="35" height="2.4" rx="0.9" fill="url(#stretcherBedGrad)" stroke="#881337" stroke-width="0.4" />
+        <rect x="-17.2" y="30.2" width="4.8" height="1.5" rx="0.6" fill="#E2E8F0" stroke="#94A3B8" stroke-width="0.3" />
+        <line x1="-20.5" y1="33.2" x2="20.5" y2="33.2" stroke="#CBD5E1" stroke-width="1.6" stroke-linecap="round" />
+        <line x1="-20.5" y1="33.2" x2="-17.5" y2="33.2" stroke="#1E293B" stroke-width="2.0" stroke-linecap="round" />
+        <line x1="17.5" y1="33.2" x2="20.5" y2="33.2" stroke="#1E293B" stroke-width="2.0" stroke-linecap="round" />
+
+        <!-- Patient Resting Securely on Stretcher -->
+        <g transform="translate(1, 31.8) rotate(-88.5)">
+          <path d="M 0 0 L -0.4 8.3 L -0.2 16.4" fill="none" stroke="#334155" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M -0.8 16.4 L 3.0 16.4 C 3.7 16.4 3.8 17.4 2.8 17.4 L -1.1 17.4 Z" fill="#1E293B" />
+          <path d="M -2.7 0.5 L -2.3 -11.3 C -2.1 -12.5 2.4 -12.5 2.8 -11.1 L 2.5 0.5 Z" fill="url(#pedJacketGrad)" stroke="#1B344D" stroke-width="0.35" />
+          <line x1="-2.5" y1="-0.1" x2="2.4" y2="-0.1" stroke="#0F172A" stroke-width="0.9" />
+          <path d="M 0 -10.0 L 2.2 -5.8 L 1.6 -1.8" fill="none" stroke="#3F6B96" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="1.6" cy="-1.4" r="0.95" fill="#E6B89C" />
+          <rect x="-0.8" y="-14.3" width="1.9" height="2.4" rx="0.7" fill="#E6B89C" />
+          <g transform="translate(0.5, -16.6)">
+            <circle cx="0" cy="0" r="2.9" fill="#E6B89C" stroke="#8C624C" stroke-width="0.25" />
+            <path d="M 2.6 -0.3 L 3.4 0.4 L 2.6 1.0" fill="#E6B89C" />
+            <path d="M -2.9 0.4 C -3.2 -2.2 -1.0 -3.5 1.7 -2.7 C 2.6 -2.4 2.9 -1.4 2.3 -1.0 C 0.6 -1.4 -0.8 -0.6 -1.5 1.1 Z" fill="#1E2430" />
+          </g>
+        </g>
+
+        <!-- High-Vis Safety Straps Across Patient -->
+        <rect x="-6.5" y="27.9" width="1.6" height="5.2" rx="0.4" fill="#FBBF24" stroke="#92400E" stroke-width="0.3" />
+        <rect x="2.5" y="28.6" width="1.5" height="4.5" rx="0.4" fill="#FBBF24" stroke="#92400E" stroke-width="0.3" />
+      </g>
+
+      <!-- REAR MEDIC (x=+24, facing LEFT) -->
+      <g transform="translate(24, 0)">
+        <g transform="translate(0, 29.5)">
+          <g class="med-thigh-bb">
+            <path d="M 0 0 L 0 8.3" stroke="#162233" stroke-width="2.7" stroke-linecap="round" />
+            <g transform="translate(0, 8.3)">
+              <g class="med-knee-bb">
+                <path d="M 0 0 L 0 8.1" stroke="#0F172A" stroke-width="2.3" stroke-linecap="round" />
+                <path d="M 1.0 8.1 L -3.1 8.1 C -3.8 8.1 -3.9 9.1 -2.9 9.1 L 1.2 9.1 Z" fill="#334155" />
+              </g>
+            </g>
+          </g>
+        </g>
+        <g transform="translate(0, 29.5)">
+          <g class="med-thigh-fb">
+            <path d="M 0 0 L 0 8.3" stroke="#24354C" stroke-width="2.8" stroke-linecap="round" />
+            <g transform="translate(0, 8.3)">
+              <g class="med-knee-fb">
+                <path d="M 0 0 L 0 8.1" stroke="#1E293B" stroke-width="2.4" stroke-linecap="round" />
+                <path d="M 1.0 8.1 L -3.3 8.1 C -4.0 8.1 -4.1 9.1 -3.1 9.1 L 1.2 9.1 Z" fill="#0F172A" stroke="#475569" stroke-width="0.3" />
+              </g>
+            </g>
+          </g>
+        </g>
+        <g class="med-bob-b">
+          <path d="M -2.7 30.0 L -2.9 18.4 C -2.5 17.0 2.0 17.0 2.5 18.4 L 2.7 30.0 Z" fill="url(#emsUniformGrad)" stroke="#0F1D30" stroke-width="0.35" />
+          <line x1="-2.7" y1="24.5" x2="2.6" y2="24.5" stroke="#FBBF24" stroke-width="1.0" />
+          <line x1="-2.7" y1="26.0" x2="2.6" y2="26.0" stroke="#E2E8F0" stroke-width="0.55" />
+          <rect x="-1.1" y="15.5" width="1.9" height="2.4" rx="0.7" fill="#D5A68A" />
+          <g transform="translate(-0.6, 13.0)">
+            <circle cx="0" cy="0" r="2.9" fill="#D5A68A" stroke="#7A523D" stroke-width="0.25" />
+            <path d="M -2.6 -0.3 L -3.4 0.4 L -2.6 1.0" fill="#D5A68A" />
+            <path d="M 2.9 0.4 C 3.2 -2.2 1.0 -3.5 -1.7 -2.7 C -2.6 -2.4 -2.9 -1.4 -2.3 -1.0 C -0.6 -1.4 0.8 -0.6 1.5 1.1 Z" fill="#1C1917" />
+          </g>
+          <path d="M -0.4 19.2 L -2.2 26.2 L -4.8 32.8" fill="none" stroke="#1E3F63" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />
+          <line x1="-2.6" y1="27.2" x2="-3.8" y2="29.6" stroke="#FBBF24" stroke-width="0.9" />
+          <circle cx="-5.0" cy="33.1" r="1.15" fill="#38BDF8" stroke="#0369A1" stroke-width="0.3" />
+        </g>
+      </g>
+    </g>
+
   </g>
 </svg>
