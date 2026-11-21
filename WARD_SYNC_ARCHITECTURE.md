@@ -82,7 +82,7 @@ Phone numbers, profile photos and self-profile data use their dedicated RPCs and
 
 ## Office Administration and published rosters
 
-The Office Admin frontend is embedded in `index.html`, but it is a separate workspace. An `office_admin` session sets the role explicitly and enters the `OA` controller rather than the ordinary patient-care page map. The client excludes this role from `canWrite()`, the clinical resident directory and BDFT people lists. The workspace is designed as a desktop/landscape workbench (minimum layout width 1160px) with its own sidebar and independently scrollable main area.
+The Office Admin frontend is embedded in `index.html`, but it is a separate workspace. An `office_admin` session sets the role explicitly and enters the `OA` controller rather than the ordinary patient-care page map. The client excludes this role from `canWrite()`, the clinical resident directory and BDFT people lists. The workspace is a desktop workbench with its own sidebar and independently scrollable main area. From `R2.0.12` the office theme is plain blue and white and the shell no longer forces a 1160px minimum width, so a 1024px landscape window does not spill past the viewport. Production `office_admin_*` RPCs already require `private.require_office_admin`. They can create and edit ward setup, users, PGT groups and rosters. They refuse the `admin` role and refuse edits to an existing admin account. Clinical RPCs read `ward_sessions` (or the clinical actor lookup), not `office_admin_sessions`, so an office-admin token is not a clinical session. Intern wide screens do not use the resident tablet rail; the intern shell is a centred column, and a desktop-only connection line is added. The phone intern layout is unchanged.
 
 ### Roster management
 

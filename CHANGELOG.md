@@ -1,3 +1,10 @@
+## 2026-11-21 — Office admin desktop and intern wide screens
+
+### Changed
+- Client version `R2.0.12`. Service worker cache `ward-sync-pwa-r2.0.0-20`.
+- Office Administration uses a plain blue-and-white desktop theme. Account search and ward-setup search filter on the page. The header shows Online or Offline from the device connection. Ward setup, user management, PGT groups and roster editing stay on the existing office-admin RPCs.
+- Intern pages on a wide desktop stay inside a centred column and no longer reserve the resident sidebar. A connection line with colour and text is shown on desktop only. The phone intern layout is unchanged.
+
 ## 2026-11-21 — Session loader logo alignment
 
 ### Changed
