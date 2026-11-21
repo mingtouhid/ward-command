@@ -12,6 +12,13 @@
 - The Office Admin account form shows Year for residents only. It reads `residents.bdft_batch`. Saving it needs `migrations/r20_14_office_admin_resident_year.sql`, which is not applied. Until then the account still saves and the screen says the year was not stored.
 - On Home, the Total patients number is 1.5 times its previous size for residents and consultants. The label, colours, and other roles stay the same.
 
+## 2026-11-21 — Permanent delete of inactive office accounts
+
+### Added
+- Client version stays `R2.0.12`. Service worker cache `ward-sync-pwa-r2.0.0-23`.
+- Office Administration can permanently delete an inactive, non-admin account. The users table and the edit form ask for the exact username, then call `office_admin_delete_user`. Deleted is shown only after the server returns ok. A refusal, including clinical or roster records, shows the server message.
+- `migrations/r20_13_office_admin_delete_user.sql` records the function and archive table applied to production on 2026-11-21 at about 16:18 IST. A one-off delete of 11 inactive test and legacy accounts with no clinical references was run at that time. The rows were archived in `private.deleted_accounts_archive`.
+
 ## 2026-11-21 — Office admin account checkbox
 
 ### Fixed
