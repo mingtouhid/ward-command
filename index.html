@@ -6067,6 +6067,29 @@ html.ws-session-loading body {
   #app .login.ws-session-loader .session-loader-art { animation:none!important; }
 }
 </style>
+
+<style id="ward-sync-session-loader-background-fix-v2">
+/* Must follow the legacy elegant-loader rules, which otherwise reapply var(--bg). */
+html.ws-session-loading,
+html.ws-session-loading body,
+html.ws-session-loading #app,
+html.ws-session-loading #app.app {
+  background:#001c65!important;
+  background-image:none!important;
+  color-scheme:dark!important;
+}
+html.ws-session-loading #app .login.ws-session-loader,
+html.ws-session-loading #app .login:has(.session-check-card).ws-session-loader {
+  background:#001c65!important;
+  background-image:none!important;
+}
+html.ws-session-loading #app .login.ws-session-loader::before,
+html.ws-session-loading #app .login.ws-session-loader::after {
+  content:none!important;
+  display:none!important;
+  background:none!important;
+}
+</style>
 </head>
 <body>
 <svg id="ward-sync-icon-sprite" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
