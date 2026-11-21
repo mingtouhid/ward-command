@@ -9931,7 +9931,7 @@ function prefersReduceMotion(){
 }
 function clearOverlayState(extra){
   extra=extra||{};
-  ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null; ui.medEditId=null; ui.r17Gate=null; ui.r17Next=null; ui.r17Reason="";
+  ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null; ui.medEditId=null; ui.r17Gate=null; ui.r17Next=null; ;
   ui.bdftAdminSheet=false; ui.bdftResidentModal=null; ui.bdftBedPickerModal=null; ui.bdftOccupiedModal=false; ui.bdftUnavailableModal=false;
   ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null; ui.addUser=null; ui.myPhone=null; ui.photoPick=false; ui.photoCrop=null; ui.seForm=null; ui.disPreview=false; phoneFieldsWipe();
   if(extra.med){
@@ -9943,7 +9943,7 @@ function popTopOverlay(extra){
   extra=extra||{};
   if(ui.disPreview){ ui.disPreview=false; return "disPreview"; }
   if(ui.seForm){ ui.seForm=null; return "seForm"; }
-  if(ui.r17Gate){ ui.r17Gate=null; ui.r17Next=null; ui.r17Reason=""; return "r17"; }
+  if(ui.r17Gate){ ui.r17Gate=null; ui.r17Next=null; ; return "r17"; }
   if(ui.confirm){ ui.confirm=null; return "confirm"; }
   if(ui.pick){ ui.pick=null; return "pick"; }
   if(ui.notifySet){ ui.notifySet=false; return "notifySet"; }
@@ -10043,7 +10043,7 @@ function shell(inner){
       <button class="${on("home")}" onclick="go('home')" aria-label="Home">${navIco('home')}<span class="lbl">Home</span></button>
       <button class="${on("patients")}" onclick="go('patients')" aria-label="Patients">${navIco('patients')}<span class="lbl">Patients</span></button>
       <button class="${on("more")}" onclick="go('more')" aria-label="More">${navIco('more')}<span class="lbl">More</span></button>
-    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(photoOverlays()||"")+(seFormOverlay()||"")+(disPreviewOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(bdftAdminSheetOverlay()||"")+(bdftResidentModalOverlay()||"")+(bdftBedPickerOverlay()||"")+(bdftOccupiedModalOverlay()||"")+(bdftUnavailableModalOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review,ui.r17Reason||"")}</div></div>`:""))}${busyVeil()}`;
+    </div></nav>${stampSheetEnter((livePanels()||"")+(ui.sheet||"")+(notifySetOverlay()||"")+(userEditOverlay()||"")+(addUserOverlay()||"")+(myPhoneOverlay()||"")+(photoOverlays()||"")+(seFormOverlay()||"")+(disPreviewOverlay()||"")+(consEditOverlay()||"")+(pickOverlay()||"")+(confirmOverlay()||"")+(bdftAdminSheetOverlay()||"")+(bdftResidentModalOverlay()||"")+(bdftBedPickerOverlay()||"")+(bdftOccupiedModalOverlay()||"")+(bdftUnavailableModalOverlay()||"")+(ui.r17Gate?`<div class="sheet mid"><button class="mask" onclick="r17WarnCancel()"></button><div class="box r17-warn-box">${(function(){const p=patient(ui.r17Gate.pid);const b=p?bedObj(p.id):null;return p?`<p class="sm" style="margin:0 0 8px"><b>${esc(b?b.no+" · ":"")}${esc(p.name)}</b></p>`:""})()}${r17DischargeWarnHtml(ui.r17Gate.review)}</div></div>`:""))}${busyVeil()}`;
 }
 /* HOME: occupied beds only, current status */
 let toastTimer=null;
@@ -10858,7 +10858,7 @@ function homeView(){
   const tile=(n,l,fn,cls)=>`<button type="button" class="r2-tile ${cls||""}${Number(n)>0&&/today-(observation|admitted|discharged)/.test(cls||"")?" has-dot":""}" onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
   const consHome=isConsultant();
   return `<div class="r2-home">
-    ${r17AuditMissHtml()}
+    
     <div class="r2-wardhead"><h2>${esc((canWrite()&&!consHome&&!isIntern())?((S.unit&&S.unit.name)||"Ward"):"Today")}</h2></div>
     ${consHome?"":`<div class="r2-bdft" role="link" tabindex="0" aria-label="Bed distribution. Open complete BDFT." onclick="bdftOpenReadOnly()">
       <div class="row"><span class="r2-kicker">BED DISTRIBUTION</span><span class="r2-pill ${current?"ok":"warn"}">${esc(bdftPill)}</span></div>
@@ -14172,7 +14172,7 @@ function observeView(){
       </div>`;
     }).filter(Boolean).join(""):`<div class="card"><p class="sm">${oq?"No matching previous observations.":"No previous observations."}</p></div>`;
     return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-    ${r17AuditMissHtml()}
+    
     <h2 class="page-title">Under observation</h2>
     ${seg}
     <input id="obsPrevQ" placeholder="Search name, hospital no., diagnosis or bed" value="${esc(ui.obsPrevQ||"")}" oninput="ui.obsPrevQ=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>
@@ -14216,7 +14216,7 @@ function observeView(){
     </div>`;
   const formCard=ui.obsForm?form:`<button class="btn block" onclick="obsDraft();ui.obsForm=true;render()">Keep someone under observation</button>`;
   return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-    ${r17AuditMissHtml()}
+    
     <h2 class="page-title">Under observation</h2>
     ${seg}
     <p class="tiny" style="margin:-4px 0 8px">NOW UNDER OBSERVATION · ${open.length}</p>
@@ -14952,16 +14952,8 @@ async function closeObservation(pid,outcome){
       rpcArgs.p_discharge_outcome=dOut;
     }
     if(dmeds.length) rpcArgs.p_discharge_meds=dmeds; // omitted when empty → identical call to R1.3.115
-    const reviewOv=outcome==="disposed"&&ui.r17Ov&&String(ui.r17Ov.pid)===String(pid)?{reason:ui.r17Ov.reason}:null;
-    let reviewUnstored=false;
     let data,error;
-    if(reviewOv){
-      ({data,error}=await sb.rpc("ward_close_observation_with_review",Object.assign({},rpcArgs,{p_review_override:reviewOv})));
-      if(error&&/does not exist|could not find the function|PGRST202|42883/i.test(String(error.message||error.code||error))){
-        reviewUnstored=true;
-        ({data,error}=await sb.rpc("ward_close_observation",rpcArgs));
-      }
-    }else ({data,error}=await sb.rpc("ward_close_observation",rpcArgs));
+    ({data,error}=await sb.rpc("ward_close_observation",rpcArgs));
     let dmServer=!!dmeds.length;
     if(error&&dmeds.length&&/p_discharge_meds|PGRST202|could not find the function|function .*does not exist/i.test(String(error.message||error.code||error))){
       // Server not migrated yet: close as before; keep the list on this device only.
@@ -14993,19 +14985,8 @@ async function closeObservation(pid,outcome){
       });
     }catch(ne){ evFail(pid,"Observation notification",ne); }
     closePanel();ui.obsRefer=null;ui.obsDispose=null;ui.obsClose=null;
-    if(reviewOv){
-      const echo=data&&data.review;
-      const stored=!!(echo&&echo.stored===true);
-      const repeated=!!(echo&&echo.repeated===true);
-      const missing=!!(echo&&(echo.missing_mse||echo.missing_report));
-      reviewUnstored=!repeated&&!stored&&(!echo||missing||reviewUnstored);
-    }
     ui.r17Ov=null;
     toast(outcome==="referred"?"Referred"+(dept?" to "+dept:""):"Disposed","ok");
-    if(reviewUnstored){
-      ui.r17AuditMiss={text:"This observation disposal was saved. The review reason was not stored on the server and is not an audit record."};
-      toast("Review reason was not stored. It is not an audit record.","bad");
-    }
     save();go("observe");
   }catch(e){toast(clinicianCopy(e.message||e)||String(e.message||e),"bad")}
   finally{workflowUnlock("obs-close",pid);setBusy(false)}
@@ -15057,7 +15038,7 @@ function censusView(){
     }
     return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
       <h2 class="page-title">Discharge</h2>${seg}
-      ${r17AuditMissHtml()}
+      
       ${disDoneHtml()}
       <div class="card">
         <label class="field"><span>Patient</span>
@@ -15365,12 +15346,10 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
     // R1.3.126: requester only when set, so a server without the R1.3.126 migration still matches the call.
     const reqArgs=xx&&xx.reqBy&&xx.reqBy.length?{p_discharge_requested_by:xx.reqBy,...(xx.reqName?{p_discharge_requester_name:xx.reqName}:{})}:(xx&&xx.reqName?{p_discharge_requester_name:xx.reqName}:{});
     const msePayload=r17MsePayload(p.id);
-    const reviewOv=ui.r17Ov&&String(ui.r17Ov.pid)===String(p.id)?{reason:ui.r17Ov.reason}:null;
-    let reviewUnstored=false;
     let atomic;
-    if(msePayload||reviewOv){
-      atomic=await callAtomicWorkflow("ward_discharge_with_review",{...disArgs,...reqArgs,p_discharge_mse:msePayload,p_review_override:reviewOv});
-      if(!atomic.used){reviewUnstored=!!reviewOv;atomic=await callAtomicWorkflow("ward_discharge_patient",{...disArgs,...reqArgs})}
+    if(msePayload){
+      atomic=await callAtomicWorkflow("ward_discharge_with_review",{...disArgs,...reqArgs,p_discharge_mse:msePayload});
+      if(!atomic.used)atomic=await callAtomicWorkflow("ward_discharge_patient",{...disArgs,...reqArgs});
     }else atomic=await callAtomicWorkflow("ward_discharge_patient",{...disArgs,...reqArgs});
     if(!atomic.used&&Object.keys(reqArgs).length&&sb&&sessionTok){console.warn("Discharge requester not supported by server; retrying without it");atomic=await callAtomicWorkflow("ward_discharge_patient",disArgs)}
     if(xx&&atomic.used&&atomic.data&&Array.isArray(atomic.data.discharge_meds)){
@@ -15432,23 +15411,11 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
         if(me){ev(p.id,"MSE queued · not saved with the discharge yet"+(me.highRisk?" · high risk":""),true,"mse",msePreviewText(me.data||{}).slice(0,160));setTimeout(()=>{try{flushPending()}catch(x){}},0)}
       }
     }catch(me){console.warn("MSE at discharge",me)} // R1.3.124 · R1.7 atomic only when the discharge RPC saved it
-    const reviewEcho=atomic.used&&atomic.data&&atomic.data.review;
-    if(reviewOv){
-      const stored=!!(reviewEcho&&reviewEcho.stored===true);
-      const repeated=!!(reviewEcho&&reviewEcho.repeated===true);
-      const missing=!!(reviewEcho&&(reviewEcho.missing_mse||reviewEcho.missing_report));
-      if(stored||repeated||(reviewEcho&&!missing)) reviewUnstored=false;
-      else reviewUnstored=true;
-    }
     ui.r17Ov=null;
     if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dreview;delete ui.census.dmrd;delete ui.census.dect;delete ui.census.dreq;delete ui.census.dreqName;}
     if(ui.obsClose&&ui.obsClose.pid===p.id) ui.obsClose=null;
     ui.disDone=certEligible(p)?{pid:p.id,at:p.dischargedAt}:null; // R1.3.126: offer the certificate right away
     flashBtn(".btn.danger.block","ok");toast("Discharged "+p.name,"ok");
-    if(reviewUnstored){
-      ui.r17AuditMiss={text:"The discharge was saved. The review reason was not stored on the server and is not an audit record."};
-      toast("Review reason was not stored. It is not an audit record.","bad");
-    }
     ui.disId="";ui.disForm=false;save();ui.ctab="out";render();
   }catch(e){
     if(oldDx!==undefined) p.diagnosis=oldDx;
@@ -22715,7 +22682,7 @@ function r17ReviewFor(pid){
   let staged=null;try{staged=mseDisFilled(pid)}catch(e){staged=null}
   return r17DischargeReview({id:p.id,admittedAt:p.admittedAt,status:p.status},mses,reports,{ops:r17Ops(),stagedMse:staged&&staged.data?{data:true}:null,stagedAtomic:false});
 }
-function r17OpenWarn(pid, review){ui.r17Gate={pid:pid,review:review||r17ReviewFor(pid)};ui.r17Reason="";render({force:1})}
+function r17OpenWarn(pid, review){ui.r17Gate={pid:pid,review:review||r17ReviewFor(pid)};;render({force:1})}
 function r17HoldForSubmit(pid, again){
   const review=r17ReviewFor(pid);
   if(!review.warn)return true;
@@ -22729,7 +22696,7 @@ function r17EnterDischarge(pid, proceed){
   if(!review.warn){ui.r17Ov=null;proceed();return}
   ui.r17Next=proceed;r17OpenWarn(pid,review);
 }
-function r17WarnCancel(){ui.r17Gate=null;ui.r17Next=null;ui.r17Reason="";render({force:1})}
+function r17WarnCancel(){ui.r17Gate=null;ui.r17Next=null;;render({force:1})}
 function r17WarnMse(){const pid=ui.r17Gate&&ui.r17Gate.pid;ui.r17Gate=null;ui.r17Next=null;render({force:1});if(!pid)return;if(ui.disForm&&ui.disId===pid)mseOpen(pid,"discharge");else mseOpen(pid,"routine")}
 function r17WarnReports(){const pid=ui.r17Gate&&ui.r17Gate.pid;ui.r17Gate=null;ui.r17Next=null;render({force:1});if(!pid)return;if(typeof r146Open==="function")r146Open(pid,"results");else go("snap",pid)}
 function r17WarnContinue(){
@@ -22741,8 +22708,8 @@ function r17WarnContinue(){
     toast("The record changed. Read the updated reminder.","info");render({force:1});return;
   }
   if(!fresh.warn){ui.r17Ov=null;ui.r17Gate=null;const n=ui.r17Next;ui.r17Next=null;render({force:1});if(n)n();return}
-  ui.r17Ov={pid:g.pid,reason:"",allow:true,fp:r17ReviewFingerprint(fresh)};
-  ui.r17Gate=null;ui.r17Reason="";const n=ui.r17Next;ui.r17Next=null;render({force:1});if(n)n();
+  ui.r17Ov={pid:g.pid,allow:true,fp:r17ReviewFingerprint(fresh)};
+  ui.r17Gate=null;;const n=ui.r17Next;ui.r17Next=null;render({force:1});if(n)n();
 }
 function r17MsePayload(pid){
   let x=null;try{x=mseDisFilled(pid)}catch(e){x=null}
@@ -22968,7 +22935,7 @@ function r17DischargeReview(patient, mses, reports, opts){
     latestReportId:latestRep?latestRep.id:null,latestReportAt:latestRep?(latestRep.reportedAt||latestRep.at||null):null,latestReportWhy:latestRep?r17RepWhy(patient,latestRep,ops):"none",latestReportEligible:!!latestEligibleRep};
 }
 function r17ReviewFingerprint(review){if(!review)return "";return [review.pid||"",review.admittedAt||"",(review.missing||[]).join(","),(review.mseIds||[]).join(","),(review.reportIds||[]).join(","),review.stagedAtomic?"atomic":"noatomic"].join("|")}
-function r17OverrideMatches(override, review){if(!review||!review.warn)return true;if(!override)return false;if(!override.allow&&String(override.reason||"").trim().length<3)return false;if(String(override.pid)!==String(review.pid||""))return false;return override.fp===r17ReviewFingerprint(review)}
+function r17OverrideMatches(override, review){if(!review||!review.warn)return true;if(!override||override.allow!==true)return false;if(String(override.pid)!==String(review.pid||""))return false;return override.fp===r17ReviewFingerprint(review)}
 function r17WarnLines(review){
   const lines=[];
   if(!review.hasMse){lines.push("No eligible MSE on this admission.");if(review.latestMseAt)lines.push("Latest MSE "+r17IstWhen(review.latestMseAt)+" ("+(review.latestMseWhy||"not counted")+") — not counted.");else lines.push("No MSE on record.")}
@@ -23062,10 +23029,6 @@ function r17InternTasksHtml(tasks, mode){
     +(open.length?open.map(row).join(""):'<p class="sm ih-empty">No open intern tasks.</p>')
     +(done.length?'<details class="ih-done-sec"><summary>Completed ('+done.length+')</summary>'+done.map(row).join("")+'</details>':"")
     +'</section>';
-}
-function r17AuditMissHtml(){
-  const m=ui&&ui.r17AuditMiss;if(!m||!m.text)return "";
-  return '<div class="card r17-audit-miss" role="alert"><p><b>Review reason not stored</b></p><p class="sm">'+r17Esc(m.text)+'</p><button type="button" class="btn sm ghost" onclick="ui.r17AuditMiss=null;render()">Dismiss</button></div>';
 }
 function r17DischargeWarnHtml(review){
   const lines=[];
