@@ -1,7 +1,8 @@
 ## 2026-11-21 — Office admin desktop and intern wide screens
 
 ### Changed
-- Client version `R2.0.12`. Service worker cache `ward-sync-pwa-r2.0.0-20`.
+- Client version stays `R2.0.12`. Service worker cache `ward-sync-pwa-r2.0.0-21`.
+- The Office Admin user form has a BDFT short name for resident and admin accounts. It is saved on `residents.bdft_short` once `migrations/r20_12_office_admin_bdft_short.sql` is applied. That migration is not applied yet. PGT membership stays matched by resident id.
 - Office Administration is plain blue and white (`#1D4ED8`, `#EFF6FF`, `#F8FAFC`). Account lists are a compact table with search and a role filter. Ward setup and rosters use compact tables. Edits stay in the existing modal or roster editor, and a Saved toast appears only after the server returns. A save refreshes only the list it changed.
 - Intern pages on a wide desktop stay inside a centred column. The bottom bar matches that column, shows an icon and a label on every tab, and uses a modest selected highlight. A connection line with colour and text is shown on desktop only. The phone intern layout is unchanged.
 
