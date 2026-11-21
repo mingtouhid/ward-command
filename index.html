@@ -26347,7 +26347,8 @@ function wardSyncIsResidentTabletWide(){
 }
 window.addEventListener("resize",wardSyncApplyResidentTabletMode,{passive:true});
 window.addEventListener("orientationchange",wardSyncApplyResidentTabletMode,{passive:true});
-function wsRestoreSessionLoaderTheme(){document.documentElement.classList.remove("ws-session-loading");const m=document.querySelector('meta[name="theme-color"]');if(m){const previous=document.documentElement.getAttribute("data-ws-loader-theme-color");if(previous!==null)m.setAttribute("content",previous);document.documentElement.removeAttribute("data-ws-loader-theme-color");}}\nfunction render(opts){
+function wsRestoreSessionLoaderTheme(){document.documentElement.classList.remove("ws-session-loading");const m=document.querySelector('meta[name="theme-color"]');if(m){const previous=document.documentElement.getAttribute("data-ws-loader-theme-color");if(previous!==null)m.setAttribute("content",previous);document.documentElement.removeAttribute("data-ws-loader-theme-color");}}
+function render(opts){
   opts=opts||{};
   wardSyncApplyResidentTabletMode();
   if(ui._sheetLeaving && !opts.forceLeave) return;
