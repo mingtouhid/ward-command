@@ -1,3 +1,10 @@
+## 2026-11-21 — Session loader logo alignment
+
+### Changed
+- Matched the visible session-loader artwork to the native Android splash logo using the supplied 690 × 1536 screenshots as measurement references.
+- Increased the visible logo bounds from approximately 248 × 284 px to 298 × 327 px and shifted it down to align its centre with the native splash artwork. The title and connection status remain in their existing positions.
+- Advanced the app-shell service-worker cache to ward-sync-pwa-r2.0.0-19.
+
 ## 2026-11-21 — Session loader background correction
 
 ### Fixed
