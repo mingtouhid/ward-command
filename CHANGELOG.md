@@ -5,11 +5,20 @@
 - Office Administration can permanently delete an inactive, non-admin account. The users table and the edit form ask for the exact username, then call `office_admin_delete_user`. Deleted is shown only after the server returns ok. A refusal, including clinical or roster records, shows the server message.
 - `migrations/r20_13_office_admin_delete_user.sql` records the function and archive table applied to production on 2026-11-21 at about 16:18 IST. A one-off delete of 11 inactive test and legacy accounts with no clinical references was run at that time. The rows were archived in `private.deleted_accounts_archive`.
 
+## 2026-11-21 — Office admin account checkbox
+
+### Fixed
+- Client version stays `R2.0.12`. Service worker cache `ward-sync-pwa-r2.0.0-22`.
+- In the Office Admin edit-account form, Account active is a left-aligned checkbox with its label on the same line. The label toggles the checkbox.
+
+### Changed
+- `migrations/r20_12_office_admin_bdft_short.sql` was applied to production on 2026-11-21.
+
 ## 2026-11-21 — Office admin desktop and intern wide screens
 
 ### Changed
 - Client version stays `R2.0.12`. Service worker cache `ward-sync-pwa-r2.0.0-21`.
-- The Office Admin user form has a BDFT short name for resident and admin accounts. It is saved on `residents.bdft_short` once `migrations/r20_12_office_admin_bdft_short.sql` is applied. That migration is not applied yet. PGT membership stays matched by resident id.
+- The Office Admin user form has a BDFT short name for resident and admin accounts. It is saved on `residents.bdft_short`. `migrations/r20_12_office_admin_bdft_short.sql` was applied to production on 2026-11-21. PGT membership stays matched by resident id.
 - Office Administration is plain blue and white (`#1D4ED8`, `#EFF6FF`, `#F8FAFC`). Account lists are a compact table with search and a role filter. Ward setup and rosters use compact tables. Edits stay in the existing modal or roster editor, and a Saved toast appears only after the server returns. A save refreshes only the list it changed.
 - Intern pages on a wide desktop stay inside a centred column. The bottom bar matches that column, shows an icon and a label on every tab, and uses a modest selected highlight. A connection line with colour and text is shown on desktop only. The phone intern layout is unchanged.
 

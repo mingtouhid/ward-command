@@ -9560,7 +9560,7 @@ function oaToggleUserShort(){
   const wrap=document.getElementById("ouShortWrap");
   if(wrap) wrap.hidden=!(role==="resident"||role==="admin");
 }
-function oaUserForm(u){u=u||{};const role=u.role||"resident";const showShort=role==="resident"||role==="admin";const html=`<div class="oa-card"><h2>${u.id?"Edit account":"Create account"}</h2><label class="field"><span>Username</span><input id="ouName" value="${oaEsc(u.username)}"></label><label class="field"><span>Display name</span><input id="ouDisplay" value="${oaEsc(u.display_name)}"></label><label class="field"><span>Password ${u.id?"(leave blank to keep current)":""}</span><input id="ouPass" type="password"></label><label class="field"><span>Role</span><select id="ouRole" onchange="oaToggleUserShort()">${["resident","consultant","intern","office_admin"].map(x=>`<option ${role===x?"selected":""}>${x}</option>`).join("")}</select></label><div class="field" id="ouShortWrap"${showShort?"":" hidden"}><span>BDFT short name</span><input id="ouShort" maxlength="16" autocomplete="off" value="${oaEsc(u.bdft_short||"")}" placeholder="e.g. DT"></div><label class="field"><span>Email</span><input id="ouEmail" value="${oaEsc(u.email)}"></label><label class="field"><span>Designation</span><input id="ouDesignation" value="${oaEsc(u.designation)}"></label><label class="field"><span>Phone</span><input id="ouPhone" value="${oaEsc(u.phone)}"></label>${u.id?`<label class="oa-check"><input id="ouActive" type="checkbox" ${u.active?"checked":""}> Account active</label>`:""}${u.id&&u.active===false&&role!=="admin"?`<button type="button" class="btn oa-danger-btn" onclick='oaConfirmDelete(${JSON.stringify(String(u.username||""))})'>Delete permanently</button>`:""}<div class="oa-actions"><button class="btn" onclick="oaSaveUser('${oaEsc(u.username||"")}')">Save account</button><button class="btn secondary" onclick="document.getElementById('oaModal').classList.remove('show')">Cancel</button></div></div>`;const el=document.getElementById("oaModal");el.innerHTML=html;el.classList.add("show")}
+function oaUserForm(u){u=u||{};const role=u.role||"resident";const showShort=role==="resident"||role==="admin";const html=`<div class="oa-card"><h2>${u.id?"Edit account":"Create account"}</h2><label class="field"><span>Username</span><input id="ouName" value="${oaEsc(u.username)}"></label><label class="field"><span>Display name</span><input id="ouDisplay" value="${oaEsc(u.display_name)}"></label><label class="field"><span>Password ${u.id?"(leave blank to keep current)":""}</span><input id="ouPass" type="password"></label><label class="field"><span>Role</span><select id="ouRole" onchange="oaToggleUserShort()">${["resident","consultant","intern","office_admin"].map(x=>`<option ${role===x?"selected":""}>${x}</option>`).join("")}</select></label><div class="field" id="ouShortWrap"${showShort?"":" hidden"}><span>BDFT short name</span><input id="ouShort" maxlength="16" autocomplete="off" value="${oaEsc(u.bdft_short||"")}" placeholder="e.g. DT"></div><label class="field"><span>Email</span><input id="ouEmail" value="${oaEsc(u.email)}"></label><label class="field"><span>Designation</span><input id="ouDesignation" value="${oaEsc(u.designation)}"></label><label class="field"><span>Phone</span><input id="ouPhone" value="${oaEsc(u.phone)}"></label>${u.id?`<label class="oa-check" for="ouActive"><input id="ouActive" type="checkbox" ${u.active?"checked":""}><span>Account active</span></label>`:""}${u.id&&u.active===false&&role!=="admin"?`<button type="button" class="btn oa-danger-btn" onclick='oaConfirmDelete(${JSON.stringify(String(u.username||""))})'>Delete permanently</button>`:""}<div class="oa-actions"><button class="btn" onclick="oaSaveUser('${oaEsc(u.username||"")}')">Save account</button><button class="btn secondary" onclick="document.getElementById('oaModal').classList.remove('show')">Cancel</button></div></div>`;const el=document.getElementById("oaModal");el.innerHTML=html;el.classList.add("show")}
 function oaUserSaveErr(e){const m=String((e&&e.message)||e||"");if(/bdft short/i.test(m))return m;if(/residents_active_pgt_bdft_short_unique_idx/i.test(m))return "This BDFT short name is already used by another active resident or admin.";return m}
 async function oaSaveUser(old){try{const un=document.getElementById("ouName").value,display=document.getElementById("ouDisplay").value,pw=document.getElementById("ouPass").value,role=document.getElementById("ouRole").value,email=document.getElementById("ouEmail").value,designation=document.getElementById("ouDesignation").value,phone=document.getElementById("ouPhone").value;const shortWrap=document.getElementById("ouShortWrap");const short=shortWrap&&!shortWrap.hidden?document.getElementById("ouShort").value:null;const args={p_display:display,p_password:pw,p_role:role,p_email:email,p_designation:designation,p_short:short};if(old){await oaRpc("office_admin_update_user",Object.assign({p_username:old,p_new_username:un,p_active:document.getElementById("ouActive").checked},args))}else{await oaRpc("office_admin_invite_user",Object.assign({p_username:un},args))}if(phone)await oaRpc("office_admin_set_user_phone",{p_username:un,p_phone:phone});document.getElementById("oaModal").classList.remove("show");toast("Saved","ok");await oaLoad()}catch(e){toast(oaUserSaveErr(e),"bad")}}
 function oaConfirmDelete(username){
@@ -28146,7 +28146,30 @@ html:not(.ws-resident-tablet) #app.app .main .r2-bdft-see{display:none!important
   border-color:#bfdbfe!important;
   color:#1e293b!important;
 }
-#app.app.oa-mode .oa-modal .oa-card{max-width:520px;margin:8vh auto;background:#fff!important}
+#app.app.oa-mode .oa-modal .oa-check{
+  display:inline-flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:8px!important;
+  width:auto!important;
+  margin:4px 0 14px!important;
+  color:#1e293b!important;
+  font-size:14.5px!important;
+  font-weight:600!important;
+  cursor:pointer;
+}
+#app.app.oa-mode .oa-modal .oa-check input[type="checkbox"]{
+  width:16px!important;
+  height:16px!important;
+  min-width:16px!important;
+  flex:0 0 16px!important;
+  margin:0!important;
+  padding:0!important;
+  border-radius:4px!important;
+  accent-color:#1d4ed8;
+}
+#app.app.oa-mode .oa-modal .oa-check span{line-height:1.2}
 @media (max-width:1279px){
   #app.app.oa-mode>.oa-app{min-width:0!important}
   #app.app.oa-mode .oa-workspace{grid-template-columns:200px minmax(0,1fr)!important}

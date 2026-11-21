@@ -1,5 +1,5 @@
 -- R2.0.12 office admin BDFT short name.
--- NOT APPLIED. Apply only after review.
+-- Applied to production 2026-11-21.
 -- Adds a defaulted p_short argument to the existing office-admin user RPCs.
 -- Callers that omit p_short keep the previous behaviour.
 -- The value is public.residents.bdft_short. Active resident and admin codes stay unique
