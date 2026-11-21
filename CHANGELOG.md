@@ -10,6 +10,7 @@
 - A faculty roster has a phone line under each faculty name. The phone is stored in the roster content and printed under that name. No schema change.
 - New faculty rosters use the printable name Faculty Roster. A roster that already has another name keeps it.
 - The Office Admin account form shows Year for residents only. It reads `residents.bdft_batch`. Saving it needs `migrations/r20_14_office_admin_resident_year.sql`, which is not applied. Until then the account still saves and the screen says the year was not stored.
+- On Home, the Total patients number is 1.5 times its previous size for residents and consultants. The label, colours, and other roles stay the same.
 
 ## 2026-11-21 — Office admin account checkbox
 

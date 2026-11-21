@@ -11051,7 +11051,7 @@ function homeView(){
     </section>`:""}
     <div class="r2-split"><section class="r2-overview" aria-label="Ward">
       <div class="row">
-        <div><div class="r2-count">${list.length}<small>Total patients</small></div></div>
+        <div><div class="r2-count${roleOf()==="resident"||isConsultant()?" r2-count-lg":""}">${list.length}<small>Total patients</small></div></div>
         <div class="r2-shift">${esc(shiftLabel(sh))} shift<b>${esc(dateStrong)}</b></div>
       </div>
       <p class="r2-h r2-h-spacer" aria-hidden="true"></p>
@@ -27500,6 +27500,7 @@ body:has(.resident-roster-detail-page) .page-head{display:none}
   html.ws-resident-tablet #app.app .main .r2-tile b{font-size:clamp(22px,2vw,29px)!important}
   html.ws-resident-tablet #app.app .main .r2-tile span{font-size:13px!important;line-height:1.2!important}
   html.ws-resident-tablet #app.app .main .r2-count{font-size:30px!important}
+  html.ws-resident-tablet #app.app .main .r2-count.r2-count-lg{font-size:45px!important;line-height:1!important}
   html.ws-resident-tablet #app.app .main .r2-flags,
   html.ws-resident-tablet #app.app .main .r2-team,
   html.ws-resident-tablet #app.app .main .r2-duty,
@@ -28275,6 +28276,8 @@ html.ws-intern .snap-cols>.card{
 }
 </style>
 <style id="ward-sync-r2012-oa-roster-align">
+.r2-count.r2-count-lg{font-size:42px;line-height:1}
+.r2-count.r2-count-lg small{font-size:15px;font-weight:500;line-height:1.15}
 #app.app.oa-mode .oa-modal .field[hidden]{display:none!important}
 #app.app.oa-mode .oa-group-editor-head{align-items:flex-end!important}
 #app.app.oa-mode .oa-group-editor-head .oa-count{margin:0 0 1px!important}
