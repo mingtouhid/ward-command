@@ -5990,7 +5990,84 @@ html[data-theme="ot"] .app>.pt-qbar{
 .oa-canonical-code{display:block;padding:10px 5px;border:1px solid #ded7e9;border-radius:9px;background:#f1edf7;color:#493a61;text-align:center;font-size:13px}
 .oa-pgt-name-wrap .field input{font-size:12px}
 .resident-roster-identity-warning{margin:8px 0;padding:9px 11px;border:1px solid #d8b86e;border-radius:9px;background:#fff8e7;color:#74551c;font-size:12px;line-height:1.45}
-</style></head>
+</style>
+<style id="ward-sync-seamless-session-loader-v1">
+/* Session verification matches the native Android launch screen. */
+html.ws-session-loading,
+html.ws-session-loading body,
+html.ws-session-loading #app {
+  background:#001c65!important;
+  color-scheme:dark!important;
+}
+html.ws-session-loading body {
+  margin:0!important;
+  overscroll-behavior:none!important;
+}
+#app .login.ws-session-loader {
+  position:fixed!important;
+  inset:0!important;
+  z-index:99999!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100vw!important;
+  height:100vh!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:env(safe-area-inset-top,0px) 20px env(safe-area-inset-bottom,0px)!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  background:#001c65!important;
+}
+#app .login.ws-session-loader .session-check-card {
+  width:min(100%,360px)!important;
+  max-width:360px!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  text-align:center!important;
+}
+#app .login.ws-session-loader .session-loader-art {
+  display:block!important;
+  width:min(240px,64vw)!important;
+  height:auto!important;
+  aspect-ratio:1/1!important;
+  object-fit:contain!important;
+  margin:0 auto 8px!important;
+}
+#app .login.ws-session-loader .session-check-card h1 {
+  order:1!important;
+  margin:0 0 9px!important;
+  color:#fff!important;
+  font-size:29px!important;
+  line-height:1.12!important;
+  letter-spacing:-.045em!important;
+  font-weight:800!important;
+}
+#app .login.ws-session-loader .session-check-card p {
+  order:2!important;
+  margin:0!important;
+  color:rgba(255,255,255,.76)!important;
+  font-size:14px!important;
+  line-height:1.5!important;
+  letter-spacing:.025em!important;
+}
+@media(prefers-reduced-motion:reduce) {
+  #app .login.ws-session-loader .session-loader-art { animation:none!important; }
+}
+</style>
+</head>
 <body>
 <svg id="ward-sync-icon-sprite" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
   <symbol id="icon-admit-patient" viewBox="0 0 24 24">
@@ -26287,9 +26364,9 @@ function render(opts){
   const y=main?main.scrollTop:0;
   const chipXs=Array.from(document.querySelectorAll(".ptag-row")).map(r=>r.scrollLeft);
   const el=document.getElementById("app");
-  if(!S.userId||!sessionTok){try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
-  if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){el.innerHTML=`<div class="login"><div class="login-card session-check-card"><div class="session-leds" role="status" aria-label="Checking session"><i></i><i></i><i></i><i></i></div><h1>Ward Sync</h1><p class="muted">Establishing secure connection</p></div></div>`;return}
-  if(isOfficeAdmin()){
+  if(!S.userId||!sessionTok){document.documentElement.classList.remove("ws-session-loading");try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
+  if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){document.documentElement.classList.add("ws-session-loading");const sessionThemeMeta=document.querySelector('meta[name="theme-color"]');if(sessionThemeMeta)sessionThemeMeta.setAttribute("content","#001c65");el.innerHTML=`<div class="login ws-session-loader"><div class="session-check-card" role="status" aria-live="polite"><img class="session-loader-art" src="./ward-sync-session-loader.svg" width="240" height="240" alt="Animated Ward Sync heart ECG loading emblem"/><h1>Ward Sync</h1><p>Establishing secure connection</p></div></div>`;return}
+  document.documentElement.classList.remove("ws-session-loading");if(isOfficeAdmin()){
     el.classList.add("oa-mode");
     const currentMain=el.querySelector(".oa-main");
     const nextMarkup=officeAdminView();
