@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="Ward Sync animated medical heart ECG">
+  <style>
+    @keyframes upperLogoFadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes ecgScrollRight { 0% { transform: translate3d(-72px, 0, 0); } 100% { transform: translate3d(0px, 0, 0); } }
+    @keyframes heartGentlePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+    #upper-logo { opacity: 1; animation: upperLogoFadeOut 0.60s ease-out 400ms 1 forwards; will-change: opacity; }
+    .ecg-wave-track { transform: translate3d(-72px, 0, 0); animation: ecgScrollRight 2.5s linear infinite; will-change: transform; }
+    .heart-pulse-group { transform-origin: 0px 0px; animation: heartGentlePulse 2.4s ease-in-out infinite; will-change: transform; }
+    @media (prefers-reduced-motion: reduce) { #upper-logo,.ecg-wave-track,.heart-pulse-group { animation:none!important; } #upper-logo { opacity:0; } }
+  </style>
+  <defs><clipPath id="ecg-clip"><rect x="46" y="156" width="148" height="54" /></clipPath></defs>
+  <g id="upper-logo">
+    <circle cx="79" cy="57.5" r="11.5" fill="#FFFFFF" />
+    <path d="M 63 107 C 68 103.5, 87 103.5, 92 106 L 92 85 C 92 77, 86.5 73, 79 73 L 76 73 C 68.5 73, 63 77, 63 85 Z" fill="#FFFFFF" />
+    <rect x="75.6" y="83.2" width="3.8" height="12.6" rx="1.2" fill="#001c65" />
+    <rect x="71.2" y="87.6" width="12.6" height="3.8" rx="1.2" fill="#001c65" />
+    <circle cx="120" cy="48" r="14.5" fill="#FFFFFF" />
+    <path d="M 97 109 L 97 82 C 97 71.5, 105 66.5, 115 66.5 L 125 66.5 C 135 66.5, 143 71.5, 143 82 L 143 109 Z" fill="#FFFFFF" />
+    <path d="M 112.5 65.5 L 112.5 79.5" stroke="#001c65" stroke-width="3.5" stroke-linecap="round" fill="none" />
+    <path d="M 106.2 89.2 L 106.2 85.2 C 106.2 81.2, 109 79.2, 112.5 79.2 C 116 79.2, 118.8 81.2, 118.8 85.2 L 118.8 89.2" stroke="#001c65" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <circle cx="106.2" cy="90.2" r="2.2" fill="#001c65" /><circle cx="118.8" cy="90.2" r="2.2" fill="#001c65" />
+    <path d="M 127.5 65.5 L 127.5 84.2" stroke="#001c65" stroke-width="3.5" stroke-linecap="round" fill="none" />
+    <circle cx="127.5" cy="88.8" r="5.3" fill="#001c65" /><circle cx="127.5" cy="88.8" r="2.1" fill="#FFFFFF" />
+    <circle cx="161" cy="57.5" r="11.5" fill="#FFFFFF" />
+    <path d="M 148 109 L 148 85 C 148 77, 153.5 73, 161 73 L 164 73 C 171.5 73, 177 77, 177 85 L 177 109 Z" fill="#FFFFFF" />
+    <rect x="160.6" y="83.2" width="3.8" height="12.6" rx="1.2" fill="#001c65" /><rect x="156.2" y="87.6" width="12.6" height="3.8" rx="1.2" fill="#001c65" />
+    <rect x="46" y="95" width="13" height="69" rx="6.5" fill="#FFFFFF" /><rect x="181" y="112" width="13" height="52" rx="6.5" fill="#FFFFFF" /><rect x="52" y="140" width="136" height="11.5" fill="#FFFFFF" />
+    <path d="M 63 121.5 C 63 112.5, 70 109.5, 81 109.5 C 92 109.5, 99 112.5, 99 121.5 C 99 122.6, 98.2 123.5, 97 123.5 L 65 123.5 C 63.8 123.5, 63 122.6, 63 121.5 Z" fill="#FFFFFF" />
+    <rect x="63" y="127.5" width="36" height="8" rx="2.5" fill="#FFFFFF" />
+    <path d="M 103 133 L 103 123.5 C 103 117.5, 107.8 113.5, 114 113.5 L 166 113.5 C 172.2 113.5, 177 117.5, 177 123.5 L 177 133 C 177 134.5, 175.8 135.5, 174.5 135.5 L 105.5 135.5 C 104.2 135.5, 103 134.5, 103 133 Z" fill="#FFFFFF" />
+  </g>
+  <g id="ecg-group">
+    <g clip-path="url(#ecg-clip)"><g class="ecg-wave-track">
+      <path d="M -142.75 183 L -139.75 186.00 L -134.75 167.40 L -129.25 195.60 L -125.25 183 Q -122.25 178.92 -119.25 183 L -70.75 183 L -67.75 186.00 L -62.75 167.40 L -57.25 195.60 L -53.25 183 Q -50.25 178.92 -47.25 183 L 1.25 183 L 4.25 186.00 L 9.25 167.40 L 14.75 195.60 L 18.75 183 Q 21.75 178.92 24.75 183 L 73.25 183 L 76.25 186.00 L 81.25 167.40 L 86.75 195.60 L 90.75 183 Q 93.75 178.92 96.75 183 L 145.25 183 L 148.25 186.00 L 153.25 167.40 L 158.75 195.60 L 162.75 183 Q 165.75 178.92 168.75 183 L 217.25 183 L 220.25 186.00 L 225.25 167.40 L 230.75 195.60 L 234.75 183 Q 237.75 178.92 240.75 183 L 289.25 183 L 292.25 186.00 L 297.25 167.40 L 302.75 195.60 L 306.75 183 Q 309.75 178.92 312.75 183 L 361.25 183" fill="none" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" />
+    </g></g>
+    <g transform="translate(120 184)"><g class="heart-pulse-group"><path d="M 0 -9.5 C -4 -16.5, -18 -16.5, -18 -5.5 C -18 3.5, -7 10.5, 0 16.5 C 7 10.5, 18 3.5, 18 -5.5 C 18 -16.5, 4 -16.5, 0 -9.5 Z" fill="#001c65" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" /></g></g>
+  </g>
+</svg>
