@@ -9931,7 +9931,7 @@ function prefersReduceMotion(){
 }
 function clearOverlayState(extra){
   extra=extra||{};
-  ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null; ui.medEditId=null; ui.r17Gate=null; ui.r17Next=null; ;
+  ui.sheet=null; ui.panel=null; ui.pick=null; ui.confirm=null; ui.medEditId=null; ui.r17Gate=null; ui.r17Next=null;
   ui.bdftAdminSheet=false; ui.bdftResidentModal=null; ui.bdftBedPickerModal=null; ui.bdftOccupiedModal=false; ui.bdftUnavailableModal=false;
   ui.giveOpen=false; ui.notifySet=false; ui.userEdit=null; ui.consEdit=null; ui.addUser=null; ui.myPhone=null; ui.photoPick=false; ui.photoCrop=null; ui.seForm=null; ui.disPreview=false; phoneFieldsWipe();
   if(extra.med){
@@ -9943,7 +9943,7 @@ function popTopOverlay(extra){
   extra=extra||{};
   if(ui.disPreview){ ui.disPreview=false; return "disPreview"; }
   if(ui.seForm){ ui.seForm=null; return "seForm"; }
-  if(ui.r17Gate){ ui.r17Gate=null; ui.r17Next=null; ; return "r17"; }
+  if(ui.r17Gate){ ui.r17Gate=null; ui.r17Next=null; return "r17"; }
   if(ui.confirm){ ui.confirm=null; return "confirm"; }
   if(ui.pick){ ui.pick=null; return "pick"; }
   if(ui.notifySet){ ui.notifySet=false; return "notifySet"; }
@@ -22682,7 +22682,7 @@ function r17ReviewFor(pid){
   let staged=null;try{staged=mseDisFilled(pid)}catch(e){staged=null}
   return r17DischargeReview({id:p.id,admittedAt:p.admittedAt,status:p.status},mses,reports,{ops:r17Ops(),stagedMse:staged&&staged.data?{data:true}:null,stagedAtomic:false});
 }
-function r17OpenWarn(pid, review){ui.r17Gate={pid:pid,review:review||r17ReviewFor(pid)};;render({force:1})}
+function r17OpenWarn(pid, review){ui.r17Gate={pid:pid,review:review||r17ReviewFor(pid)};render({force:1})}
 function r17HoldForSubmit(pid, again){
   const review=r17ReviewFor(pid);
   if(!review.warn)return true;
@@ -22696,7 +22696,7 @@ function r17EnterDischarge(pid, proceed){
   if(!review.warn){ui.r17Ov=null;proceed();return}
   ui.r17Next=proceed;r17OpenWarn(pid,review);
 }
-function r17WarnCancel(){ui.r17Gate=null;ui.r17Next=null;;render({force:1})}
+function r17WarnCancel(){ui.r17Gate=null;ui.r17Next=null;render({force:1})}
 function r17WarnMse(){const pid=ui.r17Gate&&ui.r17Gate.pid;ui.r17Gate=null;ui.r17Next=null;render({force:1});if(!pid)return;if(ui.disForm&&ui.disId===pid)mseOpen(pid,"discharge");else mseOpen(pid,"routine")}
 function r17WarnReports(){const pid=ui.r17Gate&&ui.r17Gate.pid;ui.r17Gate=null;ui.r17Next=null;render({force:1});if(!pid)return;if(typeof r146Open==="function")r146Open(pid,"results");else go("snap",pid)}
 function r17WarnContinue(){
@@ -22709,7 +22709,7 @@ function r17WarnContinue(){
   }
   if(!fresh.warn){ui.r17Ov=null;ui.r17Gate=null;const n=ui.r17Next;ui.r17Next=null;render({force:1});if(n)n();return}
   ui.r17Ov={pid:g.pid,allow:true,fp:r17ReviewFingerprint(fresh)};
-  ui.r17Gate=null;;const n=ui.r17Next;ui.r17Next=null;render({force:1});if(n)n();
+  ui.r17Gate=null;const n=ui.r17Next;ui.r17Next=null;render({force:1});if(n)n();
 }
 function r17MsePayload(pid){
   let x=null;try{x=mseDisFilled(pid)}catch(e){x=null}
