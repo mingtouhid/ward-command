@@ -1,3 +1,16 @@
+## 2026-11-21 — Seamless animated session loader
+
+### Changed
+- Replaced the multicolour session-verification spinner and white card with a full-screen deep navy loader matching the Android splash background (#001c65).
+- Added the supplied heart-ECG SVG as a standalone asset. The upper medical team/bed artwork fades away while the ECG scroll and heart pulse continue; internal navy cut-outs now match the splash background exactly.
+- Kept the Ward Sync title and secure-connection status text in white beneath the animation.
+- Temporarily sets the browser theme colour to #001c65 during session verification and restores the previously selected theme colour when verification ends or the login screen is shown.
+- Added the SVG to the service-worker precache and advanced the app-shell cache to ward-sync-pwa-r2.0.0-17.
+
+### Preserved
+- Native Android splash artwork, manifest configuration, authentication/session verification logic and backend calls remain unchanged.
+- No patient data, database schema, clinical workflows or access-control rules changed.
+
 ## 2026-11-20 — Home medical animation
 
 ### Changed
