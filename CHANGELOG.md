@@ -1,3 +1,10 @@
+## 2026-11-21 — Session loader background correction
+
+### Fixed
+- Forced the session-verification screen background and background image to the exact splash navy (#001c65), including the full-screen login wrapper.
+- Added a final, higher-specificity override after the legacy session-loader theme rules, which had been reapplying the light-theme radial gradient over the new loader.
+- Advanced the service-worker app-shell cache to ward-sync-pwa-r2.0.0-18.
+
 ## 2026-11-21 — Seamless animated session loader
 
 ### Changed
