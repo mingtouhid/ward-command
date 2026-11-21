@@ -7,7 +7,7 @@
     #upper-logo { opacity: 1; animation: upperLogoFadeOut 0.60s ease-out 400ms 1 forwards; will-change: opacity; }
     .ecg-wave-track { transform: translate3d(-72px, 0, 0); animation: ecgScrollRight 2.5s linear infinite; will-change: transform; }
     .heart-pulse-group { transform-origin: 0px 0px; animation: heartGentlePulse 2.4s ease-in-out infinite; will-change: transform; }
-    @media (prefers-reduced-motion: reduce) { #upper-logo,.ecg-wave-track,.heart-pulse-group { animation:none!important; } #upper-logo { opacity:0; } }
+    @media (prefers-reduced-motion: reduce) { #upper-logo,.ecg-wave-track,.heart-pulse-group { animation:none!important; } }
   </style>
   <defs><clipPath id="ecg-clip"><rect x="46" y="156" width="148" height="54" /></clipPath></defs>
   <g id="upper-logo">
