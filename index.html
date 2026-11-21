@@ -26347,7 +26347,7 @@ function wardSyncIsResidentTabletWide(){
 }
 window.addEventListener("resize",wardSyncApplyResidentTabletMode,{passive:true});
 window.addEventListener("orientationchange",wardSyncApplyResidentTabletMode,{passive:true});
-function render(opts){
+function wsRestoreSessionLoaderTheme(){document.documentElement.classList.remove("ws-session-loading");const m=document.querySelector('meta[name="theme-color"]');if(m){const previous=document.documentElement.getAttribute("data-ws-loader-theme-color");if(previous!==null)m.setAttribute("content",previous);document.documentElement.removeAttribute("data-ws-loader-theme-color");}}\nfunction render(opts){
   opts=opts||{};
   wardSyncApplyResidentTabletMode();
   if(ui._sheetLeaving && !opts.forceLeave) return;
@@ -26364,9 +26364,9 @@ function render(opts){
   const y=main?main.scrollTop:0;
   const chipXs=Array.from(document.querySelectorAll(".ptag-row")).map(r=>r.scrollLeft);
   const el=document.getElementById("app");
-  if(!S.userId||!sessionTok){document.documentElement.classList.remove("ws-session-loading");try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
-  if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){document.documentElement.classList.add("ws-session-loading");const sessionThemeMeta=document.querySelector('meta[name="theme-color"]');if(sessionThemeMeta)sessionThemeMeta.setAttribute("content","#001c65");el.innerHTML=`<div class="login ws-session-loader"><div class="session-check-card" role="status" aria-live="polite"><img class="session-loader-art" src="./ward-sync-session-loader.svg" width="240" height="240" alt="Animated Ward Sync heart ECG loading emblem"/><h1>Ward Sync</h1><p>Establishing secure connection</p></div></div>`;return}
-  document.documentElement.classList.remove("ws-session-loading");if(isOfficeAdmin()){
+  if(!S.userId||!sessionTok){wsRestoreSessionLoaderTheme();try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
+  if(S.userId&&sessionTok&&!sessionVerified&&navigator.onLine){const sessionThemeMeta=document.querySelector('meta[name="theme-color"]');if(sessionThemeMeta){if(!document.documentElement.hasAttribute("data-ws-loader-theme-color"))document.documentElement.setAttribute("data-ws-loader-theme-color",sessionThemeMeta.getAttribute("content")||"#001c65");sessionThemeMeta.setAttribute("content","#001c65");}document.documentElement.classList.add("ws-session-loading");el.innerHTML=`<div class="login ws-session-loader"><div class="session-check-card" role="status" aria-live="polite"><img class="session-loader-art" src="./ward-sync-session-loader.svg" width="240" height="240" alt="Animated Ward Sync heart ECG loading emblem"/><h1>Ward Sync</h1><p>Establishing secure connection</p></div></div>`;return}
+  wsRestoreSessionLoaderTheme();if(isOfficeAdmin()){
     el.classList.add("oa-mode");
     const currentMain=el.querySelector(".oa-main");
     const nextMarkup=officeAdminView();
