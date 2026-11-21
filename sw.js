@@ -1,10 +1,11 @@
-const VERSION = "ward-sync-pwa-r2.0.0-16";
+const VERSION = "ward-sync-pwa-r2.0.0-17";
 // R1.3.134: the on-device scanner engine lives in its own cache, filled and verified by the page; never deleted on update.
 const OCR_CACHE = "ocr-assets-v7";
 const PRECACHE = [
   "./",
   "./index.html",
   "./medical-banner-60s.svg",
+  "./ward-sync-session-loader.svg",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
