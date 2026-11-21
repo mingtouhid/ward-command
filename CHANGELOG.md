@@ -1,3 +1,17 @@
+## 2026-11-21 — Office Admin faculty roster and workflow fixes
+
+### Fixed
+- Faculty roster suggestions use active consultant accounts from `public.residents`, linked by the canonical resident ID. Selecting a consultant fills the saved phone number beneath the name; existing roster entries are matched by account ID or normalized name.
+- The existing faculty preview and editable Word export print the saved phone under the matching name.
+- Roster dates are synchronised into the draft model before row, column, faculty, note, or group actions re-render the form. Calendar selections update the model immediately.
+- Office Admin can save phone numbers for consultant accounts through the existing private phone store. Numbers remain excluded from the broad clinical ward-state response and are returned to the Office Admin users RPC only.
+
+### Simplified
+- Removed the separate “Mark ready for publication” stage. Office Admin can save a draft and publish it directly; older items already in review remain publishable or can be returned to draft.
+- Removed the redundant Preview button because the document preview is already displayed in the builder.
+- Roster action buttons use distinct semantic colours for date generation, additions, Word export, draft saving, publishing, and returning to draft.
+- Client version remains `R2.0.12`; service-worker cache is `ward-sync-pwa-r2.0.0-27`.
+
 ## 2026-11-21 — Resident year migration applied
 
 ### Changed
