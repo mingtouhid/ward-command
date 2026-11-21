@@ -1,3 +1,10 @@
+## 2026-11-21 — BDFT year choices and PGT group rows
+
+### Changed
+- Client version stays `R2.0.12`. Service worker cache `ward-sync-pwa-r2.0.0-25`.
+- The Office Admin Year field is a choice of `3rd Year`, `2nd Year`, or `1st Year`, the same labels as BDFT settings. It is prefilled from `residents.bdft_batch`. `migrations/r20_14_office_admin_resident_year.sql` now accepts only those three values and is still not applied.
+- A PGT group shows the name and BDFT short code on one row. Searching for a resident adds that person to the group, so the separate Add PGT button is gone.
+
 ## 2026-11-21 — Office admin roster dates, faculty phones, and resident year
 
 ### Fixed

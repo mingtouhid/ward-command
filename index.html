@@ -9174,20 +9174,23 @@ function oaPgtMemberProfile(m){return m&&m.residentId?(OA.users||[]).find(u=>Str
 function oaPgtMemberName(m){const u=oaPgtMemberProfile(m);return String(u?.display_name||m?.name||m?.display_name||"").trim()}
 function oaPgtMemberCode(m){const u=oaPgtMemberProfile(m);return String(u?.bdft_short||m?.abbr||m?.abbreviation||"").trim()}
 function oaPgtMemberUsername(m){const u=oaPgtMemberProfile(m);return String(u?.username||"").trim()}
-function oaRenderPgtSuggestions(g,m,query=""){
- const box=document.getElementById(`oaPgtSuggest_${g}_${m}`);if(!box)return;
+function oaRenderPgtSuggestions(g,query=""){
+ const box=document.getElementById(`oaPgtSuggest_${g}`);if(!box)return;
  const users=oaPgtSuggestionUsers(),q=String(query||"").trim().toLowerCase();
  const matches=users.filter(u=>[u.display_name,u.username,u.bdft_short,u.bdft_batch].some(v=>String(v||"").toLowerCase().includes(q))).slice(0,20);
- box.innerHTML=matches.length?`<div class="oa-pgt-suggestion-heading">${q?"Matching registered PGTs":"Active PGT accounts"} · ${matches.length}</div>${matches.map(u=>{const idx=users.indexOf(u);return `<button type="button" role="option" onpointerdown="event.preventDefault();oaChoosePgtSuggestion(${g},${m},${idx})"><span>${oaEsc(oaPgtSuggestionName(u))}</span><small>${oaEsc(u.bdft_short||"")} · ${oaEsc(u.bdft_batch||"")} · @${oaEsc(u.username||"")}</small></button>`}).join("")}`:`<div class="oa-pgt-no-match">${users.length?"No matching active resident profile.":"No active PGT profile is available."}</div>`;
+ box.innerHTML=matches.length?`<div class="oa-pgt-suggestion-heading">${q?"Matching registered PGTs":"Active PGT accounts"} · ${matches.length}</div>${matches.map(u=>{const idx=users.indexOf(u);return `<button type="button" role="option" onpointerdown="event.preventDefault();oaAddPgtFromSearch(${g},${idx})"><span>${oaEsc(oaPgtSuggestionName(u))}</span><small>${oaEsc(u.bdft_short||"")} · ${oaEsc(u.bdft_batch||"")} · @${oaEsc(u.username||"")}</small></button>`}).join("")}`:`<div class="oa-pgt-no-match">${users.length?"No matching active resident profile.":"No active PGT profile is available."}</div>`;
  box.classList.add("show");
 }
-function oaShowPgtSuggestions(g,m){const input=document.querySelector(`.oa-member-row[data-group="${g}"][data-member="${m}"] .oa-pgt-name-input`);oaRenderPgtSuggestions(g,m,input?.value||"")}
-function oaHidePgtSuggestions(g,m){const box=document.getElementById(`oaPgtSuggest_${g}_${m}`);if(box)box.classList.remove("show")}
-function oaChoosePgtSuggestion(g,m,index){
- const groups=oaActiveGroups(),users=oaPgtSuggestionUsers(),u=users[index],item=groups[g]?.members?.[m];
- if(!u||!item||u.active===false||!u.bdft_short)return;
- const duplicate=groups.some((group,gi)=>(group.members||[]).some((member,mi)=>!(gi===g&&mi===m)&&String(member.residentId||"")===String(u.id)));
+function oaShowPgtSuggestions(g){const input=document.querySelector(`.oa-pgt-add[data-group="${g}"] .oa-pgt-name-input`);oaRenderPgtSuggestions(g,input?.value||"")}
+function oaHidePgtSuggestions(g){const box=document.getElementById(`oaPgtSuggest_${g}`);if(box)box.classList.remove("show")}
+function oaAddPgtFromSearch(g,index){
+ const groups=oaActiveGroups(),users=oaPgtSuggestionUsers(),u=users[index];
+ if(!groups[g]||!u||u.active===false||!u.bdft_short)return;
+ if(!Array.isArray(groups[g].members))groups[g].members=[];
+ const duplicate=groups.some(group=>(group.members||[]).some(member=>String(member.residentId||"")===String(u.id)));
  if(duplicate){toast("This resident is already assigned to another PGT group in this set.","bad");return}
+ let item=groups[g].members.find(member=>!String(member.residentId||"").trim());
+ if(!item){item={residentId:""};groups[g].members.push(item)}
  item.residentId=String(u.id);
  delete item.name;delete item.abbr;delete item.display_name;delete item.abbreviation;
  const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;
@@ -9241,20 +9244,19 @@ function oaPgtGroupsView(){
  const cards=groups.map((g,gi)=>`<section class="oa-group-card">
   <div class="oa-group-card-head"><label class="field"><span>Group name</span><input value="${oaEsc(g.name)}" oninput="oaGroupNameInput(${gi},this.value)"></label>${groups.length>1?`<button class="oa-iconbtn" title="Remove group" onclick="oaRemoveGroup(${gi})">×</button>`:""}</div>
   <div class="oa-members-head"><b>PGT members</b><span>Linked resident profiles</span></div>
-  <div class="oa-group-members">${(g.members||[]).map((m,mi)=>{
+  <div class="oa-group-members">${(g.members||[]).map((m,mi)=>String(m.residentId||"").trim()?(()=>{
    const profile=oaPgtMemberProfile(m),name=oaPgtMemberName(m),code=oaPgtMemberCode(m),username=oaPgtMemberUsername(m);
-   const status=m.residentId?(profile&&profile.active===false?"Inactive profile":profile?"Linked resident":"Resident record unavailable"):"No resident linked";
+   const status=profile&&profile.active===false?"Inactive profile":profile?"Linked resident":"Resident record unavailable";
    return `<div class="oa-member-row" data-group="${gi}" data-member="${mi}">
-    <div class="oa-pgt-selected"><strong>${oaEsc(name||"Choose a resident")}</strong><small>${oaEsc(m.residentId?(username?"@"+username+" · ":"")+status:"Select an active registered resident")}</small></div>
-    <div class="oa-pgt-name-wrap">
-     <label class="field"><span>Search registered resident</span><input class="oa-pgt-name-input" autocomplete="off" placeholder="Name, username or code" value="" onfocus="oaShowPgtSuggestions(${gi},${mi})" onblur="oaHidePgtSuggestions(${gi},${mi})" oninput="oaGroupMemberNameInput(${gi},${mi},this.value)"></label>
-     <div class="oa-pgt-suggestions" id="oaPgtSuggest_${gi}_${mi}" role="listbox"></div>
-    </div>
-    <div class="field oa-abbr-field"><span>BDFT short code</span><strong class="oa-canonical-code">${oaEsc(code||"—")}</strong></div>
+    <div class="oa-pgt-selected"><strong>${oaEsc(name||"Resident")}</strong><small>${oaEsc((username?"@"+username+" · ":"")+status)}</small></div>
+    <strong class="oa-canonical-code" title="BDFT short code">${oaEsc(code||"—")}</strong>
     <button type="button" class="oa-iconbtn oa-remove-member" title="Remove PGT" onclick="oaRemoveGroupMember(${gi},${mi})">×</button>
    </div>`;
-  }).join("")||`<p class="oa-empty-members">No members in this group.</p>`}</div>
-  <button type="button" class="btn secondary sm" onclick="event.preventDefault();event.stopPropagation();oaAddGroupMember(${gi})">+ Add PGT</button>
+  })():"").join("")||`<p class="oa-empty-members">No members in this group.</p>`}</div>
+  <div class="oa-pgt-name-wrap oa-pgt-add" data-group="${gi}">
+   <label class="field"><span>Search registered resident</span><input class="oa-pgt-name-input" autocomplete="off" placeholder="Name, username or code" value="" onfocus="oaShowPgtSuggestions(${gi})" onblur="oaHidePgtSuggestions(${gi})" oninput="oaGroupMemberNameInput(${gi},this.value)"></label>
+   <div class="oa-pgt-suggestions" id="oaPgtSuggest_${gi}" role="listbox"></div>
+  </div>
  </section>`).join("");
  return `<div class="oa-groups-workspace"><aside class="oa-saved-groups"><div class="oa-saved-groups-head"><b>Saved group sets</b><span>${sets.length}</span></div>${sets.length?sets.map(x=>`<div class="oa-saved-group-row ${String(x.id)===String(OA.groupEditingId)?"selected":""}"><button class="oa-saved-group-open" onclick="oaOpenGroupSet('${oaEsc(x.id)}')"><b>${oaEsc(x.name)}</b><small>${(x.groups||[]).length} groups · Updated ${oaDate(String(x.updated_at||"").slice(0,10))}</small></button><button class="oa-iconbtn" title="Delete group set" onclick="oaDeleteGroupSet('${oaEsc(x.id)}')">×</button></div>`).join(""):`<p class="oa-muted">No group sets have been saved yet.</p>`}</aside>
  <section class="oa-group-editor"><div class="oa-group-editor-head"><label class="field"><span>Group set name</span><input id="oaGroupSetName" maxlength="100" value="${oaEsc(OA.groupDraftName)}" oninput="OA.groupDraftName=this.value" placeholder="e.g. Psychiatry PGT groups"></label><span class="oa-count">${groups.length} groups</span></div><p class="oa-help">${OA.groupEditingId?"Editing a saved configuration.":"New configuration — save it to reuse it in future months."}</p>
@@ -9296,7 +9298,7 @@ function oaCellInput(i,j,v){const c=oaEnsureRosterContent();if(c.rows[i])c.rows[
 function oaColumnInput(j,v){oaEnsureRosterContent().columns[j]=v;}
 function oaNoteInput(i,v){oaEnsureRosterContent().notes[i]=v;}
 function oaGroupNameInput(g,v){const groups=oaActiveGroups();if(groups[g])groups[g].name=v;}
-function oaGroupMemberNameInput(g,m,v){oaRenderPgtSuggestions(g,m,v)}
+function oaGroupMemberNameInput(g,v){oaRenderPgtSuggestions(g,v)}
 function oaGroupMemberNameChange(g,m,v){}
 function oaPgtMobileDutyTables(c,editable){
  const groups=[
@@ -9308,14 +9310,6 @@ function oaPgtMobileDutyTables(c,editable){
 }
 function oaGroupMemberAbbrInput(g,m,v){}
 function oaMakePgtAbbr(name){const words=String(name||"").replace(/^(dr\.?|doctor)\s+/i,"").trim().split(/\s+/).filter(Boolean);if(words.length>1)return (words[0][0]+words[words.length-1][0]).toUpperCase();return words[0]?words[0].slice(0,2).toUpperCase():"";}
-function oaAddGroupMember(g){
- if(OA.page!=="groups"||!Array.isArray(OA.groupDraft))return;
- const groups=OA.groupDraft;if(!groups[g])return;
- if(!Array.isArray(groups[g].members))groups[g].members=[];
- const nextIndex=groups[g].members.length;groups[g].members.push({residentId:""});
- const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;
- render({force:1});requestAnimationFrame(()=>document.querySelector(`.oa-member-row[data-group="${g}"][data-member="${nextIndex}"] .oa-pgt-name-input`)?.focus({preventScroll:true}));
-}
 function oaRemoveGroupMember(g,m){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft)||!OA.groupDraft[g])return;OA.groupDraft[g].members.splice(m,1);const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});}
 function oaAddGroup(){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft))return;OA.groupDraft.push({name:`Group ${String.fromCharCode(65+OA.groupDraft.length)}`,members:[]});const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});}
 function oaRemoveGroup(g){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft)||!confirm("Remove this group and its member list?"))return;OA.groupDraft.splice(g,1);const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});}
@@ -9594,7 +9588,13 @@ function oaToggleUserShort(){
   const year=document.getElementById("ouYearWrap");
   if(year) year.hidden=role!=="resident";
 }
-function oaUserForm(u){u=u||{};const role=u.role||"resident";const showShort=role==="resident"||role==="admin";const showYear=role==="resident";const html=`<div class="oa-card"><h2>${u.id?"Edit account":"Create account"}</h2><label class="field"><span>Username</span><input id="ouName" value="${oaEsc(u.username)}"></label><label class="field"><span>Display name</span><input id="ouDisplay" value="${oaEsc(u.display_name)}"></label><label class="field"><span>Password ${u.id?"(leave blank to keep current)":""}</span><input id="ouPass" type="password"></label><label class="field"><span>Role</span><select id="ouRole" onchange="oaToggleUserShort()">${["resident","consultant","intern","office_admin"].map(x=>`<option ${role===x?"selected":""}>${x}</option>`).join("")}</select></label><div class="field" id="ouShortWrap"${showShort?"":" hidden"}><span>BDFT short name</span><input id="ouShort" maxlength="16" autocomplete="off" value="${oaEsc(u.bdft_short||"")}" placeholder="e.g. DT"></div><div class="field" id="ouYearWrap"${showYear?"":" hidden"}><span>Year</span><input id="ouYear" maxlength="32" autocomplete="off" value="${oaEsc(u.bdft_batch||"")}" placeholder="e.g. 2024"></div><label class="field"><span>Email</span><input id="ouEmail" value="${oaEsc(u.email)}"></label><label class="field"><span>Designation</span><input id="ouDesignation" value="${oaEsc(u.designation)}"></label><label class="field"><span>Phone</span><input id="ouPhone" value="${oaEsc(u.phone)}"></label>${u.id?`<label class="oa-check" for="ouActive"><input id="ouActive" type="checkbox" ${u.active?"checked":""}><span>Account active</span></label>`:""}${u.id&&u.active===false&&role!=="admin"?`<button type="button" class="btn oa-danger-btn" onclick='oaConfirmDelete(${JSON.stringify(String(u.username||""))})'>Delete permanently</button>`:""}<div class="oa-actions"><button class="btn" onclick="oaSaveUser('${oaEsc(u.username||"")}')">Save account</button><button class="btn secondary" onclick="document.getElementById('oaModal').classList.remove('show')">Cancel</button></div></div>`;const el=document.getElementById("oaModal");el.innerHTML=html;el.classList.add("show")}
+function oaYearOptions(current){
+ const years=["3rd Year","2nd Year","1st Year"],raw=String(current||"").trim();
+ const match=years.find(y=>y.toLowerCase()===raw.toLowerCase())||"";
+ const extra=raw&&!match?`<option value="${oaEsc(raw)}" selected>${oaEsc(raw)}</option>`:"";
+ return `<option value=""${!match&&!raw?" selected":""}>Select year</option>${extra}${years.map(y=>`<option value="${oaEsc(y)}"${match===y?" selected":""}>${y}</option>`).join("")}`;
+}
+function oaUserForm(u){u=u||{};const role=u.role||"resident";const showShort=role==="resident"||role==="admin";const showYear=role==="resident";const html=`<div class="oa-card"><h2>${u.id?"Edit account":"Create account"}</h2><label class="field"><span>Username</span><input id="ouName" value="${oaEsc(u.username)}"></label><label class="field"><span>Display name</span><input id="ouDisplay" value="${oaEsc(u.display_name)}"></label><label class="field"><span>Password ${u.id?"(leave blank to keep current)":""}</span><input id="ouPass" type="password"></label><label class="field"><span>Role</span><select id="ouRole" onchange="oaToggleUserShort()">${["resident","consultant","intern","office_admin"].map(x=>`<option ${role===x?"selected":""}>${x}</option>`).join("")}</select></label><div class="field" id="ouShortWrap"${showShort?"":" hidden"}><span>BDFT short name</span><input id="ouShort" maxlength="16" autocomplete="off" value="${oaEsc(u.bdft_short||"")}" placeholder="e.g. DT"></div><div class="field" id="ouYearWrap"${showYear?"":" hidden"}><span>Year</span><select id="ouYear">${oaYearOptions(u.bdft_batch)}</select></div><label class="field"><span>Email</span><input id="ouEmail" value="${oaEsc(u.email)}"></label><label class="field"><span>Designation</span><input id="ouDesignation" value="${oaEsc(u.designation)}"></label><label class="field"><span>Phone</span><input id="ouPhone" value="${oaEsc(u.phone)}"></label>${u.id?`<label class="oa-check" for="ouActive"><input id="ouActive" type="checkbox" ${u.active?"checked":""}><span>Account active</span></label>`:""}${u.id&&u.active===false&&role!=="admin"?`<button type="button" class="btn oa-danger-btn" onclick='oaConfirmDelete(${JSON.stringify(String(u.username||""))})'>Delete permanently</button>`:""}<div class="oa-actions"><button class="btn" onclick="oaSaveUser('${oaEsc(u.username||"")}')">Save account</button><button class="btn secondary" onclick="document.getElementById('oaModal').classList.remove('show')">Cancel</button></div></div>`;const el=document.getElementById("oaModal");el.innerHTML=html;el.classList.add("show")}
 function oaUserSaveErr(e){const m=String((e&&e.message)||e||"");if(/bdft short/i.test(m))return m;if(/residents_active_pgt_bdft_short_unique_idx/i.test(m))return "This BDFT short name is already used by another active resident or admin.";return m}
 async function oaSaveUser(old){try{const un=document.getElementById("ouName").value,display=document.getElementById("ouDisplay").value,pw=document.getElementById("ouPass").value,role=document.getElementById("ouRole").value,email=document.getElementById("ouEmail").value,designation=document.getElementById("ouDesignation").value,phone=document.getElementById("ouPhone").value;const shortWrap=document.getElementById("ouShortWrap");const short=shortWrap&&!shortWrap.hidden?document.getElementById("ouShort").value:null;const yearWrap=document.getElementById("ouYearWrap");const args={p_display:display,p_password:pw,p_role:role,p_email:email,p_designation:designation,p_short:short};if(yearWrap&&!yearWrap.hidden)args.p_year=document.getElementById("ouYear").value;const call=payload=>old?oaRpc("office_admin_update_user",Object.assign({p_username:old,p_new_username:un,p_active:document.getElementById("ouActive").checked},payload)):oaRpc("office_admin_invite_user",Object.assign({p_username:un},payload));let yearSkipped=false;try{await call(args);}catch(e){const msg=String((e&&e.message)||e||"");if(args.p_year===undefined||!/p_year|schema cache|Could not find the function/i.test(msg))throw e;const retry=Object.assign({},args);delete retry.p_year;await call(retry);yearSkipped=true;}if(phone)await oaRpc("office_admin_set_user_phone",{p_username:un,p_phone:phone});document.getElementById("oaModal").classList.remove("show");toast(yearSkipped?"Saved. Year was not stored because the server update is not applied yet.":"Saved","ok");await oaLoad()}catch(e){toast(oaUserSaveErr(e),"bad")}}
 function oaConfirmDelete(username){
@@ -28318,21 +28318,21 @@ html.ws-intern .snap-cols>.card{
 #app.app.oa-mode .oa-group-card-head .oa-iconbtn{width:36px;height:39px;margin:0}
 #app.app.oa-mode .oa-member-row{
   display:grid!important;
-  grid-template-columns:minmax(0,1fr) 148px 36px!important;
-  grid-template-areas:"picked picked picked" "search code remove"!important;
-  align-items:end!important;
-  gap:8px 10px!important;
+  grid-template-columns:minmax(0,1fr) auto 36px!important;
+  grid-template-areas:"picked code remove"!important;
+  align-items:center!important;
+  gap:8px!important;
 }
-#app.app.oa-mode .oa-pgt-selected{grid-area:picked;min-width:0}
+#app.app.oa-mode .oa-member-row .oa-pgt-selected{grid-area:picked;min-width:0;margin:0!important;background:#eff6ff!important;border-color:#bfdbfe!important}
 #app.app.oa-mode .oa-pgt-selected strong,
-#app.app.oa-mode .oa-pgt-selected small{display:block;overflow-wrap:anywhere}
-#app.app.oa-mode .oa-pgt-name-wrap{grid-area:search;min-width:0;position:relative}
-#app.app.oa-mode .oa-abbr-field{grid-area:code;min-width:0;margin:0!important}
-#app.app.oa-mode .oa-member-row .field span,
-#app.app.oa-mode .oa-abbr-field span{display:block;margin:0 0 4px;font-size:11px!important;line-height:1.2}
-#app.app.oa-mode .oa-member-row input{height:39px!important}
-#app.app.oa-mode .oa-canonical-code{display:flex!important;align-items:center;justify-content:center;height:39px!important;box-sizing:border-box;padding:0 8px!important}
-#app.app.oa-mode .oa-member-row .oa-remove-member{grid-area:remove;width:36px;height:39px;align-self:end}
+#app.app.oa-mode .oa-pgt-selected small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#app.app.oa-mode .oa-members-head{gap:6px;min-width:0}
+#app.app.oa-mode .oa-members-head b,
+#app.app.oa-mode .oa-members-head span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#app.app.oa-mode .oa-pgt-add{position:relative;margin-top:8px}
+#app.app.oa-mode .oa-pgt-add .oa-pgt-suggestions{left:0;right:0}
+#app.app.oa-mode .oa-member-row .oa-canonical-code{grid-area:code;width:auto!important;min-width:44px;height:36px!important;padding:0 10px!important}
+#app.app.oa-mode .oa-member-row .oa-remove-member{grid-area:remove;width:36px;height:36px;align-self:center}
 #app.app.oa-mode .oa-faculty-entry{
   display:grid;grid-template-columns:minmax(0,1fr) 36px;grid-template-areas:"name remove" "phone phone";
   gap:8px;align-items:end;margin:10px 0;padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;
@@ -28355,13 +28355,20 @@ html.ws-intern .snap-cols>.card{
 #app.app.oa-mode .oa-date-dow span,#app.app.oa-mode .oa-date-grid>span{font-size:11px;color:#64748b;line-height:28px}
 @media (max-width:900px){
   #app.app.oa-mode .oa-groups-workspace{grid-template-columns:1fr!important}
-  #app.app.oa-mode .oa-groups-grid{grid-template-columns:1fr!important}
-  #app.app.oa-mode .oa-member-row{
-    grid-template-columns:minmax(0,1fr) 36px!important;
-    grid-template-areas:"picked picked" "search remove" "code code"!important;
-  }
+  #app.app.oa-mode .oa-groups-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
   #app.app.oa-mode .oa-group-editor-head{flex-wrap:wrap!important}
   #app.app.oa-mode .oa-group-editor-head .field{width:100%!important}
+}
+@media (max-width:480px){
+  #app.app.oa-mode .oa-sidebar{display:none!important}
+  #app.app.oa-mode .oa-workspace{grid-template-columns:minmax(0,1fr)!important}
+  #app.app.oa-mode .oa-department-title{display:none!important}
+  #app.app.oa-mode .oa-main{padding:12px!important}
+  #app.app.oa-mode .oa-group-card{padding:8px!important}
+  #app.app.oa-mode .oa-member-row{gap:4px!important}
+  #app.app.oa-mode .oa-member-row .oa-canonical-code{min-width:0!important;height:28px!important;padding:0 6px!important;font-size:12px!important}
+  #app.app.oa-mode .oa-member-row .oa-remove-member{width:28px!important;height:28px!important}
+  #app.app.oa-mode .oa-pgt-selected strong{font-size:13px!important}
 }
 </style>
 
