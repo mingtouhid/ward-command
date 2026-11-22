@@ -7264,7 +7264,12 @@ function profileView(){
     </div>`;
 }
 function setSessionTok(tok){
-  sessionTok=tok||null;
+  const nextToken=tok||null;
+  if(nextToken!==sessionTok){
+    ui._profileFullNameStarted=false;
+    ui.profileFullName=null;
+  }
+  sessionTok=nextToken;
   phonesForget();
   try{
     if(sessionTok){sessionStorage.setItem("wc_tok",sessionTok);localStorage.setItem("wc_tok",sessionTok)}
