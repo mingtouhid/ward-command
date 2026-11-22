@@ -6885,6 +6885,26 @@ function profileEnsureFullName(){
     ui.profileFullName={loading:false,full_name:"",err:rpcMissing(e)?"Full-name profile needs a server update.":String(e.message||e)};
   }).finally(()=>{try{render()}catch(e){}});
 }
+function profileBeginFullNameOnly(){
+  const me=user();if(!me||String(me.id)!==String(S.userId))return;
+  ui.profileFullNameEdit=true;ui.fields=ui.fields||{};
+  ui.fields.pfull=String(ui.profileFullName?.full_name||me.fullName||"");
+  render();
+}
+function profileCancelFullNameOnly(){ui.profileFullNameEdit=false;render()}
+async function profileSaveFullNameOnly(){
+  const me=user();if(!me||String(me.id)!==String(S.userId)){toast("You can only edit your own full name.","bad");return}
+  const fullName=String(val("pfull")||"").trim();
+  if(fullName.length>120){toast("Full name must be 120 characters or fewer.","bad");return}
+  if(!sb||!sessionTok){toast("Sign in again to save your full name.","bad");return}
+  try{
+    const {data,error}=await sb.rpc("ward_set_my_full_name",{p_token:sessionTok,p_full_name:fullName});
+    if(error)throw error;
+    me.fullName=String(data?.full_name||fullName);
+    ui.profileFullName={loading:false,full_name:me.fullName};
+    ui.profileFullNameEdit=false;save();render({force:1});toast("Full name saved","ok");
+  }catch(e){toast("Could not save full name: "+String(e.message||e),"bad")}
+}
 function profileBeginEdit(){
   if(!canOpenProfile()) return;
   const me=user(); if(!me) return;
@@ -7220,7 +7240,7 @@ function profileView(){
   profileEnsureFullName();
   if(!canOpenProfile()){
     const role=normRole(me.role),roleName=role==="admin"?"Administrator":role==="consultant"?"Consultant":role==="intern"?"Intern":"Resident";
-    return `<div class="profile-readonly"><div class="profile-readonly-head"><p class="tiny">ACCOUNT</p><h2 class="page-title">My profile</h2></div><section class="card profile-readonly-card"><div class="profile-readonly-avatar">${esc(profileInitials(me.displayName||me.username||""))}</div><div class="profile-readonly-name">${esc(me.displayName||me.username||"User")}</div><p class="profile-readonly-role">${roleName}</p><dl><div><dt>Username</dt><dd>${esc(me.username||"—")}</dd></div><div><dt>Full name</dt><dd>${esc(ui.profileFullName?.loading?"Loading…":(ui.profileFullName?.full_name||"Not set"))}</dd></div><div><dt>Ward / unit</dt><dd>${esc((S.unit&&S.unit.name)||"—")}</dd></div></dl><p class="tiny">Account details are managed by the ward administrator.</p></section></div>`;
+    return `<div class="profile-readonly"><div class="profile-readonly-head"><p class="tiny">ACCOUNT</p><h2 class="page-title">My profile</h2></div><section class="card profile-readonly-card"><div class="profile-readonly-avatar">${esc(profileInitials(me.displayName||me.username||""))}</div><div class="profile-readonly-name">${esc(me.displayName||me.username||"User")}</div><p class="profile-readonly-role">${roleName}</p><dl><div><dt>Username</dt><dd>${esc(me.username||"—")}</dd></div><div><dt>Full name</dt><dd>${ui.profileFullNameEdit?`<input id="pfull" maxlength="120" autocomplete="name" placeholder="Official full name for rosters" value="${esc(val("pfull"))}" oninput="ui.fields.pfull=this.value"/>`:esc(ui.profileFullName?.loading?"Loading…":(ui.profileFullName?.full_name||"Not set"))}</dd></div><div><dt>Ward / unit</dt><dd>${esc((S.unit&&S.unit.name)||"—")}</dd></div></dl>${ui.profileFullNameEdit?`<div style="display:flex;gap:8px;margin-top:12px"><button type="button" class="btn sm" onclick="profileSaveFullNameOnly()">Save full name</button><button type="button" class="btn ghost sm" onclick="profileCancelFullNameOnly()">Cancel</button></div>`:`<button type="button" class="btn ghost sm" style="margin-top:12px" onclick="profileBeginFullNameOnly()">Set / edit full name</button>`}<p class="tiny">Other account details are managed by the ward administrator.</p></section></div>`;
   }
   const editing=!!ui.profileEdit;
   const short=editing?(ui.profileShort||""):bdftGetResidentShort(me);
@@ -7268,6 +7288,7 @@ function setSessionTok(tok){
   if(nextToken!==sessionTok){
     ui._profileFullNameStarted=false;
     ui.profileFullName=null;
+    ui.profileFullNameEdit=false;
   }
   sessionTok=nextToken;
   phonesForget();
