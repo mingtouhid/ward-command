@@ -11614,9 +11614,8 @@ function wsResidentLandscapeHome(){
       }).join("")
     : `<div class="ws-team-empty">No team members currently signed in on duty. <button type="button" class="ws-link-btn" onclick="signDuty()">Sign in</button></div>`;
 
-  // SVG Waveform Assets
+  // SVG Waveform Asset
   const avgWaveSvg='<img class="ws-avg-wave" src="./medical-banner-60s.svg" alt="" width="360" height="46" decoding="async" fetchpriority="high">';
-  const avgWaveSubSvg='<img class="ws-avg-wave-sub" src="./medical-banner-60s.svg" alt="" width="220" height="32" decoding="async">';
 
   return `<div class="ws-resident-landscape-home">
     <!-- Title Row: Psychiatry Ward + Live ward overview + AVG Animation -->
@@ -11665,9 +11664,6 @@ function wsResidentLandscapeHome(){
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/></svg>
             </span>
             <h3>Psychiatry Ward</h3>
-          </div>
-          <div class="ws-overview-subhead-wave" aria-hidden="true">
-            ${avgWaveSubSvg}
           </div>
         </div>
 
@@ -11743,7 +11739,7 @@ function wsResidentLandscapeHome(){
           ${teamHtml}
         </div>
         <div class="ws-team-action-wrap">
-          <button type="button" class="ws-panel-link-btn ws-team-link" onclick="go('more')">View team <span aria-hidden="true">→</span></button>
+          <button type="button" class="ws-panel-link-btn ws-team-link" onclick="go('pgts')">View team <span aria-hidden="true">→</span></button>
         </div>
       </div>
     </section>
@@ -29577,20 +29573,6 @@ html.ws-intern .snap-cols>.card{
   font-size: 15px !important;
   font-weight: 800 !important;
   margin: 0 !important;
- }
- html.ws-resident-landscape .ws-overview-subhead-wave {
-  display: flex !important;
-  align-items: center !important;
-  max-width: 220px !important;
-  height: 32px !important;
-  overflow: hidden !important;
- }
- html.ws-resident-landscape .ws-avg-wave-sub {
-  width: 100% !important;
-  height: 32px !important;
-  object-fit: contain !important;
-  object-position: right center !important;
-  filter: hue-rotate(240deg) saturate(1.4) !important;
  }
 
  /* 6 Unit Cards Grid */
