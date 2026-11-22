@@ -6746,10 +6746,30 @@ function roleOf(u){
   const x=u||user();
   return normRole(x?x.role:S.loginRole);
 } // R2.0.10: preserve intern role across reduced read-state refreshes
+function hasAdminPermission(u){
+  const x=u||user();
+  if(!x&&!S.userId) return false;
+  const r=roleOf(x);
+  if(r==="admin") return true;
+  if(x&&(x.isAdmin||x.is_admin)) return true;
+  if(x&&Array.isArray(x.roles)&&x.roles.includes("admin")) return true;
+  if(String(S.loginRole||"").toLowerCase()==="admin") return true;
+  return false;
+}
+function hasResidentPermission(u){
+  const x=u||user();
+  if(!x&&!S.userId) return false;
+  const r=roleOf(x);
+  // Residents and Admins (SRs) in Ward Sync carry resident clinical permissions
+  if(r==="resident"||r==="admin") return true;
+  if(x&&(x.isResident||x.is_resident)) return true;
+  if(x&&Array.isArray(x.roles)&&x.roles.includes("resident")) return true;
+  return false;
+}
 function canWrite(){const r=roleOf();return r!=="consultant"&&r!=="intern"&&r!=="office_admin"}
 function isConsultant(){return !!S.userId&&roleOf()==="consultant"}
 function canBroadcast(){return !!S.userId}
-function canAdmin(){return roleOf()==="admin"}
+function canAdmin(u){return hasAdminPermission(u)}
 function isOfficeAdmin(){return !!S.userId&&roleOf()==="office_admin"}
 let sessionPw=null;
 let sessionTok=null;
@@ -10553,12 +10573,12 @@ function shell(inner){
   const snapB=snapP?bedObj(snapP.id):null;
   const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["handover","census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile","pgts"].includes(route.page))?"on":"";
   const bell=`<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications" title="Notifications">${ico("notify")}${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button>`;
-  const landscapeMode=isHome&&roleOf()==="resident"&&document.documentElement.classList.contains("ws-resident-landscape");
+  const landscapeMode=isHome&&hasResidentPermission()&&document.documentElement.classList.contains("ws-resident-landscape");
   const landscapeDate=new Date().toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
   const landscapeTimes={morning:"8:00 AM – 2:00 PM",evening:"2:00 PM – 10:00 PM",night:"10:00 PM – 8:00 AM"}[currentShift()]||shiftHours(currentShift());
   const landscapeDuty=!!dutyRecord();
   const landscapeBar="";
-  const landscapeControls=landscapeMode?'<div class="ws-landscape-greeting-actions"><button type="button" class="ws-landscape-top-icon" aria-label="Search patients" title="Search patients" onclick="go(\'patients\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5" stroke-linecap="round"/></svg></button>'+bell+'<button type="button" class="ws-landscape-top-icon" aria-label="Connection status" title="Connection status" onclick="go(\'connection\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5a14 14 0 0 1 18 0M6.5 13a8.5 8.5 0 0 1 11 0M10 16.5a3.2 3.2 0 0 1 4 0"/><path d="M12 20h.01"/></svg></button><div class="ws-landscape-shift"><div><b>'+esc(shiftLabel(currentShift()))+' shift</b><small>'+esc(landscapeDate)+' · '+esc(landscapeTimes)+'</small></div></div><button type="button" class="ws-landscape-duty" onclick="'+(landscapeDuty?"endDuty()":"signDuty()")+'">'+(landscapeDuty?"Sign out":"Sign in")+'</button></div>':'';
+  const landscapeControls=landscapeMode?'<div class="ws-landscape-greeting-actions"><button type="button" class="ws-landscape-top-icon" aria-label="Search patients" title="Search patients" onclick="go(\'patients\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5" stroke-linecap="round"/></svg></button>'+bell+'<button type="button" class="ws-landscape-top-icon" aria-label="Connection status" title="Connection status" onclick="go(\'connection\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5a14 14 0 0 1 18 0M6.5 13a8.5 8.5 0 0 1 11 0M10 16.5a3.2 3.2 0 0 1 4 0"/><path d="M12 20h.01"/></svg></button><div class="ws-landscape-shift"><span class="ws-shift-cal-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><div><b>'+esc(shiftLabel(currentShift()))+' shift</b><small>'+esc(landscapeDate)+' · '+esc(landscapeTimes)+'</small></div></div><button type="button" class="ws-landscape-duty" onclick="'+(landscapeDuty?"endDuty()":"signDuty()")+'">'+(landscapeDuty?"Sign out":"Sign in")+'</button></div>':'';
   const syncText=statusLabel()==="Live"?"Synced":statusLabel();
   const syncMini=`<span class="ws-sync-mini ${statusClass()}" title="${esc(statusLabel())}">${statusDot()}<span>${esc(syncText)}</span></span>`;
   const labels={patients:"Patients",handover:"Handovers",more:"More",tasks:"Task board",census:"Admit patient",observe:"Observation",ect:"ECT",activity:"Activity log",setup:(ui.setupTab==="notify"?"Notifications":ui.setupTab==="theme"?"Appearance":"Settings"),ward:"Ward setup",users:"User management",about:"About",connection:"Connection",broadcast:"Broadcast",myorders:"My orders",bdft:"BDFT",profile:"Account",pgts:"Resident directory",record:"Patient record",dcert:"Discharge certificate",dedit:"Discharge review",pedit:"Edit patient",vchart:"Vitals chart",scale:"Rating scales",srate:"Rating scale",ivitals:"Vitals",ireports:"Reports",ireport:"Report"};
@@ -10572,7 +10592,7 @@ function shell(inner){
   const tools=isHome?(landscapeMode?'<div class="who-tools home-tools ws-landscape-greeting-tools">'+landscapeControls+'</div>':legacyHomeTools):snapP?'<div class="who-tools compact-tools">'+bell+'</div>':'<div class="who-tools compact-tools">'+syncMini+bell+'</div>';
   const sideIcon=name=>["home","patients","handover","more"].includes(name)?navIco(name):ico(name);
   const sideBtn=(page,label,icon,extra)=>`<button type="button" class="${on(page)}" onclick="${extra||`go('${page}')`}" aria-label="${label}">${sideIcon(icon)}<span>${label}</span></button>`;
-  return `${landscapeBar}<aside class="side-nav" aria-label="Ward"><p class="side-brand"><span class="ws-landscape-brand-mark" aria-hidden="true"><svg viewBox="0 0 36 28" fill="none"><path d="M2 14h7l4-10 5 20 5-14 3 4h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><strong>Ward Sync</strong></p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}${landscapeMode?'<div class="ws-landscape-profile">'+photoFace(profileInitials(u.displayName||u.username||""),"ws-landscape-profile-photo") + '<span><strong>'+esc(u.displayName||u.username||"Resident")+'</strong><small>PG Resident</small></span><button type="button" aria-label="Account settings" onclick="go(\'profile\')">'+ico("setup")+'</button></div>':""}</aside><header class="top${isHome?" resident-home":snapP?" patient-top":route.page==="rosters"?" compact-top roster-top":" compact-top"}">${left}${tools}</header>
+  return `${landscapeBar}<aside class="side-nav" aria-label="Ward"><p class="side-brand"><span class="ws-landscape-brand-mark" aria-hidden="true"><svg viewBox="0 0 36 28" fill="none"><path d="M2 14h7l4-10 5 20 5-14 3 4h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><strong>Ward Sync</strong></p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}${landscapeMode?'<div class="ws-landscape-profile">'+photoFace(profileInitials(u.displayName||u.username||""),"ws-landscape-profile-photo") + '<span><strong>'+esc(u.displayName||u.username||"Resident")+'</strong><small>'+esc(u.designation||(canAdmin()&&hasResidentPermission()?"SR · Admin":canAdmin()?"Admin":"PG Resident"))+'</small></span><button type="button" aria-label="Account settings" onclick="go(\'profile\')">'+ico("setup")+'</button></div>':""}</aside><header class="top${isHome?" resident-home":snapP?" patient-top":route.page==="rosters"?" compact-top roster-top":" compact-top"}">${left}${tools}</header>
     <main class="main">${inner}</main>${r151Dock()}${snapP&&isConsultant()&&snapP.status!=="discharged"?`<button type="button" class="snap-advice-fab" onclick="openAdviceForm('${snapP.id}')" aria-label="Give advice to ${esc(snapP.name)}"><span class="snap-advice-fab-ico">${ico("myorders")}</span><span>Give advice</span></button>`:""}
     <nav class="nav"><div class="nav-in">
       <button class="${on("home")}" onclick="go('home')" aria-label="Home">${navIco('home')}<span class="lbl">Home</span></button>
@@ -11435,113 +11455,299 @@ function homeView(){
 }
 
 function wsResidentLandscapeHome(){
- const list=occupied().filter(b=>{const p=patient(b.patientId);return !!(p&&p.status!=="discharged")});
- tidySectionNames();
- const rows=list.map(b=>({bed:b,p:patient(b.patientId)})).filter(x=>x.p);
- const wards=(S.sections||[]).filter(x=>x.active!==false).map(sec=>{
-  const name=sectionLabel(sec.name);
-  return {id:sec.id,name:name,count:list.filter(b=>String(b.sectionId)===String(sec.id)).length};
- });
- const countSection=re=>wards.filter(w=>re.test(String(w.name||"").toLowerCase())).reduce((n,w)=>n+w.count,0);
- const sexOf=p=>String(p&&(p.sex||p.gender||p.sexAtBirth||p.patientSex)||"").trim().toLowerCase();
- const male=rows.filter(x=>/^(m|male|man)$/.test(sexOf(x.p))).length;
- const female=rows.filter(x=>/^(f|female|woman)$/.test(sexOf(x.p))).length;
- const deaddiction=countSection(/de.?addict|addiction/);
- const isolation=countSection(/isolat/);
- const observation=(S.patients||[]).filter(p=>p.status==="observation").length;
- const activeBeds=(S.beds||[]).filter(b=>b&&b.active!==false).length;
- const free=Math.max(0,activeBeds-list.length);
- const metric=(n,label,icon,primary)=>'<div class="ws-landscape-metric'+(primary?' primary':'')+'"><span class="ws-landscape-metric-icon">'+icon+'</span><span class="ws-landscape-metric-copy"><b>'+n+'</b><small>'+esc(label)+'</small></span></div>';
- const metrics=[
-  metric(list.length,"Total patients",ico("patients"),true),
-  metric(male,"Male","♂",false),
-  metric(female,"Female","♀",false),
-  metric(deaddiction,"De-addiction",ico("tasks"),false),
-  metric(isolation,"Isolation",ico("bdft"),false),
-  metric(observation,"Observation",ico("observe"),false)
- ].join("");
+  // 1. Live Data & Active Patients
+  const list=occupied().filter(b=>{const p=patient(b.patientId);return !!(p&&p.status!=="discharged")});
+  tidySectionNames();
 
- const delirium=rows.filter(x=>isDelirium(x.p.id)).length;
- const suicidal=rows.filter(x=>hasSnapTag(x.p.id,"suicidal")).length;
- const restrained=rows.filter(x=>restrainHeld(x.p.id)).length;
- const jail=rows.filter(x=>hasSnapTag(x.p.id,"jail")).length;
- const ect=(S.ect||[]).filter(e=>(!e.status||e.status==="planned")&&onWard(e.pid)).length;
- const handovers=handoverTileCount();
- const highRisk=rows.filter(x=>isDelirium(x.p.id)||hasSnapTag(x.p.id,"suicidal")||restrainHeld(x.p.id)).length;
- const flags=[
-  {k:"delirium",n:delirium,l:"Delirium",c:"amber",fn:"ui.ptag='delirium';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
-  {k:"suicidal",n:suicidal,l:"Suicidal",c:"red",fn:"ui.ptag='suicidal';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
-  {k:"restrained",n:restrained,l:"Restrained",c:"red",fn:"ui.ptag='restrain';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
-  {k:"high-risk",n:highRisk,l:"High risk",c:"purple",fn:"clearPatientListFilters(true)"},
-  {k:"jail",n:jail,l:"Jail",c:"grey",fn:"ui.ptag='jail';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
-  {k:"ect",n:ect,l:"ECT",c:"blue",fn:"go('ect')"},
-  {k:"handover",n:handovers,l:"Handover",c:"amber",fn:"go('handover')"},
-  {k:"opinion",n:opinionCount(),l:"Opinion",c:"blue",fn:"ui.ptag='';ui.pcon='';ui.preason='opinion';ui.pf='';go('patients')"}
- ].filter(f=>f.n>0);
- const flagHtml=flags.map(f=>'<button type="button" class="r146-fchip '+f.c+'" data-flag="'+f.k+'" onclick="'+f.fn+'">'+f.n+' '+esc(f.l)+'</button>').join("");
+  const totalPatients=list.length;
+  const obsCount=(S.patients||[]).filter(p=>p.status==="observation").length;
+  const admittedCount=wardTodayAdmissionCount();
+  const dischargedCount=wardTodayDischargeCount();
 
- const distribution=bdftGetActiveDistribution();
- const distributionDate=distribution&&distribution.tiers?distribution.dateStr:null;
- const distributionOffset=distributionDate?bdftDayOffset(distributionDate):null;
- const hasBdft=!!(distribution&&distribution.tiers&&Object.keys(distribution.tiers||{}).length&&(distributionOffset===0||distributionOffset===1));
- const makeBdft=canWrite()&&!isIntern()&&!isConsultant()&&isEveningDuty()&&!hasBdft;
- const bdftCodes=[];
- if(hasBdft){
-  Object.keys(distribution.tiers||{}).forEach(year=>{
-   const doctors=distribution.tiers[year]||{};
-   Object.keys(doctors).forEach(name=>{
-    const assigned=Array.isArray(doctors[name])?doctors[name]:[];
-    assigned.forEach(item=>{
-     const code=typeof item==="string"?item:(item&&(item.code||item.no||item.bed||item.bedNo))||"";
-     if(code&&bdftCodes.indexOf(String(code))===-1)bdftCodes.push(String(code));
+  // 2. Unit Mapping for 6 Ward Cards:
+  // Male Ward (M), Female Ward (F), D-Unit (D), Isolation (ISO), PC Unit (PC), Others
+  const classifyBed=b=>{
+    const no=String(b.no||"").trim();
+    const sec=(S.sections||[]).find(s=>String(s.id)===String(b.sectionId));
+    const secName=String(sec?sec.name:"").trim().toLowerCase();
+    const secId=String(b.sectionId||"");
+
+    if(/^iso/i.test(no)||/isolat/i.test(secName)||secId==="sec_3zt6x5") return "ISO";
+    if(/^pc([-\s]|\d)/i.test(no)||/^(pc|paying|cabin)/i.test(secName)||secId==="sec_3g3xnt") return "PC";
+    if(/^d([-\s]|\d)/i.test(no)||/^de-?\s*addict/i.test(secName)||/d-?unit/i.test(secName)||secId==="sec_dqxvz7") return "D";
+    if(/^m([-\s]|\d)/i.test(no)||/^male/i.test(secName)||secId==="sec_m"){
+      if(!/^mx/i.test(no)||secId==="sec_m"||/^male/i.test(secName)) return "M";
+    }
+    if(/^f([-\s]|\d)/i.test(no)||/^female/i.test(secName)||secId==="sec_f"){
+      if(!/^fx/i.test(no)||secId==="sec_f"||/^female/i.test(secName)) return "F";
+    }
+    if(/^m/i.test(no)) return "M";
+    if(/^f/i.test(no)) return "F";
+    return "OTHER";
+  };
+
+  const unitDefs=[
+    {key:"M",label:"Male Ward (M)",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ws-unit-ico-svg"><circle cx="10" cy="14" r="5"/><path d="M19 5l-5.4 5.4M19 5h-5M19 5v5"/></svg>'},
+    {key:"F",label:"Female Ward (F)",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ws-unit-ico-svg"><circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/></svg>'},
+    {key:"D",label:"D-Unit (D)",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ws-unit-ico-svg"><path d="M10.5 20.5l10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>'},
+    {key:"ISO",label:"Isolation (Iso)",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ws-unit-ico-svg"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'},
+    {key:"PC",label:"PC Unit (PC)",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ws-unit-ico-svg"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'},
+    {key:"OTHER",label:"Others",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ws-unit-ico-svg"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>'}
+  ];
+
+  const unitCardsHtml=unitDefs.map(u=>{
+    const beds=list.filter(b=>classifyBed(b)===u.key);
+    const count=beds.length;
+    const countText=count+" "+(count===1?"patient":"patients");
+    const chips=count>0
+      ? `<div class="ws-unit-beds">${beds.map(b=>`<button type="button" class="ws-unit-bed-chip" onclick="go('snap','${esc(b.patientId)}')">${esc(b.no)}</button>`).join("")}</div>`
+      : `<div class="ws-unit-empty">No patients</div>`;
+
+    return `<div class="ws-unit-card" data-unit="${esc(u.key)}">
+      <div class="ws-unit-head">
+        <div class="ws-unit-title">
+          <span class="ws-unit-icon" aria-hidden="true">${u.icon}</span>
+          <b>${esc(u.label)}</b>
+        </div>
+        <span class="ws-unit-count">${esc(countText)}</span>
+      </div>
+      ${chips}
+    </div>`;
+  }).join("");
+
+  // 3. Right Supporting Panel A: Bed Distribution (Tomorrow)
+  const distribution=bdftGetActiveDistribution();
+  const distributionDate=distribution&&distribution.tiers?distribution.dateStr:null;
+  const distributionOffset=distributionDate?bdftDayOffset(distributionDate):null;
+  const hasBdft=!!(distribution&&distribution.tiers&&Object.keys(distribution.tiers||{}).length&&(distributionOffset===0||distributionOffset===1));
+  const makeBdft=canWrite()&&!isIntern()&&!isConsultant()&&isEveningDuty()&&!hasBdft;
+  const bdftCodes=[];
+  if(hasBdft){
+    Object.keys(distribution.tiers||{}).forEach(year=>{
+      const doctors=distribution.tiers[year]||{};
+      Object.keys(doctors).forEach(name=>{
+        const assigned=Array.isArray(doctors[name])?doctors[name]:[];
+        assigned.forEach(item=>{
+          const code=typeof item==="string"?item:(item&&(item.code||item.no||item.bed||item.bedNo))||"";
+          if(code&&bdftCodes.indexOf(String(code))===-1) bdftCodes.push(String(code));
+        });
+      });
     });
-   });
-  });
- }
- const bdftTitle=hasBdft?(distributionOffset===0?"Bed distribution (Today)":"Bed distribution (Tomorrow)"):"Bed distribution";
- const bedChips=bdftCodes.length?bdftCodes.map(code=>'<button type="button" class="ws-landscape-bed" onclick="bdftTapBedPatient(\''+esc(code)+'\')">'+esc(code)+'</button>').join(""):'<span class="ws-landscape-bed-empty">'+(hasBdft?"No bed codes listed in this distribution":"No active BDFT available")+'</span>';
- const bdftCard='<section class="ws-landscape-card ws-landscape-bdft-card"><header><h2>'+ico("bdft")+'<span>'+bdftTitle+'</span></h2><button type="button" class="ws-landscape-text-action" onclick="bdftOpenReadOnly()">View BDFT <span aria-hidden="true">→</span></button></header><div class="ws-landscape-bed-list">'+bedChips+'</div>'+(makeBdft?'<button type="button" class="ws-landscape-create-bdft" onclick="bdftOpenGenerate()">Prepare tomorrow’s BDFT</button>':"")+'</section>';
+  }
+  const tomorrowBdftChips=bdftCodes.length
+    ? `<div class="ws-bdft-chip-grid">${bdftCodes.map(c=>`<button type="button" class="ws-bdft-chip" onclick="bdftTapBedPatient('${esc(c)}')">${esc(c)}</button>`).join("")}</div>`
+    : `<div class="ws-panel-empty-text">No bed distribution has been finalised for tomorrow yet.${makeBdft?' <button type="button" class="ws-prepare-bdft-link" onclick="bdftOpenGenerate()">Prepare tomorrow’s BDFT</button>':''}</div>`;
 
- const needs=dutyRecord()?r146TodayHtml():'<section class="ws-landscape-card ws-landscape-needs-card"><header><h2>Needs You Now</h2><span class="ws-landscape-muted-pill">Off duty</span></header><p>Sign in for the current shift to see patient-specific priorities.</p><button type="button" class="ws-landscape-action-link" onclick="signDuty()">Sign in for this shift</button></section>';
- const needsHtml=needs||'<section class="ws-landscape-card ws-landscape-needs-card"><header><h2>Needs You Now</h2><span class="ws-landscape-muted-pill">All clear</span></header><p>No urgent patient reviews are pending.</p></section>';
+  // 4. Right Supporting Panel B: Needs You Now (urgent clinical preview)
+  const {rows}=r146TodayRows();
+  const urgentRows=(rows||[]).slice(0,4);
+  const urgentCount=(rows||[]).filter(r=>r.lvl===0).length||urgentRows.length;
+  const needsListHtml=urgentRows.length
+    ? `<ul class="ws-needs-list">${urgentRows.map(x=>{
+        const top=(x.R&&x.R[0])||{act:"Review",fn:`r146Open('${esc(x.p.id)}','plan')`,txt:"Urgent review required"};
+        const dotColor=x.lvl===0?"red":x.lvl===1?"amber":"blue";
+        const opTag=r146LegalOp(x.p)[0];
+        const tagHtml=opTag?`<span class="ws-need-pill op">${esc(opTag[1])}</span>`:"";
+        const actLabel=esc(top.act||"Review");
+        const actClass=String(top.act||"").toLowerCase()==="release"?"release":"review";
+        const subtitle=esc(x.R.slice(0,2).map(r=>r.txt).join(" · ")+(x.R.length>2?` · +${x.R.length-2}`:""));
 
- const admitted=wardTodayAdmissionCount();
- const discharged=wardTodayDischargeCount();
- const pendingTasks=(S.tasks||[]).filter(t=>t.status!=="done"&&onWard(t.pid)).length;
- const activityRow=(icon,label,n,fn)=>'<button type="button" class="ws-landscape-activity-row" onclick="'+fn+'"><span class="ws-landscape-activity-icon">'+icon+'</span><span>'+esc(label)+'</span><b>'+n+'</b><span class="ws-landscape-chevron">›</span></button>';
- const todayCard='<section class="ws-landscape-card ws-landscape-today-card"><header><h2>'+ico("tasks")+'<span>Today at a glance</span></h2><span class="ws-landscape-muted">Live ward activity</span></header><div class="ws-landscape-activity-list">'+
-  activityRow("✓","Admitted",admitted,"ui.psec='';ui.ptag='today';ui.pf='';go('patients')")+
-  activityRow("↗","Discharged",discharged,"openRecentDischarges()")+
-  activityRow("ϟ","ECT planned",ect,"go('ect')")+
-  activityRow("☷","Tasks pending",pendingTasks,"go('tasks')")+
-  '</div></section>';
+        return `<li class="ws-need-row">
+          <span class="ws-need-dot ${dotColor}" aria-hidden="true"></span>
+          <div class="ws-need-info" onclick="r146Open('${esc(x.p.id)}')">
+            <div class="ws-need-headline">
+              <b>${esc(x.b?x.b.no:"No bed")} · ${esc(x.p.name||"Patient")}</b>
+              ${tagHtml}
+            </div>
+            <p class="ws-need-desc">${subtitle}</p>
+          </div>
+          <button type="button" class="ws-need-act-btn ${actClass}" onclick="event.stopPropagation(); ${top.fn}">${actLabel}</button>
+        </li>`;
+      }).join("")}</ul>`
+    : `<div class="ws-panel-empty-text">No urgent patient reviews are pending.</div>`;
 
- const shift=currentShift();
- const dateLabel=new Date().toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
- const shiftCard='<section class="ws-landscape-card ws-landscape-shift-card"><div class="ws-landscape-shift-mark">'+ico("tasks")+'</div><div><small>Current shift</small><strong>'+esc(shiftLabel(shift))+' shift</strong><span>'+esc(dateLabel)+' · '+esc(shiftHours(shift))+'</span></div><button type="button" aria-label="View duty schedule" onclick="go(\'more\')">⌄</button></section>';
- const team=canWrite()?dutyResidentGrid():dutyCardBody();
- const teamCard='<section class="ws-landscape-card ws-landscape-team-card"><header><h2>'+ico("patients")+'<span>On-duty team</span></h2><button type="button" class="ws-landscape-text-action" onclick="go(\'more\')">View team →</button></header><div class="ws-landscape-team-content">'+team+'</div></section>';
- const quickAction=(icon,label,routeName)=>'<button type="button" class="ws-landscape-quick-action" onclick="go(\''+routeName+'\')"><span>'+ico(icon)+'</span><b>'+esc(label)+'</b></button>';
- const quickCard='<section class="ws-landscape-card ws-landscape-quick-card"><header><h2>'+ico("tasks")+'<span>Quick actions</span></h2></header><div class="ws-landscape-quick-grid">'+
-  quickAction("patients","Add patient","census")+
-  quickAction("handover","New handover","handover")+
-  quickAction("ect","Plan ECT","ect")+
-  quickAction("tasks","Add task","tasks")+
-  '</div></section>';
+  // 5. Right Supporting Panel C: Clinical Flags
+  const activeRows=list.map(b=>({bed:b,p:patient(b.patientId)})).filter(x=>x.p);
+  const deliriumN=activeRows.filter(x=>isDelirium(x.p.id)).length;
+  const suicidalN=activeRows.filter(x=>hasSnapTag(x.p.id,"suicidal")).length;
+  const restrainedN=activeRows.filter(x=>restrainHeld(x.p.id)).length;
+  const highRiskN=activeRows.filter(x=>isDelirium(x.p.id)||hasSnapTag(x.p.id,"suicidal")||restrainHeld(x.p.id)).length;
+  const ectN=(S.ect||[]).filter(e=>(!e.status||e.status==="planned")&&onWard(e.pid)).length;
+  const opinionN=opinionCount();
 
- const summary=(n,label,icon,cls,fn)=>'<button type="button" class="ws-landscape-summary-stat '+cls+'" onclick="'+fn+'"><span>'+icon+'</span><b>'+n+'</b><small>'+esc(label)+'</small></button>';
- const bottom='<section class="ws-landscape-bottom-stats" aria-label="Ward status">'+
-  summary(free,"Beds free",ico("bdft"),"free","go('patients')")+
-  summary(admitted,"Admitted",ico("patients"),"admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')")+
-  summary(discharged,"Discharged",ico("tasks"),"discharged","openRecentDischarges()")+
-  '</section>';
+  const flagBadges=[
+    {label:"Delirium",count:deliriumN,cls:"amber",fn:"ui.ptag='delirium';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
+    {label:"Suicidal",count:suicidalN,cls:"red",fn:"ui.ptag='suicidal';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
+    {label:"Restrained",count:restrainedN,cls:"red",fn:"ui.ptag='restrain';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
+    {label:"High risk",count:highRiskN,cls:"warm",fn:"clearPatientListFilters(true);go('patients')"},
+    {label:"ECT",count:ectN,cls:"blue",fn:"go('ect')"},
+    {label:"Opinion",count:opinionN,cls:"lavender",fn:"ui.ptag='';ui.pcon='';ui.preason='opinion';ui.pf='';go('patients')"}
+  ];
 
- return '<div class="ws-landscape-dashboard"><div class="ws-landscape-metrics">'+metrics+'</div><div class="ws-landscape-workspace">'+
-  '<div class="ws-landscape-column ws-landscape-left-column">'+needsHtml+
-   '<section class="ws-landscape-card ws-landscape-flags-card"><header><h2>'+ico("tasks")+'<span>Clinical flags</span></h2><button type="button" class="ws-landscape-text-action" onclick="clearPatientListFilters(true)">View all →</button></header>'+(flagHtml?'<div class="ws-landscape-flag-list">'+flagHtml+'</div>':'<p class="ws-landscape-empty-note">No active clinical flags.</p>')+'</section>'+
-  '</div><div class="ws-landscape-column ws-landscape-middle-column">'+bdftCard+todayCard+'</div>'+
-  '<aside class="ws-landscape-column ws-landscape-right-column" aria-label="Team and quick actions">'+shiftCard+teamCard+quickCard+'</aside>'+
-  '</div>'+bottom+'</div>';
+  const flagHtml=flagBadges.map(f=>
+    `<button type="button" class="ws-flag-chip ${f.cls}" onclick="${f.fn}">
+      <b>${f.count}</b>
+      <span>${esc(f.label)}</span>
+    </button>`
+  ).join("");
+
+  // 6. Full-Width Bottom On-Duty Team
+  const openDuty=dutyOpen();
+  const byId=new Map(pgtPeople().map(r=>[String(r.id),r]));
+  const myId=String(S.userId||"");
+  const teamHtml=openDuty.length
+    ? openDuty.map(d=>{
+        const u=byId.get(String(d.userId))||(S.residents||[]).find(r=>String(r.id)===String(d.userId))||{id:d.userId,name:d.name||rname(d.userId)};
+        const isMe=String(d.userId)===myId;
+        const name=(u.displayName||u.name||d.name||"Doctor");
+        const role=u.designation||(normRole(u.role)==="admin"?"SR":normRole(u.role)==="consultant"?"Consultant":"PG Resident");
+        const roleLabel=isMe?`${esc(role)} <span class="ws-team-you">(You)</span>`:esc(role);
+        const avatar=photoFace(profileInitials(name),"ws-team-face"+(isMe?" is-me":""));
+
+        return `<div class="ws-team-person${isMe?" is-me":""}">
+          ${avatar}
+          <div class="ws-team-meta">
+            <strong class="ws-team-name">${esc(name)}</strong>
+            <small class="ws-team-role">${roleLabel}</small>
+          </div>
+        </div>`;
+      }).join("")
+    : `<div class="ws-team-empty">No team members currently signed in on duty. <button type="button" class="ws-link-btn" onclick="signDuty()">Sign in</button></div>`;
+
+  // SVG Waveform Assets
+  const avgWaveSvg='<img class="ws-avg-wave" src="./medical-banner-60s.svg" alt="" width="360" height="46" decoding="async" fetchpriority="high">';
+  const avgWaveSubSvg='<img class="ws-avg-wave-sub" src="./medical-banner-60s.svg" alt="" width="220" height="32" decoding="async">';
+
+  return `<div class="ws-resident-landscape-home">
+    <!-- Title Row: Psychiatry Ward + Live ward overview + AVG Animation -->
+    <div class="ws-landscape-title-row">
+      <div class="ws-landscape-title-left">
+        <h1 class="ws-landscape-heading">Psychiatry Ward</h1>
+        <p class="ws-landscape-subheading">Live ward overview</p>
+      </div>
+      <div class="ws-landscape-title-wave" aria-hidden="true">
+        ${avgWaveSvg}
+      </div>
+    </div>
+
+    <!-- Main Two-Column Layout (~64% / ~36%) -->
+    <div class="ws-landscape-main-grid">
+      <!-- Left Column: Ward Overview Card -->
+      <section class="ws-landscape-card ws-overview-card" aria-label="Ward Overview">
+        <div class="ws-overview-top">
+          <h2 class="ws-overview-heading">Ward Overview</h2>
+          <div class="ws-overview-summary-strip">
+            <div class="ws-overview-total">
+              <span class="ws-overview-total-val">${totalPatients}</span>
+              <span class="ws-overview-total-label">Total patients</span>
+            </div>
+            <div class="ws-overview-metric-pill obs" onclick="go('observe')">
+              <span class="ws-metric-dot obs" aria-hidden="true"></span>
+              <b>${obsCount}</b>
+              <small>Observation</small>
+            </div>
+            <div class="ws-overview-metric-pill adm" onclick="ui.psec='';ui.ptag='today';ui.pf='';go('patients')">
+              <span class="ws-metric-dot adm" aria-hidden="true"></span>
+              <b>${admittedCount}</b>
+              <small>Admitted</small>
+            </div>
+            <div class="ws-overview-metric-pill dis" onclick="openRecentDischarges()">
+              <span class="ws-metric-dot dis" aria-hidden="true"></span>
+              <b>${dischargedCount}</b>
+              <small>Discharged</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="ws-overview-subhead">
+          <div class="ws-overview-subhead-title">
+            <span class="ws-overview-bed-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/></svg>
+            </span>
+            <h3>Psychiatry Ward</h3>
+          </div>
+          <div class="ws-overview-subhead-wave" aria-hidden="true">
+            ${avgWaveSubSvg}
+          </div>
+        </div>
+
+        <div class="ws-units-grid">
+          ${unitCardsHtml}
+        </div>
+      </section>
+
+      <!-- Right Column: 3 Supporting Panels -->
+      <div class="ws-landscape-right-column">
+        <!-- Panel 1: Bed distribution (Tomorrow) -->
+        <section class="ws-landscape-card ws-panel-card ws-panel-bdft">
+          <header class="ws-panel-head">
+            <h3 class="ws-panel-title">
+              <span class="ws-panel-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/></svg>
+              </span>
+              <span>Bed distribution (Tomorrow)</span>
+            </h3>
+            <button type="button" class="ws-panel-link-btn" onclick="bdftOpenReadOnly()">View BDFT <span aria-hidden="true">→</span></button>
+          </header>
+          <div class="ws-panel-body">
+            ${tomorrowBdftChips}
+          </div>
+        </section>
+
+        <!-- Panel 2: Needs you now -->
+        <section class="ws-landscape-card ws-panel-card ws-panel-needs">
+          <header class="ws-panel-head">
+            <h3 class="ws-panel-title">
+              <span class="ws-panel-icon needs-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+              </span>
+              <span>Needs you now</span>
+            </h3>
+            <span class="ws-panel-badge-count red">${urgentCount}</span>
+          </header>
+          <div class="ws-panel-body">
+            ${needsListHtml}
+          </div>
+        </section>
+
+        <!-- Panel 3: Clinical flags -->
+        <section class="ws-landscape-card ws-panel-card ws-panel-flags">
+          <header class="ws-panel-head">
+            <h3 class="ws-panel-title">
+              <span class="ws-panel-icon flags-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7"/></svg>
+              </span>
+              <span>Clinical flags</span>
+            </h3>
+            <button type="button" class="ws-panel-link-btn" onclick="clearPatientListFilters(true);go('patients')">View all <span aria-hidden="true">→</span></button>
+          </header>
+          <div class="ws-panel-body">
+            <div class="ws-flags-container">
+              ${flagHtml}
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Full-Width Bottom On-Duty Team Section -->
+    <section class="ws-landscape-card ws-team-section" aria-label="On-duty team">
+      <div class="ws-team-inner">
+        <div class="ws-team-heading-wrap">
+          <span class="ws-team-header-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          <h3 class="ws-team-heading">On-duty team</h3>
+        </div>
+        <div class="ws-team-list-wrap">
+          ${teamHtml}
+        </div>
+        <div class="ws-team-action-wrap">
+          <button type="button" class="ws-panel-link-btn ws-team-link" onclick="go('more')">View team <span aria-hidden="true">→</span></button>
+        </div>
+      </div>
+    </section>
+  </div>`;
 }
 const wsOriginalHomeView=homeView;
 homeView=function(){
@@ -26910,19 +27116,19 @@ function dropEmptySections(h){ // R1.3.145: a section header with nothing under 
 }
 function wardSyncApplyResidentTabletMode(){
   try{
-    const activeRole=(S.userId&&typeof roleOf==="function")?roleOf():"";
-    const resident=!!(S.userId&&(activeRole==="resident"||activeRole==="admin")); // Admin accounts also retain the resident workspace.
+    const resident=!!(S.userId&&hasResidentPermission());
     const tablet=!!(window.matchMedia&&window.matchMedia("(min-width:760px)").matches);
     document.documentElement.classList.toggle("ws-resident-tablet",resident&&tablet);
-    const land=!!(S.userId&&activeRole==="resident"&&window.matchMedia&&window.matchMedia("(min-width:900px) and (orientation:landscape)").matches);
+    const land=!!(S.userId&&resident&&window.matchMedia&&window.matchMedia("(min-width:900px) and (orientation:landscape)").matches);
     document.documentElement.classList.toggle("ws-resident-landscape",land);
-    document.documentElement.classList.toggle("ws-intern",activeRole==="intern");
+    document.documentElement.classList.toggle("ws-intern",isIntern());
   }catch(e){
     document.documentElement.classList.remove("ws-resident-tablet");
+    document.documentElement.classList.remove("ws-resident-landscape");
   }
 }
 function wardSyncIsResidentTabletWide(){
-  try{const activeRole=(S.userId&&typeof roleOf==="function")?roleOf():"";return !!(S.userId&&(activeRole==="resident"||activeRole==="admin")&&window.matchMedia&&window.matchMedia("(min-width:900px) and (orientation:landscape)").matches)}catch(e){return false}
+  try{return !!(S.userId&&hasResidentPermission()&&window.matchMedia&&window.matchMedia("(min-width:900px) and (orientation:landscape)").matches)}catch(e){return false}
 }
 let wsResidentResizeRenderQueued=false;
 function wardSyncRefreshResidentTabletMode(){
@@ -28862,311 +29068,992 @@ html.ws-intern .snap-cols>.card{
 </style>
 
 <style id="ward-sync-final-landscape-home-v3">
-.ws-landscape-topbar,.ws-landscape-dashboard,.ws-landscape-greeting-tools{display:none}
-@media (min-width:900px) and (orientation:landscape){
- html.ws-resident-landscape #app.app{
-  --ws-landscape-rail:198px;box-sizing:border-box!important;width:calc(100vw - var(--ws-landscape-rail))!important;
-  height:100dvh!important;max-height:100dvh!important;margin:0 0 0 var(--ws-landscape-rail)!important;
-  padding:0!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;
+.ws-resident-landscape-home, .ws-landscape-topbar, .ws-landscape-greeting-tools { display: none; }
+@media (min-width: 900px) and (orientation: landscape) {
+ html.ws-resident-landscape #app.app {
+  --ws-landscape-rail: 208px;
+  box-sizing: border-box !important;
+  width: calc(100vw - var(--ws-landscape-rail)) !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  margin: 0 0 0 var(--ws-landscape-rail) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
  }
- html.ws-resident-landscape #app.app>.side-nav{
-  position:fixed!important;inset:0 auto 0 0!important;z-index:110!important;width:var(--ws-landscape-rail)!important;
-  height:100dvh!important;box-sizing:border-box!important;padding:18px 12px 14px!important;
-  display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:7px!important;
-  overflow-x:hidden!important;overflow-y:auto!important;background:var(--panel)!important;
-  border-right:1px solid var(--line)!important;
+
+ /* Left Navigation Rail */
+ html.ws-resident-landscape #app.app > .side-nav {
+  position: fixed !important;
+  inset: 0 auto 0 0 !important;
+  z-index: 110 !important;
+  width: var(--ws-landscape-rail) !important;
+  height: 100dvh !important;
+  box-sizing: border-box !important;
+  padding: 16px 12px 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 6px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  background: var(--panel) !important;
+  border-right: 1px solid var(--line) !important;
  }
- html.ws-resident-landscape #app.app>.side-nav .side-brand{
-  display:flex!important;align-items:center!important;gap:10px!important;min-height:42px!important;
-  margin:0 0 13px!important;padding:1px 7px!important;text-align:left!important;
-  font-size:17px!important;line-height:1.1!important;font-weight:850!important;color:var(--ink)!important;
+ html.ws-resident-landscape #app.app > .side-nav .side-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 42px !important;
+  margin: 0 0 10px !important;
+  padding: 2px 6px !important;
+  text-align: left !important;
+  font-size: 17px !important;
+  line-height: 1.1 !important;
+  font-weight: 850 !important;
+  color: var(--ink) !important;
  }
- html.ws-resident-landscape .ws-landscape-brand-mark{
-  display:grid!important;place-items:center!important;width:34px!important;height:34px!important;flex:none!important;
-  border-radius:11px!important;background:linear-gradient(145deg,#7838e9,#4a1cb8)!important;color:#fff!important;
+ html.ws-resident-landscape .ws-landscape-brand-mark {
+  display: grid !important;
+  place-items: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  flex: none !important;
+  border-radius: 9px !important;
+  background: linear-gradient(135deg, #7835DB, #6826D9) !important;
+  color: #fff !important;
  }
- html.ws-resident-landscape .ws-landscape-brand-mark svg{width:25px!important;height:23px!important}
- html.ws-resident-landscape #app.app>.side-nav button{
-  display:flex!important;flex:0 0 45px!important;flex-direction:row!important;align-items:center!important;
-  justify-content:flex-start!important;gap:13px!important;width:100%!important;min-width:0!important;
-  min-height:45px!important;height:45px!important;margin:0!important;padding:0 13px!important;
-  border:0!important;border-radius:12px!important;background:transparent!important;color:var(--muted)!important;
-  text-align:left!important;font-size:13px!important;font-weight:650!important;line-height:1.2!important;
-  white-space:nowrap!important;
+ html.ws-resident-landscape .ws-landscape-brand-mark svg { width: 22px !important; height: 20px !important; }
+ html.ws-resident-landscape #app.app > .side-nav button {
+  display: flex !important;
+  flex: 0 0 42px !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 42px !important;
+  height: 42px !important;
+  margin: 0 !important;
+  padding: 0 12px !important;
+  border: 0 !important;
+  border-radius: 11px !important;
+  background: transparent !important;
+  color: var(--muted) !important;
+  text-align: left !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
  }
- html.ws-resident-landscape #app.app>.side-nav button .ico{
-  display:grid!important;place-items:center!important;width:22px!important;height:22px!important;flex:0 0 22px!important;
+ html.ws-resident-landscape #app.app > .side-nav button .ico {
+  display: grid !important;
+  place-items: center !important;
+  width: 22px !important;
+  height: 22px !important;
+  flex: 0 0 22px !important;
  }
- html.ws-resident-landscape #app.app>.side-nav button .ico svg{display:block!important;width:21px!important;height:21px!important}
- html.ws-resident-landscape #app.app>.side-nav button span:last-child{
-  display:block!important;max-width:none!important;font-size:13px!important;line-height:1.2!important;
-  font-weight:650!important;white-space:nowrap!important;
+ html.ws-resident-landscape #app.app > .side-nav button .ico svg { display: block !important; width: 20px !important; height: 20px !important; }
+ html.ws-resident-landscape #app.app > .side-nav button span:last-child {
+  display: block !important;
+  max-width: none !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
  }
- html.ws-resident-landscape #app.app>.side-nav button.on{
-  background:#7138e8!important;color:#fff!important;box-shadow:0 5px 14px rgba(113,56,232,.18)!important;
+ html.ws-resident-landscape #app.app > .side-nav button.on {
+  background: #7835DB !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(120, 53, 219, 0.28) !important;
  }
- html.ws-resident-landscape .ws-landscape-profile{
-  display:flex!important;align-items:center!important;gap:9px!important;min-width:0!important;
-  margin-top:auto!important;padding:12px 5px 2px!important;border-top:1px solid var(--line)!important;
+
+ /* Profile at bottom of rail */
+ html.ws-resident-landscape .ws-landscape-profile {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  min-width: 0 !important;
+  margin-top: auto !important;
+  padding: 12px 4px 2px !important;
+  border-top: 1px solid var(--line) !important;
  }
- html.ws-resident-landscape .ws-landscape-profile-photo{
-  display:grid!important;place-items:center!important;width:37px!important;height:37px!important;
-  min-width:37px!important;border-radius:50%!important;overflow:hidden!important;
+ html.ws-resident-landscape .ws-landscape-profile-photo {
+  display: grid !important;
+  place-items: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  background: color-mix(in srgb, #7835DB 15%, var(--panel)) !important;
+  color: #7835DB !important;
+  font-weight: 750 !important;
  }
- html.ws-resident-landscape .ws-landscape-profile>span{display:flex!important;flex-direction:column!important;gap:3px!important;min-width:0!important;flex:1!important}
- html.ws-resident-landscape .ws-landscape-profile>span strong{font-size:12px!important;font-weight:750!important;color:var(--ink)!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
- html.ws-resident-landscape .ws-landscape-profile>span small{font-size:11px!important;color:var(--muted)!important}
- html.ws-resident-landscape .ws-landscape-profile>button{width:30px!important;height:30px!important;min-height:30px!important;flex:0 0 30px!important;padding:4px!important;border-radius:9px!important}
- html.ws-resident-landscape .ws-landscape-profile>button .ico svg{width:17px!important;height:17px!important}
- html.ws-resident-landscape #app.app>.top.resident-home{
-  position:relative!important;z-index:20!important;display:flex!important;flex:0 0 82px!important;
-  align-items:center!important;width:100%!important;max-width:none!important;min-width:0!important;
-  height:82px!important;min-height:82px!important;box-sizing:border-box!important;
-  padding:10px 22px!important;gap:16px!important;background:var(--bg)!important;color:var(--ink)!important;
-  border:0!important;border-bottom:1px solid var(--line)!important;
+ html.ws-resident-landscape .ws-landscape-profile > span {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+  flex: 1 !important;
  }
- html.ws-resident-landscape #app.app>.top.resident-home .home-id{
-  display:flex!important;flex:1 1 auto!important;align-items:center!important;gap:13px!important;
-  min-width:0!important;overflow:visible!important;
+ html.ws-resident-landscape .ws-landscape-profile > span strong {
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  color: var(--ink) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
  }
- html.ws-resident-landscape #app.app>.top.resident-home .profile-photo.home-photo,
- html.ws-resident-landscape #app.app>.top.resident-home .photo-img.home-photo{
-  display:block!important;width:47px!important;height:47px!important;min-width:47px!important;
-  border-radius:50%!important;object-fit:cover!important;
+ html.ws-resident-landscape .ws-landscape-profile > span small {
+  font-size: 11px !important;
+  color: var(--muted) !important;
  }
- html.ws-resident-landscape #app.app>.top.resident-home .home-greet{
-  display:flex!important;flex-direction:column!important;gap:3px!important;min-width:0!important;
+ html.ws-resident-landscape .ws-landscape-profile > button {
+  width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  flex: 0 0 28px !important;
+  padding: 4px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--muted) !important;
+  cursor: pointer !important;
  }
- html.ws-resident-landscape #app.app>.top.resident-home .home-greet b{
-  font-size:18px!important;line-height:1.18!important;font-weight:780!important;color:var(--ink)!important;
+ html.ws-resident-landscape .ws-landscape-profile > button .ico svg { width: 17px !important; height: 17px !important; }
+
+ /* Top Header */
+ html.ws-resident-landscape #app.app > .top.resident-home {
+  position: relative !important;
+  z-index: 20 !important;
+  display: flex !important;
+  flex: 0 0 84px !important;
+  align-items: center !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 84px !important;
+  min-height: 84px !important;
+  box-sizing: border-box !important;
+  padding: 10px 20px !important;
+  gap: 16px !important;
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--line) !important;
  }
- html.ws-resident-landscape #app.app>.top.resident-home .home-sync{
-  font-size:12px!important;line-height:1.2!important;color:var(--ok)!important;
+ html.ws-resident-landscape #app.app > .top.resident-home .home-id {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-width: 0 !important;
  }
- html.ws-resident-landscape .ws-landscape-greeting-tools{display:flex!important;align-items:center!important;justify-content:flex-end!important;width:auto!important;min-width:0!important;max-width:none!important;flex:0 0 auto!important}
- html.ws-resident-landscape #app.app>.top.resident-home .ws-landscape-dept{font-size:11px!important;line-height:1.2!important;color:var(--muted)!important}
- html.ws-resident-landscape .ws-landscape-greeting-actions{
-  display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:10px!important;
-  min-width:0!important;
+ html.ws-resident-landscape #app.app > .top.resident-home .profile-photo.home-photo,
+ html.ws-resident-landscape #app.app > .top.resident-home .photo-img.home-photo {
+  display: block !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
  }
- html.ws-resident-landscape .ws-landscape-top-icon{
-  display:flex!important;align-items:center!important;justify-content:center!important;
-  width:39px!important;height:39px!important;flex:0 0 39px!important;padding:7px!important;
-  border:1px solid var(--line)!important;border-radius:12px!important;background:var(--panel)!important;
-  color:var(--ink)!important;
+ html.ws-resident-landscape #app.app > .top.resident-home .home-greet {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  min-width: 0 !important;
  }
- html.ws-resident-landscape .ws-landscape-top-icon svg{width:21px!important;height:21px!important}
- html.ws-resident-landscape .ws-landscape-greeting-actions .top-bell{
-  position:relative!important;display:flex!important;align-items:center!important;justify-content:center!important;
-  width:39px!important;height:39px!important;flex:0 0 39px!important;padding:7px!important;
-  border:1px solid var(--line)!important;border-radius:12px!important;background:var(--panel)!important;color:var(--ink)!important;
+ html.ws-resident-landscape #app.app > .top.resident-home .home-greet b {
+  font-size: 17px !important;
+  line-height: 1.2 !important;
+  font-weight: 780 !important;
+  color: var(--ink) !important;
  }
- html.ws-resident-landscape .ws-landscape-greeting-actions .top-bell .ico{width:21px!important;height:21px!important}
- html.ws-resident-landscape .ws-landscape-greeting-actions .top-bell-n{position:absolute!important;top:-4px!important;right:-4px!important}
- html.ws-resident-landscape .ws-landscape-shift{
-  display:flex!important;align-items:center!important;min-height:42px!important;padding:6px 12px!important;
-  border-radius:12px!important;background:color-mix(in srgb,#8b5cf6 10%,var(--panel))!important;color:var(--ink)!important;
-  white-space:nowrap!important;
+ html.ws-resident-landscape #app.app > .top.resident-home .home-sync {
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+  color: var(--ok) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
  }
- html.ws-resident-landscape .ws-landscape-shift>div{display:flex!important;flex-direction:column!important;gap:2px!important}
- html.ws-resident-landscape .ws-landscape-shift b{font-size:12px!important;font-weight:750!important}
- html.ws-resident-landscape .ws-landscape-shift small{font-size:10px!important;color:var(--muted)!important}
- html.ws-resident-landscape .ws-landscape-duty{
-  height:40px!important;min-width:84px!important;padding:0 13px!important;border:0!important;border-radius:11px!important;
-  background:linear-gradient(135deg,#a855f7,#6826d9)!important;color:#fff!important;
-  display:inline-flex!important;align-items:center!important;justify-content:center!important;
-  font-size:12px!important;font-weight:750!important;white-space:nowrap!important;
+ html.ws-resident-landscape #app.app > .top.resident-home .ws-landscape-dept {
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  color: var(--muted) !important;
  }
- html.ws-resident-landscape #app.app>.main{
-  display:block!important;flex:1 1 auto!important;width:100%!important;max-width:none!important;
-  min-width:0!important;min-height:0!important;height:0!important;margin:0!important;
-  padding:12px 15px 14px!important;overflow-x:hidden!important;overflow-y:auto!important;
-  overscroll-behavior:contain!important;scrollbar-gutter:stable!important;box-sizing:border-box!important;
+ html.ws-resident-landscape .ws-landscape-greeting-tools {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  width: auto !important;
+  min-width: 0 !important;
+  flex: 0 0 auto !important;
  }
- html.ws-resident-landscape #app.app>.main>.ws-landscape-dashboard{
-  display:flex!important;flex-direction:column!important;gap:12px!important;width:100%!important;
-  min-width:0!important;min-height:100%!important;
+ html.ws-resident-landscape .ws-landscape-greeting-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  min-width: 0 !important;
  }
- html.ws-resident-landscape .ws-landscape-metrics{
-  display:grid!important;grid-template-columns:1.22fr repeat(5,minmax(0,1fr))!important;
-  gap:9px!important;flex:none!important;min-width:0!important;
+ html.ws-resident-landscape .ws-landscape-top-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  flex: 0 0 38px !important;
+  padding: 7px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 11px !important;
+  background: var(--panel) !important;
+  color: var(--ink) !important;
+  cursor: pointer !important;
  }
- html.ws-resident-landscape .ws-landscape-metric{
-  display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:10px!important;
-  min-width:0!important;min-height:72px!important;padding:10px 12px!important;
-  border:1px solid var(--line)!important;border-radius:16px!important;background:var(--panel)!important;
-  box-shadow:var(--shadow)!important;color:var(--ink)!important;
+ html.ws-resident-landscape .ws-landscape-top-icon svg { width: 19px !important; height: 19px !important; }
+ html.ws-resident-landscape .ws-landscape-greeting-actions .top-bell {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  flex: 0 0 38px !important;
+  padding: 7px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 11px !important;
+  background: var(--panel) !important;
+  color: var(--ink) !important;
+  cursor: pointer !important;
  }
- html.ws-resident-landscape .ws-landscape-metric.primary{
-  border-color:transparent!important;background:linear-gradient(125deg,#9b5cf4,#6934dc)!important;color:#fff!important;
-  box-shadow:0 6px 16px rgba(105,52,220,.2)!important;
+ html.ws-resident-landscape .ws-landscape-greeting-actions .top-bell .ico { width: 19px !important; height: 19px !important; }
+ html.ws-resident-landscape .ws-landscape-greeting-actions .top-bell-n {
+  position: absolute !important;
+  top: -3px !important;
+  right: -3px !important;
+  background: #DC6473 !important;
+  color: #fff !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  border-radius: 999px !important;
+  min-width: 17px !important;
+  height: 17px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 4px !important;
  }
- html.ws-resident-landscape .ws-landscape-metric-icon{
-  display:grid!important;place-items:center!important;flex:0 0 30px!important;width:30px!important;height:30px!important;
-  color:#8050df!important;
+ html.ws-resident-landscape .ws-landscape-shift {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 4px 12px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 11px !important;
+  background: var(--panel) !important;
+  color: var(--ink) !important;
+  white-space: nowrap !important;
  }
- html.ws-resident-landscape .ws-landscape-metric-icon .ico{width:26px!important;height:26px!important}
- html.ws-resident-landscape .ws-landscape-metric-icon svg{width:25px!important;height:25px!important}
- html.ws-resident-landscape .ws-landscape-metric.primary .ws-landscape-metric-icon{color:#fff!important}
- html.ws-resident-landscape .ws-landscape-metric-copy{display:flex!important;flex-direction:column!important;gap:2px!important;min-width:0!important}
- html.ws-resident-landscape .ws-landscape-metric-copy b{font-size:clamp(20px,2vw,27px)!important;line-height:1!important;font-weight:800!important;color:inherit!important}
- html.ws-resident-landscape .ws-landscape-metric.primary .ws-landscape-metric-copy b{font-size:34px!important}
- html.ws-resident-landscape .ws-landscape-metric-copy small{font-size:11px!important;line-height:1.15!important;color:var(--muted)!important;white-space:normal!important}
- html.ws-resident-landscape .ws-landscape-metric.primary .ws-landscape-metric-copy small{font-size:12px!important;color:#fff!important;opacity:.94!important}
- html.ws-resident-landscape .ws-landscape-workspace{
-  display:grid!important;grid-template-columns:minmax(220px,.96fr) minmax(290px,1.25fr) minmax(235px,.98fr)!important;
-  gap:11px!important;flex:1 1 auto!important;min-height:0!important;align-items:stretch!important;
+ html.ws-resident-landscape .ws-shift-cal-icon {
+  display: grid !important;
+  place-items: center !important;
+  width: 18px !important;
+  height: 18px !important;
+  color: #7835DB !important;
+  flex: none !important;
  }
- html.ws-resident-landscape .ws-landscape-column{
-  display:flex!important;flex-direction:column!important;gap:11px!important;min-width:0!important;min-height:0!important;
+ html.ws-resident-landscape .ws-shift-cal-icon svg { width: 18px !important; height: 18px !important; }
+ html.ws-resident-landscape .ws-landscape-shift > div { display: flex !important; flex-direction: column !important; gap: 1px !important; }
+ html.ws-resident-landscape .ws-landscape-shift b { font-size: 11.5px !important; font-weight: 750 !important; line-height: 1.1 !important; }
+ html.ws-resident-landscape .ws-landscape-shift small { font-size: 10px !important; color: var(--muted) !important; line-height: 1.1 !important; }
+
+ /* Sign out button sitting directly beside shift chip */
+ html.ws-resident-landscape .ws-landscape-duty {
+  height: 38px !important;
+  min-width: 82px !important;
+  padding: 0 15px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: #7835DB !important;
+  color: #fff !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 8px rgba(120, 53, 219, 0.28) !important;
  }
- html.ws-resident-landscape .ws-landscape-card{
-  display:block!important;flex:0 0 auto!important;min-width:0!important;padding:13px 14px!important;
-  border:1px solid var(--line)!important;border-radius:17px!important;background:var(--panel)!important;
-  color:var(--ink)!important;box-shadow:var(--shadow)!important;
+
+ /* Main Content Area */
+ html.ws-resident-landscape #app.app > .main {
+  display: block !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 14px 20px 18px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable !important;
+  box-sizing: border-box !important;
+  background: var(--bg) !important;
  }
- html.ws-resident-landscape .ws-landscape-card>header{
-  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:9px!important;
-  min-width:0!important;margin:0!important;
+
+ /* Dashboard Container */
+ html.ws-resident-landscape .ws-resident-landscape-home {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
  }
- html.ws-resident-landscape .ws-landscape-card>header h2{
-  display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;margin:0!important;
-  font-size:15px!important;line-height:1.2!important;font-weight:800!important;color:var(--ink)!important;
+
+ /* Title Row with Heading & AVG Waveform */
+ html.ws-resident-landscape .ws-landscape-title-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  margin: 0 0 2px !important;
  }
- html.ws-resident-landscape .ws-landscape-card>header h2 .ico{width:19px!important;height:19px!important;color:#7942dc!important;flex:none!important}
- html.ws-resident-landscape .ws-landscape-text-action{
-  padding:3px 0!important;border:0!important;background:transparent!important;color:#7942dc!important;
-  font-size:11px!important;font-weight:750!important;white-space:nowrap!important;
+ html.ws-resident-landscape .ws-landscape-title-left { display: flex !important; flex-direction: column !important; gap: 2px !important; }
+ html.ws-resident-landscape .ws-landscape-heading {
+  font-size: clamp(23px, 2vw, 28px) !important;
+  line-height: 1.15 !important;
+  font-weight: 850 !important;
+  color: var(--ink) !important;
+  margin: 0 !important;
  }
- html.ws-resident-landscape .ws-landscape-muted{font-size:10px!important;color:var(--muted)!important;white-space:nowrap!important}
- html.ws-resident-landscape .ws-landscape-muted-pill{
-  padding:4px 8px!important;border-radius:999px!important;background:color-mix(in srgb,#f59e0b 15%,var(--panel))!important;
-  color:#a16207!important;font-size:10px!important;font-weight:750!important;
+ html.ws-resident-landscape .ws-landscape-subheading {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--muted) !important;
+  margin: 0 !important;
  }
- html.ws-resident-landscape .ws-landscape-needs-card{padding-bottom:9px!important}
- html.ws-resident-landscape .ws-landscape-needs-card p{margin:8px 0!important;color:var(--muted)!important;font-size:12px!important;line-height:1.4!important}
- html.ws-resident-landscape .ws-landscape-action-link{padding:0!important;border:0!important;background:transparent!important;color:#7942dc!important;font-size:12px!important;font-weight:750!important}
- html.ws-resident-landscape .r146-needs{
-  flex:0 0 auto!important;min-width:0!important;margin:0!important;padding:13px 14px 8px!important;
-  border:1px solid var(--line)!important;border-radius:17px!important;background:var(--panel)!important;
-  box-shadow:var(--shadow)!important;
+ html.ws-resident-landscape .ws-landscape-title-wave {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  max-width: 380px !important;
+  flex: 0 1 380px !important;
+  height: 46px !important;
+  overflow: hidden !important;
  }
- html.ws-resident-landscape .r146-needs-head{display:flex!important;align-items:center!important;gap:8px!important;margin:0 0 7px!important}
- html.ws-resident-landscape .r146-needs-head .tiny{font-size:15px!important;font-weight:800!important;color:var(--ink)!important}
- html.ws-resident-landscape .r146-need-list{margin:0!important;padding:0!important;list-style:none!important}
- html.ws-resident-landscape .r146-need{display:flex!important;align-items:center!important;gap:7px!important;padding:9px 0!important;border-top:1px solid var(--line)!important}
- html.ws-resident-landscape .r146-need-main{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;gap:3px!important;min-width:0!important;padding:0!important;border:0!important;background:transparent!important;color:var(--ink)!important;text-align:left!important}
- html.ws-resident-landscape .r146-need-main b{font-size:12px!important;line-height:1.25!important}
- html.ws-resident-landscape .r146-need-act{min-width:64px!important;min-height:30px!important;padding:4px 7px!important;font-size:10px!important;flex:none!important}
- html.ws-resident-landscape .r151-l1{display:block!important;min-width:0!important}
- html.ws-resident-landscape .r151-l2{display:block!important;font-size:10px!important;line-height:1.3!important;color:var(--muted)!important}
- html.ws-resident-landscape .ws-landscape-flags-card{min-height:0!important}
- html.ws-resident-landscape .ws-landscape-flag-list{display:flex!important;flex-wrap:wrap!important;gap:7px!important;margin-top:11px!important}
- html.ws-resident-landscape .ws-landscape-flag-list .r146-fchip{min-height:31px!important;padding:6px 10px!important;border-radius:999px!important;font-size:11px!important;font-weight:750!important}
- html.ws-resident-landscape .ws-landscape-empty-note{margin-top:9px!important;color:var(--muted)!important;font-size:12px!important}
- html.ws-resident-landscape .ws-landscape-bdft-card>header{margin-bottom:11px!important}
- html.ws-resident-landscape .ws-landscape-bed-list{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:7px!important;min-width:0!important}
- html.ws-resident-landscape .ws-landscape-bed{
-  display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:33px!important;
-  padding:6px 11px!important;border:1px solid color-mix(in srgb,#8b5cf6 25%,var(--line))!important;
-  border-radius:999px!important;background:color-mix(in srgb,#8b5cf6 11%,var(--panel))!important;
-  color:var(--ink)!important;font-size:11px!important;font-weight:800!important;white-space:nowrap!important;
+ html.ws-resident-landscape .ws-avg-wave {
+  width: 100% !important;
+  height: 46px !important;
+  object-fit: contain !important;
+  object-position: right center !important;
+  filter: hue-rotate(240deg) saturate(1.4) !important;
  }
- html.ws-resident-landscape .ws-landscape-bed-empty{font-size:12px!important;color:var(--muted)!important;padding:5px 0!important}
- html.ws-resident-landscape .ws-landscape-create-bdft{
-  margin-top:10px!important;padding:5px 9px!important;border:0!important;border-radius:8px!important;
-  background:color-mix(in srgb,#8b5cf6 13%,var(--panel))!important;color:#7942dc!important;font-size:11px!important;font-weight:750!important;
+
+ /* Main 2-Column Grid (~64% / ~36%) */
+ html.ws-resident-landscape .ws-landscape-main-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.76fr) minmax(320px, 1fr) !important;
+  gap: 16px !important;
+  align-items: start !important;
+  width: 100% !important;
+  min-width: 0 !important;
  }
- html.ws-resident-landscape .ws-landscape-today-card>header{margin-bottom:6px!important}
- html.ws-resident-landscape .ws-landscape-activity-list{display:flex!important;flex-direction:column!important}
- html.ws-resident-landscape .ws-landscape-activity-row{
-  display:flex!important;align-items:center!important;gap:9px!important;min-width:0!important;min-height:37px!important;
-  padding:6px 2px!important;border:0!important;border-top:1px solid var(--line)!important;background:transparent!important;
-  color:var(--ink)!important;text-align:left!important;font-size:12px!important;
+
+ /* Common Card Styling */
+ html.ws-resident-landscape .ws-landscape-card {
+  display: block !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 18px !important;
+  background: var(--panel) !important;
+  color: var(--ink) !important;
+  box-shadow: var(--shadow) !important;
  }
- html.ws-resident-landscape .ws-landscape-activity-icon{
-  display:grid!important;place-items:center!important;width:24px!important;height:24px!important;flex:none!important;
-  border-radius:8px!important;background:color-mix(in srgb,#8b5cf6 12%,var(--panel))!important;color:#7942dc!important;font-weight:800!important;
+
+ /* Left Column: Ward Overview Card */
+ html.ws-resident-landscape .ws-overview-card {
+  padding: 16px 18px 18px !important;
  }
- html.ws-resident-landscape .ws-landscape-activity-row>b{margin-left:auto!important;font-size:13px!important;font-weight:800!important}
- html.ws-resident-landscape .ws-landscape-chevron{color:var(--muted)!important;font-size:19px!important;line-height:1!important}
- html.ws-resident-landscape .ws-landscape-right-column{gap:10px!important}
- html.ws-resident-landscape .ws-landscape-shift-card{display:flex!important;align-items:center!important;gap:10px!important;padding:11px 13px!important}
- html.ws-resident-landscape .ws-landscape-shift-mark{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;flex:none!important;border-radius:10px!important;background:color-mix(in srgb,#8b5cf6 12%,var(--panel))!important;color:#7942dc!important}
- html.ws-resident-landscape .ws-landscape-shift-mark .ico{width:21px!important;height:21px!important}
- html.ws-resident-landscape .ws-landscape-shift-card>div:nth-child(2){display:flex!important;flex-direction:column!important;gap:2px!important;min-width:0!important;flex:1!important}
- html.ws-resident-landscape .ws-landscape-shift-card small{font-size:10px!important;color:var(--muted)!important}
- html.ws-resident-landscape .ws-landscape-shift-card strong{font-size:13px!important;font-weight:800!important}
- html.ws-resident-landscape .ws-landscape-shift-card span{font-size:10px!important;color:var(--muted)!important}
- html.ws-resident-landscape .ws-landscape-shift-card>button{border:0!important;background:transparent!important;color:var(--muted)!important;font-size:18px!important}
- html.ws-resident-landscape .ws-landscape-team-card>header{margin-bottom:9px!important}
- html.ws-resident-landscape .ws-landscape-team-content .pgt-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:7px!important}
- html.ws-resident-landscape .ws-landscape-team-content .pgt-tile{
-  display:flex!important;flex-direction:row!important;align-items:center!important;gap:9px!important;min-width:0!important;
-  padding:5px 0!important;border:0!important;background:transparent!important;
+ html.ws-resident-landscape .ws-overview-top {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
  }
- html.ws-resident-landscape .ws-landscape-team-content .pgt-photo{width:32px!important;height:32px!important;min-width:32px!important;flex:none!important;border-radius:50%!important}
- html.ws-resident-landscape .ws-landscape-team-content .r2-who{display:flex!important;flex-direction:column!important;gap:2px!important;min-width:0!important}
- html.ws-resident-landscape .ws-landscape-team-content .r2-name{font-size:11px!important;line-height:1.2!important;font-weight:750!important;color:var(--ink)!important;white-space:normal!important}
- html.ws-resident-landscape .ws-landscape-team-content .pgt-role{font-size:10px!important;color:var(--muted)!important}
- html.ws-resident-landscape .ws-landscape-team-content .duty-actions{margin-top:8px!important}
- html.ws-resident-landscape .ws-landscape-team-content .duty-actions button{min-height:31px!important;padding:5px 10px!important;font-size:11px!important}
- html.ws-resident-landscape .ws-landscape-quick-card{margin-top:auto!important}
- html.ws-resident-landscape .ws-landscape-quick-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important;margin-top:10px!important}
- html.ws-resident-landscape .ws-landscape-quick-action{
-  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:6px!important;
-  min-width:0!important;min-height:66px!important;padding:8px 5px!important;border:1px solid color-mix(in srgb,#8b5cf6 18%,var(--line))!important;
-  border-radius:12px!important;background:color-mix(in srgb,#8b5cf6 8%,var(--panel))!important;color:var(--ink)!important;
+ html.ws-resident-landscape .ws-overview-heading {
+  font-size: 16.5px !important;
+  font-weight: 850 !important;
+  color: var(--ink) !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
  }
- html.ws-resident-landscape .ws-landscape-quick-action>span{display:grid!important;place-items:center!important;width:23px!important;height:23px!important;color:#7942dc!important}
- html.ws-resident-landscape .ws-landscape-quick-action .ico svg{width:22px!important;height:22px!important}
- html.ws-resident-landscape .ws-landscape-quick-action b{font-size:10px!important;font-weight:750!important;text-align:center!important}
- html.ws-resident-landscape .ws-landscape-bottom-stats{
-  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:9px!important;
-  flex:none!important;min-width:0!important;
+ html.ws-resident-landscape .ws-overview-summary-strip {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
  }
- html.ws-resident-landscape .ws-landscape-summary-stat{
-  display:flex!important;align-items:center!important;justify-content:center!important;gap:9px!important;min-width:0!important;
-  min-height:58px!important;padding:8px 12px!important;border:1px solid var(--line)!important;border-radius:14px!important;
-  background:var(--panel)!important;color:var(--ink)!important;box-shadow:var(--shadow)!important;
+ html.ws-resident-landscape .ws-overview-total {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 8px !important;
+  padding: 6px 14px !important;
+  background: color-mix(in srgb, #7835DB 10%, var(--panel)) !important;
+  border: 1px solid color-mix(in srgb, #7835DB 20%, transparent) !important;
+  border-radius: 12px !important;
+  margin-right: 4px !important;
  }
- html.ws-resident-landscape .ws-landscape-summary-stat>span{display:grid!important;place-items:center!important;width:24px!important;height:24px!important;color:#7942dc!important}
- html.ws-resident-landscape .ws-landscape-summary-stat>span .ico svg{width:22px!important;height:22px!important}
- html.ws-resident-landscape .ws-landscape-summary-stat>b{font-size:22px!important;line-height:1!important;font-weight:800!important}
- html.ws-resident-landscape .ws-landscape-summary-stat>small{font-size:11px!important;color:var(--muted)!important}
- html.ws-resident-landscape .ws-landscape-summary-stat.free{background:color-mix(in srgb,#16a36b 8%,var(--panel))!important}
- html.ws-resident-landscape .ws-landscape-summary-stat.free>b,html.ws-resident-landscape .ws-landscape-summary-stat.free>span{color:#16845b!important}
- html.ws-resident-landscape .ws-landscape-summary-stat.admitted{background:color-mix(in srgb,#8b5cf6 8%,var(--panel))!important}
- html.ws-resident-landscape .ws-landscape-summary-stat.discharged{background:color-mix(in srgb,#e879a6 8%,var(--panel))!important}
- html.ws-resident-landscape .ws-landscape-summary-stat.discharged>b,html.ws-resident-landscape .ws-landscape-summary-stat.discharged>span{color:#d44d83!important}
- html.ws-resident-landscape .ws-landscape-dashboard .card{min-width:0!important;max-width:100%!important}
- html.ws-resident-landscape .ws-landscape-dashboard button{touch-action:manipulation}
+ html.ws-resident-landscape .ws-overview-total-val {
+  font-size: 30px !important;
+  font-weight: 850 !important;
+  line-height: 1 !important;
+  color: #6826D9 !important;
+ }
+ html.ws-resident-landscape .ws-overview-total-label {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: var(--ink) !important;
+ }
+ html.ws-resident-landscape .ws-overview-metric-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 7px 13px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 11px !important;
+  background: var(--panel) !important;
+  cursor: pointer !important;
+  color: var(--ink) !important;
+  font-size: 12px !important;
+  transition: background .15s !important;
+ }
+ html.ws-resident-landscape .ws-overview-metric-pill:hover { background: color-mix(in srgb, #7835DB 6%, var(--panel)) !important; }
+ html.ws-resident-landscape .ws-overview-metric-pill b { font-size: 13px !important; font-weight: 800 !important; }
+ html.ws-resident-landscape .ws-overview-metric-pill small { font-size: 11px !important; font-weight: 600 !important; color: var(--muted) !important; }
+ html.ws-resident-landscape .ws-metric-dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  flex: none !important;
+ }
+ html.ws-resident-landscape .ws-metric-dot.obs { background: #E4A54B !important; }
+ html.ws-resident-landscape .ws-metric-dot.adm { background: #3B82F6 !important; }
+ html.ws-resident-landscape .ws-metric-dot.dis { background: var(--muted) !important; }
+
+ /* Psychiatry Ward Subhead inside Ward Overview */
+ html.ws-resident-landscape .ws-overview-subhead {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-top: 1px solid var(--line) !important;
+  margin: 14px 0 12px !important;
+  padding-top: 12px !important;
+ }
+ html.ws-resident-landscape .ws-overview-subhead-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: var(--ink) !important;
+ }
+ html.ws-resident-landscape .ws-overview-bed-ico {
+  display: grid !important;
+  place-items: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  color: #7835DB !important;
+  flex: none !important;
+ }
+ html.ws-resident-landscape .ws-overview-bed-ico svg { width: 19px !important; height: 19px !important; }
+ html.ws-resident-landscape .ws-overview-subhead-title h3 {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  margin: 0 !important;
+ }
+ html.ws-resident-landscape .ws-overview-subhead-wave {
+  display: flex !important;
+  align-items: center !important;
+  max-width: 220px !important;
+  height: 32px !important;
+  overflow: hidden !important;
+ }
+ html.ws-resident-landscape .ws-avg-wave-sub {
+  width: 100% !important;
+  height: 32px !important;
+  object-fit: contain !important;
+  object-position: right center !important;
+  filter: hue-rotate(240deg) saturate(1.4) !important;
+ }
+
+ /* 6 Unit Cards Grid */
+ html.ws-resident-landscape .ws-units-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 11px !important;
+ }
+ html.ws-resident-landscape .ws-unit-card {
+  background: color-mix(in srgb, var(--panel) 92%, #F8F7FC) !important;
+  border: 1px solid color-mix(in srgb, #7835DB 16%, var(--line)) !important;
+  border-radius: 15px !important;
+  padding: 11px 13px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  min-height: 80px !important;
+  box-sizing: border-box !important;
+ }
+ html.ws-resident-landscape .ws-unit-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+ }
+ html.ws-resident-landscape .ws-unit-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: var(--ink) !important;
+ }
+ html.ws-resident-landscape .ws-unit-icon {
+  display: grid !important;
+  place-items: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  color: #7835DB !important;
+  flex: none !important;
+ }
+ html.ws-resident-landscape .ws-unit-ico-svg { width: 17px !important; height: 17px !important; }
+ html.ws-resident-landscape .ws-unit-count {
+  font-size: 11px !important;
+  font-weight: 650 !important;
+  color: var(--muted) !important;
+ }
+ html.ws-resident-landscape .ws-unit-beds {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+ }
+ html.ws-resident-landscape .ws-unit-bed-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 27px !important;
+  padding: 0 10px !important;
+  border-radius: 8px !important;
+  background: #F1EAFB !important;
+  color: #6826D9 !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  border: 1px solid color-mix(in srgb, #7835DB 18%, transparent) !important;
+  cursor: pointer !important;
+  transition: transform .1s, background .15s !important;
+  white-space: nowrap !important;
+ }
+ html.ws-resident-landscape .ws-unit-bed-chip:hover {
+  background: #E8DDFA !important;
+  transform: translateY(-1px) !important;
+ }
+ html.ws-resident-landscape .ws-unit-empty {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: var(--muted) !important;
+  padding: 3px 0 !important;
+  font-style: italic !important;
+ }
+
+ /* Right Column Supporting Panels */
+ html.ws-resident-landscape .ws-landscape-right-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+ }
+ html.ws-resident-landscape .ws-panel-card {
+  padding: 13px 15px !important;
+ }
+ html.ws-resident-landscape .ws-panel-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  margin-bottom: 9px !important;
+ }
+ html.ws-resident-landscape .ws-panel-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 13.5px !important;
+  font-weight: 800 !important;
+  color: var(--ink) !important;
+  margin: 0 !important;
+ }
+ html.ws-resident-landscape .ws-panel-icon {
+  display: grid !important;
+  place-items: center !important;
+  width: 18px !important;
+  height: 18px !important;
+  color: #7835DB !important;
+  flex: none !important;
+ }
+ html.ws-resident-landscape .ws-panel-icon svg { width: 17px !important; height: 17px !important; }
+ html.ws-resident-landscape .ws-panel-link-btn {
+  background: transparent !important;
+  border: 0 !important;
+  color: #7835DB !important;
+  font-size: 11.5px !important;
+  font-weight: 750 !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+ }
+ html.ws-resident-landscape .ws-panel-badge-count {
+  display: inline-grid !important;
+  place-items: center !important;
+  min-width: 20px !important;
+  height: 20px !important;
+  padding: 0 5px !important;
+  border-radius: 999px !important;
+  font-size: 10.5px !important;
+  font-weight: 850 !important;
+  color: #fff !important;
+ }
+ html.ws-resident-landscape .ws-panel-badge-count.red { background: #DC6473 !important; }
+
+ /* BDFT Panel Body */
+ html.ws-resident-landscape .ws-bdft-chip-grid {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+ }
+ html.ws-resident-landscape .ws-bdft-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 26px !important;
+  padding: 0 9px !important;
+  border-radius: 8px !important;
+  background: color-mix(in srgb, #7835DB 9%, var(--panel)) !important;
+  border: 1px solid color-mix(in srgb, #7835DB 20%, var(--line)) !important;
+  color: var(--ink) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+ }
+ html.ws-resident-landscape .ws-panel-empty-text {
+  font-size: 11.5px !important;
+  color: var(--muted) !important;
+  margin: 3px 0 !important;
+ }
+ html.ws-resident-landscape .ws-prepare-bdft-link {
+  display: inline-block !important;
+  margin-top: 6px !important;
+  padding: 4px 8px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: color-mix(in srgb, #7835DB 12%, var(--panel)) !important;
+  color: #7835DB !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  cursor: pointer !important;
+ }
+
+ /* Needs You Now Panel Body */
+ html.ws-resident-landscape .ws-needs-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+ }
+ html.ws-resident-landscape .ws-need-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding-top: 7px !important;
+  border-top: 1px solid var(--line) !important;
+ }
+ html.ws-resident-landscape .ws-need-row:first-child { border-top: 0 !important; padding-top: 0 !important; }
+ html.ws-resident-landscape .ws-need-dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  flex: none !important;
+ }
+ html.ws-resident-landscape .ws-need-dot.red { background: #DC6473 !important; }
+ html.ws-resident-landscape .ws-need-dot.amber { background: #E4A54B !important; }
+ html.ws-resident-landscape .ws-need-dot.blue { background: #3B82F6 !important; }
+ html.ws-resident-landscape .ws-need-info {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  cursor: pointer !important;
+ }
+ html.ws-resident-landscape .ws-need-headline {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  color: var(--ink) !important;
+  line-height: 1.25 !important;
+ }
+ html.ws-resident-landscape .ws-need-pill.op {
+  padding: 1px 6px !important;
+  border-radius: 5px !important;
+  background: color-mix(in srgb, #10B981 14%, var(--panel)) !important;
+  color: #047857 !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+ }
+ html.ws-resident-landscape .ws-need-desc {
+  font-size: 10px !important;
+  color: var(--muted) !important;
+  margin: 1px 0 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+ }
+ html.ws-resident-landscape .ws-need-act-btn {
+  flex: none !important;
+  min-width: 58px !important;
+  height: 26px !important;
+  padding: 0 9px !important;
+  border-radius: 7px !important;
+  border: 0 !important;
+  font-size: 10.5px !important;
+  font-weight: 750 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+ }
+ html.ws-resident-landscape .ws-need-act-btn.release {
+  background: #DC6473 !important;
+  color: #fff !important;
+ }
+ html.ws-resident-landscape .ws-need-act-btn.review {
+  background: #7835DB !important;
+  color: #fff !important;
+ }
+
+ /* Clinical Flags Panel Body */
+ html.ws-resident-landscape .ws-flags-container {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+ }
+ html.ws-resident-landscape .ws-flag-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  height: 28px !important;
+  padding: 0 11px !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+ }
+ html.ws-resident-landscape .ws-flag-chip.amber { background: #FEF3C7 !important; color: #B45309 !important; }
+ html.ws-resident-landscape .ws-flag-chip.red { background: #FEE2E2 !important; color: #B91C1C !important; }
+ html.ws-resident-landscape .ws-flag-chip.warm { background: #F3F4F6 !important; color: #374151 !important; }
+ html.ws-resident-landscape .ws-flag-chip.blue { background: #DBEAFE !important; color: #1D4ED8 !important; }
+ html.ws-resident-landscape .ws-flag-chip.lavender { background: #EDE9FE !important; color: #6D28D9 !important; }
+
+ /* Full-Width Bottom On-Duty Team Section */
+ html.ws-resident-landscape .ws-team-section {
+  padding: 13px 18px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+ }
+ html.ws-resident-landscape .ws-team-inner {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  width: 100% !important;
+ }
+ html.ws-resident-landscape .ws-team-heading-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex: none !important;
+  color: var(--ink) !important;
+ }
+ html.ws-resident-landscape .ws-team-heading {
+  font-size: 14.5px !important;
+  font-weight: 850 !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+ }
+ html.ws-resident-landscape .ws-team-header-icon {
+  display: grid !important;
+  place-items: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  color: #7835DB !important;
+  flex: none !important;
+ }
+ html.ws-resident-landscape .ws-team-header-icon svg { width: 19px !important; height: 19px !important; }
+ html.ws-resident-landscape .ws-team-list-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  flex: 1 1 auto !important;
+  overflow-x: auto !important;
+  padding: 1px 4px !important;
+ }
+ html.ws-resident-landscape .ws-team-person {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  flex: none !important;
+  padding: 4px 8px !important;
+  border-radius: 11px !important;
+ }
+ html.ws-resident-landscape .ws-team-person.is-me {
+  background: color-mix(in srgb, #7835DB 9%, var(--panel)) !important;
+  border: 1px solid color-mix(in srgb, #7835DB 25%, transparent) !important;
+ }
+ html.ws-resident-landscape .ws-team-face {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  display: grid !important;
+  place-items: center !important;
+  flex: none !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  background: color-mix(in srgb, #7835DB 15%, var(--panel)) !important;
+  color: #7835DB !important;
+ }
+ html.ws-resident-landscape .ws-team-face.is-me {
+  background: #7835DB !important;
+  color: #fff !important;
+ }
+ html.ws-resident-landscape .ws-team-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+  min-width: 0 !important;
+ }
+ html.ws-resident-landscape .ws-team-name {
+  font-size: 12px !important;
+  font-weight: 780 !important;
+  color: var(--ink) !important;
+  white-space: nowrap !important;
+ }
+ html.ws-resident-landscape .ws-team-role {
+  font-size: 10.5px !important;
+  color: var(--muted) !important;
+  white-space: nowrap !important;
+ }
+ html.ws-resident-landscape .ws-team-you {
+  color: #7835DB !important;
+  font-weight: 750 !important;
+ }
+ html.ws-resident-landscape .ws-team-empty {
+  font-size: 12px !important;
+  color: var(--muted) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+ }
+ html.ws-resident-landscape .ws-team-action-wrap { flex: none !important; }
+ html.ws-resident-landscape .ws-team-link { white-space: nowrap !important; }
+
+ /* Dark Mode Polish */
+ html.theme-dark .ws-unit-card,
+ html[data-theme="dark"] .ws-unit-card {
+  background: color-mix(in srgb, var(--panel) 92%, #fff 4%) !important;
+  border-color: color-mix(in srgb, #7835DB 32%, var(--line)) !important;
+ }
+ html.theme-dark .ws-unit-bed-chip,
+ html[data-theme="dark"] .ws-unit-bed-chip {
+  background: color-mix(in srgb, #7835DB 26%, var(--panel)) !important;
+  color: #DDD6FE !important;
+  border-color: color-mix(in srgb, #7835DB 38%, transparent) !important;
+ }
+ html.theme-dark .ws-overview-total,
+ html[data-theme="dark"] .ws-overview-total {
+  background: color-mix(in srgb, #7835DB 20%, var(--panel)) !important;
+ }
+ html.theme-dark .ws-overview-total-val,
+ html[data-theme="dark"] .ws-overview-total-val {
+  color: #A78BFA !important;
+ }
+ html.theme-dark .ws-flag-chip.amber,
+ html[data-theme="dark"] .ws-flag-chip.amber {
+  background: rgba(245, 158, 11, 0.22) !important;
+  color: #FCD34D !important;
+ }
+ html.theme-dark .ws-flag-chip.red,
+ html[data-theme="dark"] .ws-flag-chip.red {
+  background: rgba(239, 68, 68, 0.22) !important;
+  color: #FCA5A5 !important;
+ }
+ html.theme-dark .ws-flag-chip.warm,
+ html[data-theme="dark"] .ws-flag-chip.warm {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #E5E7EB !important;
+ }
+ html.theme-dark .ws-flag-chip.blue,
+ html[data-theme="dark"] .ws-flag-chip.blue {
+  background: rgba(59, 130, 246, 0.22) !important;
+  color: #93C5FD !important;
+ }
+ html.theme-dark .ws-flag-chip.lavender,
+ html[data-theme="dark"] .ws-flag-chip.lavender {
+  background: rgba(139, 92, 246, 0.22) !important;
+  color: #C4B5FD !important;
+ }
 }
-@media (min-width:900px) and (max-width:1150px) and (orientation:landscape){
- html.ws-resident-landscape #app.app{--ws-landscape-rail:180px}
- html.ws-resident-landscape #app.app>.side-nav{padding-left:10px!important;padding-right:10px!important}
- html.ws-resident-landscape #app.app>.main{padding:10px 11px!important}
- html.ws-resident-landscape .ws-landscape-metrics{grid-template-columns:repeat(3,minmax(0,1fr))!important}
- html.ws-resident-landscape .ws-landscape-metric{min-height:60px!important;padding:8px 10px!important}
- html.ws-resident-landscape .ws-landscape-metric.primary .ws-landscape-metric-copy b{font-size:27px!important}
- html.ws-resident-landscape .ws-landscape-workspace{grid-template-columns:minmax(0,.95fr) minmax(0,1.15fr)!important;gap:9px!important}
- html.ws-resident-landscape .ws-landscape-right-column{grid-column:1/-1!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:start!important}
- html.ws-resident-landscape .ws-landscape-quick-card{margin-top:0!important}
+
+/* Responsive Viewports */
+@media (min-width: 900px) and (max-width: 1250px) and (orientation: landscape) {
+ html.ws-resident-landscape #app.app { --ws-landscape-rail: 184px; }
+ html.ws-resident-landscape #app.app > .side-nav { padding-left: 9px !important; padding-right: 9px !important; }
+ html.ws-resident-landscape #app.app > .main { padding: 12px 14px 14px !important; }
+ html.ws-resident-landscape .ws-landscape-main-grid {
+  grid-template-columns: minmax(0, 1.55fr) minmax(290px, 1fr) !important;
+  gap: 12px !important;
+ }
+ html.ws-resident-landscape .ws-landscape-title-wave { max-width: 280px !important; }
+ html.ws-resident-landscape .ws-overview-card { padding: 14px 15px !important; }
 }
-@media (min-width:900px) and (orientation:landscape) and (max-height:700px){
- html.ws-resident-landscape #app.app>.top.resident-home{height:70px!important;min-height:70px!important;flex-basis:70px!important;padding-top:7px!important;padding-bottom:7px!important}
- html.ws-resident-landscape #app.app>.main{padding-top:8px!important;padding-bottom:8px!important}
- html.ws-resident-landscape #app.app>.main>.ws-landscape-dashboard{gap:8px!important}
- html.ws-resident-landscape .ws-landscape-workspace{gap:8px!important}
- html.ws-resident-landscape .ws-landscape-column{gap:8px!important}
- html.ws-resident-landscape .ws-landscape-metric{min-height:58px!important}
- html.ws-resident-landscape .ws-landscape-card{padding:10px 11px!important}
- html.ws-resident-landscape .ws-landscape-quick-action{min-height:55px!important}
- html.ws-resident-landscape .ws-landscape-summary-stat{min-height:48px!important}
+@media (min-width: 900px) and (orientation: landscape) and (max-height: 700px) {
+ html.ws-resident-landscape #app.app > .top.resident-home {
+  height: 68px !important;
+  min-height: 68px !important;
+  flex-basis: 68px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+ }
+ html.ws-resident-landscape #app.app > .main { padding-top: 8px !important; padding-bottom: 8px !important; }
+ html.ws-resident-landscape .ws-overview-card { padding: 12px 14px !important; }
+ html.ws-resident-landscape .ws-unit-card { min-height: 70px !important; padding: 9px 11px !important; }
 }
-@media (min-width:900px) and (max-width:980px) and (orientation:landscape){
- html.ws-resident-landscape .ws-landscape-workspace{grid-template-columns:minmax(0,1fr)!important}
- html.ws-resident-landscape .ws-landscape-right-column{grid-column:auto!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+@media (min-width: 900px) and (max-width: 1040px) and (orientation: landscape) {
+ html.ws-resident-landscape #app.app { --ws-landscape-rail: 176px; }
+ html.ws-resident-landscape .ws-landscape-main-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 12px !important;
+ }
+ html.ws-resident-landscape .ws-team-inner {
+  flex-wrap: wrap !important;
+ }
 }
 </style>
 </body>
