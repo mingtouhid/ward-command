@@ -9344,8 +9344,10 @@ function oaFacultyDutyCell(row,rowIndex,columnIndex,editable){
  if(!selected&&selectedId)options+='<option value="'+oaEsc(selectedId)+'" selected disabled>Saved account unavailable</option>';
  options+=available.map(u=>'<option value="'+oaEsc(u.id)+'" '+(String(u.id)===selectedId?"selected":"")+'>'+oaEsc(oaConsultantOptionLabel(u))+'</option>').join("");
  const phone=String((selected&&selected.phone)||"").trim();
+ const phoneDigits=phone.replace(/\D/g,"");
+ const shownPhone=phoneDigits.length===12&&phoneDigits.startsWith("91")?"+91 "+phoneDigits.slice(2,7)+" "+phoneDigits.slice(7):phone;
  const profile=selected
-  ?'<div class="oa-faculty-duty-profile"><strong>'+oaEsc(oaConsultantFullName(selected))+'</strong><span class="oa-faculty-duty-designation">'+oaEsc(selected.designation||"Designation not set")+'</span><span class="oa-faculty-duty-phone">'+(phone?"Phone: "+oaEsc(phone):"No phone saved in user profile")+'</span></div>'
+  ?'<div class="oa-faculty-duty-profile"><strong>'+oaEsc(oaConsultantFullName(selected))+'</strong><span class="oa-faculty-duty-designation">'+oaEsc(selected.designation||"Designation not set")+'</span><span class="oa-faculty-duty-phone">'+(phone?"Phone: "+oaEsc(shownPhone):"No phone saved in user profile")+'</span></div>'
   :'<div class="oa-faculty-duty-profile"><strong>'+oaEsc(raw||"No faculty selected")+'</strong><span class="oa-faculty-duty-unmatched">'+(raw?"This roster entry is not linked to a registered consultant account.":"Select a registered consultant account.")+'</span></div>';
  return '<div class="oa-faculty-duty-cell"><select class="oa-faculty-duty-select" aria-label="'+label+', row '+(rowIndex+1)+'" '+(editable?'onchange="oaFacultyDutyChange('+rowIndex+','+columnIndex+',this.value)"':"disabled")+'><option value="" '+(!selectedId?"selected":"")+'>'+oaEsc(placeholder)+'</option>'+options+'</select>'+profile+'</div>';
 }
@@ -9629,7 +9631,7 @@ function oaGenerateDates(){
   if(to<from)return toast("End date must be on or after start date","bad");
   const c=oaEnsureRosterContent();
   if(c.rows.length&&!confirm("Replace the existing duty rows with dates for this period?"))return;
-  const dateCol=c.columns.findIndex(x=>/^date$/i.test(x)),dayCol=c.columns.findIndex(x=>/^day$/i.test(x));c.rows=[];
+  const dateCol=c.columns.findIndex(x=>/^date$/i.test(x)),dayCol=c.columns.findIndex(x=>/^day$/i.test(x));c.rows=[];c.facultyAssignments=[];
   for(let d=new Date(from);d<=to;d.setDate(d.getDate()+1)){
     const row=c.columns.map(()=>"");
     if(dateCol>=0)row[dateCol]=d.toLocaleDateString("en-GB").replace(/\//g,"-").replace(/-(\d{4})$/,(m,y)=>"-"+y.slice(-2));
