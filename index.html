@@ -6871,6 +6871,20 @@ function profileEnsurePhone(){
     ui.profilePhone={loading:false,e164:"",err:rpcMissing(e)?"Phone status needs a server update.":phoneErrCopy(e),missing:rpcMissing(e)};
   }).finally(()=>{try{render()}catch(e){}});
 }
+function profileEnsureFullName(){
+  if(ui._profileFullNameStarted||!user()) return;
+  ui._profileFullNameStarted=true;
+  ui.profileFullName={loading:true,full_name:""};
+  if(!sb||!sessionTok){ui.profileFullName={loading:false,full_name:"",err:"Sign in again to load your full name."};return}
+  sb.rpc("ward_get_my_full_name",{p_token:sessionTok}).then(({data,error})=>{
+    if(error) throw error;
+    const fullName=String(data?.full_name||"");
+    const me=user();if(me)me.fullName=fullName;
+    ui.profileFullName={loading:false,full_name:fullName};
+  }).catch(e=>{
+    ui.profileFullName={loading:false,full_name:"",err:rpcMissing(e)?"Full-name profile needs a server update.":String(e.message||e)};
+  }).finally(()=>{try{render()}catch(e){}});
+}
 function profileBeginEdit(){
   if(!canOpenProfile()) return;
   const me=user(); if(!me) return;
@@ -6878,6 +6892,7 @@ function profileBeginEdit(){
   ui.fields=ui.fields||{};
   ui.fields.pu=me.username||"";
   ui.fields.pd=me.displayName||"";
+  ui.fields.pfull=String(ui.profileFullName?.full_name||me.fullName||"");
   ui.fields.pph=ui.profilePhone&&ui.profilePhone.e164?phonePretty(ui.profilePhone.e164):"";
   ui.profileShort=bdftGetResidentShort(me);
   ui.profileBeds=(bdftGetResidentBeds(me)||[]).slice();
@@ -6924,6 +6939,7 @@ async function profileSave(){
   const me=user(); if(!me||String(me.id)!==String(S.userId)){toast("You can only edit your own profile.","bad");return}
   const username=(val("pu")||"").trim().toLowerCase();
   const display=(val("pd")||"").trim();
+  const fullName=(val("pfull")||"").trim();
   const short=String(ui.profileShort||"").trim().toUpperCase().slice(0,16);
   const beds=(ui.profileBeds||[]).slice();
   if(!/^[a-z0-9][a-z0-9._-]{0,31}$/.test(username)){toast("Username: letters, numbers, . _ -","bad");return}
@@ -6937,6 +6953,17 @@ async function profileSave(){
     if(e164===null){phoneErrSet("pph",PHONE_ERR);render({force:1});return}
   }
   phoneErrSet("pph","");
+  if(fullName.length>120){toast("Full name must be 120 characters or fewer.","bad");return}
+  const oldFullName=String(ui.profileFullName?.full_name||me.fullName||"").trim();
+  if(fullName!==oldFullName){
+    if(!sb||!sessionTok){toast("Sign in again to save your full name.","bad");return}
+    try{
+      const {data,error}=await sb.rpc("ward_set_my_full_name",{p_token:sessionTok,p_full_name:fullName});
+      if(error) throw error;
+      me.fullName=String(data?.full_name||fullName);
+      ui.profileFullName={loading:false,full_name:me.fullName};
+    }catch(e){toast("Could not save full name: "+String(e.message||e),"bad");return}
+  }
   let nameNote="";
   const nameChanged=username!==String(me.username||"").toLowerCase()||display!==String(me.displayName||"");
   if(nameChanged){
@@ -7190,9 +7217,10 @@ function profileView(){
   try{bdftInit()}catch(e){}
   const me=user()||{};
   profileEnsurePhone();
+  profileEnsureFullName();
   if(!canOpenProfile()){
     const role=normRole(me.role),roleName=role==="admin"?"Administrator":role==="consultant"?"Consultant":role==="intern"?"Intern":"Resident";
-    return `<div class="profile-readonly"><div class="profile-readonly-head"><p class="tiny">ACCOUNT</p><h2 class="page-title">My profile</h2></div><section class="card profile-readonly-card"><div class="profile-readonly-avatar">${esc(profileInitials(me.displayName||me.username||""))}</div><div class="profile-readonly-name">${esc(me.displayName||me.username||"User")}</div><p class="profile-readonly-role">${roleName}</p><dl><div><dt>Username</dt><dd>${esc(me.username||"—")}</dd></div><div><dt>Ward / unit</dt><dd>${esc((S.unit&&S.unit.name)||"—")}</dd></div></dl><p class="tiny">Account details are managed by the ward administrator.</p></section></div>`;
+    return `<div class="profile-readonly"><div class="profile-readonly-head"><p class="tiny">ACCOUNT</p><h2 class="page-title">My profile</h2></div><section class="card profile-readonly-card"><div class="profile-readonly-avatar">${esc(profileInitials(me.displayName||me.username||""))}</div><div class="profile-readonly-name">${esc(me.displayName||me.username||"User")}</div><p class="profile-readonly-role">${roleName}</p><dl><div><dt>Username</dt><dd>${esc(me.username||"—")}</dd></div><div><dt>Full name</dt><dd>${esc(ui.profileFullName?.loading?"Loading…":(ui.profileFullName?.full_name||"Not set"))}</dd></div><div><dt>Ward / unit</dt><dd>${esc((S.unit&&S.unit.name)||"—")}</dd></div></dl><p class="tiny">Account details are managed by the ward administrator.</p></section></div>`;
   }
   const editing=!!ui.profileEdit;
   const short=editing?(ui.profileShort||""):bdftGetResidentShort(me);
@@ -7221,12 +7249,14 @@ function profileView(){
       <dl class="profile-rows">
       ${editing?`${row("Username",`<input id="pu" autocapitalize="none" autocomplete="username" value="${esc(val("pu"))}" oninput="ui.fields.pu=this.value"/>`)}
         ${row("Display name",`<input id="pd" value="${esc(val("pd"))}" oninput="ui.fields.pd=this.value"/>`)}
+        ${row("Full name",`<input id="pfull" maxlength="120" autocomplete="name" placeholder="Official full name for rosters" value="${esc(val("pfull"))}" oninput="ui.fields.pfull=this.value"/>`)}
         ${row("Phone",`<input id="pph" type="tel" inputmode="tel" autocomplete="tel" maxlength="18" placeholder="10-digit mobile" value="${esc(val("pph"))}" ${(ui.phoneErr||{}).pph?`aria-invalid="true"`:""} oninput="ui.fields.pph=this.value;phoneErrClear('pph',this)"/>${(ui.phoneErr||{}).pph?`<span class="field-err" role="alert">${esc(ui.phoneErr.pph)}</span>`:""}`)}
         <div class="span2"><dd class="tiny" style="margin:0 0 8px">Only consultants can call you, and only while you are on duty. Other residents never see this number.</dd>${ph.e164?`<button type="button" class="btn ghost sm" style="color:var(--danger)" onclick="profileClearPhone()">Remove number</button>`:""}</div>
         ${row("BDFT short name",`<input id="pshort" maxlength="16" style="text-transform:uppercase" value="${esc(short)}" oninput="ui.profileShort=this.value.toUpperCase()"/>`)}
         <div class="span2"><dt>Owned beds (${(ui.profileBeds||[]).length})</dt>${grid}</div>`
       :`${row("Username",esc(me.username||""))}
         ${row("Display name",esc(me.displayName||""))}
+        ${row("Full name",esc(ui.profileFullName?.loading?"Loading…":(ui.profileFullName?.full_name||"Not set")))}
         ${row("Phone",esc(phoneLine))}
         ${row("BDFT short name",esc(short||""))}
         ${row("Owned beds",chips)}`}
@@ -9118,9 +9148,10 @@ function oaEditRoster(id){
         c.faculty=(c.faculty||[]).map(f=>{
           const match=(f.consultantId
             ?oaFacultySuggestionUsers().find(u=>String(u.id)===String(f.consultantId))
-            :null)||oaFacultyMatch(f.name);
-          return match?{...f,consultantId:match.id,name:match.display_name||f.name,
-            designation:match.designation||f.designation||"",phone:String(match.phone||f.phone||"")}:f;
+            :null)||oaFacultyMatch(f.fullName||f.name||f.displayName);
+          return match?{...f,consultantId:match.id,name:oaConsultantFullName(match),
+            fullName:String(match.full_name||""),displayName:String(match.display_name||""),
+            designation:String(match.designation||""),phone:String(match.phone||"")}:f;
         });
       }
     }catch(e){OA.error=e.message||String(e)}
@@ -9157,9 +9188,12 @@ function oaGroupPreviewTable(c){
  return `<div class="oa-group-preview-wrap"><table class="oa-group-preview"><thead><tr>${groups.map(g=>`<th>${oaEsc(g.name||"Group")}</th>`).join("")}</tr></thead><tbody>${Array.from({length:max},(_,i)=>`<tr>${groups.map(g=>`<td>${groupCell((g.members||[])[i])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 function oaFacultyPrintHtml(c){
- const list=(Array.isArray(c.faculty)?c.faculty:[]).filter(f=>String(f.name||"").trim()||String(f.phone||"").trim());
+ const list=(Array.isArray(c.faculty)?c.faculty:[]).filter(f=>String(f.fullName||f.name||"").trim()||String(f.phone||"").trim());
  if(!list.length)return "";
- return `<div class="oa-faculty-preview"><b>Faculty</b>${list.map(f=>`<p class="oa-faculty-print"><b>${oaEsc(f.name||"Faculty")}</b>${String(f.phone||"").trim()?`<br>Phone: ${oaEsc(f.phone)}`:""}</p>`).join("")}</div>`;
+ return `<div class="oa-faculty-preview"><b>Faculty</b>${list.map(f=>{
+   const name=String(f.fullName||f.name||"Faculty");
+   return `<p class="oa-faculty-print"><b>${oaEsc(name)}</b>${f.designation?`<br>${oaEsc(f.designation)}`:""}${String(f.phone||"").trim()?`<br>Phone: ${oaEsc(f.phone)}`:""}</p>`;
+ }).join("")}</div>`;
 }
 function oaRosterPreviewContent(c){
  const cols=Array.isArray(c.columns)?c.columns:[],rows=Array.isArray(c.rows)?c.rows:[];
@@ -9189,7 +9223,7 @@ function oaEnsureRosterContent(){
  }else{
   const oldSub="FACULTY / VP / RESIDENT PHYSICIAN-GDMO — WEEKLY DUTY ROSTER";
   if(!String(c.subtitle||"").trim()||c.subtitle===oldSub)c.subtitle="Faculty Roster";
-  c.faculty=(Array.isArray(c.faculty)?c.faculty:[]).map(f=>({name:String((f&&(f.name||f.display_name))||""),phone:String((f&&(f.phone||f.phone_number))||""),consultantId:String((f&&(f.consultantId||f.consultant_id||f.residentId||f.resident_id))||""),designation:String((f&&f.designation)||"")}));
+  c.faculty=(Array.isArray(c.faculty)?c.faculty:[]).map(f=>({name:String((f&&(f.fullName||f.full_name||f.name||f.display_name))||""),fullName:String((f&&(f.fullName||f.full_name))||""),displayName:String((f&&(f.displayName||f.display_name))||""),phone:String((f&&(f.phone||f.phone_number))||""),consultantId:String((f&&(f.consultantId||f.consultant_id||f.residentId||f.resident_id))||""),designation:String((f&&f.designation)||"")}));
  }
  r.content=c;OA.editing=r;return c;
 }
@@ -9201,21 +9235,55 @@ function oaPgtSuggestionUsers(){
  return (OA.users||[]).filter(u=>u&&u.active!==false&&eligibleRoles.has(String(u.role||"").toLowerCase())&&String(u.bdft_short||"").trim()&&(u.display_name||u.username)).sort((a,b)=>String(a.display_name||a.username).localeCompare(String(b.display_name||b.username)));
 }
 function oaFacultySuggestionUsers(){
-  const norm=v=>String(v||"").trim().toLocaleLowerCase();
   return (OA.users||[]).filter(u=>u&&u.active!==false
-    &&norm(u.role)==="consultant"
-    &&norm(u.username)!=="consultant"
-    &&!/\btest\b/i.test(String(u.display_name||""))
-    &&!/^\s*dr\.?\s*x\s*$/i.test(String(u.display_name||""))
+    &&String(u.role||"").trim().toLowerCase()==="consultant"
+    &&String(u.id||"").trim()
     &&String(u.display_name||u.username||"").trim())
-    .sort((a,b)=>String(a.display_name||a.username).localeCompare(String(b.display_name||b.username)));
+    .sort((a,b)=>String(a.full_name||a.display_name||a.username).localeCompare(String(b.full_name||b.display_name||b.username)));
+}
+function oaConsultantFullName(u){
+  return String(u?.full_name||u?.display_name||u?.username||"").trim();
+}
+function oaConsultantOptionLabel(u){
+  const full=oaConsultantFullName(u),display=String(u?.display_name||u?.username||"").trim();
+  const secondary=display&&display.toLocaleLowerCase()!==full.toLocaleLowerCase()?" · Account: "+display:"";
+  const designation=String(u?.designation||"Consultant").trim();
+  return full+(secondary?secondary:"")+" · "+designation;
 }
 function oaFacultyMatch(value){
   const norm=v=>String(v||"").normalize("NFKC").trim()
-    .replace(/^(?:(?:prof(?:essor)?|dr)\.?\s*)+/i,"")
-    .replace(/\s+/g," ").toLocaleLowerCase();
+    .replace(/^(?:(?:prof(?:essor)?|dr)\\.?\\s*)+/i,"")
+    .replace(/[.,]+/g," ").replace(/\\s+/g," ").toLocaleLowerCase();
   const q=norm(value);if(!q)return null;
-  return oaFacultySuggestionUsers().find(u=>norm(u.display_name)===q||norm(u.username)===q)||null;
+  const matched=oaFacultySuggestionUsers().filter(u=>
+    [u.full_name,u.display_name,u.username,...(Array.isArray(u.aliases)?u.aliases:[])]
+      .some(v=>norm(v)===q)
+  );
+  const unique=new Map(matched.map(u=>[String(u.id),u]));
+  return unique.size===1?[...unique.values()][0]:null;
+}
+function oaFacultyRows(c,editable){
+  const users=oaFacultySuggestionUsers();
+  const entries=Array.isArray(c.faculty)?c.faculty:[];
+  const rows=entries.map((f,i)=>{
+    const selected=users.find(u=>String(u.id)===String(f.consultantId))||null;
+    const shown=selected?oaConsultantFullName(selected):String(f.fullName||f.name||"").trim();
+    const selectLabel=selected?"Select a registered consultant":(shown?"Unresolved: "+shown:"Select a registered consultant");
+    return `<div class="oa-faculty-entry">
+      <label class="field"><span>Consultant account</span><select ${editable?`onchange="oaFacultyName(${i},this.value)"`:"disabled"} aria-label="Consultant account ${i+1}">
+        <option value="" ${selected?"":"selected"}>${oaEsc(selectLabel)}</option>
+        ${users.map(u=>`<option value="${oaEsc(u.id)}" ${selected&&String(selected.id)===String(u.id)?"selected":""}>${oaEsc(oaConsultantOptionLabel(u))}</option>`).join("")}
+      </select></label>
+      <div class="oa-faculty-contact">
+        <span class="oa-faculty-name-label">${oaEsc(shown||"No consultant selected")}</span>
+        ${selected&&selected.designation?`<span class="oa-faculty-designation">${oaEsc(selected.designation)}</span>`:""}
+        ${selected&&!String(selected.full_name||"").trim()?`<span class="oa-faculty-phone-empty">Full name not set in the user profile; the display name will be used on the roster.</span>`:""}
+        ${selected?(String(selected.phone||"").trim()?`<span class="oa-faculty-phone-label">Phone: ${oaEsc(selected.phone)}</span>`:`<span class="oa-faculty-phone-empty">No phone saved in user profile</span>`):""}
+      </div>
+      ${editable?`<button type="button" class="oa-iconbtn" title="Remove faculty" onclick="oaRemoveFaculty(${i})">×</button>`:""}
+    </div>`;
+  }).join("");
+  return rows+${editable?`<button type="button" class="btn oa-action-add sm" onclick="oaAddFaculty()">+ Add consultant</button>`:""};
 }
 function oaPgtDatalist(){
  const n=oaPgtSuggestionUsers().length;
@@ -9338,12 +9406,12 @@ function oaRosterForm(){
   const suggestions=[...new Set(assignmentValues.filter(Boolean))];
   const dateRows=c.rows.map((row,i)=>`<tr><td class="oa-rownum">${i+1}</td>${c.columns.map((col,j)=>`<td><input class="oa-cell" list="${pgt?"oaDutySuggestions":""}" aria-label="Row ${i+1}, ${oaEsc(col)}" value="${oaEsc(row[j]??"")}" ${editable?`oninput="oaCellInput(${i},${j},this.value)"`:'disabled'}></td>`).join("")}<td><button class="oa-iconbtn" title="Remove row" ${editable?`onclick="oaRemoveRosterRow(${i})"`:"disabled"}>×</button></td></tr>`).join("");
   const pgtHeaders=c.columns.map((col,j)=>{const fixed=j<2;return `<th><div class="oa-col-head"><input class="oa-colname" value="${oaEsc(col)}" ${editable&&!fixed?`oninput="oaColumnInput(${j},this.value)"`:'disabled'} aria-label="Column heading ${j+1}"><button type="button" class="oa-remove-col-btn" title="${fixed?'Date and day columns are required':'Remove '+oaEsc(col)}" ${editable&&!fixed?`onclick="oaRemoveRosterColumn(${j})"`:'disabled'} aria-label="Remove column ${j+1}">×</button></div></th>`}).join("");
-  const facultyOptions=oaFacultySuggestionUsers();
-  const facultyDatalist=!pgt?`<datalist id="oaFacultySuggestions">${facultyOptions.map(u=>`<option value="${oaEsc(u.display_name||u.username)}" label="${oaEsc(u.designation||"Consultant")}"></option>`).join("")}</datalist>`:"";
+  const facultyRows=!pgt?oaFacultyRows(c,editable):"";
+
   return `<div class="oa-card oa-roster-builder"><div class="oa-row"><button class="btn secondary" onclick="OA.editing=null;render({force:1})">← Back</button><span class="oa-status">${oaStatus(r.status||"draft")}</span></div>
-  <h2>${r.id?"Edit roster":"Create duty roster"}</h2><p class="oa-help">${pgt?"Choose a saved PGT group set, then allocate group letters and PGT abbreviations in the daily duty table.":"Select registered consultants from the name suggestions. Their saved phone number appears below the name and in the printable roster."}</p>
+  <h2>${r.id?"Edit roster":"Create duty roster"}</h2><p class="oa-help">${pgt?"Choose a saved PGT group set, then allocate group letters and PGT abbreviations in the daily duty table.":"Select a registered consultant account. The full name, designation and saved phone number are read from that account profile."}</p>
   <div class="oa-field-grid"><label class="field"><span>Roster type</span><input value="${pgt?"PGT monthly duty roster":"Faculty weekly duty roster"}" disabled></label><label class="field"><span>Reference / dispatch no.</span><input id="oaRef" ${editable?"":"disabled"} value="${oaEsc(r.reference_number||"")}"></label>${oaRosterDateField("oaIssue","Issue date",r.issue_date||"",editable)}${oaRosterDateField("oaStart","Start date",r.period_start||"",editable,"oa-period-start")}${oaRosterDateField("oaEnd","End date",r.period_end||"",editable,"oa-period-end")}</div>
-  ${pgt?"":`<section class="oa-builder-section oa-faculty-section"><div class="oa-builder-heading"><div><h3>Faculty</h3><p class="oa-help">Choose a consultant account. The phone number is read from the saved user profile and printed below the name.</p></div></div>${facultyDatalist}${(c.faculty||[]).map((f,i)=>`<div class="oa-faculty-entry"><label class="field"><span>Faculty / Consultant</span><input ${editable?`list="oaFacultySuggestions" onchange="oaFacultyName(${i},this.value)`:"disabled"} autocomplete="off" value="${oaEsc(f.name)}" placeholder="Type or select a consultant"></label><div class="oa-faculty-contact">${String(f.phone||"").trim()?`<span class="oa-faculty-phone-label">Phone: ${oaEsc(f.phone)}</span>`:`<span class="oa-faculty-phone-empty">No phone saved in user profile</span>`}${f.designation?`<span class="oa-faculty-designation">${oaEsc(f.designation)}</span>`:""}</div>${editable?`<button type="button" class="oa-iconbtn" title="Remove faculty" onclick="oaRemoveFaculty(${i})">×</button>`:""}</div>`).join("")||`<p class="oa-help">No faculty lines yet.</p>`}${editable?`<button type="button" class="btn oa-action-add sm" onclick="oaAddFaculty()">+ Add consultant</button>`:""}</section>`}
+  ${pgt?"":`<section class="oa-builder-section oa-faculty-section"><div class="oa-builder-heading"><div><h3>Faculty</h3><p class="oa-help">Choose a consultant account. The phone number is read from the saved user profile and printed below the name.</p></div></div>${facultyRows}</section>`}
   ${pgt?oaRosterGroupSetSelector():groupsHtml}
   <datalist id="oaDutySuggestions">${suggestions.map(v=>`<option value="${oaEsc(v)}"></option>`).join("")}</datalist>
   <section class="oa-builder-section"><div class="oa-builder-heading"><div><h3>${pgt?"2. Daily duty allocation":"1. Duty allocation table"}</h3><p class="oa-help">${pgt?"Use group letters (A–D) or individual PGT short codes. Combined assignments such as MM+AS can be typed directly.":"Enter duty assignments directly into the cells."}</p></div><span class="oa-count">${c.rows.length} days</span></div>
@@ -9399,16 +9467,19 @@ function oaRemoveRosterColumn(j){
 }
 function oaAddNote(){oaSyncRosterMeta();oaEnsureRosterContent().notes.push("");render({force:1})}
 function oaRemoveNote(i){oaSyncRosterMeta();oaEnsureRosterContent().notes.splice(i,1);render({force:1})}
-function oaFacultyName(i,v){
+function oaFacultyName(i,id){
   oaSyncRosterMeta();
   const list=oaEnsureRosterContent().faculty||[],f=list[i];if(!f)return;
-  const previous=f.name||"",match=oaFacultyMatch(v);
-  f.name=match?(match.display_name||match.username):String(v||"").trim();
-  if(match){
-    f.consultantId=match.id;f.designation=match.designation||"";
-    f.phone=String(match.phone||f.phone||"");
-  }else if(previous.trim()!==String(v||"").trim()){
-    f.consultantId="";f.designation="";f.phone="";
+  const match=oaFacultySuggestionUsers().find(u=>String(u.id)===String(id));
+  if(!match){
+    f.consultantId="";f.name="";f.fullName="";f.displayName="";f.designation="";f.phone="";
+  }else{
+    f.consultantId=String(match.id);
+    f.name=oaConsultantFullName(match);
+    f.fullName=String(match.full_name||"");
+    f.displayName=String(match.display_name||"");
+    f.designation=String(match.designation||"");
+    f.phone=String(match.phone||"");
   }
   const main=document.querySelector(".oa-main");OA._actionScrollTop=main?.scrollTop||0;
   render({force:1});requestAnimationFrame(oaRestoreMainScrollAfterRender);
@@ -9579,7 +9650,9 @@ async function oaExportDocx(){
    paras.push(oaWordP("Faculty",{bold:true,size:18,pprSize:36,after:5,keepNext:true}));
    c.faculty.forEach(f=>{
     if(!String(f.name||"").trim()&&!String(f.phone||"").trim())return;
-    paras.push(oaWordP(f.name||"Faculty",{bold:true,size:18,pprSize:36,after:0,line:185,keepNext:!!String(f.phone||"").trim()}));
+    const facultyName=String(f.fullName||f.name||"Faculty");
+    paras.push(oaWordP(facultyName,{bold:true,size:18,pprSize:36,after:0,line:185,keepNext:!!(f.designation||f.phone)}));
+    if(String(f.designation||"").trim())paras.push(oaWordP(f.designation,{size:18,pprSize:36,after:0,line:185,keepNext:!!String(f.phone||"").trim()}));
     if(String(f.phone||"").trim())paras.push(oaWordP(`Phone: ${f.phone}`,{size:18,pprSize:36,after:5,line:185}));
    });
   }
@@ -9635,14 +9708,14 @@ function oaUsersView(){
  const all=(OA.users||[]).filter(u=>{
   const role=String(u.role||"").toLowerCase();
   if(roleF&&role!==roleF) return false;
-  return !q||[u.display_name,u.username,u.role,u.email,u.designation].join(" ").toLowerCase().includes(q);
+  return !q||[u.display_name,u.full_name,u.username,u.role,u.email,u.designation].join(" ").toLowerCase().includes(q);
  });
  const roles=["resident","consultant","intern","office_admin","admin"];
  const roleName={resident:"Resident",consultant:"Consultant",intern:"Intern",office_admin:"Office admin",admin:"Admin"};
  const rows=all.slice().sort((a,b)=>String(a.display_name||a.username).localeCompare(String(b.display_name||b.username)));
  const body=rows.map(u=>{
   const role=String(u.role||"other").toLowerCase();
-  return `<tr><td>${oaEsc(u.display_name||u.username)}</td><td>${oaEsc(u.username)}</td><td>${oaEsc(roleName[role]||role)}</td><td>${oaEsc(u.designation||"—")}</td><td>${oaEsc(u.bdft_short||"—")}</td><td>${oaEsc(u.email||"—")}</td><td><span class="oa-status ${u.active?"published":"draft"}">${u.active?"Active":"Inactive"}</span></td><td class="oa-td-act"><button type="button" class="btn secondary sm" onclick='oaUserForm(${JSON.stringify(u).replace(/'/g,"&#39;")})'>Edit</button>${(!u.active&&role!=="admin")?`<button type="button" class="btn oa-danger-btn sm" onclick='oaConfirmDelete(${JSON.stringify(String(u.username||""))})'>Delete permanently</button>`:""}</td></tr>`;
+  return `<tr><td><b>${oaEsc(u.display_name||u.username)}</b><small style="display:block;color:var(--muted);margin-top:2px">${u.full_name?"Full name: "+oaEsc(u.full_name):"Full name not set"}</small></td><td>${oaEsc(u.username)}</td><td>${oaEsc(roleName[role]||role)}</td><td>${oaEsc(u.designation||"—")}</td><td>${oaEsc(u.bdft_short||"—")}</td><td>${oaEsc(u.email||"—")}</td><td><span class="oa-status ${u.active?"published":"draft"}">${u.active?"Active":"Inactive"}</span></td><td class="oa-td-act"><button type="button" class="btn secondary sm" onclick='oaUserForm(${JSON.stringify(u).replace(/'/g,"&#39;")})'>Edit</button>${(!u.active&&role!=="admin")?`<button type="button" class="btn oa-danger-btn sm" onclick='oaConfirmDelete(${JSON.stringify(String(u.username||""))})'>Delete permanently</button>`:""}</td></tr>`;
  }).join("");
  return `<div class="oa-toolbar oa-filter-row"><label class="field oa-filter"><span>Search</span><input id="oaUserQ" type="search" value="${oaEsc(OA.userQ||"")}" placeholder="Name, username or email" oninput="oaQueueFilter('userQ', this.value)" autocomplete="off"></label><label class="field oa-filter"><span>Role</span><select id="oaUserRole" onchange="OA.userRole=this.value;render({force:1})"><option value="">All roles</option>${roles.map(r=>`<option value="${r}" ${roleF===r?"selected":""}>${roleName[r]}</option>`).join("")}</select></label></div>${rows.length?`<div class="oa-table-wrap"><table class="oa-table"><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Group / designation</th><th>BDFT short</th><th>Email</th><th>Status</th><th></th></tr></thead><tbody>${body}</tbody></table></div>`:`<div class="oa-empty">${q||roleF?"No accounts match that search.":"No user accounts found."}</div>`}`;
 }
@@ -9659,9 +9732,38 @@ function oaYearOptions(current){
  const extra=raw&&!match?`<option value="${oaEsc(raw)}" selected>${oaEsc(raw)}</option>`:"";
  return `<option value=""${!match&&!raw?" selected":""}>Select year</option>${extra}${years.map(y=>`<option value="${oaEsc(y)}"${match===y?" selected":""}>${y}</option>`).join("")}`;
 }
-function oaUserForm(u){u=u||{};const role=u.role||"resident";const showShort=role==="resident"||role==="admin";const showYear=role==="resident";const html=`<div class="oa-card"><h2>${u.id?"Edit account":"Create account"}</h2><label class="field"><span>Username</span><input id="ouName" value="${oaEsc(u.username)}"></label><label class="field"><span>Display name</span><input id="ouDisplay" value="${oaEsc(u.display_name)}"></label><label class="field"><span>Password ${u.id?"(leave blank to keep current)":""}</span><input id="ouPass" type="password"></label><label class="field"><span>Role</span><select id="ouRole" onchange="oaToggleUserShort()">${["resident","consultant","intern","office_admin"].map(x=>`<option ${role===x?"selected":""}>${x}</option>`).join("")}</select></label><div class="field" id="ouShortWrap"${showShort?"":" hidden"}><span>BDFT short name</span><input id="ouShort" maxlength="16" autocomplete="off" value="${oaEsc(u.bdft_short||"")}" placeholder="e.g. DT"></div><div class="field" id="ouYearWrap"${showYear?"":" hidden"}><span>Year</span><select id="ouYear">${oaYearOptions(u.bdft_batch)}</select></div><label class="field"><span>Email</span><input id="ouEmail" value="${oaEsc(u.email)}"></label><label class="field"><span>Designation</span><input id="ouDesignation" value="${oaEsc(u.designation)}"></label><label class="field"><span>Phone</span><input id="ouPhone" value="${oaEsc(u.phone)}"></label>${u.id?`<label class="oa-check" for="ouActive"><input id="ouActive" type="checkbox" ${u.active?"checked":""}><span>Account active</span></label>`:""}${u.id&&u.active===false&&role!=="admin"?`<button type="button" class="btn oa-danger-btn" onclick='oaConfirmDelete(${JSON.stringify(String(u.username||""))})'>Delete permanently</button>`:""}<div class="oa-actions"><button class="btn" onclick="oaSaveUser('${oaEsc(u.username||"")}')">Save account</button><button class="btn secondary" onclick="document.getElementById('oaModal').classList.remove('show')">Cancel</button></div></div>`;const el=document.getElementById("oaModal");el.innerHTML=html;el.classList.add("show")}
+function oaUserForm(u){u=u||{};const role=u.role||"resident";const showShort=role==="resident"||role==="admin";const showYear=role==="resident";const html=`<div class="oa-card"><h2>${u.id?"Edit account":"Create account"}</h2><label class="field"><span>Username</span><input id="ouName" value="${oaEsc(u.username)}"></label><label class="field"><span>Display name</span><input id="ouDisplay" value="${oaEsc(u.display_name)}"></label><label class="field"><span>Full name (official roster name)</span><input id="ouFull" maxlength="120" value="${oaEsc(u.full_name||"")}" placeholder="Enter the official full name"></label><label class="field"><span>Password ${u.id?"(leave blank to keep current)":""}</span><input id="ouPass" type="password"></label><label class="field"><span>Role</span><select id="ouRole" onchange="oaToggleUserShort()">${["resident","consultant","intern","office_admin"].map(x=>`<option ${role===x?"selected":""}>${x}</option>`).join("")}</select></label><div class="field" id="ouShortWrap"${showShort?"":" hidden"}><span>BDFT short name</span><input id="ouShort" maxlength="16" autocomplete="off" value="${oaEsc(u.bdft_short||"")}" placeholder="e.g. DT"></div><div class="field" id="ouYearWrap"${showYear?"":" hidden"}><span>Year</span><select id="ouYear">${oaYearOptions(u.bdft_batch)}</select></div><label class="field"><span>Email</span><input id="ouEmail" value="${oaEsc(u.email)}"></label><label class="field"><span>Designation</span><input id="ouDesignation" value="${oaEsc(u.designation)}"></label><label class="field"><span>Phone</span><input id="ouPhone" value="${oaEsc(u.phone)}"></label>${u.id?`<label class="oa-check" for="ouActive"><input id="ouActive" type="checkbox" ${u.active?"checked":""}><span>Account active</span></label>`:""}${u.id&&u.active===false&&role!=="admin"?`<button type="button" class="btn oa-danger-btn" onclick='oaConfirmDelete(${JSON.stringify(String(u.username||""))})'>Delete permanently</button>`:""}<div class="oa-actions"><button class="btn" onclick="oaSaveUser('${oaEsc(u.username||"")}')">Save account</button><button class="btn secondary" onclick="document.getElementById('oaModal').classList.remove('show')">Cancel</button></div></div>`;const el=document.getElementById("oaModal");el.innerHTML=html;el.classList.add("show")}
 function oaUserSaveErr(e){const m=String((e&&e.message)||e||"");if(/bdft short/i.test(m))return m;if(/residents_active_pgt_bdft_short_unique_idx/i.test(m))return "This BDFT short name is already used by another active resident or admin.";return m}
-async function oaSaveUser(old){try{const un=document.getElementById("ouName").value,display=document.getElementById("ouDisplay").value,pw=document.getElementById("ouPass").value,role=document.getElementById("ouRole").value,email=document.getElementById("ouEmail").value,designation=document.getElementById("ouDesignation").value,phone=document.getElementById("ouPhone").value;const shortWrap=document.getElementById("ouShortWrap");const short=shortWrap&&!shortWrap.hidden?document.getElementById("ouShort").value:null;const yearWrap=document.getElementById("ouYearWrap");const args={p_display:display,p_password:pw,p_role:role,p_email:email,p_designation:designation,p_short:short};if(yearWrap&&!yearWrap.hidden)args.p_year=document.getElementById("ouYear").value;const call=payload=>old?oaRpc("office_admin_update_user",Object.assign({p_username:old,p_new_username:un,p_active:document.getElementById("ouActive").checked},payload)):oaRpc("office_admin_invite_user",Object.assign({p_username:un},payload));let yearSkipped=false;try{await call(args);}catch(e){const msg=String((e&&e.message)||e||"");if(args.p_year===undefined||!/p_year|schema cache|Could not find the function/i.test(msg))throw e;const retry=Object.assign({},args);delete retry.p_year;await call(retry);yearSkipped=true;}if(phone)await oaRpc("office_admin_set_user_phone",{p_username:un,p_phone:phone});document.getElementById("oaModal").classList.remove("show");toast(yearSkipped?"Saved. Year was not stored because the server update is not applied yet.":"Saved","ok");OA.usersAt=0;OA.pgtUsersLoaded=false;await oaLoad(true)}catch(e){toast(oaUserSaveErr(e),"bad")}}
+async function oaSaveUser(old){
+ try{
+  const un=document.getElementById("ouName").value.trim().toLowerCase();
+  const display=document.getElementById("ouDisplay").value.trim();
+  const fullName=document.getElementById("ouFull").value.trim();
+  const pw=document.getElementById("ouPass").value;
+  const role=document.getElementById("ouRole").value;
+  const email=document.getElementById("ouEmail").value;
+  const designation=document.getElementById("ouDesignation").value;
+  const phone=document.getElementById("ouPhone").value;
+  if(fullName.length>120)throw new Error("Full name must be 120 characters or fewer.");
+  const shortWrap=document.getElementById("ouShortWrap");
+  const short=shortWrap&&!shortWrap.hidden?document.getElementById("ouShort").value:null;
+  const yearWrap=document.getElementById("ouYearWrap");
+  const args={p_display:display,p_password:pw,p_role:role,p_email:email,p_designation:designation,p_short:short};
+  if(yearWrap&&!yearWrap.hidden)args.p_year=document.getElementById("ouYear").value;
+  const call=payload=>old?oaRpc("office_admin_update_user",Object.assign({p_username:old,p_new_username:un,p_active:document.getElementById("ouActive").checked},payload)):oaRpc("office_admin_invite_user",Object.assign({p_username:un},payload));
+  let yearSkipped=false;
+  try{await call(args)}catch(e){
+    const msg=String((e&&e.message)||e||"");
+    if(args.p_year===undefined||!/p_year|schema cache|Could not find the function/i.test(msg))throw e;
+    const retry=Object.assign({},args);delete retry.p_year;await call(retry);yearSkipped=true;
+  }
+  await oaRpc("office_admin_set_user_full_name",{p_username:un,p_full_name:fullName});
+  if(phone)await oaRpc("office_admin_set_user_phone",{p_username:un,p_phone:phone});
+  document.getElementById("oaModal").classList.remove("show");
+  toast(yearSkipped?"Saved. Year was not stored because the server update is not applied yet.":"Saved","ok");
+  OA.usersAt=0;OA.pgtUsersLoaded=false;await oaLoad(true);
+ }catch(e){toast(oaUserSaveErr(e),"bad")}
+}
 function oaConfirmDelete(username){
   const name=String(username||"");
   const el=document.getElementById("oaModal");
