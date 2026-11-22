@@ -9252,8 +9252,8 @@ function oaConsultantOptionLabel(u){
 }
 function oaFacultyMatch(value){
   const norm=v=>String(v||"").normalize("NFKC").trim()
-    .replace(/^(?:(?:prof(?:essor)?|dr)\\.?\\s*)+/i,"")
-    .replace(/[.,]+/g," ").replace(/\\s+/g," ").toLocaleLowerCase();
+    .replace(/^(?:(?:prof(?:essor)?|dr)\.?\s*)+/i,"")
+    .replace(/[.,]+/g," ").replace(/\s+/g," ").toLocaleLowerCase();
   const q=norm(value);if(!q)return null;
   const matched=oaFacultySuggestionUsers().filter(u=>
     [u.full_name,u.display_name,u.username,...(Array.isArray(u.aliases)?u.aliases:[])]
@@ -9283,7 +9283,7 @@ function oaFacultyRows(c,editable){
       ${editable?`<button type="button" class="oa-iconbtn" title="Remove faculty" onclick="oaRemoveFaculty(${i})">×</button>`:""}
     </div>`;
   }).join("");
-  return rows+${editable?`<button type="button" class="btn oa-action-add sm" onclick="oaAddFaculty()">+ Add consultant</button>`:""};
+  return rows+(editable?'<button type="button" class="btn oa-action-add sm" onclick="oaAddFaculty()">+ Add consultant</button>':"");
 }
 function oaPgtDatalist(){
  const n=oaPgtSuggestionUsers().length;
