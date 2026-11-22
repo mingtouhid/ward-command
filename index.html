@@ -26924,8 +26924,21 @@ function wardSyncApplyResidentTabletMode(){
 function wardSyncIsResidentTabletWide(){
   try{const activeRole=(S.userId&&typeof roleOf==="function")?roleOf():"";return !!(S.userId&&(activeRole==="resident"||activeRole==="admin")&&window.matchMedia&&window.matchMedia("(min-width:900px) and (orientation:landscape)").matches)}catch(e){return false}
 }
-window.addEventListener("resize",wardSyncApplyResidentTabletMode,{passive:true});
-window.addEventListener("orientationchange",wardSyncApplyResidentTabletMode,{passive:true});
+let wsResidentResizeRenderQueued=false;
+function wardSyncRefreshResidentTabletMode(){
+  const wasLandscape=document.documentElement.classList.contains("ws-resident-landscape");
+  wardSyncApplyResidentTabletMode();
+  const isLandscape=document.documentElement.classList.contains("ws-resident-landscape");
+  if(wasLandscape!==isLandscape&&S.userId&&route.page==="home"&&!wsResidentResizeRenderQueued){
+    wsResidentResizeRenderQueued=true;
+    requestAnimationFrame(()=>{
+      wsResidentResizeRenderQueued=false;
+      if(route.page==="home"&&S.userId)render({force:true});
+    });
+  }
+}
+window.addEventListener("resize",wardSyncRefreshResidentTabletMode,{passive:true});
+window.addEventListener("orientationchange",wardSyncRefreshResidentTabletMode,{passive:true});
 function wsRestoreSessionLoaderTheme(){document.documentElement.classList.remove("ws-session-loading");const m=document.querySelector('meta[name="theme-color"]');if(m){const previous=document.documentElement.getAttribute("data-ws-loader-theme-color");if(previous!==null)m.setAttribute("content",previous);document.documentElement.removeAttribute("data-ws-loader-theme-color");}}
 function render(opts){
   opts=opts||{};
