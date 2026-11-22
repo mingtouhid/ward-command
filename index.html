@@ -10696,7 +10696,8 @@ function shell(inner){
   const snapB=snapP?bedObj(snapP.id):null;
   const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["handover","census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile","pgts"].includes(route.page))?"on":"";
   const bell=`<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications" title="Notifications">${ico("notify")}${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button>`;
-  const landscapeMode=isHome&&hasResidentPermission()&&document.documentElement.classList.contains("ws-resident-landscape");
+  const isMoreWide=wardSyncIsMoreTabletWide()&&(route.page==="more"||nav.tab==="more"||["ward","users","setup","about","connection","profile","pgts","rosters","census","observe","ect","myorders","handover","tasks","activity","broadcast","reports"].includes(route.page));
+  const landscapeMode=(isHome||isMoreWide)&&hasResidentPermission()&&document.documentElement.classList.contains("ws-resident-landscape");
   const landscapeDate=new Date().toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
   const landscapeTimes={morning:"8:00 AM – 2:00 PM",evening:"2:00 PM – 10:00 PM",night:"10:00 PM – 8:00 AM"}[currentShift()]||shiftHours(currentShift());
   const landscapeDuty=!!dutyRecord();
@@ -10706,17 +10707,17 @@ function shell(inner){
   const syncMini=`<span class="ws-sync-mini ${statusClass()}" title="${esc(statusLabel())}">${statusDot()}<span>${esc(syncText)}</span></span>`;
   const labels={patients:"Patients",handover:"Handovers",more:"More",tasks:"Task board",census:"Admit patient",observe:"Observation",ect:"ECT",activity:"Activity log",setup:(ui.setupTab==="notify"?"Notifications":ui.setupTab==="theme"?"Appearance":"Settings"),ward:"Ward setup",users:"User management",about:"About",connection:"Connection",broadcast:"Broadcast",myorders:"My orders",bdft:"BDFT",profile:"Account",pgts:"Resident directory",record:"Patient record",dcert:"Discharge certificate",dedit:"Discharge review",pedit:"Edit patient",vchart:"Vitals chart",scale:"Rating scales",srate:"Rating scale",ivitals:"Vitals",ireports:"Reports",ireport:"Report"};
   const contextTitle=labels[route.page]||((S.unit&&S.unit.name)||"Ward Sync");
-  const left=isHome
+  const left=(isHome||(landscapeMode&&isMoreWide))
     ? '<div class="home-id">'+photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")+'<div class="home-greet"><b>'+esc(greet())+', '+esc(u.displayName||u.username||"User")+'</b>'+homeSyncSlot()+(landscapeMode?'<span class="ws-landscape-dept">Psychiatry Ward</span>':"")+'</div>'+(landscapeMode?"":'<div class="ws-home-shift"><span class="ws-home-shift-chip">'+esc(shiftLabel(currentShift()))+' · '+esc(shiftHours(currentShift()))+'</span>'+(canWrite()?'<button type="button" class="ws-home-duty-btn '+(dutyRecord()?"is-on":"")+'" onclick="'+(dutyRecord()?"endDuty()":"signDuty()")+'">'+(dutyRecord()?"Sign out":"Sign in")+'</button>':"")+'</div>')+'</div>'
     : snapP
       ? `<div class="patient-shell-left"><button class="patient-shell-back" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="patient-shell-meta"><div class="patient-shell-primary"><span class="patient-shell-bed">${esc(snapB&&snapB.no?snapB.no:(snapP.status==="observation"?"OBS":"NO BED"))}</span><strong>${esc(snapP.name||"Patient")}</strong></div><div class="patient-shell-sync">${syncMini}</div></div></div>`
       : `<div class="compact-context"><span class="compact-kicker">WARD SYNC</span><strong>${esc(contextTitle)}</strong></div>`;
   const legacyHomeTools=`<div class="who-tools home-tools"><label class="ws-home-search"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg><input type="search" placeholder="Search patients" aria-label="Search patients" onkeydown="if(event.key===&#39;Enter&#39;){ui.q=this.value;go(&#39;patients&#39;)}" /></label>${bell}<button type="button" class="ws-home-profile" onclick="go(&quot;profile&quot;)" aria-label="Profile">${ico("profile")}</button></div>`;
-  const tools=isHome?(landscapeMode?'<div class="who-tools home-tools ws-landscape-greeting-tools">'+landscapeControls+'</div>':legacyHomeTools):snapP?'<div class="who-tools compact-tools">'+bell+'</div>':'<div class="who-tools compact-tools">'+syncMini+bell+'</div>';
+  const tools=(isHome||(landscapeMode&&isMoreWide))?(landscapeMode?'<div class="who-tools home-tools ws-landscape-greeting-tools">'+landscapeControls+'</div>':legacyHomeTools):snapP?'<div class="who-tools compact-tools">'+bell+'</div>':'<div class="who-tools compact-tools">'+syncMini+bell+'</div>';
   const sideIcon=name=>["home","patients","handover","more"].includes(name)?navIco(name):ico(name);
   const sideBtn=(page,label,icon,extra)=>`<button type="button" class="${on(page)}" onclick="${extra||`go('${page}')`}" aria-label="${label}">${sideIcon(icon)}<span>${label}</span></button>`;
-  return `${landscapeBar}<aside class="side-nav" aria-label="Ward"><p class="side-brand"><span class="ws-landscape-brand-mark" aria-hidden="true"><svg viewBox="0 0 36 28" fill="none"><path d="M2 14h7l4-10 5 20 5-14 3 4h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><strong>Ward Sync</strong></p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}${landscapeMode?'<div class="ws-landscape-profile">'+photoFace(profileInitials(u.displayName||u.username||""),"ws-landscape-profile-photo") + '<span><strong>'+esc(u.displayName||u.username||"Resident")+'</strong><small>'+esc(u.designation||(canAdmin()&&hasResidentPermission()?"SR · Admin":canAdmin()?"Admin":"PG Resident"))+'</small></span><button type="button" aria-label="Account settings" onclick="go(\'profile\')">'+ico("setup")+'</button></div>':""}</aside><header class="top${isHome?" resident-home":snapP?" patient-top":route.page==="rosters"?" compact-top roster-top":" compact-top"}">${left}${tools}</header>
-    <main class="main">${inner}</main>${r151Dock()}${snapP&&isConsultant()&&snapP.status!=="discharged"?`<button type="button" class="snap-advice-fab" onclick="openAdviceForm('${snapP.id}')" aria-label="Give advice to ${esc(snapP.name)}"><span class="snap-advice-fab-ico">${ico("myorders")}</span><span>Give advice</span></button>`:""}
+  return `${landscapeBar}<aside class="side-nav" aria-label="Ward"><p class="side-brand"><span class="ws-landscape-brand-mark" aria-hidden="true"><svg viewBox="0 0 36 28" fill="none"><path d="M2 14h7l4-10 5 20 5-14 3 4h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><strong>Ward Sync</strong></p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}${landscapeMode?'<div class="ws-landscape-profile">'+photoFace(profileInitials(u.displayName||u.username||""),"ws-landscape-profile-photo") + '<span><strong>'+esc(u.displayName||u.username||"Resident")+'</strong><small>'+esc(u.designation||(canAdmin()&&hasResidentPermission()?"SR · Admin":canAdmin()?"Admin":"PG Resident"))+'</small></span><button type="button" aria-label="Account settings" onclick="go(\'profile\')">'+ico("setup")+'</button></div>':""}</aside><header class="top${(isHome||(landscapeMode&&isMoreWide))?" resident-home":snapP?" patient-top":route.page==="rosters"?" compact-top roster-top":" compact-top"}">${left}${tools}</header>
+    <main class="main${isMoreWide?" ws-more-main":""}">${inner}</main>${r151Dock()}${snapP&&isConsultant()&&snapP.status!=="discharged"?`<button type="button" class="snap-advice-fab" onclick="openAdviceForm('${snapP.id}')" aria-label="Give advice to ${esc(snapP.name)}"><span class="snap-advice-fab-ico">${ico("myorders")}</span><span>Give advice</span></button>`:""}
     <nav class="nav"><div class="nav-in">
       <button class="${on("home")}" onclick="go('home')" aria-label="Home">${navIco('home')}<span class="lbl">Home</span></button>
       <button class="${on("patients")}" onclick="go('patients')" aria-label="Patients">${navIco('patients')}<span class="lbl">Patients</span></button>
@@ -17739,7 +17740,269 @@ function broadcastView(){
     <div class="bcast-inbox">${cards}</div>`;
 }
 
-function moreView(){
+// =========================================================================
+// WARD SYNC — MORE PAGE: WIDE TABLET MASTER–DETAIL IMPLEMENTATION
+// =========================================================================
+
+function wardSyncIsMoreTabletWide(){
+  try{
+    return !!(window.matchMedia && window.matchMedia("(min-width: 1024px)").matches);
+  }catch(e){
+    return false;
+  }
+}
+
+const WS_MORE_PAGES = ["more", "ward", "users", "setup", "about", "connection", "profile", "pgts", "rosters", "census", "observe", "ect", "myorders", "handover", "tasks", "activity", "broadcast", "reports"];
+
+function wsSelectMoreItem(itemKey, extraFn){
+  if(extraFn) extraFn();
+  if(!wardSyncIsMoreTabletWide()){
+    if(itemKey==="ward") go('ward');
+    else if(itemKey==="theme" || itemKey==="notify"){ ui.setupTab=itemKey; go('setup'); }
+    else if(itemKey==="reports"){ ui.moreSelected="reports"; go('more'); }
+    else go(itemKey);
+    return;
+  }
+  ui.moreSelected = itemKey;
+  const m = document.querySelector(".ws-more-menu-pane");
+  if(m) ui._moreMenuScrollTop = m.scrollTop;
+
+  if(itemKey==="theme" || itemKey==="notify"){
+    ui.setupTab = itemKey;
+  }
+  if(itemKey==="census"){
+    ui.ctab = 'in';
+    ui.disListOnly = false;
+  }
+
+  try{
+    const hash = "#/more/" + encodeURIComponent(itemKey);
+    history.replaceState({tab: "more", stack: [{page: "more", id: itemKey}]}, "", hash);
+  }catch(e){}
+
+  nav.tab = "more";
+  route = {page: "more", id: itemKey};
+
+  render({force: true});
+}
+
+function wsMoreItemHeader(itemKey){
+  const defs = {
+    ward: {
+      title: "Ward Settings",
+      subtitle: "Configure ward structure, beds and ward-specific preferences",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>`
+    },
+    census: {
+      title: "Admit Patient",
+      subtitle: "Census and patient admission form",
+      icon: ico("census")
+    },
+    observe: {
+      title: "Under Observation",
+      subtitle: "Patients currently under close observation watch",
+      icon: ico("observe")
+    },
+    ect: {
+      title: "ECT",
+      subtitle: "Electroconvulsive therapy schedule and session management",
+      icon: ico("ect")
+    },
+    myorders: {
+      title: "My Advices",
+      subtitle: "Consultant treatment orders and clinical advices",
+      icon: ico("myorders")
+    },
+    handover: {
+      title: "Handovers",
+      subtitle: "Shift handover notes and clinical status review",
+      icon: ico("handover")
+    },
+    tasks: {
+      title: "Task Board",
+      subtitle: "Ward procedures, investigations and resident tasks",
+      icon: ico("tasks")
+    },
+    broadcast: {
+      title: "Broadcast",
+      subtitle: "Send ward announcement to all on-duty team members",
+      icon: ico("broadcast")
+    },
+    activity: {
+      title: "Activity Log",
+      subtitle: "Audit log of clinical events, vitals, meds and changes",
+      icon: ico("activity")
+    },
+    pgts: {
+      title: "Resident Directory",
+      subtitle: "Resident contact directory and ward assignments",
+      icon: ico("residentDir")
+    },
+    rosters: {
+      title: "Duty Rosters",
+      subtitle: "Monthly roster schedule and resident shift assignments",
+      icon: ico("activity")
+    },
+    users: {
+      title: "User Management",
+      subtitle: "Manage staff accounts, credentials and permissions",
+      icon: ico("users")
+    },
+    reports: {
+      title: "Reports & Export",
+      subtitle: "Monthly ward census and clinical summary reports",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`
+    },
+    theme: {
+      title: "Appearance",
+      subtitle: "Theme styles, colour accents and day/night mode",
+      icon: ico("theme")
+    },
+    notify: {
+      title: "Notifications",
+      subtitle: "Recent alerts, notification inbox and notification preferences",
+      icon: ico("notify")
+    },
+    connection: {
+      title: "Connection & Sync",
+      subtitle: "Cloud server connectivity, sync queue and diagnostics",
+      icon: ico("connection")
+    },
+    about: {
+      title: "About Ward Sync",
+      subtitle: "Application build version, system status and diagnostics",
+      icon: ico("about")
+    },
+    profile: {
+      title: "My Profile",
+      subtitle: "User profile details, PIN security and account settings",
+      icon: ico("profile")
+    }
+  };
+  const d = defs[itemKey] || {title: "More Settings", subtitle: "Ward Sync configuration", icon: ico("setup")};
+  return `<header class="ws-more-content-header">
+    <div class="ws-more-header-icon-box" aria-hidden="true">${d.icon}</div>
+    <div class="ws-more-header-text">
+      <h2>${esc(d.title)}</h2>
+      <p>${esc(d.subtitle)}</p>
+    </div>
+  </header>`;
+}
+
+function wsRenderMoreContent(itemKey){
+  if(itemKey==="ward") return wardView();
+  if(itemKey==="users") return usersView();
+  if(itemKey==="theme"){ ui.setupTab="theme"; return setupView(); }
+  if(itemKey==="notify"){ ui.setupTab="notify"; return setupView(); }
+  if(itemKey==="about") return aboutView();
+  if(itemKey==="connection") return connectionView();
+  if(itemKey==="profile") return profileView();
+  if(itemKey==="pgts") return pgtsView();
+  if(itemKey==="rosters") return wardRostersView();
+  if(itemKey==="census"){ ui.ctab="in"; ui.disListOnly=false; return censusView(); }
+  if(itemKey==="observe") return observeView();
+  if(itemKey==="ect") return ectView();
+  if(itemKey==="myorders") return myOrdersView();
+  if(itemKey==="handover") return handoverView();
+  if(itemKey==="tasks") return tasksView();
+  if(itemKey==="activity") return activityView();
+  if(itemKey==="broadcast") return broadcastView();
+  if(itemKey==="reports"){
+    return `<section class="card more-report-card" style="padding:16px 20px">
+      <label class="field more-report-field"><span>Report month</span><input type="month" id="rmon" value="${esc(ui.reportMonth||new Date().toISOString().slice(0,7))}" oninput="ui.reportMonth=this.value"/></label>
+      <button class="btn block more-report-action" style="margin-top:12px" onclick="exportMonthly()">Export monthly report</button>
+    </section>`;
+  }
+  return canAdmin() ? wardView() : pgtsView();
+}
+
+function wsMoreMenuHtml(sel){
+  const chevron = `<span class="ws-more-item-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>`;
+  
+  const item = (key, label, icon, extraClick) => {
+    const isSel = (sel === key);
+    const click = extraClick || `wsSelectMoreItem('${key}')`;
+    return `<button type="button" class="ws-more-item-btn${isSel ? " is-selected" : ""}" onclick="${click}">
+      <span class="ws-more-item-left">
+        <span class="ws-more-item-ico">${icon}</span>
+        <span class="ws-more-item-label">${esc(label)}</span>
+      </span>
+      ${chevron}
+    </button>`;
+  };
+
+  const groupHeader = (title, icon) => `<div class="ws-more-group-title"><span class="ico">${icon}</span><span>${title}</span></div>`;
+
+  const patientItems = [
+    canAdmin() ? item("ward", "Ward Settings", `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>`) : "",
+    canWrite() ? item("census", "Admit Patient", ico("census")) : "",
+    canWrite() ? item("observe", "Under Observation", ico("observe")) : "",
+    item("ect", "ECT", ico("ect")),
+    isConsultant() ? item("myorders", "My Advices", ico("myorders")) : "",
+    (canAdmin() || isConsultant()) ? item("reports", "Reports & Export", `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`) : ""
+  ].filter(Boolean).join("");
+
+  const residentItems = [
+    !isIntern() ? item("pgts", "Resident Directory", ico("residentDir")) : "",
+    !isIntern() ? item("rosters", "Duty Rosters", ico("activity")) : "",
+    (canAdmin() || (!isIntern() && !isConsultant() && canWrite() && isEveningDuty())) ? item("bdft", "BDFT Settings", ico("setup"), "bdftOpenSetup()") : "",
+    item("handover", "Handovers", ico("handover")),
+    item("tasks", "Task Board", ico("tasks")),
+    item("activity", "Activity Log", ico("activity")),
+    canBroadcast() ? item("broadcast", "Broadcast", ico("broadcast")) : ""
+  ].filter(Boolean).join("");
+
+  const adminItems = canAdmin() ? [
+    item("users", "User Management", ico("users")),
+    item("ward_setup", "Ward Setup", ico("setup"), "wsSelectMoreItem('ward')")
+  ].filter(Boolean).join("") : "";
+
+  const systemItems = [
+    item("theme", "Appearance", ico("theme")),
+    item("notify", "Notifications", ico("notify")),
+    item("connection", "Connection & Sync", ico("connection")),
+    item("about", "About & Help", ico("about"))
+  ].filter(Boolean).join("");
+
+  const accountItems = [
+    item("profile", "My Profile", ico("profile")),
+    `<button type="button" class="ws-more-item-btn ws-more-logout-btn" onclick="askLogout()">
+      <span class="ws-more-item-left">
+        <span class="ws-more-item-ico" style="color:var(--danger,#e11d48)">${ico("logout")}</span>
+        <span class="ws-more-item-label" style="color:var(--danger,#e11d48)">Log out</span>
+      </span>
+      ${chevron}
+    </button>`
+  ].join("");
+
+  return `<div class="ws-more-menu-header">
+    <h2>More</h2>
+    <p>Settings, administration and system tools</p>
+  </div>
+  ${patientItems ? `<div class="ws-more-group">${groupHeader("Patient & Clinical", ico("census"))}${patientItems}</div>` : ""}
+  ${residentItems ? `<div class="ws-more-group">${groupHeader("Residents", ico("residentDir"))}${residentItems}</div>` : ""}
+  ${adminItems ? `<div class="ws-more-group">${groupHeader("Administration", ico("users"))}${adminItems}</div>` : ""}
+  <div class="ws-more-group">${groupHeader("System", ico("setup"))}${systemItems}</div>
+  <div class="ws-more-group">${groupHeader("Account", ico("profile"))}${accountItems}</div>`;
+}
+
+function wsMoreMasterDetailView(){
+  const selected = (route.page !== "more" ? (route.page === "setup" ? (ui.setupTab || "theme") : route.page) : (route.id || ui.moreSelected || (canAdmin() ? "ward" : "pgts")));
+  ui.moreSelected = selected;
+  return `<div class="ws-more-master-detail">
+    <aside class="ws-more-menu-pane" aria-label="More navigation">
+      ${wsMoreMenuHtml(selected)}
+    </aside>
+    <main class="ws-more-content-pane" aria-label="Selected content">
+      ${wsMoreItemHeader(selected)}
+      <div class="ws-more-content-body">
+        ${wsRenderMoreContent(selected)}
+      </div>
+    </main>
+  </div>`;
+}
+
+function wsMoreMobileView(){
   const row=(go,icon,title,tone,variant="")=>`<button class="more-row tone-${tone}${variant?" "+variant:""}" onclick="${go}">
       <span class="more-ico">${icon}</span>
       <span class="more-label">${title}</span>
@@ -17781,6 +18044,13 @@ function moreView(){
     ${row("go('profile')",ico("profile"),"My profile","green")}
     ${row("askLogout()",ico("logout"),"Log out","rose","danger")}
     </div>`;
+}
+
+function moreView(){
+  if(wardSyncIsMoreTabletWide()){
+    return wsMoreMasterDetailView();
+  }
+  return wsMoreMobileView();
 }
 function dmy(v){
   if(!v) return "";
@@ -18379,18 +18649,125 @@ function foldWrap(key,label,meta,body,def){
     <div class="fold-panel"><div class="fold-panel-inner"><div class="fold-body">${body}</div></div></div>
   </div>`;
 }
+function saveWardInfo(){
+  if(!canCfg(user().role) && !canAdmin()) return;
+  const uname = (document.getElementById("ws-ward-name-input")?.value || "").trim();
+  const ucode = (document.getElementById("ws-ward-code-input")?.value || "").trim();
+  if(!uname){ toast("Ward name required","bad"); return; }
+  S.unit = S.unit || {};
+  S.unit.name = uname;
+  if(ucode) S.unit.code = ucode;
+  queue("unit_settings", {id: "unit", unit_name: uname, unit_code: ucode});
+  toast("Ward information saved", "ok");
+  save();
+  render();
+  Promise.resolve(flushPending()).catch(()=>{});
+}
+
+function wsWardSettingsHub(){
+  const cfg = canCfg(user().role) || canAdmin();
+  const nBeds = (S.beds || []).filter(b => b.active !== false).length;
+  const unitName = (S.unit && S.unit.name) || "Psychiatry Ward";
+  const unitCode = (S.unit && S.unit.code) || "PSY";
+  const secNames = (S.sections || []).filter(s => s.active !== false).map(s => s.name);
+  const sectionsSummary = secNames.length ? secNames.join(", ") : "Male Ward, Female Ward, D-Unit, Isolation, PC Unit, Others";
+
+  return `<div class="ws-ward-settings-wrap">
+    <!-- Card 1: Ward information -->
+    <section class="card ws-ward-card">
+      <div class="ws-ward-card-header">
+        <span class="ws-ward-card-ico" aria-hidden="true">${ico("about")}</span>
+        <h3>Ward information</h3>
+      </div>
+      <div class="ws-ward-info-grid">
+        <label class="field">
+          <span>Ward name</span>
+          <input type="text" id="ws-ward-name-input" value="${esc(unitName)}" ${cfg ? "" : "disabled"} />
+        </label>
+        <label class="field">
+          <span>Ward code</span>
+          <input type="text" id="ws-ward-code-input" value="${esc(unitCode)}" ${cfg ? "" : "disabled"} />
+        </label>
+        ${cfg ? `<div class="ws-ward-info-action"><button type="button" class="btn sm" onclick="saveWardInfo()">Save</button></div>` : ""}
+      </div>
+    </section>
+
+    <!-- Card 2: Ward structure -->
+    <section class="card ws-ward-card">
+      <div class="ws-ward-card-header">
+        <span class="ws-ward-card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+        <h3>Ward structure</h3>
+      </div>
+      <div class="ws-ward-nav-list">
+        <button type="button" class="ws-ward-nav-row" onclick="go('ward','sections')">
+          <span class="ws-ward-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="22" x2="9" y2="22.01"/><line x1="15" y1="22" x2="15" y2="22.01"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/><line x1="15" y1="18" x2="15" y2="18.01"/></svg></span>
+          <div class="ws-ward-nav-text">
+            <b>Manage units</b>
+            <small>${esc(sectionsSummary)}</small>
+          </div>
+          <span class="ws-ward-nav-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>
+        </button>
+
+        <button type="button" class="ws-ward-nav-row" onclick="go('ward','beds')">
+          <span class="ws-ward-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg></span>
+          <div class="ws-ward-nav-text">
+            <b>Manage beds</b>
+            <small>Add, edit or deactivate beds and bed codes · ${nBeds} total beds</small>
+          </div>
+          <span class="ws-ward-nav-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>
+        </button>
+
+        <button type="button" class="ws-ward-nav-row" onclick="go('ward','unit')">
+          <span class="ws-ward-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span>
+          <div class="ws-ward-nav-text">
+            <b>Unit mapping</b>
+            <small>Map bed codes to ward units</small>
+          </div>
+          <span class="ws-ward-nav-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Card 3: Ward preferences -->
+    <section class="card ws-ward-card">
+      <div class="ws-ward-card-header">
+        <span class="ws-ward-card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>
+        <h3>Ward preferences</h3>
+      </div>
+      <div class="ws-ward-nav-list">
+        <button type="button" class="ws-ward-nav-row" onclick="wsSelectMoreItem('theme')">
+          <span class="ws-ward-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
+          <div class="ws-ward-nav-text">
+            <b>Default views</b>
+            <small>Set default filters and display options</small>
+          </div>
+          <span class="ws-ward-nav-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>
+        </button>
+
+        <button type="button" class="ws-ward-nav-row" onclick="go('home')">
+          <span class="ws-ward-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></span>
+          <div class="ws-ward-nav-text">
+            <b>Clinical flags</b>
+            <small>Enable and configure clinical flag categories</small>
+          </div>
+          <span class="ws-ward-nav-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>
+        </button>
+
+        <button type="button" class="ws-ward-nav-row" onclick="wsSelectMoreItem('notify')">
+          <span class="ws-ward-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+          <div class="ws-ward-nav-text">
+            <b>Notifications</b>
+            <small>Ward-specific notification settings</small>
+          </div>
+          <span class="ws-ward-nav-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>
+        </button>
+      </div>
+    </section>
+  </div>`;
+}
+
 function wardHubPage(){
-  const nBeds=S.beds.filter(b=>b.active!==false).length;
-  const tile=(id,k,t,m)=>`<button type="button" class="setup-tile" onclick="go('ward','${id}')">
-      <span class="setup-k">${k}</span><b>${esc(t)}</b><span class="tiny">${esc(m)}</span>
-    </button>`;
-  return `<button class="back back-btn" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button>
-    <div class="row" style="margin-bottom:10px"><span class="tiny">${nBeds} active beds</span></div>
-    <div class="setup-hub">
-      ${tile("unit","01","Unit",S.unit.name||"Name the ward")}
-      ${tile("sections","02","Sections",S.sections.length+" named")}
-      ${tile("beds","03","Beds",nBeds+" on the map")}
-    </div>`;
+  return wsWardSettingsHub();
 }
 function wardPageShell(title,inner){
   return `<button class="back back-btn" type="button" aria-label="Back to Ward setup" title="Back to Ward setup" onclick="go(\'ward\')">${BACK_ICON}</button>
@@ -27252,13 +27629,16 @@ function wardSyncIsResidentTabletWide(){
 let wsResidentResizeRenderQueued=false;
 function wardSyncRefreshResidentTabletMode(){
   const wasLandscape=document.documentElement.classList.contains("ws-resident-landscape");
+  const wasMoreWide=!!document.documentElement.getAttribute("data-ws-more-wide");
   wardSyncApplyResidentTabletMode();
   const isLandscape=document.documentElement.classList.contains("ws-resident-landscape");
-  if(wasLandscape!==isLandscape&&S.userId&&route.page==="home"&&!wsResidentResizeRenderQueued){
+  const isMoreWideNow=wardSyncIsMoreTabletWide();
+  document.documentElement.setAttribute("data-ws-more-wide", isMoreWideNow ? "1" : "");
+  if((wasLandscape!==isLandscape || wasMoreWide!==isMoreWideNow)&&S.userId&&!wsResidentResizeRenderQueued){
     wsResidentResizeRenderQueued=true;
     requestAnimationFrame(()=>{
       wsResidentResizeRenderQueued=false;
-      if(route.page==="home"&&S.userId)render({force:true});
+      if(S.userId)render({force:true});
     });
   }
 }
@@ -27280,6 +27660,9 @@ function render(opts){
   try{outboxUiSig=outboxSig()}catch(e){} // R1.3.141 SYNC: remember what the screen shows so a later send/fail redraws it
   const main=document.querySelector(".main");
   const y=main?main.scrollTop:0;
+  const moreMenuEl=document.querySelector(".ws-more-menu-pane");
+  const moreMenuY=moreMenuEl?moreMenuEl.scrollTop:null;
+  if(moreMenuY!=null) ui._moreMenuScrollTop=moreMenuY;
   const chipXs=Array.from(document.querySelectorAll(".ptag-row")).map(r=>r.scrollLeft);
   const el=document.getElementById("app");
   if(!S.userId||!sessionTok){wsRestoreSessionLoaderTheme();try{document.documentElement.classList.remove("sheet-open")}catch(e){}el.innerHTML=loginView();restoreTyping(opts.fromInput?keep:null);return}
@@ -27328,6 +27711,8 @@ function render(opts){
       </section>
       <section class="ws-tablet-patient-detail" aria-label="Selected patient">${snapView()}</section>
     </div>`);
+  }else if(wardSyncIsMoreTabletWide()&&(route.page==="more"||(nav.tab==="more"&&WS_MORE_PAGES.includes(route.page)))){
+    _html=shell(wsMoreMasterDetailView());
   }else{
     _html=route.page==="vchart"?vchartShell(vchartView()):(route.page==="scale"||route.page==="srate")?scShell(pages[route.page]()):isIntern()?internShell((pages[route.page]||internHomeView)()):shell((pages[route.page]||patientsView)());
   } // R1.3.140 + resident tablet master-detail
@@ -27341,6 +27726,10 @@ function render(opts){
   // R1.3.117: patch the DOM in place instead of rebuilding it, so open modals keep their scroll, focus and typed values.
   _html=dropEmptySections(_html); // R1.3.145
   patchApp(el,_html,{full:!!(opts.nav||navAnim||!_sameRoute||!el.firstChild),bg:!!opts.bg});
+  const nextMoreMenu=document.querySelector(".ws-more-menu-pane");
+  if(nextMoreMenu && ui._moreMenuScrollTop!=null){
+    nextMoreMenu.scrollTop=ui._moreMenuScrollTop;
+  }
   try{ if(route.page==="bdft") bdftMount(); }catch(e){}
   if(sessionTok&&canWrite()&&!isIntern()&&!isConsultant()&&!ui.bdftInitDone) bdftInit();
   ui._sheetEnter=false;
@@ -30158,6 +30547,397 @@ html.ws-intern .snap-cols>.card{
  }
  html.ws-resident-landscape .ws-team-inner {
   flex-wrap: wrap !important;
+ }
+}
+</style>
+<style id="ward-sync-more-tablet-master-detail">
+/* =========================================================================
+   WARD SYNC — MORE PAGE TABLET MASTER–DETAIL REDESIGN
+   ========================================================================= */
+
+@media (min-width: 1024px) {
+ html.ws-resident-landscape #app.app > .main.ws-more-main,
+ #app.app > .main.ws-more-main {
+  padding: 14px 18px 16px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: calc(100dvh - 84px) !important;
+  max-height: calc(100dvh - 84px) !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+ }
+
+ .ws-more-master-detail {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 16px !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+ }
+
+ /* Pane 1: More navigation list */
+ .ws-more-menu-pane {
+  flex: 0 0 340px !important;
+  width: 340px !important;
+  max-width: 360px !important;
+  min-width: 320px !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  padding: 16px 12px 24px !important;
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 16px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+ }
+
+ .ws-more-menu-header {
+  padding: 2px 8px 10px !important;
+  border-bottom: 1px solid var(--line) !important;
+  margin-bottom: 2px !important;
+ }
+ .ws-more-menu-header h2 {
+  font-size: 20px !important;
+  font-weight: 850 !important;
+  color: var(--ink) !important;
+  margin: 0 0 3px !important;
+  line-height: 1.1 !important;
+ }
+ .ws-more-menu-header p {
+  font-size: 12px !important;
+  color: var(--muted) !important;
+  margin: 0 !important;
+  line-height: 1.3 !important;
+ }
+
+ .ws-more-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+ }
+
+ .ws-more-group-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  color: #7835DB !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 6px 10px 4px !important;
+  margin: 0 !important;
+ }
+ .ws-more-group-title .ico {
+  display: grid !important;
+  place-items: center !important;
+  width: 14px !important;
+  height: 14px !important;
+ }
+ .ws-more-group-title .ico svg {
+  width: 14px !important;
+  height: 14px !important;
+  display: block !important;
+ }
+
+ .ws-more-item-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  padding: 0 12px !important;
+  box-sizing: border-box !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: var(--ink) !important;
+  cursor: pointer !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+  transition: background 0.14s ease, color 0.14s ease !important;
+ }
+ .ws-more-item-btn:hover {
+  background: color-mix(in srgb, #7835DB 7%, var(--panel)) !important;
+ }
+ .ws-more-item-btn:active {
+  transform: scale(0.99) !important;
+ }
+ .ws-more-item-btn .ws-more-item-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 11px !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+ }
+ .ws-more-item-btn .ws-more-item-ico {
+  display: grid !important;
+  place-items: center !important;
+  width: 22px !important;
+  height: 22px !important;
+  flex: 0 0 22px !important;
+  color: var(--muted) !important;
+ }
+ .ws-more-item-btn .ws-more-item-ico svg {
+  width: 19px !important;
+  height: 19px !important;
+  display: block !important;
+ }
+ .ws-more-item-btn .ws-more-item-label {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 13px !important;
+ }
+ .ws-more-item-btn .ws-more-item-chevron {
+  display: grid !important;
+  place-items: center !important;
+  width: 16px !important;
+  height: 16px !important;
+  flex: 0 0 16px !important;
+  color: var(--muted) !important;
+  opacity: 0.5 !important;
+ }
+ .ws-more-item-btn .ws-more-item-chevron svg {
+  width: 14px !important;
+  height: 14px !important;
+  display: block !important;
+ }
+
+ /* Selected state */
+ .ws-more-item-btn.is-selected {
+  background: color-mix(in srgb, #7835DB 12%, var(--panel)) !important;
+  color: #7835DB !important;
+  font-weight: 750 !important;
+ }
+ .ws-more-item-btn.is-selected .ws-more-item-ico,
+ .ws-more-item-btn.is-selected .ws-more-item-chevron {
+  color: #7835DB !important;
+  opacity: 1 !important;
+ }
+
+ /* Pane 2: Selected content */
+ .ws-more-content-pane {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  padding: 18px 22px 28px !important;
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 16px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+ }
+
+ .ws-more-content-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 12px 16px !important;
+  background: color-mix(in srgb, #7835DB 6%, var(--panel)) !important;
+  border: 1px solid color-mix(in srgb, #7835DB 16%, var(--line)) !important;
+  border-radius: 14px !important;
+  box-sizing: border-box !important;
+ }
+ .ws-more-header-icon-box {
+  display: grid !important;
+  place-items: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  flex: 0 0 44px !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, #7835DB 15%, var(--panel)) !important;
+  color: #7835DB !important;
+ }
+ .ws-more-header-icon-box svg {
+  width: 22px !important;
+  height: 22px !important;
+  display: block !important;
+ }
+ .ws-more-header-text {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+ }
+ .ws-more-header-text h2 {
+  font-size: 19px !important;
+  font-weight: 850 !important;
+  color: var(--ink) !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
+ }
+ .ws-more-header-text p {
+  font-size: 12.5px !important;
+  color: var(--muted) !important;
+  margin: 0 !important;
+  line-height: 1.3 !important;
+ }
+
+ .ws-more-content-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+ }
+
+ /* Hide redundant top-level back buttons inside master-detail pane */
+ .ws-more-content-body > .back-btn:first-child,
+ .ws-more-content-body > div > .back-btn:first-child,
+ .ws-more-content-body > .act-log > .back-btn:first-child {
+  display: none !important;
+ }
+
+ /* Ward Settings Hub structured cards */
+ .ws-ward-settings-wrap {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+ }
+ .ws-ward-card {
+  background: var(--bg) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 14px !important;
+  padding: 14px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+ }
+ .ws-ward-card-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  font-size: 14.5px !important;
+  font-weight: 750 !important;
+  color: var(--ink) !important;
+ }
+ .ws-ward-card-ico {
+  display: grid !important;
+  place-items: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  color: #7835DB !important;
+ }
+ .ws-ward-card-ico svg {
+  width: 18px !important;
+  height: 18px !important;
+  display: block !important;
+ }
+ .ws-ward-card-header h3 {
+  font-size: 14.5px !important;
+  font-weight: 780 !important;
+  margin: 0 !important;
+  color: var(--ink) !important;
+ }
+ .ws-ward-info-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) auto !important;
+  gap: 12px !important;
+  align-items: flex-end !important;
+ }
+ .ws-ward-info-grid .field {
+  margin: 0 !important;
+ }
+ .ws-ward-info-grid .field input {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  height: 38px !important;
+  border-radius: 9px !important;
+ }
+ .ws-ward-info-action {
+  display: flex !important;
+  align-items: center !important;
+  height: 38px !important;
+ }
+ .ws-ward-nav-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+ }
+ .ws-ward-nav-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 10px 12px !important;
+  border-radius: 11px !important;
+  border: 0 !important;
+  background: transparent !important;
+  cursor: pointer !important;
+  color: var(--ink) !important;
+  text-align: left !important;
+  transition: background 0.12s ease !important;
+ }
+ .ws-ward-nav-row:hover {
+  background: color-mix(in srgb, #7835DB 6%, var(--bg)) !important;
+ }
+ .ws-ward-nav-ico {
+  display: grid !important;
+  place-items: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  flex: 0 0 32px !important;
+  border-radius: 9px !important;
+  background: color-mix(in srgb, #7835DB 10%, var(--bg)) !important;
+  color: #7835DB !important;
+ }
+ .ws-ward-nav-ico svg {
+  width: 18px !important;
+  height: 18px !important;
+  display: block !important;
+ }
+ .ws-ward-nav-text {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+ }
+ .ws-ward-nav-text b {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: var(--ink) !important;
+ }
+ .ws-ward-nav-text small {
+  font-size: 11.5px !important;
+  color: var(--muted) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+ }
+ .ws-ward-nav-chevron {
+  display: grid !important;
+  place-items: center !important;
+  width: 16px !important;
+  height: 16px !important;
+  color: var(--muted) !important;
+ }
+ .ws-ward-nav-chevron svg {
+  width: 14px !important;
+  height: 14px !important;
+  display: block !important;
  }
 }
 </style>
