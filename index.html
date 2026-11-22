@@ -9146,8 +9146,11 @@ function oaNewRoster(){
     if(OA.type==="pgt_monthly"){
       const chosen=OA.groupSets.find(x=>String(x.id)===String(OA.activeGroupSetId))||OA.groupSets[0]||null;
       if(chosen){content.groups=JSON.parse(JSON.stringify(chosen.groups||[]));OA.activeGroupSetId=chosen.id;}
-    }else content.faculty=[];
-    OA.editing={id:null,roster_type:OA.type,period_start:"",period_end:"",title:OA.type==="pgt_monthly"?"PGT Duty Roster":"Faculty Roster",reference_number:"",issue_date:new Date().toISOString().slice(0,10),content};
+    }else content.faculty=oaFacultySuggestionUsers().map(u=>({
+      name:oaConsultantFullName(u),fullName:String(u.full_name||""),displayName:String(u.display_name||""),
+      phone:String(u.phone||""),consultantId:String(u.id),designation:String(u.designation||"")
+    }));
+    OA.editing={id:null,roster_type:OA.type,period_start:"",period_end:"",title:OA.type==="pgt_monthly"?"PGT Duty Roster":"Faculty Roster",reference_number:"",issue_date:oaLocalTodayISO(),content};
     render({force:1});
   };
   return load();
@@ -9171,6 +9174,11 @@ function oaEditRoster(id){
       await Promise.all(jobs);
       if(type==="faculty_weekly"){
         const c=oaEnsureRosterContent();
+        if((c.faculty||[]).length===0&&(OA.editing.status||"draft")==="draft")
+          c.faculty=oaFacultySuggestionUsers().map(u=>({
+            name:oaConsultantFullName(u),fullName:String(u.full_name||""),displayName:String(u.display_name||""),
+            phone:String(u.phone||""),consultantId:String(u.id),designation:String(u.designation||"")
+          }));
         c.faculty=(c.faculty||[]).map(f=>{
           const match=(f.consultantId
             ?oaFacultySuggestionUsers().find(u=>String(u.id)===String(f.consultantId))
@@ -9309,7 +9317,7 @@ function oaFacultyRows(c,editable){
       ${editable?`<button type="button" class="oa-iconbtn" title="Remove faculty" onclick="oaRemoveFaculty(${i})">×</button>`:""}
     </div>`;
   }).join("");
-  return rows+(editable?'<button type="button" class="btn oa-action-add sm" onclick="oaAddFaculty()">+ Add consultant</button>':"");
+  return rows;
 }
 function oaPgtDatalist(){
  const n=oaPgtSuggestionUsers().length;
@@ -9411,16 +9419,33 @@ function oaPgtGroupsView(){
 }
 function oaFormatDMY(value){const m=String(value||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:String(value||"");}
 function oaParseDMY(value){const v=String(value||"").trim();if(!v)return null;let y,mo,d,m=v.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m){y=+m[1];mo=+m[2];d=+m[3];}else{m=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);if(!m)return null;d=+m[1];mo=+m[2];y=+m[3];}const dt=new Date(Date.UTC(y,mo-1,d));if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==mo-1||dt.getUTCDate()!==d)return null;return `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;}
-function oaRosterDateValue(id){const el=document.getElementById(id);if(!el)return null;const wrap=el.closest(".dmy");if(wrap&&wrap.dataset.bad==="1")return "__invalid_date__";const shown=wrap&&wrap.querySelector(".dmy-d")?wrap.querySelector(".dmy-d").value:el.value;if(!String(shown||"").trim()&&!String(el.value||"").trim())return null;return oaParseDMY(el.value)||oaParseDMY(shown)||"__invalid_date__";}
-function oaRosterDateField(id,label,value,editable,cls){const klass=`field${cls?" "+cls:""}`;const shown=oaEsc(oaFormatDMY(value||""));if(!editable)return `<label class="${klass}"><span>${label}</span><input value="${shown}" disabled></label>`;return `<label class="${klass}"><span>${label}</span><div class="oa-date"><input id="${id}" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy" autocomplete="off" value="${shown}" oninput="oaDateTyped('${id}')"><button type="button" class="oa-date-btn" aria-label="Choose ${oaEsc(label)} from the calendar" onclick="oaToggleDatePicker('${id}')">${CAL_ICON}</button><div class="oa-date-pop" id="${id}Pop" hidden></div></div></label>`;}
-function oaToggleDatePicker(id){const pop=document.getElementById(id+"Pop");if(!pop)return;const opening=pop.hidden;document.querySelectorAll(".oa-date-pop").forEach(p=>{p.hidden=true});if(!opening)return;const parsed=oaParseDMY((document.getElementById(id)||{}).value)||new Date().toISOString().slice(0,10);pop.dataset.month=parsed.slice(0,7);pop.hidden=false;oaRenderDatePicker(id);}
-function oaDateTyped(id){const pop=document.getElementById(id+"Pop");if(!pop||pop.hidden)return;const parsed=oaParseDMY((document.getElementById(id)||{}).value);if(parsed)pop.dataset.month=parsed.slice(0,7);oaRenderDatePicker(id);}
+function oaLocalTodayISO(){
+ const p=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+ const get=k=>p.find(x=>x.type===k)?.value||"";
+ return get("year")+"-"+get("month")+"-"+get("day");
+}
+function oaRosterDateValue(id){const el=document.getElementById(id);if(!el)return null;const raw=String(el.value??"").trim();return raw?(oaParseDMY(raw)||"__invalid_date__"):null;}
+function oaRosterDateField(id,label,value,editable,cls){const klass=`field${cls?" "+cls:""}`;const shown=oaEsc(oaFormatDMY(value||""));if(!editable)return `<label class="${klass}"><span>${label}</span><input value="${shown}" disabled></label>`;return `<label class="${klass}"><span>${label}</span><div class="oa-date"><input id="${id}" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy" autocomplete="off" value="${shown}" oninput="oaDateInput('${id}')" onchange="oaDateInput('${id}')" onblur="oaDateInput('${id}')"><button type="button" class="oa-date-btn" aria-label="Choose ${oaEsc(label)} from the calendar" onclick="oaToggleDatePicker('${id}')">${CAL_ICON}</button><div class="oa-date-pop" id="${id}Pop" hidden></div></div></label>`;}
+function oaToggleDatePicker(id){const pop=document.getElementById(id+"Pop");if(!pop)return;const opening=pop.hidden;document.querySelectorAll(".oa-date-pop").forEach(p=>{p.hidden=true});if(!opening)return;const parsed=oaParseDMY((document.getElementById(id)||{}).value)||oaLocalTodayISO();pop.dataset.month=parsed.slice(0,7);pop.hidden=false;oaRenderDatePicker(id);}
+function oaDateTyped(id){oaDateInput(id)}
+function oaDateInput(id){
+ const el=document.getElementById(id);if(!el||!OA.editing)return;
+ const field=id==="oaStart"?"period_start":id==="oaEnd"?"period_end":id==="oaIssue"?"issue_date":null;
+ if(!field)return;
+ const raw=String(el.value??"").trim();
+ OA.editing[field]=raw?(oaParseDMY(raw)||"__invalid_date__"):null;
+ if(field==="period_start"&&OA.editing.period_start&&OA.editing.period_start!=="__invalid_date__"){
+  const title=String(OA.editing.title||"").trim();
+  if(!title||/^(PGT Duty Roster|Faculty Duty Roster|Faculty Roster)( – .+)?$/.test(title))
+   OA.editing.title=oaRosterAutoTitle(OA.editing.roster_type||OA.type,OA.editing.period_start);
+ }
+ const pop=document.getElementById(id+"Pop");
+ if(pop&&!pop.hidden){const parsed=oaParseDMY(raw);if(parsed)pop.dataset.month=parsed.slice(0,7);oaRenderDatePicker(id);}
+}
 function oaShiftDatePicker(id,delta){const pop=document.getElementById(id+"Pop");const parts=String(pop.dataset.month||"").split("-").map(Number);const dt=new Date(parts[0],(parts[1]||1)-1+delta,1);pop.dataset.month=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0");oaRenderDatePicker(id);}
 function oaPickDate(id,iso){
-  oaSyncRosterMeta();
-  const field=id==="oaStart"?"period_start":id==="oaEnd"?"period_end":id==="oaIssue"?"issue_date":null;
-  if(field&&OA.editing)OA.editing[field]=iso;
   const el=document.getElementById(id);if(el)el.value=oaFormatDMY(iso);
+  oaDateInput(id);
   const pop=document.getElementById(id+"Pop");if(pop)pop.hidden=true;
 }
 function oaRenderDatePicker(id){const pop=document.getElementById(id+"Pop");if(!pop)return;const parts=String(pop.dataset.month||"").split("-").map(Number);const y=parts[0],m=parts[1];const first=new Date(y,m-1,1),days=new Date(y,m,0).getDate(),lead=(first.getDay()+6)%7;const selected=oaParseDMY((document.getElementById(id)||{}).value);const label=first.toLocaleDateString("en-GB",{month:"long",year:"numeric"});let cells="";for(let i=0;i<lead;i++)cells+="<span></span>";for(let d=1;d<=days;d++){const iso=y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");cells+=`<button type="button" class="${selected===iso?"on":""}" onclick="oaPickDate('${id}','${iso}')">${d}</button>`;}pop.innerHTML=`<div class="oa-date-nav"><button type="button" aria-label="Previous month" onclick="oaShiftDatePicker('${id}',-1)">‹</button><b>${oaEsc(label)}</b><button type="button" aria-label="Next month" onclick="oaShiftDatePicker('${id}',1)">›</button></div><div class="oa-date-dow"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div><div class="oa-date-grid">${cells}</div>`;}
@@ -9511,7 +9536,7 @@ function oaFacultyName(i,id){
   render({force:1});requestAnimationFrame(oaRestoreMainScrollAfterRender);
 }
 function oaFacultyPhone(i,v){const list=oaEnsureRosterContent().faculty||[];if(list[i])list[i].phone=v;}
-function oaAddFaculty(){oaSyncRosterMeta();const c=oaEnsureRosterContent();c.faculty=c.faculty||[];c.faculty.push({name:"",phone:"",consultantId:""});render({force:1})}
+function oaAddFaculty(){toast("Consultants are populated automatically from active user profiles.","bad")}
 function oaRemoveFaculty(i){oaSyncRosterMeta();const c=oaEnsureRosterContent();(c.faculty||[]).splice(i,1);render({force:1})}
 function oaGenerateDates(){
   oaSyncRosterMeta();
@@ -9568,10 +9593,18 @@ async function oaPersistCurrentDraft(requireComplete=false){
  const existing=OA.editing?.id||payload.p_roster_id||null;
  const result=await oaRpc("office_admin_save_roster_draft",{...payload,p_roster_id:existing});
  const id=oaNormaliseRosterId(result,existing);
- OA.editing.id=id;OA.editing.roster_type=payload.p_roster_type;
- OA.editing.title=payload.p_title;OA.editing.period_start=payload.p_period_start;OA.editing.period_end=payload.p_period_end;
- OA.editing.reference_number=payload.p_reference_number;OA.editing.issue_date=payload.p_issue_date;OA.editing.content=payload.p_content;
- OA.editing.status="draft";
+ const verify=await oaRpc("office_admin_get_roster",{p_roster_id:id});
+ const saved=verify?.roster||null;
+ if(!saved)throw new Error("Draft was submitted, but the saved record could not be reloaded for verification.");
+ const dates=[["Start date","period_start",payload.p_period_start],["End date","period_end",payload.p_period_end],["Issue date","issue_date",payload.p_issue_date]];
+ for(const item of dates){
+  const actual=saved[item[1]]==null?null:String(saved[item[1]]).slice(0,10);
+  const wanted=item[2]==null?null:String(item[2]).slice(0,10);
+  if(actual!==wanted)throw new Error(item[0]+" was not persisted. The draft was not confirmed as saved; please retry.");
+ }
+ OA.editing={...OA.editing,...saved,id,roster_type:payload.p_roster_type,status:"draft",
+  period_start:saved.period_start||null,period_end:saved.period_end||null,issue_date:saved.issue_date||null,
+  content:payload.p_content};
  return id;
 }
 function oaRestoreMainScrollAfterRender(){const main=document.querySelector(".oa-main");if(main&&Number.isFinite(OA._actionScrollTop))main.scrollTop=OA._actionScrollTop;}
