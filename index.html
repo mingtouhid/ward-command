@@ -10558,11 +10558,11 @@ function shell(inner){
   const labels={patients:"Patients",handover:"Handovers",more:"More",tasks:"Task board",census:"Admit patient",observe:"Observation",ect:"ECT",activity:"Activity log",setup:(ui.setupTab==="notify"?"Notifications":ui.setupTab==="theme"?"Appearance":"Settings"),ward:"Ward setup",users:"User management",about:"About",connection:"Connection",broadcast:"Broadcast",myorders:"My orders",bdft:"BDFT",profile:"Account",pgts:"Resident directory",record:"Patient record",dcert:"Discharge certificate",dedit:"Discharge review",pedit:"Edit patient",vchart:"Vitals chart",scale:"Rating scales",srate:"Rating scale",ivitals:"Vitals",ireports:"Reports",ireport:"Report"};
   const contextTitle=labels[route.page]||((S.unit&&S.unit.name)||"Ward Sync");
   const left=isHome
-    ? `<div class="home-id">${photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")}<div class="home-greet"><b>${esc(greet())}, ${esc(u.displayName||u.username||"User")}</b>${homeSyncSlot()}</div></div>`
+    ? `<div class="home-id">${photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")}<div class="home-greet"><b>${esc(greet())}, ${esc(u.displayName||u.username||"User")}</b>${homeSyncSlot()}</div><div class="ws-home-shift"><span class="ws-home-shift-chip">${esc(shiftLabel(currentShift()))} · ${esc(shiftHours(currentShift()))}</span>${canWrite()?`<button type="button" class="ws-home-duty-btn ${dutyRecord()?"is-on":""}" onclick="${dutyRecord()?"endDuty()":"signDuty()"}">${dutyRecord()?"Sign out":"Sign in"}</button>`:""}</div></div>`
     : snapP
       ? `<div class="patient-shell-left"><button class="patient-shell-back" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="patient-shell-meta"><div class="patient-shell-primary"><span class="patient-shell-bed">${esc(snapB&&snapB.no?snapB.no:(snapP.status==="observation"?"OBS":"NO BED"))}</span><strong>${esc(snapP.name||"Patient")}</strong></div><div class="patient-shell-sync">${syncMini}</div></div></div>`
       : `<div class="compact-context"><span class="compact-kicker">WARD SYNC</span><strong>${esc(contextTitle)}</strong></div>`;
-  const tools=isHome?`<div class="who-tools home-tools">${bell}</div>`:snapP?`<div class="who-tools compact-tools">${bell}</div>`:`<div class="who-tools compact-tools">${syncMini}${bell}</div>`;
+  const tools=isHome?`<div class="who-tools home-tools"><button type="button" class="ws-home-search" onclick="go(&quot;patients&quot;)" aria-label="Search patients">${ico("search")}<span>Search patients</span></button>${bell}<button type="button" class="ws-home-profile" onclick="go(&quot;profile&quot;)" aria-label="Profile">${ico("profile")}</button></div>`:snapP?`<div class="who-tools compact-tools">${bell}</div>`:`<div class="who-tools compact-tools">${syncMini}${bell}</div>`;
   const sideIcon=name=>["home","patients","handover","more"].includes(name)?navIco(name):ico(name);
   const sideBtn=(page,label,icon,extra)=>`<button type="button" class="${on(page)}" onclick="${extra||`go('${page}')`}" aria-label="${label}">${sideIcon(icon)}<span>${label}</span></button>`;
   return `<aside class="side-nav" aria-label="Ward"><p class="side-brand">Ward Sync</p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}</aside><header class="top${isHome?" resident-home":snapP?" patient-top":route.page==="rosters"?" compact-top roster-top":" compact-top"}">${left}${tools}</header>
@@ -11426,6 +11426,18 @@ function homeView(){
     </section></div></div>
   </div>`;
 }
+
+const wsOriginalHomeView=homeView;
+homeView=function(){
+ let html=wsOriginalHomeView();
+ if(!document.documentElement.classList.contains("ws-resident-landscape"))return html;
+ const secs=(S.sections||[]).filter(x=>x.active!==false),bs=occupied();
+ const list=secs.map(sec=>{const rows=bs.filter(b=>b.sectionId===sec.id).map(b=>{const p=patient(b.patientId);if(!p||p.status==="discharged")return "";return '<button type="button" class="ws-lbed-row" onclick="r146Open('+r146Q(p.id)+')"><b>'+esc(b.no||"—")+'</b><span>'+esc(p.name||"Patient")+'</span></button>';}).join("");const n=bs.filter(b=>b.sectionId===sec.id&&patient(b.patientId)&&patient(b.patientId).status!=="discharged").length;return '<section class="ws-lward-section"><header><b>'+esc(sectionLabel(sec.name))+'</b><small>'+n+' occupied</small></header>'+(rows||'<p>No patients</p>')+'</section>';}).join("");
+ html=html.replace(/<div class="r2-wardhead"><h2>.*?<\/h2><\/div>/,'<div class="r2-wardhead ws-lward-title"><div><span>WARD OVERVIEW</span><h2>Psychiatry Ward</h2></div><img class="ws-lmedical" src="./medical-banner-60s.svg" alt="" width="390" height="65"></div>');
+ html=html.replace(/<div class="r2-medical-strip"[^>]*>[\s\S]*?<\/div>/,"");
+ html=html.replace('    </section><div class="r2-side">','<div class="ws-lsection-list">'+(list||'<p>No active ward sections</p>')+'</div></section><div class="r2-side">');
+ return html;
+};
 // ---------- Patient page ----------
 // R1.5 (t401u): Jail / Opinion chips wherever a patient appears. Same logic as R1.3.145's Jail and Opinion
 // counts: Jail = snapshot tag "jail" (hasSnapTag), Opinion = admission reason "opinion" (patientHasReason).
@@ -26792,6 +26804,8 @@ function wardSyncApplyResidentTabletMode(){
     const resident=!!(S.userId&&(activeRole==="resident"||activeRole==="admin")); // Admin accounts also retain the resident workspace.
     const tablet=!!(window.matchMedia&&window.matchMedia("(min-width:760px)").matches);
     document.documentElement.classList.toggle("ws-resident-tablet",resident&&tablet);
+    const land=!!(S.userId&&activeRole==="resident"&&window.matchMedia&&window.matchMedia("(min-width:900px) and (orientation:landscape)").matches);
+    document.documentElement.classList.toggle("ws-resident-landscape",land);
     document.documentElement.classList.toggle("ws-intern",activeRole==="intern");
   }catch(e){
     document.documentElement.classList.remove("ws-resident-tablet");
@@ -28724,6 +28738,49 @@ html.ws-intern .snap-cols>.card{
 #app.app.oa-mode .btn.oa-action-generate:disabled,#app.app.oa-mode .btn.oa-action-add:disabled,#app.app.oa-mode .btn.oa-action-export:disabled,#app.app.oa-mode .btn.oa-action-save:disabled,#app.app.oa-mode .btn.oa-action-publish:disabled,#app.app.oa-mode .btn.oa-action-return:disabled{opacity:.55;cursor:not-allowed}
 </style>
 
+<style id="ward-sync-final-landscape-home-v1">
+@media (min-width:900px) and (orientation:landscape){
+ html.ws-resident-landscape #app.app{display:flex!important;flex-direction:column!important;width:calc(100vw - 88px)!important;height:100dvh!important;margin-left:88px!important;overflow:hidden!important}
+ html.ws-resident-landscape #app.app>.side-nav{position:fixed!important;inset:0 auto 0 0!important;width:88px!important;background:linear-gradient(180deg,#28163f,#352052)!important;z-index:110!important}
+ html.ws-resident-landscape #app.app>.top.resident-home{min-height:82px!important;padding:12px 24px!important;background:linear-gradient(105deg,#28163f,#49306f)!important;color:#fff!important;border:0!important;display:flex!important;align-items:center!important}
+ html.ws-resident-landscape #app.app>.top.resident-home .home-id{flex:1 1 auto!important;gap:22px!important;overflow:visible!important}
+ html.ws-resident-landscape #app.app>.top.resident-home .home-greet b{color:#fff!important;font-size:19px!important}
+ html.ws-resident-landscape #app.app>.top.resident-home .ws-home-shift{display:flex!important;align-items:center!important;gap:8px!important;margin-left:auto!important}
+ html.ws-resident-landscape #app.app>.top.resident-home .ws-home-shift-chip{padding:10px 12px!important;border:1px solid #ffffff44!important;border-radius:10px!important;color:#fff!important;white-space:nowrap!important}
+ html.ws-resident-landscape #app.app>.top.resident-home .ws-home-duty-btn{padding:10px 14px!important;border:0!important;border-radius:10px!important;background:#fff!important;color:#352052!important;font-weight:700!important;white-space:nowrap!important}
+ html.ws-resident-landscape #app.app>.top.resident-home .who-tools.home-tools{display:flex!important;align-items:center!important;gap:9px!important;width:auto!important;max-width:none!important}
+ html.ws-resident-landscape #app.app>.top.resident-home .ws-home-search{display:flex!important;align-items:center!important;gap:8px!important;padding:10px 12px!important;border:1px solid #ffffff44!important;border-radius:10px!important;color:#fff!important;background:#ffffff12!important;white-space:nowrap!important}
+ html.ws-resident-landscape #app.app>.top.resident-home .top-bell,html.ws-resident-landscape #app.app>.top.resident-home .ws-home-profile{background:#ffffff20!important;color:#fff!important;border:1px solid #ffffff30!important}
+ html.ws-resident-landscape #app.app>.main{flex:1 1 0!important;height:0!important;min-height:0!important;overflow:auto!important;padding:18px 22px!important}
+ html.ws-resident-landscape #app.app>.main>.r2-home{display:grid!important;grid-template-columns:minmax(0,1.2fr) minmax(330px,.8fr)!important;grid-template-areas:"heading bdft" "ward flags" "ward urgent" "ward schedule" "team team"!important;gap:12px 16px!important;align-items:start!important}
+ html.ws-resident-landscape #app.app>.main .r2-wardhead{grid-area:heading!important;display:flex!important;align-items:center!important;justify-content:space-between!important}
+ html.ws-resident-landscape #app.app>.main .r2-wardhead h2{margin:0!important;font-size:21px!important;color:var(--ink)!important}
+ html.ws-resident-landscape #app.app>.main .ws-lward-title>div>span{display:block!important;margin-bottom:5px!important;color:var(--muted)!important;font-size:10px!important;font-weight:800!important;letter-spacing:.11em!important}
+ html.ws-resident-landscape #app.app>.main .ws-lmedical{display:block!important;width:min(230px,36%)!important;height:auto!important}
+ html.ws-resident-landscape #app.app>.main .r2-bdft{grid-area:bdft!important;margin:0!important;background:var(--panel)!important}
+ html.ws-resident-landscape #app.app>.main .r2-split{display:contents!important}
+ html.ws-resident-landscape #app.app>.main .r2-overview{grid-area:ward!important;min-width:0!important;overflow:visible!important;background:var(--panel)!important}
+ html.ws-resident-landscape #app.app>.main .r2-medical-strip{display:none!important}
+ html.ws-resident-landscape #app.app>.main .ws-lsection-list{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;margin-top:14px!important}
+ html.ws-resident-landscape #app.app>.main .ws-lward-section{padding:10px!important;border:1px solid var(--line)!important;border-radius:12px!important;background:var(--panel2)!important;min-width:0!important}
+ html.ws-resident-landscape #app.app>.main .ws-lward-section header{display:flex!important;justify-content:space-between!important;gap:8px!important;margin-bottom:7px!important}
+ html.ws-resident-landscape #app.app>.main .ws-lward-section header b{font-size:13px!important;color:var(--ink)!important}
+ html.ws-resident-landscape #app.app>.main .ws-lward-section header small,html.ws-resident-landscape #app.app>.main .ws-lward-section p{font-size:11px!important;color:var(--muted)!important}
+ html.ws-resident-landscape #app.app>.main .ws-lbed-row{display:flex!important;align-items:center!important;gap:10px!important;width:100%!important;padding:8px 2px!important;border:0!important;border-top:1px solid var(--line)!important;background:transparent!important;color:var(--ink)!important;text-align:left!important}
+ html.ws-resident-landscape #app.app>.main .ws-lbed-row b{min-width:40px!important;padding:6px!important;border-radius:7px!important;background:color-mix(in srgb,var(--teal) 14%,var(--panel))!important;color:var(--teal)!important;font-size:11px!important;text-align:center!important}
+ html.ws-resident-landscape #app.app>.main .ws-lbed-row span{font-size:12px!important;font-weight:600!important}
+ html.ws-resident-landscape #app.app>.main .r2-side{display:contents!important}
+ html.ws-resident-landscape #app.app>.main .r2-duty{display:none!important}
+ html.ws-resident-landscape #app.app>.main .r2-flags{grid-area:flags!important;margin:0!important}
+ html.ws-resident-landscape #app.app>.main .r146-needs{grid-area:urgent!important;margin:0!important}
+ html.ws-resident-landscape #app.app>.main .r146-sched{grid-area:schedule!important;margin:0!important}
+ html.ws-resident-landscape #app.app>.main .r2-team{grid-area:team!important;margin:0!important}
+}
+@media (min-width:900px) and (max-width:1100px) and (orientation:landscape){
+ html.ws-resident-landscape #app.app>.main>.r2-home{grid-template-columns:minmax(0,1fr) minmax(280px,.8fr)!important}
+ html.ws-resident-landscape #app.app>.main .ws-lsection-list{grid-template-columns:minmax(0,1fr)!important}
+}
+</style>
 </body>
 </html>
 
