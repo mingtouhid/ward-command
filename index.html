@@ -9529,7 +9529,7 @@ function oaRosterForm(){
   const dateRows=c.rows.map((row,i)=>{
     const cells=c.columns.map((col,j)=>oaRosterDutyCell(row,i,j,pgt,editable)).join("");
     return '<tr><td class="oa-rownum">'+(i+1)+'</td>'+cells+'<td><button class="oa-iconbtn" title="Remove row" '+(editable?'onclick="oaRemoveRosterRow('+i+')"':"disabled") +'>×</button></td></tr>';
-  }).join("")
+  }).join("");
   const pgtHeaders=c.columns.map((col,j)=>{const fixed=j<2;return `<th><div class="oa-col-head"><input class="oa-colname" value="${oaEsc(col)}" ${editable&&!fixed?`oninput="oaColumnInput(${j},this.value)"`:'disabled'} aria-label="Column heading ${j+1}"><button type="button" class="oa-remove-col-btn" title="${fixed?'Date and day columns are required':'Remove '+oaEsc(col)}" ${editable&&!fixed?`onclick="oaRemoveRosterColumn(${j})"`:'disabled'} aria-label="Remove column ${j+1}">×</button></div></th>`}).join("");
 
   return `<div class="oa-card oa-roster-builder"><div class="oa-row"><button class="btn secondary" onclick="OA.editing=null;render({force:1})">← Back</button><span class="oa-status">${oaStatus(r.status||"draft")}</span></div>
