@@ -10572,7 +10572,7 @@ function shell(inner){
   const tools=isHome?(landscapeMode?'<div class="who-tools home-tools ws-landscape-greeting-tools">'+landscapeControls+'</div>':legacyHomeTools):snapP?'<div class="who-tools compact-tools">'+bell+'</div>':'<div class="who-tools compact-tools">'+syncMini+bell+'</div>';
   const sideIcon=name=>["home","patients","handover","more"].includes(name)?navIco(name):ico(name);
   const sideBtn=(page,label,icon,extra)=>`<button type="button" class="${on(page)}" onclick="${extra||`go('${page}')`}" aria-label="${label}">${sideIcon(icon)}<span>${label}</span></button>`;
-  return `${landscapeBar}<aside class="side-nav" aria-label="Ward"><p class="side-brand"><span class="ws-landscape-brand-mark" aria-hidden="true"><svg viewBox="0 0 36 28" fill="none"><path d="M2 14h7l4-10 5 20 5-14 3 4h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><strong>Ward Sync</strong></p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}${landscapeMode?'<div class="ws-landscape-profile">'+photoFace(profileInitials(u.displayName||u.username||""),"ws-landscape-profile-photo") + '<span><strong>'+esc(u.displayName||u.username||"Resident")+'</strong><small>PG Resident</small></span><button type="button" aria-label="Account settings" onclick="go(\'profile\')">'+ico("settings")+'</button></div>':""}</aside><header class="top${isHome?" resident-home":snapP?" patient-top":route.page==="rosters"?" compact-top roster-top":" compact-top"}">${left}${tools}</header>
+  return `${landscapeBar}<aside class="side-nav" aria-label="Ward"><p class="side-brand"><span class="ws-landscape-brand-mark" aria-hidden="true"><svg viewBox="0 0 36 28" fill="none"><path d="M2 14h7l4-10 5 20 5-14 3 4h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><strong>Ward Sync</strong></p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}${landscapeMode?'<div class="ws-landscape-profile">'+photoFace(profileInitials(u.displayName||u.username||""),"ws-landscape-profile-photo") + '<span><strong>'+esc(u.displayName||u.username||"Resident")+'</strong><small>PG Resident</small></span><button type="button" aria-label="Account settings" onclick="go(\'profile\')">'+ico("setup")+'</button></div>':""}</aside><header class="top${isHome?" resident-home":snapP?" patient-top":route.page==="rosters"?" compact-top roster-top":" compact-top"}">${left}${tools}</header>
     <main class="main">${inner}</main>${r151Dock()}${snapP&&isConsultant()&&snapP.status!=="discharged"?`<button type="button" class="snap-advice-fab" onclick="openAdviceForm('${snapP.id}')" aria-label="Give advice to ${esc(snapP.name)}"><span class="snap-advice-fab-ico">${ico("myorders")}</span><span>Give advice</span></button>`:""}
     <nav class="nav"><div class="nav-in">
       <button class="${on("home")}" onclick="go('home')" aria-label="Home">${navIco('home')}<span class="lbl">Home</span></button>
@@ -11454,11 +11454,11 @@ function wsResidentLandscapeHome(){
  const metric=(n,label,icon,primary)=>'<div class="ws-landscape-metric'+(primary?' primary':'')+'"><span class="ws-landscape-metric-icon">'+icon+'</span><span class="ws-landscape-metric-copy"><b>'+n+'</b><small>'+esc(label)+'</small></span></div>';
  const metrics=[
   metric(list.length,"Total patients",ico("patients"),true),
-  metric(male,"Male",ico("profile"),false),
-  metric(female,"Female",ico("profile"),false),
+  metric(male,"Male","♂",false),
+  metric(female,"Female","♀",false),
   metric(deaddiction,"De-addiction",ico("tasks"),false),
   metric(isolation,"Isolation",ico("bdft"),false),
-  metric(observation,"Observation",ico("eye"),false)
+  metric(observation,"Observation",ico("observe"),false)
  ].join("");
 
  const delirium=rows.filter(x=>isDelirium(x.p.id)).length;
@@ -11467,12 +11467,13 @@ function wsResidentLandscapeHome(){
  const jail=rows.filter(x=>hasSnapTag(x.p.id,"jail")).length;
  const ect=(S.ect||[]).filter(e=>(!e.status||e.status==="planned")&&onWard(e.pid)).length;
  const handovers=handoverTileCount();
+ const highRisk=rows.filter(x=>isDelirium(x.p.id)||hasSnapTag(x.p.id,"suicidal")||restrainHeld(x.p.id)).length;
  const flags=[
   {k:"delirium",n:delirium,l:"Delirium",c:"amber",fn:"ui.ptag='delirium';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
   {k:"suicidal",n:suicidal,l:"Suicidal",c:"red",fn:"ui.ptag='suicidal';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
   {k:"restrained",n:restrained,l:"Restrained",c:"red",fn:"ui.ptag='restrain';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
-  {k:"high-risk",n:delirium+suicidal+restrained,l:"High risk",c:"purple",fn:"clearPatientListFilters(true)"},
-  {k:"medical",n:jail,l:"Medical / Jail",c:"blue",fn:"ui.ptag='jail';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
+  {k:"high-risk",n:highRisk,l:"High risk",c:"purple",fn:"clearPatientListFilters(true)"},
+  {k:"jail",n:jail,l:"Jail",c:"grey",fn:"ui.ptag='jail';ui.preason='';ui.pcon='';ui.pf='';go('patients')"},
   {k:"ect",n:ect,l:"ECT",c:"blue",fn:"go('ect')"},
   {k:"handover",n:handovers,l:"Handover",c:"amber",fn:"go('handover')"},
   {k:"opinion",n:opinionCount(),l:"Opinion",c:"blue",fn:"ui.ptag='';ui.pcon='';ui.preason='opinion';ui.pf='';go('patients')"}
@@ -28929,6 +28930,8 @@ html.ws-intern .snap-cols>.card{
  html.ws-resident-landscape #app.app>.top.resident-home .home-sync{
   font-size:12px!important;line-height:1.2!important;color:var(--ok)!important;
  }
+ html.ws-resident-landscape .ws-landscape-greeting-tools{display:flex!important;align-items:center!important;justify-content:flex-end!important;width:auto!important;min-width:0!important;max-width:none!important;flex:0 0 auto!important}
+ html.ws-resident-landscape #app.app>.top.resident-home .ws-landscape-dept{font-size:11px!important;line-height:1.2!important;color:var(--muted)!important}
  html.ws-resident-landscape .ws-landscape-greeting-actions{
   display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:10px!important;
   min-width:0!important;
