@@ -9342,7 +9342,7 @@ function oaFacultyDutyCell(row,rowIndex,columnIndex,editable){
  const profile=selected
   ?'<div class="oa-faculty-duty-profile"><strong>'+oaEsc(oaConsultantFullName(selected))+'</strong><span class="oa-faculty-duty-designation">'+oaEsc(selected.designation||"Designation not set")+'</span><span class="oa-faculty-duty-phone">'+(phone?"Phone: "+oaEsc(phone):"No phone saved in user profile")+'</span></div>'
   :'<div class="oa-faculty-duty-profile"><strong>'+oaEsc(raw||"No faculty selected")+'</strong><span class="oa-faculty-duty-unmatched">'+(raw?"This roster entry is not linked to a registered consultant account.":"Select a registered consultant account.")+'</span></div>';
- return '<div class="oa-faculty-duty-cell"><select class="oa-faculty-duty-select" aria-label="'+label+', row '+(rowIndex+1)+'" '+(editable?'onchange="oaFacultyDutyChange('+rowIndex+','+columnIndex+',this.value)'':"disabled")+'><option value="" '+(!selectedId?"selected":"")+'>'+oaEsc(placeholder)+'</option>'+options+'</select>'+profile+'</div>';
+ return '<div class="oa-faculty-duty-cell"><select class="oa-faculty-duty-select" aria-label="'+label+', row '+(rowIndex+1)+'" '+(editable?'onchange="oaFacultyDutyChange('+rowIndex+','+columnIndex+',this.value)"':"disabled")+'><option value="" '+(!selectedId?"selected":"")+'>'+oaEsc(placeholder)+'</option>'+options+'</select>'+profile+'</div>';
 }
 function oaFacultyDutyChange(rowIndex,columnIndex,consultantId){
  oaSyncRosterMeta();
