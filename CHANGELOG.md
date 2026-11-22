@@ -1,3 +1,16 @@
+## 2026-11-22 — Final resident landscape home design
+
+### Added
+- Replaced the interim landscape override with the approved resident Home layout: fixed purple Ward Sync header, slim left navigation rail, separate resident greeting row, shift/timing chip, and Sign in/Sign out control beside the shift chip.
+- Added a census summary and Psychiatry Ward section with the existing 390×65 animated medical SVG.
+- Ward cards show active occupied bed numbers only. Selecting a bed opens that patient's record; empty sections display “No patients”.
+- Added the BDFT action/status banner, clinical flags, Needs You Now, and on-duty team in the right column using existing data and clinical renderers.
+
+### Preserved
+- Resident landscape detection, mobile/portrait home, role permissions, clinical calculations, Supabase workflows, and duty sign-in/out functions remain unchanged.
+- Service-worker app shell cache: ward-sync-pwa-r2.0.0-31.
+- Client version: R2.0.14.
+
 ## 2026-11-21 — Office Admin faculty roster and workflow fixes
 
 ### Fixed
