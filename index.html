@@ -6099,6 +6099,32 @@ html.ws-session-loading #app .login.ws-session-loader::after {
   transform:translateY(19.5px) scale(1.2016,1.1514)!important;
 }
 </style>
+<style id="oa-roster-faculty-duty-fields-v1">
+#app.app.oa-mode .oa-faculty-duty-cell{display:flex;flex-direction:column;gap:6px;min-width:150px}
+#app.app.oa-mode .oa-faculty-duty-select{width:100%;min-width:150px;min-height:36px;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#172033;font:inherit;font-size:12px;box-sizing:border-box}
+#app.app.oa-mode .oa-faculty-duty-select:disabled{opacity:1!important;color:#172033!important;-webkit-text-fill-color:#172033!important;background:#f8fafc}
+#app.app.oa-mode .oa-faculty-duty-profile{display:flex;flex-direction:column;gap:2px;line-height:1.35;font-size:11px;color:#334155;white-space:normal}
+#app.app.oa-mode .oa-faculty-duty-profile strong{font-size:12px;font-weight:700;color:#0f172a}
+#app.app.oa-mode .oa-faculty-duty-designation{color:#475569}
+#app.app.oa-mode .oa-faculty-duty-phone{color:#0f766e;font-weight:700}
+#app.app.oa-mode .oa-faculty-duty-unmatched{color:#9a3412}
+#app.app.oa-mode .oa-status.revoked{color:#991b1b!important;background:#fee2e2!important}
+#app.app.oa-mode .btn.oa-danger-btn{background:#b42318!important;border:1px solid #b42318!important;color:#fff!important}
+#app.app.oa-mode .oa-roster-builder,
+#app.app.oa-mode .oa-roster-builder .oa-builder-section{color:#1e293b!important}
+#app.app.oa-mode .oa-roster-builder h2,
+#app.app.oa-mode .oa-roster-builder h3{color:#0f172a!important;opacity:1!important}
+#app.app.oa-mode .oa-roster-builder .oa-help,
+#app.app.oa-mode .oa-roster-builder .oa-muted,
+#app.app.oa-mode .oa-roster-builder .oa-card p{color:#475569!important;opacity:1!important}
+#app.app.oa-mode .oa-roster-builder .field>span,
+#app.app.oa-mode .oa-roster-builder label{color:#334155!important;opacity:1!important}
+#app.app.oa-mode .oa-roster-builder input:disabled,
+#app.app.oa-mode .oa-roster-builder select:disabled,
+#app.app.oa-mode .oa-roster-builder textarea:disabled{color:#1e293b!important;opacity:1!important;-webkit-text-fill-color:#1e293b!important}
+#app.app.oa-mode .oa-roster-builder .oa-status{opacity:1!important}
+#app.app.oa-mode .oa-roster-builder .oa-count{color:#1d4ed8!important}
+</style>
 </head>
 <body>
 <svg id="ward-sync-icon-sprite" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
@@ -7515,7 +7541,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R2.0.12";
+const APP_VERSION="R2.0.13";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -9057,7 +9083,7 @@ function oaTouch(name){
 }
 function oaRpc(name,args){if(!sb||!sessionTok)throw new Error("No active Office Administration session");return sb.rpc(name,{p_token:sessionTok,...(args||{})}).then(({data,error})=>{if(error)throw error;return data}).then(data=>{oaTouch(name);return data});}
 function oaEsc(v){return esc(v==null?"":String(v))}
-function oaStatus(s){return ({draft:"Draft",review:"Ready to publish",published:"Published"})[s]||s||"—"}
+function oaStatus(s){return ({draft:"Draft",review:"Ready to publish",published:"Published",revoked:"Revoked"})[s]||s||"—"}
 function oaRosterLifecycle(r){
  if(!r||r.status!=="published")return oaStatus(r?.status);
  const today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
@@ -9146,10 +9172,8 @@ function oaNewRoster(){
     if(OA.type==="pgt_monthly"){
       const chosen=OA.groupSets.find(x=>String(x.id)===String(OA.activeGroupSetId))||OA.groupSets[0]||null;
       if(chosen){content.groups=JSON.parse(JSON.stringify(chosen.groups||[]));OA.activeGroupSetId=chosen.id;}
-    }else content.faculty=oaFacultySuggestionUsers().map(u=>({
-      name:oaConsultantFullName(u),fullName:String(u.full_name||""),displayName:String(u.display_name||""),
-      phone:String(u.phone||""),consultantId:String(u.id),designation:String(u.designation||"")
-    }));
+    }
+
     OA.editing={id:null,roster_type:OA.type,period_start:"",period_end:"",title:OA.type==="pgt_monthly"?"PGT Duty Roster":"Faculty Roster",reference_number:"",issue_date:oaLocalTodayISO(),content};
     render({force:1});
   };
@@ -9172,22 +9196,8 @@ function oaEditRoster(id){
           OA.groupSets=g.sets||[];OA.groupSetsLoaded=true;OA.groupSetsAt=Date.now();
         }));
       await Promise.all(jobs);
-      if(type==="faculty_weekly"){
-        const c=oaEnsureRosterContent();
-        if((c.faculty||[]).length===0&&(OA.editing.status||"draft")==="draft")
-          c.faculty=oaFacultySuggestionUsers().map(u=>({
-            name:oaConsultantFullName(u),fullName:String(u.full_name||""),displayName:String(u.display_name||""),
-            phone:String(u.phone||""),consultantId:String(u.id),designation:String(u.designation||"")
-          }));
-        c.faculty=(c.faculty||[]).map(f=>{
-          const match=(f.consultantId
-            ?oaFacultySuggestionUsers().find(u=>String(u.id)===String(f.consultantId))
-            :null)||oaFacultyMatch(f.fullName||f.name||f.displayName);
-          return match?{...f,consultantId:match.id,name:oaConsultantFullName(match),
-            fullName:String(match.full_name||""),displayName:String(match.display_name||""),
-            designation:String(match.designation||""),phone:String(match.phone||"")}:f;
-        });
-      }
+      if(type==="faculty_weekly")oaEnsureRosterContent();
+      OA.type=type;
     }catch(e){OA.error=e.message||String(e)}
     finally{OA.loading=false;render({force:1})}
   };
@@ -9258,6 +9268,16 @@ function oaEnsureRosterContent(){
   const oldSub="FACULTY / VP / RESIDENT PHYSICIAN-GDMO — WEEKLY DUTY ROSTER";
   if(!String(c.subtitle||"").trim()||c.subtitle===oldSub)c.subtitle="Faculty Roster";
   c.faculty=(Array.isArray(c.faculty)?c.faculty:[]).map(f=>({name:String((f&&(f.fullName||f.full_name||f.name||f.display_name))||""),fullName:String((f&&(f.fullName||f.full_name))||""),displayName:String((f&&(f.displayName||f.display_name))||""),phone:String((f&&(f.phone||f.phone_number))||""),consultantId:String((f&&(f.consultantId||f.consultant_id||f.residentId||f.resident_id))||""),designation:String((f&&f.designation)||"")}));
+  c.facultyAssignments=(Array.isArray(c.facultyAssignments)?c.facultyAssignments:[])
+   .map(a=>({row:Number(a.row),column:Number(a.column),consultantId:String(a.consultantId||a.consultant_id||"")}))
+   .filter(a=>Number.isInteger(a.row)&&Number.isInteger(a.column)&&a.row>=0&&a.row<c.rows.length&&a.column>=0&&a.column<c.columns.length&&!!a.consultantId&&!!oaFacultyDutyColumnKind(c.columns[a.column]));
+  c.rows.forEach((row,i)=>c.columns.forEach((col,j)=>{
+   if(!oaFacultyDutyColumnKind(col)||!String(row[j]??"").trim())return;
+   if(c.facultyAssignments.some(a=>a.row===i&&a.column===j))return;
+   const match=oaFacultyMatch(row[j]);
+   if(match)c.facultyAssignments.push({row:i,column:j,consultantId:String(match.id)});
+  }));
+  c.faculty=[];
  }
  r.content=c;OA.editing=r;return c;
 }
@@ -9289,13 +9309,64 @@ function oaFacultyMatch(value){
     .replace(/^(?:(?:prof(?:essor)?|dr)\.?\s*)+/i,"")
     .replace(/[.,]+/g," ").replace(/\s+/g," ").toLocaleLowerCase();
   const q=norm(value);if(!q)return null;
-  const matched=oaFacultySuggestionUsers().filter(u=>
+  const matched=(OA.users||[]).filter(u=>u&&String(u.role||"").toLowerCase()==="consultant"&&String(u.id||"").trim()&&
     [u.full_name,u.display_name,u.username,...(Array.isArray(u.aliases)?u.aliases:[])]
       .some(v=>norm(v)===q)
   );
   const unique=new Map(matched.map(u=>[String(u.id),u]));
   return unique.size===1?[...unique.values()][0]:null;
 }
+
+function oaFacultyDutyColumnKind(column){
+ const v=String(column||"").toLocaleLowerCase();
+ if(/resident\s*physician|\brp\b|gdmo/.test(v))return "rp";
+ if(/faculty|\bvp\b/.test(v))return "vp";
+ return "";
+}
+function oaFacultyDutyCell(row,rowIndex,columnIndex,editable){
+ const content=(OA.editing&&OA.editing.content)||{},raw=String(row[columnIndex]??"");
+ const assignments=Array.isArray(content.facultyAssignments)?content.facultyAssignments:[];
+ const assignment=assignments.find(a=>Number(a.row)===rowIndex&&Number(a.column)===columnIndex);
+ const legacyMatch=assignment?null:oaFacultyMatch(raw);
+ const selectedId=String((assignment&&assignment.consultantId)||(legacyMatch&&legacyMatch.id)||"");
+ const selected=(OA.users||[]).find(u=>String(u.id)===selectedId&&String(u.role||"").toLowerCase()==="consultant")||null;
+ const available=oaFacultySuggestionUsers();
+ const inactive=!!selected&&!available.some(u=>String(u.id)===selectedId);
+ const label=oaFacultyDutyColumnKind((content.columns||[])[columnIndex])==="vp"?"Faculty / VP":"Resident Physician / GDMO";
+ const placeholder=selected?"Select a consultant":(raw?"Unmatched roster entry: "+raw:"Select a consultant");
+ let options="";
+ if(selected&&inactive)options+='<option value="'+oaEsc(selectedId)+'" selected disabled>'+oaEsc(oaConsultantOptionLabel(selected))+' · Inactive account</option>';
+ if(!selected&&selectedId)options+='<option value="'+oaEsc(selectedId)+'" selected disabled>Saved account unavailable</option>';
+ options+=available.map(u=>'<option value="'+oaEsc(u.id)+'" '+(String(u.id)===selectedId?"selected":"")+'>'+oaEsc(oaConsultantOptionLabel(u))+'</option>').join("");
+ const phone=String((selected&&selected.phone)||"").trim();
+ const profile=selected
+  ?'<div class="oa-faculty-duty-profile"><strong>'+oaEsc(oaConsultantFullName(selected))+'</strong><span class="oa-faculty-duty-designation">'+oaEsc(selected.designation||"Designation not set")+'</span><span class="oa-faculty-duty-phone">'+(phone?"Phone: "+oaEsc(phone):"No phone saved in user profile")+'</span></div>'
+  :'<div class="oa-faculty-duty-profile"><strong>'+oaEsc(raw||"No faculty selected")+'</strong><span class="oa-faculty-duty-unmatched">'+(raw?"This roster entry is not linked to a registered consultant account.":"Select a registered consultant account.")+'</span></div>';
+ return '<div class="oa-faculty-duty-cell"><select class="oa-faculty-duty-select" aria-label="'+label+', row '+(rowIndex+1)+'" '+(editable?'onchange="oaFacultyDutyChange('+rowIndex+','+columnIndex+',this.value)'':"disabled")+'><option value="" '+(!selectedId?"selected":"")+'>'+oaEsc(placeholder)+'</option>'+options+'</select>'+profile+'</div>';
+}
+function oaFacultyDutyChange(rowIndex,columnIndex,consultantId){
+ oaSyncRosterMeta();
+ const c=oaEnsureRosterContent(),row=c.rows[rowIndex];
+ if(!row||!oaFacultyDutyColumnKind(c.columns[columnIndex]))return;
+ const selected=oaFacultySuggestionUsers().find(u=>String(u.id)===String(consultantId));
+ c.facultyAssignments=(c.facultyAssignments||[]).filter(a=>a.row!==rowIndex||a.column!==columnIndex);
+ if(!consultantId)row[columnIndex]="";
+ else{
+  if(!selected)return toast("Select an active registered consultant account.","bad");
+  row[columnIndex]=oaConsultantFullName(selected);
+  c.facultyAssignments.push({row:rowIndex,column:columnIndex,consultantId:String(selected.id)});
+ }
+ const main=document.querySelector(".oa-main");OA._actionScrollTop=main?main.scrollTop:0;
+ render({force:1});requestAnimationFrame(oaRestoreMainScrollAfterRender);
+}
+function oaRosterDutyCell(row,rowIndex,columnIndex,pgt,editable){
+ const col=OA.editing&&OA.editing.content&&OA.editing.content.columns?OA.editing.content.columns[columnIndex]:"";
+ if(!pgt&&oaFacultyDutyColumnKind(col))return "<td>"+oaFacultyDutyCell(row,rowIndex,columnIndex,editable)+"</td>";
+ const value=oaEsc(row[columnIndex]??"");
+ const oninput=editable?'oninput="oaCellInput('+rowIndex+','+columnIndex+',this.value)"':"disabled";
+ return '<td><input class="oa-cell" list="'+(pgt?"oaDutySuggestions":"")+'" aria-label="Row '+(rowIndex+1)+', '+oaEsc(col)+'" value="'+value+'" '+oninput+'></td>';
+}
+
 function oaFacultyRows(c,editable){
   const users=oaFacultySuggestionUsers();
   const entries=Array.isArray(c.faculty)?c.faculty:[];
@@ -9455,14 +9526,15 @@ function oaRosterForm(){
   const groupsHtml="";
   const assignmentValues=[...c.groups.map(g=>String(g.name||"").replace(/^group\s*/i,"")),...c.groups.map(g=>g.name||""),...c.groups.flatMap(g=>(g.members||[]).map(m=>m.abbr).filter(Boolean)),"—"];
   const suggestions=[...new Set(assignmentValues.filter(Boolean))];
-  const dateRows=c.rows.map((row,i)=>`<tr><td class="oa-rownum">${i+1}</td>${c.columns.map((col,j)=>`<td><input class="oa-cell" list="${pgt?"oaDutySuggestions":""}" aria-label="Row ${i+1}, ${oaEsc(col)}" value="${oaEsc(row[j]??"")}" ${editable?`oninput="oaCellInput(${i},${j},this.value)"`:'disabled'}></td>`).join("")}<td><button class="oa-iconbtn" title="Remove row" ${editable?`onclick="oaRemoveRosterRow(${i})"`:"disabled"}>×</button></td></tr>`).join("");
+  const dateRows=c.rows.map((row,i)=>{
+    const cells=c.columns.map((col,j)=>oaRosterDutyCell(row,i,j,pgt,editable)).join("");
+    return '<tr><td class="oa-rownum">'+(i+1)+'</td>'+cells+'<td><button class="oa-iconbtn" title="Remove row" '+(editable?'onclick="oaRemoveRosterRow('+i+')"':"disabled") +'>×</button></td></tr>';
+  }).join("")
   const pgtHeaders=c.columns.map((col,j)=>{const fixed=j<2;return `<th><div class="oa-col-head"><input class="oa-colname" value="${oaEsc(col)}" ${editable&&!fixed?`oninput="oaColumnInput(${j},this.value)"`:'disabled'} aria-label="Column heading ${j+1}"><button type="button" class="oa-remove-col-btn" title="${fixed?'Date and day columns are required':'Remove '+oaEsc(col)}" ${editable&&!fixed?`onclick="oaRemoveRosterColumn(${j})"`:'disabled'} aria-label="Remove column ${j+1}">×</button></div></th>`}).join("");
-  const facultyRows=!pgt?oaFacultyRows(c,editable):"";
 
   return `<div class="oa-card oa-roster-builder"><div class="oa-row"><button class="btn secondary" onclick="OA.editing=null;render({force:1})">← Back</button><span class="oa-status">${oaStatus(r.status||"draft")}</span></div>
-  <h2>${r.id?"Edit roster":"Create duty roster"}</h2><p class="oa-help">${pgt?"Choose a saved PGT group set, then allocate group letters and PGT abbreviations in the daily duty table.":"Select a registered consultant account. The full name, designation and saved phone number are read from that account profile."}</p>
+  <h2>${r.status==="published"?"Published roster":r.id?"Edit roster":"Create duty roster"}</h2><p class="oa-help">${pgt?"Choose a saved PGT group set, then allocate group letters and PGT abbreviations in the daily duty table.":"Select registered faculty in the Faculty / VP and Resident Physician / GDMO columns. Saved phone numbers appear below each selected name."}</p>
   <div class="oa-field-grid"><label class="field"><span>Roster type</span><input value="${pgt?"PGT monthly duty roster":"Faculty weekly duty roster"}" disabled></label><label class="field"><span>Reference / dispatch no.</span><input id="oaRef" ${editable?"":"disabled"} value="${oaEsc(r.reference_number||"")}"></label>${oaRosterDateField("oaIssue","Issue date",r.issue_date||"",editable)}${oaRosterDateField("oaStart","Start date",r.period_start||"",editable,"oa-period-start")}${oaRosterDateField("oaEnd","End date",r.period_end||"",editable,"oa-period-end")}</div>
-  ${pgt?"":`<section class="oa-builder-section oa-faculty-section"><div class="oa-builder-heading"><div><h3>Faculty</h3><p class="oa-help">Choose a consultant account. The phone number is read from the saved user profile and printed below the name.</p></div></div>${facultyRows}</section>`}
   ${pgt?oaRosterGroupSetSelector():groupsHtml}
   <datalist id="oaDutySuggestions">${suggestions.map(v=>`<option value="${oaEsc(v)}"></option>`).join("")}</datalist>
   <section class="oa-builder-section"><div class="oa-builder-heading"><div><h3>${pgt?"2. Daily duty allocation":"1. Duty allocation table"}</h3><p class="oa-help">${pgt?"Use group letters (A–D) or individual PGT short codes. Combined assignments such as MM+AS can be typed directly.":"Enter duty assignments directly into the cells."}</p></div><span class="oa-count">${c.rows.length} days</span></div>
@@ -9495,7 +9567,12 @@ function oaRemoveGroupMember(g,m){if(OA.page!=="groups"||!Array.isArray(OA.group
 function oaAddGroup(){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft))return;OA.groupDraft.push({name:`Group ${String.fromCharCode(65+OA.groupDraft.length)}`,members:[]});const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});}
 function oaRemoveGroup(g){if(OA.page!=="groups"||!Array.isArray(OA.groupDraft)||!confirm("Remove this group and its member list?"))return;OA.groupDraft.splice(g,1);const sc=document.querySelector(".oa-main");OA.preserveScrollTop=sc?sc.scrollTop:0;OA.scrollReset=false;render({force:1});}
 function oaAddRosterRow(){oaSyncRosterMeta();const c=oaEnsureRosterContent();c.rows.push(c.columns.map(()=>""));render({force:1})}
-function oaRemoveRosterRow(i){oaSyncRosterMeta();const c=oaEnsureRosterContent();c.rows.splice(i,1);render({force:1})}
+function oaRemoveRosterRow(i){
+  oaSyncRosterMeta();const c=oaEnsureRosterContent();
+  c.rows.splice(i,1);
+  c.facultyAssignments=(c.facultyAssignments||[]).filter(a=>a.row!==i).map(a=>({...a,row:a.row>i?a.row-1:a.row}));
+  render({force:1});
+}
 function oaAddRosterColumn(){
   const name=prompt("Enter the new duty column heading:");if(!name||!name.trim())return;
   oaSyncRosterMeta();
@@ -9513,6 +9590,7 @@ function oaRemoveRosterColumn(j){
   if(!confirm(`Remove “${heading}” and all assignments in this column?`))return;
   oaSyncRosterMeta();
   c.columns.splice(j,1);c.rows.forEach(row=>row.splice(j,1));
+  c.facultyAssignments=(c.facultyAssignments||[]).filter(a=>a.column!==j).map(a=>({...a,column:a.column>j?a.column-1:a.column}));
   const main=document.querySelector(".oa-main");OA._actionScrollTop=main?.scrollTop||0;
   render({force:1});requestAnimationFrame(oaRestoreMainScrollAfterRender);
 }
@@ -9630,7 +9708,28 @@ function oaPublish(){
   return publish();
 }
 async function oaReturnDraft(){try{await oaRpc("office_admin_return_roster_to_draft",{p_roster_id:OA.editing.id});OA.editing.status="draft";await oaLoad();await oaEditRoster(OA.editing.id)}catch(e){toast(e.message||String(e),"bad")}}
-async function oaRestore(id){if(!confirm("Restore this version as a new draft?"))return;try{const d=await oaRpc("office_admin_restore_roster_version",{p_roster_id:id});toast("New draft revision created","ok");await oaLoad();await oaEditRoster(d)}catch(e){toast(e.message||String(e),"bad")}}
+async function oaEditPublishedRoster(id){
+ if(!confirm("Create a new editable draft from this published roster? The published version will remain unchanged in the audit history."))return;
+ try{
+  const source=(OA.allRosters||[]).find(r=>String(r.id)===String(id));
+  if(!source||source.status!=="published")throw new Error("Only a published roster can be edited as a new revision.");
+  const draftId=await oaRpc("office_admin_restore_roster_version",{p_roster_id:id});
+  toast("Editable draft revision created. The published version is unchanged.","ok");
+  OA.type=source.roster_type||OA.type;
+  await oaLoad(true);
+  await oaEditRoster(draftId);
+ }catch(e){toast(e.message||String(e),"bad")}
+}
+async function oaRevokePublishedRoster(id){
+ if(!confirm("Revoke this published roster? It will disappear from the staff roster library. If it is the active roster, the latest earlier published version will be restored where available."))return;
+ try{
+  await oaRpc("office_admin_revoke_published_roster",{p_roster_id:id});
+  OA.editing=null;OA.page="rosters";OA.allRostersAt=0;OA.scrollReset=true;OA.preserveScrollTop=0;
+  toast("Roster publication revoked.","ok");
+  await oaLoad(true);
+ }catch(e){toast(e.message||String(e),"bad")}
+}
+
 /* Minimal OOXML/DOCX writer: uncompressed ZIP; generated locally, editable in Word/LibreOffice. */
 function oaXml(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;")}
 function oaCrc32(bytes){let c=0xffffffff;for(let i=0;i<bytes.length;i++){c^=bytes[i];for(let j=0;j<8;j++)c=(c>>>1)^((c&1)?0xedb88320:0)}return (c^0xffffffff)>>>0}
@@ -9749,7 +9848,7 @@ function oaRosterList(){
  <button type="button" class="oa-roster-type-card ${OA.type==="faculty_weekly"?"selected":""}" onclick="if(OA.type!=='faculty_weekly'){OA.type='faculty_weekly';OA.rosters=OA.allRosters.filter(r=>r.roster_type===OA.type);render({force:1});if(!OA.allRostersAt)oaLoad()}" aria-pressed="${OA.type==="faculty_weekly"}"><span class="oa-roster-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.4-3.4 2.2-5.2 5.5-5.2s5.1 1.8 5.5 5.2M16 6.2a3 3 0 0 1 0 5.8M17 14c2.2.5 3.4 2.1 3.6 5"/></svg></span><span class="oa-roster-type-copy"><b>Faculty weekly</b><small>Faculty, VP and RP/GDMO duties</small></span><span class="oa-roster-type-chevron">›</span></button>
  </div></section>
  <div class="oa-roster-results-head"><div><h3>${oaEsc(kind)} rosters</h3><span>${rows.length} ${rows.length===1?"roster":"rosters"}</span></div></div>
- ${rows.length?`<div class="oa-table-wrap"><table class="oa-table"><thead><tr><th>Title</th><th>Period</th><th>Version</th><th>Reference</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${oaEsc(r.title||"Untitled roster")}</td><td>${oaDate(r.period_start)} – ${oaDate(r.period_end)}</td><td>${r.version||1}</td><td>${oaEsc(r.reference_number||"—")}</td><td><span class="oa-status ${oaEsc(r.status)}">${oaEsc(oaRosterLifecycle(r))}</span></td><td class="oa-td-act"><button type="button" class="btn secondary sm" onclick="oaEditRoster('${r.id}')">${r.status==="draft"||r.status==="review"?"Open":"View"}</button>${r.status==="published"?`<button type="button" class="btn secondary sm" onclick="oaRestore('${r.id}')">Restore</button>`:""}</td></tr>`).join("")}</tbody></table></div>`:OA.error?`<div class="oa-empty oa-roster-empty">Could not load rosters. Use Refresh to try again.</div>`:`<div class="oa-empty oa-roster-empty">No ${OA.type==="pgt_monthly"?"PGT monthly":"Faculty weekly"} rosters yet.</div>`}`;
+ ${rows.length?`<div class="oa-table-wrap"><table class="oa-table"><thead><tr><th>Title</th><th>Period</th><th>Version</th><th>Reference</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${oaEsc(r.title||"Untitled roster")}</td><td>${oaDate(r.period_start)} – ${oaDate(r.period_end)}</td><td>${r.version||1}</td><td>${oaEsc(r.reference_number||"—")}</td><td><span class="oa-status ${oaEsc(r.status)}">${oaEsc(oaRosterLifecycle(r))}</span></td><td class="oa-td-act"><button type="button" class="btn secondary sm" onclick="oaEditRoster('${r.id}')">${r.status==="draft"||r.status==="review"?"Open":"View"}</button>${r.status==="published"?`<button type="button" class="btn secondary sm" onclick="oaEditPublishedRoster('${r.id}')">Edit</button><button type="button" class="btn oa-danger-btn sm" onclick="oaRevokePublishedRoster('${r.id}')">Revoke</button>`:""}</td></tr>`).join("")}</tbody></table></div>`:OA.error?`<div class="oa-empty oa-roster-empty">Could not load rosters. Use Refresh to try again.</div>`:`<div class="oa-empty oa-roster-empty">No ${OA.type==="pgt_monthly"?"PGT monthly":"Faculty weekly"} rosters yet.</div>`}`;
 }
 function oaQueueFilter(key,value){
   OA[key]=value;
