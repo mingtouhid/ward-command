@@ -8757,6 +8757,7 @@ async function doCloudPull(opts){
   const [wardState,criticalStatusUpdates,adviceRows,facultyRows,consLinks]=await Promise.all([
     cloudReadWardState(),qCriticalStatusUpdates(),qPatientAdvice(),qFaculty(),qPatientConsultantLinks(),qDutyPhones()
   ]);
+  if(!isIntern()) wardLoadPublishedRosters(true).catch(()=>{});
   // R1.3.141 SYNC: keep everything that was unsent when the read started, is unsent now, or was acked during the read
   const unresolved=pullGuardOps(unresolvedAtStart,pullT0);
   const stillUnsent=pending.filter(o=>o.status!=="acked");
@@ -9332,6 +9333,7 @@ async function doCloudBoot(){
     photoFetchMine().catch(()=>{});
     sePull().catch(()=>{});
     pgtLoad().catch(()=>{});
+    wardLoadPublishedRosters(true).catch(()=>{});
     return true;
   }catch(e){
     cloudLastError=e.message||String(e);
@@ -10039,12 +10041,12 @@ function oaPublish(){
       const id=r.status==="review"&&r.id?r.id:await oaPersistCurrentDraft(true);
       await oaRpc("office_admin_publish_roster",{p_roster_id:id});
       OA.editing=null;OA.page="rosters";OA.notice="Roster published";OA.scrollReset=true;OA.preserveScrollTop=0;
-      toast("Roster published","ok");await oaLoad();
+      toast("Roster published","ok");await oaLoad();wardRosterLoaded=false;wardLoadPublishedRosters(true).catch(()=>{});
     }catch(e){toast(e.message||String(e),"bad")}
   };
   return publish();
 }
-async function oaReturnDraft(){try{await oaRpc("office_admin_return_roster_to_draft",{p_roster_id:OA.editing.id});OA.editing.status="draft";await oaLoad();await oaEditRoster(OA.editing.id)}catch(e){toast(e.message||String(e),"bad")}}
+async function oaReturnDraft(){try{await oaRpc("office_admin_return_roster_to_draft",{p_roster_id:OA.editing.id});OA.editing.status="draft";await oaLoad();wardRosterLoaded=false;wardLoadPublishedRosters(true).catch(()=>{});await oaEditRoster(OA.editing.id)}catch(e){toast(e.message||String(e),"bad")}}
 async function oaEditPublishedRoster(id){
  if(!confirm("Create a new editable draft from this published roster? The published version will remain unchanged in the audit history."))return;
  try{
@@ -10063,6 +10065,7 @@ async function oaRevokePublishedRoster(id){
   await oaRpc("office_admin_revoke_published_roster",{p_roster_id:id});
   OA.editing=null;OA.page="rosters";OA.allRostersAt=0;OA.scrollReset=true;OA.preserveScrollTop=0;
   toast("Roster publication revoked.","ok");
+  wardRosterLoaded=false;wardLoadPublishedRosters(true).catch(()=>{});
   await oaLoad(true);
  }catch(e){toast(e.message||String(e),"bad")}
 }
@@ -10345,17 +10348,33 @@ async function oaToggleConfig(kind,id,active){
  try{const arr=kind==="section"?OA.setup.sections:kind==="bed"?OA.setup.beds:OA.setup.consultants;const row={...arr.find(x=>x.id===id),active};const rpc=kind==="section"?"office_admin_upsert_section":kind==="bed"?"office_admin_upsert_bed":"office_admin_upsert_consultant";await oaRpc(rpc,{p_row:row});toast(active?"Activated":"Deactivated","ok");await oaLoad()}catch(e){toast(e.message||String(e),"bad")}
 }
 async function oaSaveUnit(){try{await oaRpc("office_admin_upsert_unit_settings",{p_row:{unit_name:document.getElementById("owName").value,ward_password:document.getElementById("owPass").value||null}});toast("Saved","ok");await oaLoad()}catch(e){toast(e.message||String(e),"bad")}}
-let wardPublishedRosters=[];let wardRosterLoading=false;let wardRosterLoaded=false;let wardRosterError="";let wardRosterSelectedId=null;
-async function wardLoadPublishedRosters(){
- if(wardRosterLoading)return;
+const WARD_ROSTERS_CACHE_KEY = "ward-sync-published-rosters-cache-v1";
+function wardRostersFromCache(){
+  try{
+    const raw = localStorage.getItem(WARD_ROSTERS_CACHE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed) && parsed.length) return parsed;
+    }
+  }catch(e){}
+  return [];
+}
+let wardPublishedRosters=wardRostersFromCache();let wardRosterLoading=false;let wardRosterLoaded=wardPublishedRosters.length>0;let wardRosterError="";let wardRosterSelectedId=null;
+async function wardLoadPublishedRosters(force){
+ if(wardRosterLoading && !force)return;
+ if(!sb||!sessionTok)return;
  wardRosterLoading=true;wardRosterError="";
  try{
   const {data,error}=await sb.rpc("ward_list_published_rosters",{p_session_token:sessionTok});
   if(error)throw error;
-  wardPublishedRosters=data&&data.rosters||[];wardRosterLoaded=true;
+  if(data && Array.isArray(data.rosters)){
+    wardPublishedRosters=data.rosters;
+    wardRosterLoaded=true;
+    try{localStorage.setItem(WARD_ROSTERS_CACHE_KEY,JSON.stringify(wardPublishedRosters));}catch(e){}
+  }
   if(wardRosterSelectedId&&!wardPublishedRosters.some(r=>String(r.id)===String(wardRosterSelectedId)))wardRosterSelectedId=null;
  }catch(e){wardRosterError=e.message||String(e)}
- finally{wardRosterLoading=false;render({bg:1})}
+ finally{wardRosterLoading=false;render({force:1})}
 }
 function wardRosterMonthLabel(r){
  const raw=r&&(r.period_start||r.issue_date);
@@ -10703,6 +10722,7 @@ async function doLogin(e){
           photoFetchMine().catch(()=>{});
     sePull().catch(()=>{});
     pgtLoad().catch(()=>{});
+    wardLoadPublishedRosters(true).catch(()=>{});
           ui.loginBusy=false; ui.loginErr="";
           go("home");
           notifFlush();
@@ -11860,66 +11880,223 @@ function homeView(){
    Multi-role rule: visible to any account with resident permission
    (hasResidentPermission()), including Admin + Resident dual-role accounts.
 ============================================================ */
-function wsFacultyTodayDuty(){
-  var today = new Date();
-  var todayISO = today.getFullYear() + '-'
-    + String(today.getMonth() + 1).padStart(2, '0') + '-'
-    + String(today.getDate()).padStart(2, '0');
-  var rosters = (typeof wardPublishedRosters !== 'undefined' ? wardPublishedRosters : [])
-    .filter(function(r){ return r.roster_type === 'faculty_weekly' && r.status === 'published'; })
-    .filter(function(r){ return r.period_start <= todayISO && (!r.period_end || r.period_end >= todayISO); })
-    .sort(function(a,b){ return String(b.period_start).localeCompare(String(a.period_start)); });
-  if (!rosters.length) {
-    rosters = (typeof wardPublishedRosters !== 'undefined' ? wardPublishedRosters : [])
-      .filter(function(r){ return r.roster_type === 'faculty_weekly' && r.status === 'published'; })
-      .sort(function(a,b){ return String(b.period_start).localeCompare(String(a.period_start)); });
+function wsFacultyParseDate(raw, rosterPeriodStart) {
+  if (!raw) return null;
+  var s = String(raw).trim();
+  // 1. Standard YYYY-MM-DD
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return m[1] + '-' + m[2] + '-' + m[3];
+  
+  // 2. DD-MM-YYYY or DD-MM-YY (delimiters -, /, .)
+  m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/);
+  if (m) {
+    var d = String(m[1]).padStart(2, '0');
+    var mo = String(m[2]).padStart(2, '0');
+    var yr = Number(m[3]) < 100 ? (2000 + Number(m[3])) : Number(m[3]);
+    return yr + '-' + mo + '-' + d;
   }
-  if (!rosters.length) return null;
-  var r = rosters[0];
-  var c = r.content || {};
-  var cols = Array.isArray(c.columns) ? c.columns : [];
-  var rows = Array.isArray(c.rows) ? c.rows : [];
-  if (!rows.length) return null;
-  var dayIdx = cols.findIndex(function(x){ return /^day/i.test(String(x || '').trim()); });
-  var dateIdx = cols.findIndex(function(x){ return /^date/i.test(String(x || '').trim()); });
-  var vpIdx = cols.findIndex(function(x){ return typeof oaFacultyDutyColumnKind === 'function' ? oaFacultyDutyColumnKind(x) === 'vp' : /faculty|\bvp\b/i.test(String(x || '')); });
-  var rpIdx = cols.findIndex(function(x){ return typeof oaFacultyDutyColumnKind === 'function' ? oaFacultyDutyColumnKind(x) === 'rp' : /resident\s*physician|\brp\b|gdmo/i.test(String(x || '')); });
-  if (vpIdx < 0 && rpIdx < 0) return null;
+  
+  // 3. DD-MM or DD/MM (assume year from roster period start or current year)
+  m = s.match(/^(\d{1,2})[-\/.](\d{1,2})$/);
+  if (m) {
+    var d = String(m[1]).padStart(2, '0');
+    var mo = String(m[2]).padStart(2, '0');
+    var yr = rosterPeriodStart ? String(rosterPeriodStart).slice(0, 4) : '2026';
+    return yr + '-' + mo + '-' + d;
+  }
+  
+  // 4. Text month like '23 Nov 2026' or '23 November'
+  var months = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+  m = s.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([a-zA-Z]+)(?:\s+(\d{2,4}))?/i);
+  if (m) {
+    var d = String(m[1]).padStart(2, '0');
+    var monKey = m[2].slice(0, 3).toLowerCase();
+    if (months[monKey]) {
+      var mo = String(months[monKey]).padStart(2, '0');
+      var yr = m[3] ? (Number(m[3]) < 100 ? 2000 + Number(m[3]) : Number(m[3])) : (rosterPeriodStart ? String(rosterPeriodStart).slice(0, 4) : '2026');
+      return yr + '-' + mo + '-' + d;
+    }
+  }
+
+  // 5. Just day number '23'
+  m = s.match(/^(\d{1,2})(?:st|nd|rd|th)?$/);
+  if (m && rosterPeriodStart) {
+    var d = String(m[1]).padStart(2, '0');
+    var ym = String(rosterPeriodStart).slice(0, 7);
+    return ym + '-' + d;
+  }
+  
+  return null;
+}
+
+function wsFacultyTodayDuty(overrideDateISO){
+  // 1. Identify target date using application's local date (Asia/Kolkata)
+  var todayISO = overrideDateISO || "";
+  if (!todayISO) {
+    try {
+      if (typeof oaLocalTodayISO === "function") {
+        todayISO = oaLocalTodayISO();
+      }
+    } catch(e) {}
+  }
+  if (!todayISO) {
+    try {
+      todayISO = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
+    } catch(e) {
+      var d = new Date();
+      todayISO = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+  }
+
+  var parts = todayISO.split('-').map(Number);
   var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  var todayDayName = dayNames[today.getDay()];
+  var todayDayName = dayNames[new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12)).getUTCDay()];
+
+  var rosters = (typeof wardPublishedRosters !== 'undefined' && Array.isArray(wardPublishedRosters) ? wardPublishedRosters : [])
+    .filter(function(r){
+      if (!r) return false;
+      var type = String(r.roster_type || '').toLowerCase();
+      if (type === 'pgt_monthly') return false;
+      if (r.status && r.status !== 'published') return false;
+      return true;
+    });
+
+  if (!rosters.length) return null;
+
+  // Find the roster and row that matches target date
+  var matchedRoster = null;
   var matchedRow = null;
-  var matchedRowIndex = 0;
-  for (var ri = 0; ri < rows.length; ri++) {
-    var rv = Array.isArray(rows[ri]) ? rows[ri] : cols.map(function(k){ return rows[ri] && rows[ri][k] || ''; });
-    var dVal = dateIdx >= 0 ? rv[dateIdx] : '';
-    var dayVal = dayIdx >= 0 ? rv[dayIdx] : '';
-    var info = typeof wardRosterDateInfo === 'function' ? wardRosterDateInfo(dVal, dayVal, ri) : null;
-    if (info && info.dateKey === todayISO) {
-      matchedRow = rv; matchedRowIndex = ri; break;
+  var matchedRowIndex = -1;
+  var matchedCols = [];
+
+  // Sort rosters: active/current first, then by period_start descending
+  rosters.sort(function(a, b){
+    if (a.is_current && !b.is_current) return -1;
+    if (!a.is_current && b.is_current) return 1;
+    var startA = String(a.period_start || '').slice(0, 10);
+    var startB = String(b.period_start || '').slice(0, 10);
+    return startB.localeCompare(startA);
+  });
+
+  for (var i = 0; i < rosters.length; i++) {
+    var cand = rosters[i];
+    var c = cand.content || {};
+    var cols = Array.isArray(c.columns) ? c.columns : [];
+    var rows = Array.isArray(c.rows) ? c.rows : [];
+    if (!rows.length) continue;
+
+    var dayIdx = cols.findIndex(function(x){ return /^day(?:\b|$)/i.test(String(x || '').trim()); });
+    var dateIdx = cols.findIndex(function(x){ return /^date(?:\b|$)/i.test(String(x || '').trim()); });
+
+    // Pass 1: exact match on date column
+    for (var ri = 0; ri < rows.length; ri++) {
+      var rv = Array.isArray(rows[ri]) ? rows[ri] : cols.map(function(k){ return rows[ri] && rows[ri][k] || ''; });
+      var dVal = dateIdx >= 0 ? rv[dateIdx] : '';
+      var parsed = wsFacultyParseDate(dVal, cand.period_start);
+      if (parsed === todayISO) {
+        matchedRoster = cand; matchedRow = rv; matchedRowIndex = ri; matchedCols = cols; break;
+      }
     }
-    if (String(dayVal).trim().toLowerCase() === todayDayName.toLowerCase()) {
-      matchedRow = rv; matchedRowIndex = ri;
+    if (matchedRow) break;
+
+    // Pass 2: check all cells for date
+    for (var ri = 0; ri < rows.length; ri++) {
+      var rv = Array.isArray(rows[ri]) ? rows[ri] : cols.map(function(k){ return rows[ri] && rows[ri][k] || ''; });
+      for (var ci = 0; ci < rv.length; ci++) {
+        var parsed = wsFacultyParseDate(rv[ci], cand.period_start);
+        if (parsed === todayISO) {
+          matchedRoster = cand; matchedRow = rv; matchedRowIndex = ri; matchedCols = cols; break;
+        }
+      }
+      if (matchedRow) break;
     }
+    if (matchedRow) break;
+
+    // Pass 3: match by weekday IF today is within cand.period_start and cand.period_end
+    var startStr = String(cand.period_start || '').slice(0, 10);
+    var endStr = String(cand.period_end || cand.period_start || '').slice(0, 10);
+    var inRange = (!startStr || startStr <= todayISO) && (!endStr || endStr >= todayISO);
+    if (inRange && dayIdx >= 0 && todayDayName) {
+      for (var ri = 0; ri < rows.length; ri++) {
+        var rv = Array.isArray(rows[ri]) ? rows[ri] : cols.map(function(k){ return rows[ri] && rows[ri][k] || ''; });
+        var dayVal = String(rv[dayIdx] || '').trim().toLowerCase();
+        if (dayVal === todayDayName.toLowerCase()) {
+          matchedRoster = cand; matchedRow = rv; matchedRowIndex = ri; matchedCols = cols; break;
+        }
+      }
+    }
+    if (matchedRow) break;
   }
-  if (!matchedRow) return null;
-  function resolvePerson(colIndex){
-    if (colIndex < 0) return { name: '', phone: '', photo: '' };
+
+  if (!matchedRoster || !matchedRow) return null;
+
+  var content = matchedRoster.content || {};
+  var cols = matchedCols.length ? matchedCols : (content.columns || []);
+
+  var vpIdx = cols.findIndex(function(x){
+    return typeof oaFacultyDutyColumnKind === 'function' ? oaFacultyDutyColumnKind(x) === 'vp' : /faculty|\bvp\b/i.test(String(x || ''));
+  });
+  var rpIdx = cols.findIndex(function(x){
+    return typeof oaFacultyDutyColumnKind === 'function' ? oaFacultyDutyColumnKind(x) === 'rp' : /resident\s*physician|\brp\b|gdmo/i.test(String(x || ''));
+  });
+
+  if (vpIdx < 0 && cols.length >= 3) vpIdx = 2;
+  if (rpIdx < 0 && cols.length >= 4) rpIdx = 3;
+
+  function resolvePerson(colIndex, roleKind){
+    if (colIndex < 0 || colIndex >= matchedRow.length) return null;
     var raw = String(matchedRow[colIndex] || '').trim();
-    var assignments = Array.isArray(c.facultyAssignments) ? c.facultyAssignments : [];
+    if (!raw && !content.facultyAssignments) return null;
+
+    var assignments = Array.isArray(content.facultyAssignments) ? content.facultyAssignments : [];
     var a = assignments.find(function(x){ return Number(x.row) === matchedRowIndex && Number(x.column) === colIndex; });
-    var id = String(a && (a.consultantId || a.consultant_id) || '');
-    var contacts = c.facultyContacts && typeof c.facultyContacts === 'object' && !Array.isArray(c.facultyContacts) ? c.facultyContacts : {};
+    var id = String(a && (a.consultantId || a.consultant_id) || '').trim();
+
+    var contacts = content.facultyContacts && typeof content.facultyContacts === 'object' && !Array.isArray(content.facultyContacts) ? content.facultyContacts : {};
     var saved = id ? contacts[id] || null : null;
-    var name = String((saved && (saved.fullName || saved.full_name || saved.name)) || raw || '').trim();
-    var rawPhone = (saved && (saved.phone || saved.phone_number)) || '';
+
+    var norm = function(v){
+      return String(v || '').normalize('NFKC').replace(/^(?:(?:prof(?:essor)?|dr)\.?\s*)+/i, '').replace(/[.,\s]+/g, ' ').trim().toLowerCase();
+    };
+    var rawNorm = norm(raw);
+
+    var consultant = null;
+    if (id) {
+      consultant = (S.consultants || []).find(function(u){ return String(u.id) === id; }) ||
+        (S.residents || []).find(function(u){ return String(u.id) === id; });
+    }
+    if (!consultant && rawNorm) {
+      consultant = (S.consultants || []).find(function(u){ return norm(u.name || u.fullName || u.displayName) === rawNorm; }) ||
+        (S.residents || []).find(function(u){ return norm(u.displayName || u.username) === rawNorm; });
+    }
+
+    var name = String(
+      (consultant && (consultant.fullName || consultant.name || consultant.displayName)) ||
+      (saved && (saved.fullName || saved.full_name || saved.name)) ||
+      raw || ''
+    ).trim();
+
+    if (!name) return null;
+
+    var rawPhone = (consultant && (consultant.phone || consultant.phoneNumber)) ||
+      (saved && (saved.phone || saved.phone_number)) || '';
     var phone = typeof oaFormatFacultyPhone === 'function' ? oaFormatFacultyPhone(rawPhone) : String(rawPhone);
-    var photo = (saved && saved.photo) || (id && (S.residents || []).find(function(x){ return String(x.id) === id; }))?.photo || '';
-    return { id: id, name: name, phone: phone, photo: photo };
+
+    var photo = (consultant && consultant.photo) || (saved && saved.photo) ||
+      ((S.residents || []).find(function(u){ return String(u.id) === id; })?.photo) || '';
+
+    var designation = roleKind === 'vp' ? 'VP' : roleKind === 'rp' ? 'RP' : (consultant && consultant.designation) || '';
+    var cleanName = name.replace(/\s*\((?:VP|RP)\)\s*$/i, '').trim();
+
+    return { id: id, name: cleanName, designation: designation, phone: phone, photo: photo, roleKind: roleKind };
   }
-  return {
-    vp: resolvePerson(vpIdx),
-    rp: resolvePerson(rpIdx)
-  };
+
+  var vp = resolvePerson(vpIdx, 'vp');
+  var rp = resolvePerson(rpIdx, 'rp');
+
+  if (!vp && !rp) return null;
+
+  return { vp: vp, rp: rp, roster: matchedRoster, todayISO: todayISO };
 }
 
 function wsFacultyDutyCard(mode){
@@ -11929,29 +12106,30 @@ function wsFacultyDutyCard(mode){
     if (typeof wardRosterLoading !== 'undefined' && !wardRosterLoading) wardLoadPublishedRosters();
   }
   var duty = wsFacultyTodayDuty();
-  var sh = typeof currentShift === 'function' ? currentShift() : 'morning';
+  var sh = typeof currentShift === 'function' ? currentShift() : 'evening';
   var shiftBadge = '<span class="r2-pill ok">' + esc(typeof shiftLabel === 'function' ? shiftLabel(sh) + ' shift' : 'On duty') + '</span>';
   function personTile(person, roleTitle){
     if (!person || !person.name) return '';
     var cleanPhone = String(person.phone || '').replace(/[^\d+]/g, '');
     var callLink = cleanPhone ? '<a href="tel:' + esc(cleanPhone) + '" class="ws-faculty-call-btn" aria-label="Call ' + esc(person.name) + '">Call</a>' : '';
     var avatar = typeof pgtFace === 'function' ? pgtFace({ name: person.name, photo: person.photo || '' }, 'ws-team-face') : '<div class="ws-team-face" aria-hidden="true">' + esc(person.name.slice(0, 2).toUpperCase()) + '</div>';
+    var desigTag = person.designation ? ' <span class="ws-faculty-designation-tag">(' + esc(person.designation) + ')</span>' : '';
     return '<div class="ws-team-person">'
       + avatar
       + '<div class="ws-team-meta">'
-        + '<strong class="ws-team-name">' + esc(person.name) + '</strong>'
+        + '<strong class="ws-team-name">' + esc(person.name) + desigTag + '</strong>'
         + '<small class="ws-team-role">' + esc(roleTitle) + '</small>'
         + callLink
       + '</div>'
     + '</div>';
   }
-  var vpTile = duty ? personTile(duty.vp, 'Faculty / VP') : '';
-  var rpTile = duty ? personTile(duty.rp, 'RP / GDMO') : '';
+  var vpTile = duty && duty.vp ? personTile(duty.vp, 'Faculty / VP') : '';
+  var rpTile = duty && duty.rp ? personTile(duty.rp, 'Resident Physician / GDMO') : '';
   var content = (vpTile || rpTile) ? (vpTile + rpTile) : '<span class="ws-team-empty">No faculty roster assigned for today.</span>';
   if (mode === 'mobile') {
     return '<section class="r2-team ws-faculty-team-mobile" aria-label="Faculty on duty" style="margin-bottom:12px;">'
       + '<div class="row"><span class="r2-cardh">Faculty on duty</span>' + shiftBadge + '</div>'
-      + '<div class="ws-faculty-mobile-grid" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;">'
+      + '<div class="ws-faculty-mobile-grid">'
         + content
       + '</div>'
     + '</section>';
@@ -32596,25 +32774,39 @@ img.ws-team-face,
   object-position: center !important;
   overflow: hidden !important;
 }
+.ws-faculty-team-mobile .ws-faculty-mobile-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  margin-top: 10px !important;
+}
 .ws-faculty-team-mobile .ws-team-person {
   display: flex !important;
   align-items: center !important;
-  gap: 10px !important;
+  gap: 12px !important;
   background: var(--panel2, rgba(120, 53, 219, 0.04)) !important;
   border: 1px solid var(--line, rgba(120, 53, 219, 0.12)) !important;
   border-radius: 12px !important;
-  padding: 8px 12px !important;
-  min-width: 140px !important;
-  flex: 1 1 calc(50% - 14px) !important;
+  padding: 9px 12px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 .ws-faculty-team-mobile .ws-team-meta {
   display: flex !important;
   flex-direction: column !important;
-  gap: 1px !important;
+  gap: 2px !important;
+  flex: 1 1 auto !important;
   min-width: 0 !important;
 }
+.ws-faculty-team-mobile .ws-faculty-call-btn {
+  margin-top: 0 !important;
+  margin-left: auto !important;
+  align-self: center !important;
+  padding: 4px 14px !important;
+  font-size: 11px !important;
+}
 .ws-faculty-team-mobile .ws-team-name {
-  font-size: 13px !important;
+  font-size: 13.5px !important;
   font-weight: 700 !important;
   color: var(--ink, #1f1f23) !important;
   white-space: nowrap !important;
@@ -32622,9 +32814,22 @@ img.ws-team-face,
   text-overflow: ellipsis !important;
 }
 .ws-faculty-team-mobile .ws-team-role {
-  font-size: 11px !important;
+  font-size: 11.5px !important;
   color: var(--muted, #656565) !important;
   font-weight: 600 !important;
+}
+.ws-faculty-designation-tag {
+  display: inline-block !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #7835DB !important;
+  margin-left: 3px !important;
+}
+.ws-team-empty {
+  font-size: 12px !important;
+  color: var(--muted, #656565) !important;
+  font-style: italic !important;
+  padding: 4px 0 !important;
 }
 </style>
 </body>
