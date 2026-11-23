@@ -307,22 +307,30 @@ Deno.serve(async (req) => {
       if (error) throw error;
     }
 
-    const { data: fcmDeliveryStates, error: fcmStateError } = await admin
-      .from("notification_deliveries")
-      .select("fcm_token_id,status")
-      .eq("notification_id", notificationId)
-      .in("fcm_token_id", (fcmTokens ?? []).map((tok) => tok.id));
-    if (fcmStateError) throw fcmStateError;
-    const fcmStateMap = new Map((fcmDeliveryStates ?? []).map((row) => [row.fcm_token_id, row.status]));
+    let fcmDeliveryStates: { fcm_token_id: string; status: string }[] = [];
+    if (fcmDeliveryRows.length) {
+      const { data, error } = await admin
+        .from("notification_deliveries")
+        .select("fcm_token_id,status")
+        .eq("notification_id", notificationId)
+        .in("fcm_token_id", fcmDeliveryRows.map((row) => row.fcm_token_id));
+      if (error) throw error;
+      fcmDeliveryStates = data ?? [];
+    }
+    const fcmStateMap = new Map(fcmDeliveryStates.map((row) => [row.fcm_token_id, row.status]));
     const pendingFcmTokens = (fcmTokens ?? []).filter((tok) => ["pending", "failed"].includes(fcmStateMap.get(tok.id)));
 
-    const { data: subscriptionDeliveryStates, error: subscriptionStateError } = await admin
-      .from("notification_deliveries")
-      .select("subscription_id,status")
-      .eq("notification_id", notificationId)
-      .in("subscription_id", (subscriptions ?? []).map((sub) => sub.id));
-    if (subscriptionStateError) throw subscriptionStateError;
-    const subscriptionStateMap = new Map((subscriptionDeliveryStates ?? []).map((row) => [row.subscription_id, row.status]));
+    let subscriptionDeliveryStates: { subscription_id: string; status: string }[] = [];
+    if (deliveryRows.length) {
+      const { data, error } = await admin
+        .from("notification_deliveries")
+        .select("subscription_id,status")
+        .eq("notification_id", notificationId)
+        .in("subscription_id", deliveryRows.map((row) => row.subscription_id as string));
+      if (error) throw error;
+      subscriptionDeliveryStates = data ?? [];
+    }
+    const subscriptionStateMap = new Map(subscriptionDeliveryStates.map((row) => [row.subscription_id, row.status]));
     const pendingSubscriptions = (subscriptions ?? []).filter((sub) => ["pending", "failed"].includes(subscriptionStateMap.get(sub.id)));
 
     let sent = 0;
@@ -349,9 +357,15 @@ Deno.serve(async (req) => {
         },
       });
       try {
-        await admin.from("notification_deliveries").update({
-          status: "sending", attempts: 1, updated_at: new Date().toISOString(),
-        }).eq("notification_id", notificationId).eq("subscription_id", sub.id);
+        const { data: claimed, error: claimError } = await admin.from("notification_deliveries")
+          .update({ status: "sending", attempts: 1, updated_at: new Date().toISOString() })
+          .eq("notification_id", notificationId)
+          .eq("subscription_id", sub.id)
+          .in("status", ["pending", "failed"])
+          .select("id")
+          .maybeSingle();
+        if (claimError) throw claimError;
+        if (!claimed) continue;
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           payload,
@@ -410,9 +424,15 @@ Deno.serve(async (req) => {
 
     for (const tok of pendingFcmTokens) {
       try {
-        await admin.from("notification_deliveries").update({
-          status: "sending", attempts: 1, updated_at: new Date().toISOString(),
-        }).eq("notification_id", notificationId).eq("fcm_token_id", tok.id);
+        const { data: claimed, error: claimError } = await admin.from("notification_deliveries")
+          .update({ status: "sending", attempts: 1, updated_at: new Date().toISOString() })
+          .eq("notification_id", notificationId)
+          .eq("fcm_token_id", tok.id)
+          .in("status", ["pending", "failed"])
+          .select("id")
+          .maybeSingle();
+        if (claimError) throw claimError;
+        if (!claimed) continue;
 
         if (accessToken && projectId) {
           await sendFcmHttpV1(projectId, accessToken, tok.token, event.title, event.body, dataPayload);

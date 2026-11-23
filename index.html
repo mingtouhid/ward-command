@@ -10038,8 +10038,8 @@ function oaPublish(){
     try{
       const id=r.status==="review"&&r.id?r.id:await oaPersistCurrentDraft(true);
       const published=await oaRpc("office_admin_publish_roster",{p_roster_id:id});
-      let notificationOk=true;
-      if(published&&published.notification_id){try{await oaDispatchRosterNotification(published.notification_id)}catch(notificationError){notificationOk=false;console.error("Roster notification dispatch failed",notificationError)}}
+      let notificationOk=!!(published&&published.notification_id);
+      if(notificationOk){try{await oaDispatchRosterNotification(published.notification_id)}catch(notificationError){notificationOk=false;console.error("Roster notification dispatch failed",notificationError)}}
       OA.editing=null;OA.page="rosters";OA.notice="Roster published";OA.scrollReset=true;OA.preserveScrollTop=0;
       toast(notificationOk?"Roster published":"Roster published, but push notification delivery failed.",notificationOk?"ok":"bad");await oaLoad();
     }catch(e){toast(e.message||String(e),"bad")}
@@ -10092,8 +10092,8 @@ async function oaRollbackPublishedRoster(id){
  if(!confirm("Roll back the active roster to the previous published version?\n\n"+target+"\n\nA new published version will be created. Existing versions will remain in the history."))return;
  try{
   const result=await oaRpc("office_admin_rollback_published_roster",{p_roster_id:id});
-  let notificationOk=true;
-  if(result&&result.notification_id){try{await oaDispatchRosterNotification(result.notification_id)}catch(e){notificationOk=false;console.error("Roster rollback notification dispatch failed",e)}}
+  let notificationOk=!!(result&&result.notification_id);
+  if(notificationOk){try{await oaDispatchRosterNotification(result.notification_id)}catch(e){notificationOk=false;console.error("Roster rollback notification dispatch failed",e)}}
   OA.editing=null;OA.page="rosters";OA.allRostersAt=0;OA.scrollReset=true;OA.preserveScrollTop=0;
   await oaLoad(true);
   toast(notificationOk?"Rollback published as Version "+(result&&result.version||"new")+".":"Rollback published, but push notification delivery failed.",notificationOk?"ok":"bad");
@@ -18885,11 +18885,12 @@ function notifDest(raw){
   const type=String(raw.type||raw.event_type||raw.category||"").toLowerCase();
   const patientId=raw.patient_id||raw.patientId||null;
   const entityId=raw.entity_id||raw.entityId||raw.task_id||raw.taskId||raw.handover_id||raw.handoverId||raw.ect_plan_id||raw.ectPlanId||null;
-  const rosterId=raw.roster_id||raw.rosterId||metadata.roster_id||metadata.rosterId||null;
+  let rosterId=raw.roster_id||raw.rosterId||metadata.roster_id||metadata.rosterId||null;
   const rosterType=raw.roster_type||raw.rosterType||metadata.roster_type||metadata.rosterType||null;
   const rosterVersion=raw.roster_version||raw.rosterVersion||metadata.roster_version||metadata.rosterVersion||null;
   let page=String(raw.destination||raw.page||(parsed&&parsed.page)||"").toLowerCase();
   let routeId=raw.routeId||(parsed&&parsed.id)||null;
+  if(!rosterId&&page==="pgts"&&routeId){rosterId=routeId;routeId=null;}
   if(type==="roster_publish"||rosterId){page="pgts";routeId=null;}
   // BDFT push notifications are for viewing the published distribution.
   // Never route them to the generation/terminal workflow.

@@ -90,7 +90,7 @@ BEGIN
     event_type,category,priority,actor_id,title,body,target_url,
     recipient_scope,dedupe_key,metadata
   ) VALUES (
-    'roster_publish','rosters','normal',p_actor,v_title,v_body,'./#/pgts',
+    'roster_publish','rosters','normal',p_actor,v_title,v_body,'./#/pgts/' || p_roster_id::text,
     v_scope,'roster_publish:' || p_roster_id::text,
     pg_catalog.jsonb_build_object(
       'roster_id',p_roster_id,
@@ -395,3 +395,104 @@ COMMENT ON FUNCTION public.office_admin_rollback_published_roster(uuid,uuid) IS
   'Office Admin only. Creates and activates a new version using the previous published version content; existing versions remain immutable.';
 COMMENT ON FUNCTION public.office_admin_publish_roster(uuid,uuid) IS
   'Office Admin only. Atomically publishes a draft and creates one idempotent, role-scoped roster notification event.';
+
+
+-- Make roster notifications visible only to their intended role group in the
+-- in-app inbox as well as in push delivery. Return metadata for exact deep links.
+CREATE OR REPLACE FUNCTION public.ward_list_notification_inbox(
+  p_session_token uuid,
+  p_limit integer DEFAULT 40
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'pg_catalog', 'public'
+AS $function$
+DECLARE
+  v_resident_id text;
+  v_role text;
+  v_limit integer;
+  v_notifications jsonb;
+BEGIN
+  SELECT ws.resident_id, lower(r.role)
+    INTO v_resident_id, v_role
+  FROM public.ward_sessions ws
+  JOIN public.residents r ON r.id=ws.resident_id
+  WHERE ws.token=p_session_token AND ws.expires_at>pg_catalog.now()
+  LIMIT 1;
+
+  IF v_resident_id IS NULL THEN
+    RAISE EXCEPTION 'Invalid or expired ward session';
+  END IF;
+
+  v_limit := greatest(1,least(coalesce(p_limit,40),100));
+
+  SELECT coalesce(pg_catalog.jsonb_agg(to_jsonb(x) ORDER BY x.created_at DESC),'[]'::jsonb)
+    INTO v_notifications
+  FROM (
+    SELECT
+      e.id,e.event_type,e.category,e.priority,e.patient_id,e.task_id,
+      e.handover_id,e.ect_plan_id,e.actor_id,
+      coalesce(r.display_name,e.actor_id) AS actor_name,
+      e.title,e.body,e.target_url,e.metadata,e.created_at,
+      EXISTS (
+        SELECT 1 FROM public.notification_deliveries d
+        WHERE d.notification_id=e.id
+          AND d.resident_id=v_resident_id
+          AND d.read_at IS NOT NULL
+      ) AS read,
+      (
+        SELECT min(d.read_at) FROM public.notification_deliveries d
+        WHERE d.notification_id=e.id AND d.resident_id=v_resident_id
+      ) AS read_at,
+      e.created_at AS delivered_at,
+      true AS delivered
+    FROM public.notification_events e
+    LEFT JOIN public.residents r ON r.id=e.actor_id
+    WHERE
+      (e.held_until IS NULL OR e.held_until<pg_catalog.now())
+      AND (e.event_type IS DISTINCT FROM 'bdft' OR v_role IN ('resident','admin','sr'))
+      AND (
+        e.event_type IS DISTINCT FROM 'roster_publish'
+        OR (
+          (e.recipient_scope='roster_residents' AND v_role IN ('resident','admin'))
+          OR (e.recipient_scope='roster_consultants' AND v_role='consultant')
+        )
+      )
+      AND (
+        v_role IN ('consultant','admin')
+        OR e.recipient_scope='active_team'
+        OR (e.event_type='bdft' AND v_role IN ('resident','admin','sr'))
+        OR EXISTS (
+          SELECT 1 FROM public.notification_deliveries d
+          WHERE d.notification_id=e.id AND d.resident_id=v_resident_id
+        )
+        OR (
+          e.recipient_scope='handover'
+          AND EXISTS (
+            SELECT 1 FROM public.handovers h
+            WHERE h.id=e.handover_id
+              AND (h.to_id=v_resident_id OR (h.to_id IS NULL AND h.from_id<>v_resident_id AND v_role<>'intern'))
+          )
+        )
+        OR (
+          e.recipient_scope='task_assignees'
+          AND EXISTS (
+            SELECT 1 FROM public.tasks t
+            WHERE t.id=e.task_id AND t.assigned_to=v_resident_id
+          )
+        )
+      )
+    ORDER BY e.created_at DESC
+    LIMIT v_limit
+  ) x;
+
+  RETURN pg_catalog.jsonb_build_object(
+    'ok',true,'resident_id',v_resident_id,'notifications',v_notifications
+  );
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.ward_list_notification_inbox(uuid,integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.ward_list_notification_inbox(uuid,integer) TO anon,authenticated;
+
