@@ -9521,7 +9521,19 @@ function oaRosterPreviewContent(c){
  const cell=v=>oaEsc(v==null?"":typeof v==="object"?JSON.stringify(v):v);
  const pgt=OA.editing?.roster_type==="pgt_monthly"||OA.type==="pgt_monthly";
  const facultyPrint=!pgt?oaFacultyPrintHtml(c):"";
- return `<div class="oa-preview"><div class="inst">${oaEsc(c.institution||"ASSAM MEDICAL COLLEGE & HOSPITAL, DIBRUGARH")}</div><div class="inst">${oaEsc(c.department||"DEPARTMENT OF PSYCHIATRY")}</div><div class="sub">${oaEsc(c.subtitle||"DUTY ROSTER")}</div><div class="sub" style="margin:6px 0 10px">No. ${oaEsc(OA.editing?.reference_number||"—")} <span style="float:right">Dated ${oaDate(OA.editing?.issue_date)}</span></div><div class="sub" style="font-weight:700;margin-bottom:8px">w.e.f. ${oaDate(OA.editing?.period_start)} to ${oaDate(OA.editing?.period_end)}</div><table class="oa-duty-preview"><thead><tr>${cols.map(x=>`<th>${cell(x)}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${(Array.isArray(row)?row:cols.map(k=>row&&row[k]||"")).map(v=>`<td>${cell(v)}</td>`).join("")}</tr>`).join("")}</tbody></table>${pgt?oaGroupPreviewTable(c):facultyPrint+((c.groups||[]).length?`<p><b>Group allocations</b></p>${c.groups.map(g=>`<p>${oaEsc(g.name||g.title||"Group")}: ${oaEsc(g.members||g.allocation||"")}</p>`).join("")}`:"")}${(c.notes||[]).length?`<div class="oa-preview-notes"><b>N.B.</b><ol>${c.notes.map(n=>`<li>${cell(n)}</li>`).join("")}</ol></div>`:""}<div style="text-align:right;margin-top:24px;font-weight:700">Prof. &amp; HOD – Psychiatry<br>AMCH, Dibrugarh</div></div>`;
+ const displayColumns=pgt?null:oaFacultyDocumentColumns(cols);
+ const headers=(pgt?cols.map(x=>'<th>'+cell(x)+'</th>'):displayColumns.map(x=>'<th>'+cell(x.header)+'</th>')).join("");
+ const tableRows=rows.map((row,rowIndex)=>{
+  const values=Array.isArray(row)?row:cols.map(k=>row&&row[k]||"");
+  const cells=pgt?values.map(v=>'<td>'+cell(v)+'</td>').join(""):displayColumns.map(column=>{
+   if(column.kind==="dayDate")return '<td><div class="oa-roster-day-date"><strong>'+cell(values[column.dayIndex])+'</strong><span>'+cell(values[column.dateIndex])+'</span></div></td>';
+   const value=values[column.index];
+   if(oaFacultyDutyColumnKind(cols[column.index]))return '<td>'+oaFacultyDocumentCell(c,rowIndex,column.index,value)+'</td>';
+   return '<td>'+cell(value)+'</td>';
+  }).join("");
+  return '<tr>'+cells+'</tr>';
+ }).join("");
+ return '<div class="oa-preview"><div class="inst">'+oaEsc(c.institution||"ASSAM MEDICAL COLLEGE & HOSPITAL, DIBRUGARH")+'</div><div class="inst">'+oaEsc(c.department||"DEPARTMENT OF PSYCHIATRY")+'</div><div class="sub">'+oaEsc(c.subtitle||"DUTY ROSTER")+'</div><div class="sub" style="margin:6px 0 10px">No. '+oaEsc(OA.editing?.reference_number||"—")+' <span style="float:right">Dated '+oaDate(OA.editing?.issue_date)+'</span></div><div class="sub" style="font-weight:700;margin-bottom:8px">w.e.f. '+oaDate(OA.editing?.period_start)+' to '+oaDate(OA.editing?.period_end)+'</div><table class="oa-duty-preview"><thead><tr>'+headers+'</tr></thead><tbody>'+tableRows+'</tbody></table>'+(pgt?oaGroupPreviewTable(c):facultyPrint+((c.groups||[]).length?'<p><b>Group allocations</b></p>'+(c.groups||[]).map(g=>'<p>'+oaEsc(g.name||g.title||"Group")+': '+oaEsc(g.members||g.allocation||"")+'</p>').join(""):""))+((c.notes||[]).length?'<div class="oa-preview-notes"><b>N.B.</b><ol>'+c.notes.map(n=>'<li>'+cell(n)+'</li>').join("")+'</ol></div>':"")+'<div style="text-align:right;margin-top:24px;font-weight:700">Prof. &amp; HOD – Psychiatry<br>AMCH, Dibrugarh</div></div>';
 }
 function oaEnsureRosterContent(){
  const r=OA.editing||{};let c=r.content||oaTemplateContent(r.roster_type||OA.type);
@@ -9599,6 +9611,51 @@ function oaFacultyDutyColumnKind(column){
  if(/resident\s*physician|\brp\b|gdmo/.test(v))return "rp";
  if(/faculty|\bvp\b/.test(v))return "vp";
  return "";
+}
+function oaFacultyDocumentColumns(columns){
+ const names=Array.isArray(columns)?columns:[];
+ const dayIndex=names.findIndex(x=>/^day(?:\b|$)/i.test(String(x||"").trim()));
+ const dateIndex=names.findIndex(x=>/^date(?:\b|$)/i.test(String(x||"").trim()));
+ const merge=dayIndex>=0&&dateIndex>=0&&dayIndex!==dateIndex;
+ const result=[];
+ names.forEach((name,index)=>{
+  if(merge&&index===dateIndex)return;
+  result.push(merge&&index===dayIndex?{kind:"dayDate",dayIndex,dateIndex,header:"Day / Date"}:{kind:"cell",index,header:name});
+ });
+ return result;
+}
+function oaFormatFacultyPhone(phone){
+ const raw=String(phone||"").trim(),digits=raw.replace(/\D/g,"");
+ return digits.length===12&&digits.startsWith("91")?"+91 "+digits.slice(2,7)+" "+digits.slice(7):raw;
+}
+function oaFacultyContactDetails(c,rowIndex,columnIndex,raw){
+ const assignments=Array.isArray(c&&c.facultyAssignments)?c.facultyAssignments:[];
+ const assignment=assignments.find(a=>Number(a.row)===rowIndex&&Number(a.column)===columnIndex);
+ const legacyMatch=assignment?null:oaFacultyMatch(raw);
+ const id=String((assignment&&assignment.consultantId)||(legacyMatch&&legacyMatch.id)||"");
+ const selected=(OA.users||[]).find(u=>String(u.id)===id&&String(u.role||"").toLowerCase()==="consultant")||null;
+ const contacts=c&&c.facultyContacts&&typeof c.facultyContacts==="object"&&!Array.isArray(c.facultyContacts)?c.facultyContacts:{};
+ const saved=id?contacts[id]||null:null;
+ const name=selected?oaConsultantFullName(selected):String((saved&&(saved.fullName||saved.full_name||saved.name))||raw||"").trim();
+ const phone=oaFormatFacultyPhone((selected&&selected.phone)||(saved&&saved.phone)||"");
+ return {id,name,phone};
+}
+function oaFacultyDocumentCell(c,rowIndex,columnIndex,raw){
+ const details=oaFacultyContactDetails(c,rowIndex,columnIndex,raw),name=details.name||String(raw||"").trim();
+ return '<div class="oa-faculty-document-person">'+(name?'<strong>'+oaEsc(name)+'</strong>':"")+(details.phone?'<span>Phone: '+oaEsc(details.phone)+'</span>':"")+'</div>';
+}
+function oaSnapshotFacultyContacts(c){
+ if(!c||typeof c!=="object")return {};
+ const contacts=c.facultyContacts&&typeof c.facultyContacts==="object"&&!Array.isArray(c.facultyContacts)?{...c.facultyContacts}:{};
+ (Array.isArray(c.facultyAssignments)?c.facultyAssignments:[]).forEach(a=>{
+  const id=String(a&&a.consultantId||"").trim();
+  if(!id)return;
+  const u=(OA.users||[]).find(x=>String(x.id)===id&&String(x.role||"").toLowerCase()==="consultant");
+  if(!u)return;
+  contacts[id]={fullName:oaConsultantFullName(u),phone:String(u.phone||"").trim(),designation:String(u.designation||"").trim()};
+ });
+ c.facultyContacts=contacts;
+ return contacts;
 }
 function oaFacultyDutyCell(row,rowIndex,columnIndex,editable){
  const content=(OA.editing&&OA.editing.content)||{},raw=String(row[columnIndex]??"");
@@ -9937,7 +9994,8 @@ function oaReadRosterForm(requireComplete=false){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(r.period_start)||!/^\d{4}-\d{2}-\d{2}$/.test(r.period_end))throw new Error("Invalid date. Use dd/mm/yyyy.");
   if(r.period_start>r.period_end)throw new Error("End date cannot be earlier than start date.");
  }
- return {p_roster_type:type,p_roster_id:r.id||null,p_period_start:r.period_start||null,p_period_end:r.period_end||null,p_title:String(r.title||"").trim(),p_reference_number:r.reference_number||"",p_issue_date:r.issue_date||null,p_content:JSON.parse(JSON.stringify(content))};
+ if(type==="faculty_weekly")oaSnapshotFacultyContacts(content);
+  return {p_roster_type:type,p_roster_id:r.id||null,p_period_start:r.period_start||null,p_period_end:r.period_end||null,p_title:String(r.title||"").trim(),p_reference_number:r.reference_number||"",p_issue_date:r.issue_date||null,p_content:JSON.parse(JSON.stringify(content))};
 }
 function oaNormaliseRosterId(result,fallback){
  if(typeof result==="string"&&result.trim())return result;
@@ -10036,6 +10094,15 @@ function oaWordCell(t,header=false,width=0,size=18,pprSize=36){
  const text=String(t==null?"":t).replace(/\r?\n/g," ");
  return `<w:tc><w:tcPr>${width?`<w:tcW w:w="${width}" w:type="dxa"/>`:""}<w:vAlign w:val="center"/><w:tcMar><w:top w:w="12" w:type="dxa"/><w:left w:w="32" w:type="dxa"/><w:bottom w:w="12" w:type="dxa"/><w:right w:w="32" w:type="dxa"/></w:tcMar><w:tcBorders><w:top w:val="single" w:sz="5" w:space="0" w:color="auto"/><w:left w:val="single" w:sz="5" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="5" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="5" w:space="0" w:color="auto"/></w:tcBorders>${header?'<w:shd w:val="clear" w:color="auto" w:fill="EAEAEA"/>':""}</w:tcPr><w:p><w:pPr><w:spacing w:after="0" w:line="170" w:lineRule="auto"/><w:jc w:val="center"/><w:rPr><w:sz w:val="${pprSize}"/><w:szCs w:val="${pprSize}"/></w:rPr></w:pPr>${oaWordRun(text,header,size)}</w:p></w:tc>`;
 }
+function oaWordCellLines(lines,header=false,width=0,size=18,pprSize=36,secondarySize=16){
+ const values=(Array.isArray(lines)?lines:[lines]).map(v=>String(v==null?"":v)).filter(v=>v.trim()!=="");
+ const body=(values.length?values:[""]).map((value,index)=>{
+  const fontSize=index===0?size:secondarySize;
+  const runSize=fontSize==null?"":'<w:sz w:val="'+fontSize+'"/><w:szCs w:val="'+fontSize+'"/>';
+  return '<w:p><w:pPr><w:spacing w:after="0" w:line="170" w:lineRule="auto"/><w:jc w:val="center"/><w:rPr><w:sz w:val="'+pprSize+'"/><w:szCs w:val="'+pprSize+'"/></w:rPr></w:pPr><w:r><w:rPr>'+(header||index===0?"<w:b/>":"")+runSize+'</w:rPr><w:t xml:space="preserve">'+oaXml(value)+'</w:t></w:r></w:p>';
+ }).join("");
+ return '<w:tc><w:tcPr>'+(width?'<w:tcW w:w="'+width+'" w:type="dxa"/>':"")+'<w:vAlign w:val="center"/><w:tcMar><w:top w:w="12" w:type="dxa"/><w:left w:w="32" w:type="dxa"/><w:bottom w:w="12" w:type="dxa"/><w:right w:w="32" w:type="dxa"/></w:tcMar><w:tcBorders><w:top w:val="single" w:sz="5" w:space="0" w:color="auto"/><w:left w:val="single" w:sz="5" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="5" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="5" w:space="0" w:color="auto"/></w:tcBorders>'+(header?'<w:shd w:val="clear" w:color="auto" w:fill="EAEAEA"/>':"")+'</w:tcPr>'+body+'</w:tc>';
+}
 function oaWordTableRow(cells,header=false,height=300){return `<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="${height}"/></w:trPr>${cells.join("")}</w:tr>`}
 function oaWordTableStart(width){return `<w:tbl><w:tblPr><w:tblW w:w="${width}" w:type="dxa"/><w:tblInd w:w="32" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="7" w:space="0" w:color="auto"/><w:left w:val="single" w:sz="7" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="7" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="7" w:space="0" w:color="auto"/><w:insideH w:val="single" w:sz="5" w:space="0" w:color="auto"/><w:insideV w:val="single" w:sz="5" w:space="0" w:color="auto"/></w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="12" w:type="dxa"/><w:left w:w="32" w:type="dxa"/><w:bottom w:w="12" w:type="dxa"/><w:right w:w="32" w:type="dxa"/></w:tblCellMar><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr>`}
 function oaDistributeWidths(weights,total=11200){const sum=weights.reduce((a,b)=>a+b,0)||1;let used=0;return weights.map((w,i)=>{if(i===weights.length-1)return total-used;const n=Math.max(250,Math.round(total*w/sum));used+=n;return n})}
@@ -10053,7 +10120,12 @@ async function oaExportDocx(){
   const pageWidth=11906,usableWidth=11200;
   const pgtTwipsByHeading={"DATE":1341,"DAY":1341,"OPD":664,"DTC 10-12":1315,"ECT":919,"SUICIDE 8-2":1379,"SUICIDE 2-8":1379,"2-10 PM":1047,"10 PM TO 8 AM":1815};
   const facultyWeights=[1.05,1.05,1.75,1.95,1.4];
-  const weights=cols.map((x,i)=>isPgt?(pgtTwipsByHeading[String(x||"").trim().toUpperCase()]||1000):(facultyWeights[i]||1));
+  const displayColumns=isPgt?cols.map((x,i)=>({kind:"cell",index:i,header:x})):oaFacultyDocumentColumns(cols);
+  const weights=displayColumns.map(column=>{
+   if(isPgt)return pgtTwipsByHeading[String(cols[column.index]||"").trim().toUpperCase()]||1000;
+   if(column.kind==="dayDate")return (facultyWeights[column.dayIndex]||1)+(facultyWeights[column.dateIndex]||1);
+   return facultyWeights[column.index]||1;
+  });
   const widths=oaDistributeWidths(weights,usableWidth);
   const rosterHeading=c.subtitle||(isPgt?"DUTY ROSTER OF PGTs":"FACULTY / VP / RESIDENT PHYSICIAN-GDMO — WEEKLY DUTY ROSTER");
   const periodText=`${oaDate(r.period_start)} to ${oaDate(r.period_end)}`;
@@ -10073,13 +10145,25 @@ async function oaExportDocx(){
    oaWordP("",{pprSize:36,after:8,line:80})
   ];
 
-  let table=oaWordTableStart(usableWidth)+`<w:tblGrid>${widths.map(w=>`<w:gridCol w:w="${w}"/>`).join("")}</w:tblGrid>`;
-  table+=oaWordTableRow(cols.map((x,i)=>oaWordCell(String(x).replace(/\n/g," "),true,widths[i],20,36)),true,275);
-  // A 31-day PGT month needs a very slight row tightening to retain the
-  // complete HOD sign-off block on the same A4 page. Thirty-day months retain
-  // the reference template's exact paragraph-mark size.
+  let table=oaWordTableStart(usableWidth)+'<w:tblGrid>'+widths.map(w=>'<w:gridCol w:w="'+w+'"/>').join("")+'</w:tblGrid>';
+  table+=oaWordTableRow(displayColumns.map((column,i)=>oaWordCell(String(column.header||"").replace(/\n/g," "),true,widths[i],20,36)),true,275);
   const pgtBodyPprSize=isPgt&&rows.length>30?34:36;
-  rows.forEach(row=>table+=oaWordTableRow(cols.map((k,i)=>oaWordCell(Array.isArray(row)?row[i]:(row&&row[k])||"",false,widths[i],18,pgtBodyPprSize)),false,300));
+  rows.forEach((row,rowIndex)=>{
+   const cells=displayColumns.map((column,i)=>{
+    if(!isPgt&&column.kind==="dayDate"){
+     const day=Array.isArray(row)?row[column.dayIndex]:(row&&row[cols[column.dayIndex]])||"";
+     const date=Array.isArray(row)?row[column.dateIndex]:(row&&row[cols[column.dateIndex]])||"";
+     return oaWordCellLines([day,date],false,widths[i],18,pgtBodyPprSize,16);
+    }
+    const raw=Array.isArray(row)?row[column.index]:(row&&row[cols[column.index]])||"";
+    if(!isPgt&&oaFacultyDutyColumnKind(cols[column.index])){
+     const details=oaFacultyContactDetails(c,rowIndex,column.index,raw),name=details.name||String(raw||"");
+     return oaWordCellLines(details.phone?[name,"Phone: "+details.phone]:[name],false,widths[i],18,pgtBodyPprSize,16);
+    }
+    return oaWordCell(raw,false,widths[i],18,pgtBodyPprSize);
+   });
+   table+=oaWordTableRow(cells,false,isPgt?300:420);
+  });
   table+="</w:tbl>";
   const paras=[...headerParas,table];
 
@@ -10415,10 +10499,35 @@ function wardRosterTable(r){
  const pgt=r.roster_type==="pgt_monthly";
  const annotationMap=pgt?wardRosterAnnotationReadAll():{};
  const cell=v=>esc(v==null?"":typeof v==="object"?JSON.stringify(v):v);
+ const facultyColumns=pgt?null:oaFacultyDocumentColumns(cols);
+ const contactMap=c.facultyContacts&&typeof c.facultyContacts==="object"&&!Array.isArray(c.facultyContacts)?c.facultyContacts:{};
+ const oldFaculty=Array.isArray(c.faculty)?c.faculty:[];
+ const normName=v=>String(v||"").normalize("NFKC").replace(/^(?:(?:prof(?:essor)?|dr)\.?\s*)+/i,"").replace(/[.,]+/g," ").replace(/\s+/g," ").trim().toLocaleLowerCase();
+ const contactFor=(rowIndex,columnIndex,raw)=>{
+  const assignments=Array.isArray(c.facultyAssignments)?c.facultyAssignments:[];
+  const a=assignments.find(x=>Number(x.row)===rowIndex&&Number(x.column)===columnIndex);
+  const id=String(a&&(a.consultantId||a.consultant_id)||"");
+  const old=(id&&oldFaculty.find(f=>String(f&&(f.consultantId||f.consultant_id)||"")===id))
+   ||oldFaculty.find(f=>[f&&f.fullName,f&&f.full_name,f&&f.name,f&&f.displayName,f&&f.display_name].some(n=>normName(n)===normName(raw)));
+  const item=(id&&contactMap[id])||old||{};
+  return {name:String(item.fullName||item.full_name||item.name||item.displayName||item.display_name||raw||"").trim(),phone:oaFormatFacultyPhone(item.phone||item.phone_number||"")};
+ };
  const tableRows=rows.map((row,rowIndex)=>{
   const values=Array.isArray(row)?row:cols.map(k=>row&&row[k]||"");
+  if(!pgt){
+   const cells=facultyColumns.map(column=>{
+    if(column.kind==="dayDate")return '<td><div class="resident-roster-day-date"><strong>'+cell(values[column.dayIndex])+'</strong><span>'+cell(values[column.dateIndex])+'</span></div></td>';
+    const raw=values[column.index];
+    if(oaFacultyDutyColumnKind(cols[column.index])){
+     const details=contactFor(rowIndex,column.index,raw);
+     return '<td><div class="resident-roster-faculty-person">'+(details.name?'<strong>'+cell(details.name)+'</strong>':"")+(details.phone?'<span>Phone: '+cell(details.phone)+'</span>':"")+'</div></td>';
+    }
+    return '<td>'+cell(raw)+'</td>';
+   }).join("");
+   return "<tr>"+cells+"</tr>";
+  }
   const cells=values.map((v,colIndex)=>{
-   if(!pgt||colIndex<2) return "<td>"+cell(v)+"</td>";
+   if(colIndex<2)return "<td>"+cell(v)+"</td>";
    const rowDate=String(values[0]==null?"row-"+rowIndex:values[0]);
    const colName=String(cols[colIndex]==null?"Duty":cols[colIndex]);
    const annotation=wardRosterAnnotationValue(annotationMap,r.id,rowDate,rowIndex,colIndex,colName);
@@ -10430,7 +10539,8 @@ function wardRosterTable(r){
   }).join("");
   return "<tr>"+cells+"</tr>";
  }).join("");
- const dutyTable='<div class="resident-roster-table-wrap"><table class="resident-roster-table"><thead><tr>'+cols.map(x=>"<th>"+cell(x)+"</th>").join("")+'</tr></thead><tbody>'+tableRows+"</tbody></table></div>";
+ const headers=(pgt?cols.map(x=>"<th>"+cell(x)+"</th>"):facultyColumns.map(x=>"<th>"+cell(x.header)+"</th>")).join("");
+ const dutyTable='<div class="resident-roster-table-wrap"><table class="resident-roster-table"><thead><tr>'+headers+'</tr></thead><tbody>'+tableRows+"</tbody></table></div>";
  const groups=(pgt&&Array.isArray(c.groups))?c.groups:[];
  const groupRows=Array.from({length:Math.max(0,...groups.map(g=>(g.members||[]).length))},(_,i)=>{
   return "<tr>"+groups.map(g=>{
@@ -32191,6 +32301,22 @@ html.ws-resident-landscape #app.app > .top.resident-home img.photo-img.home-phot
   object-fit: cover !important;
   object-position: center !important;
 }
+</style>
+<style id="oa-faculty-roster-document-cells-v1">
+#app.app.oa-mode .oa-preview .oa-roster-day-date,
+#app.app.oa-mode .oa-preview .oa-faculty-document-person{
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.25;white-space:normal;
+}
+#app.app.oa-mode .oa-preview .oa-roster-day-date strong,
+#app.app.oa-mode .oa-preview .oa-faculty-document-person strong{font-weight:750;color:#172033}
+#app.app.oa-mode .oa-preview .oa-roster-day-date span,
+#app.app.oa-mode .oa-preview .oa-faculty-document-person span{font-size:10px;font-weight:500;line-height:1.2;color:#475569}
+.resident-roster-table .resident-roster-day-date,
+.resident-roster-table .resident-roster-faculty-person{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;white-space:normal;line-height:1.25}
+.resident-roster-table .resident-roster-day-date strong,
+.resident-roster-table .resident-roster-faculty-person strong{font-weight:750}
+.resident-roster-table .resident-roster-day-date span,
+.resident-roster-table .resident-roster-faculty-person span{font-size:10px;font-weight:500;color:var(--muted);line-height:1.2}
 </style>
 </body>
 </html>
