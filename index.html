@@ -11779,22 +11779,20 @@ function wsResidentLandscapeHome(){
   const distributionOffset=distributionDate?bdftDayOffset(distributionDate):null;
   const hasBdft=!!(distribution&&distribution.tiers&&Object.keys(distribution.tiers||{}).length&&(distributionOffset===0||distributionOffset===1));
   const makeBdft=canWrite()&&!isIntern()&&!isConsultant()&&isEveningDuty()&&!hasBdft;
+  // Show only this signed-in resident's allocation. Never aggregate the
+  // ward-wide distribution into a personal resident home preview.
+  const myBdft=hasBdft?bdftGetMyAssignedBeds():null;
+  const myAssignedBeds=myBdft&&!myBdft.isGeneric&&Array.isArray(myBdft.beds)?myBdft.beds:[];
   const bdftCodes=[];
-  if(hasBdft){
-    Object.keys(distribution.tiers||{}).forEach(year=>{
-      const doctors=distribution.tiers[year]||{};
-      Object.keys(doctors).forEach(name=>{
-        const assigned=Array.isArray(doctors[name])?doctors[name]:[];
-        assigned.forEach(item=>{
-          const code=typeof item==="string"?item:(item&&(item.code||item.no||item.bed||item.bedNo))||"";
-          if(code&&bdftCodes.indexOf(String(code))===-1) bdftCodes.push(String(code));
-        });
-      });
-    });
-  }
+  myAssignedBeds.forEach(item=>{
+    const code=typeof item==="string"?item:(item&&(item.code||item.no||item.bed||item.bedNo))||"";
+    if(code&&bdftCodes.indexOf(String(code))===-1) bdftCodes.push(String(code));
+  });
   const tomorrowBdftChips=bdftCodes.length
     ? `<div class="ws-bdft-chip-grid">${bdftCodes.map(c=>`<button type="button" class="ws-bdft-chip" onclick="bdftTapBedPatient('${esc(c)}')">${esc(c)}</button>`).join("")}</div>`
-    : `<div class="ws-panel-empty-text">No bed distribution has been finalised for tomorrow yet.${makeBdft?' <button type="button" class="ws-prepare-bdft-link" onclick="bdftOpenGenerate()">Prepare tomorrow’s BDFT</button>':''}</div>`;
+    : hasBdft
+      ? `<div class="ws-panel-empty-text">No personal bed allocation was found for your account in this BDFT.</div>`
+      : `<div class="ws-panel-empty-text">No bed distribution has been finalised for tomorrow yet.${makeBdft?' <button type="button" class="ws-prepare-bdft-link" onclick="bdftOpenGenerate()">Prepare tomorrow’s BDFT</button>':''}</div>`;
 
   // 4. Right Supporting Panel B: Needs You Now (urgent clinical preview)
   const {rows}=r146TodayRows();
@@ -11860,7 +11858,9 @@ function wsResidentLandscapeHome(){
         const name=(u.displayName||u.name||d.name||"Doctor");
         const role=u.designation||(normRole(u.role)==="admin"?"SR":normRole(u.role)==="consultant"?"Consultant":"PG Resident");
         const roleLabel=isMe?`${esc(role)} <span class="ws-team-you">(You)</span>`:esc(role);
-        const avatar=photoFace(profileInitials(name),"ws-team-face"+(isMe?" is-me":""));
+        // Resolve each duty member against their own directory photo. photoFace()
+        // reads the current user's photo globally and must not be reused for other staff.
+        const avatar=pgtFace({name,photo:u.photo||""},"ws-team-face"+(isMe?" is-me":""));
 
         return `<div class="ws-team-person${isMe?" is-me":""}">
           ${avatar}
@@ -11939,7 +11939,7 @@ function wsResidentLandscapeHome(){
               <span class="ws-panel-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/></svg>
               </span>
-              <span>Bed distribution (Tomorrow)</span>
+              <span>My bed distribution (Tomorrow)</span>
             </h3>
             <button type="button" class="ws-panel-link-btn" onclick="bdftOpenReadOnly()">View BDFT <span aria-hidden="true">→</span></button>
           </header>
@@ -30579,6 +30579,12 @@ html.ws-intern .snap-cols>.card{
   background: #7835DB !important;
   color: #fff !important;
  }
+html.ws-resident-landscape img.ws-team-face {
+  display: block !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  overflow: hidden !important;
+}
  html.ws-resident-landscape .ws-team-meta {
   display: flex !important;
   flex-direction: column !important;
