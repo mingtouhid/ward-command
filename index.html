@@ -32146,6 +32146,23 @@ html.ws-resident-landscape #app.app > .top.resident-home img.photo-img.home-phot
   object-fit: cover !important;
   object-position: center !important;
 }
+
+/* Keep initials fallback precisely centred in mobile and portrait home headers.
+   Real profile images remain image elements with their own crop rule. */
+#app.app > header.top.resident-home .profile-photo.home-photo,
+#app.app > header.top.intern-home-top .profile-photo.home-photo {
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+#app.app > header.top.resident-home img.photo-img.home-photo,
+#app.app > header.top.intern-home-top img.photo-img.home-photo {
+  display: block !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
 </style>
 </body>
 </html>
