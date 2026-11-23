@@ -32062,7 +32062,8 @@ html.ws-resident-landscape #app.app > .main {
 }
 html.ws-resident-portrait .home-photo,
 html.ws-resident-landscape .home-photo {
-  display: block !important;
+  display: grid !important;
+  place-items: center !important;
   width: 40px !important;
   height: 40px !important;
   min-width: 40px !important;
@@ -32071,7 +32072,14 @@ html.ws-resident-landscape .home-photo {
   object-fit: cover !important;
   overflow: hidden !important;
   flex: 0 0 40px !important;
+  line-height: 1 !important;
   box-sizing: border-box !important;
+}
+html.ws-resident-portrait .photo-img.home-photo,
+html.ws-resident-landscape .photo-img.home-photo,
+html.ws-resident-portrait .ws-landscape-profile-photo.photo-img,
+html.ws-resident-landscape .ws-landscape-profile-photo.photo-img {
+  display: block !important;
 }
 html.ws-resident-portrait .ws-landscape-profile-photo,
 html.ws-resident-landscape .ws-landscape-profile-photo {
