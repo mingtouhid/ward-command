@@ -9637,7 +9637,7 @@ function oaFacultyContactDetails(c,rowIndex,columnIndex,raw){
  const contacts=c&&c.facultyContacts&&typeof c.facultyContacts==="object"&&!Array.isArray(c.facultyContacts)?c.facultyContacts:{};
  const saved=id?contacts[id]||null:null;
  const name=selected?oaConsultantFullName(selected):String((saved&&(saved.fullName||saved.full_name||saved.name))||raw||"").trim();
- const phone=oaFormatFacultyPhone((selected&&selected.phone)||(saved&&saved.phone)||"");
+ const phone=oaFormatFacultyPhone((selected&&(selected.phone||selected.phone_e164))||(saved&&(saved.phone||saved.phone_number||saved.phone_e164))||"");
  return {id,name,phone};
 }
 function oaFacultyDocumentCell(c,rowIndex,columnIndex,raw){
@@ -9652,7 +9652,7 @@ function oaSnapshotFacultyContacts(c){
   if(!id)return;
   const u=(OA.users||[]).find(x=>String(x.id)===id&&String(x.role||"").toLowerCase()==="consultant");
   if(!u)return;
-  contacts[id]={fullName:oaConsultantFullName(u),phone:String(u.phone||"").trim(),designation:String(u.designation||"").trim()};
+  contacts[id]={fullName:oaConsultantFullName(u),phone:String(u.phone||u.phone_e164||"").trim(),designation:String(u.designation||"").trim()};
  });
  c.facultyContacts=contacts;
  return contacts;
@@ -10037,9 +10037,11 @@ function oaPublish(){
   const publish=async()=>{
     try{
       const id=r.status==="review"&&r.id?r.id:await oaPersistCurrentDraft(true);
-      await oaRpc("office_admin_publish_roster",{p_roster_id:id});
+      const published=await oaRpc("office_admin_publish_roster",{p_roster_id:id});
+      let notificationOk=!!(published&&published.notification_id);
+      if(notificationOk){try{await oaDispatchRosterNotification(published.notification_id)}catch(notificationError){notificationOk=false;console.error("Roster notification dispatch failed",notificationError)}}
       OA.editing=null;OA.page="rosters";OA.notice="Roster published";OA.scrollReset=true;OA.preserveScrollTop=0;
-      toast("Roster published","ok");await oaLoad();
+      toast(notificationOk?"Roster published":"Roster published, but push notification delivery failed.",notificationOk?"ok":"bad");await oaLoad();
     }catch(e){toast(e.message||String(e),"bad")}
   };
   return publish();
@@ -10057,13 +10059,44 @@ async function oaEditPublishedRoster(id){
   await oaEditRoster(draftId);
  }catch(e){toast(e.message||String(e),"bad")}
 }
-async function oaRevokePublishedRoster(id){
- if(!confirm("Revoke this published roster? It will disappear from the staff roster library. If it is the active roster, the latest earlier published version will be restored where available."))return;
+async function oaDeleteDraftRoster(id){
+ const roster=(OA.allRosters||[]).find(r=>String(r.id)===String(id));
+ if(!roster||roster.status!=="draft"){toast("Only draft rosters can be deleted.","bad");return}
+ const label=(roster.title||"Untitled roster")+" · Version "+(roster.version||1)+" · "+oaDate(roster.period_start)+" – "+oaDate(roster.period_end);
+ if(!confirm("Permanently delete this draft roster?\n\n"+label+"\n\nPublished and historical versions are not affected."))return;
  try{
-  await oaRpc("office_admin_revoke_published_roster",{p_roster_id:id});
+  await oaRpc("office_admin_delete_roster_draft",{p_roster_id:id});
+  if(OA.editing&&String(OA.editing.id)===String(id))OA.editing=null;
+  OA.page="rosters";OA.allRostersAt=0;OA.scrollReset=true;OA.preserveScrollTop=0;
+  await oaLoad(true);toast("Draft roster deleted.","ok");
+ }catch(e){toast(e.message||String(e),"bad")}
+}
+async function oaDispatchRosterNotification(notificationId){
+ if(!notificationId)throw new Error("Published roster has no notification event.");
+ if(!S.supabaseUrl||!S.supabaseAnonKey)throw new Error("Notification service is not configured.");
+ const response=await fetch(S.supabaseUrl.replace(/\/$/,"")+"/functions/v1/dispatch-notification",{
+  method:"POST",
+  headers:{"Content-Type":"application/json","apikey":S.supabaseAnonKey,"Authorization":"Bearer "+S.supabaseAnonKey},
+  body:JSON.stringify({notification_id:notificationId,office_admin_token:sessionTok})
+ });
+ let payload=null;try{payload=await response.json()}catch(e){}
+ if(!response.ok||!payload||payload.ok!==true)throw new Error((payload&&payload.error)||("Notification dispatch failed ("+response.status+")"));
+ return payload;
+}
+async function oaRollbackPublishedRoster(id){
+ const current=(OA.allRosters||[]).find(r=>String(r.id)===String(id));
+ if(!current||current.status!=="published"||!current.is_current){toast("Only the active published roster can be rolled back.","bad");return}
+ const previous=oaPreviousPublishedRoster(current);
+ if(!previous){toast("No earlier published version is available to restore.","info");return}
+ const target=(previous.title||current.title||"Duty roster")+" · Version "+(previous.version||1);
+ if(!confirm("Roll back the active roster to the previous published version?\n\n"+target+"\n\nA new published version will be created. Existing versions will remain in the history."))return;
+ try{
+  const result=await oaRpc("office_admin_rollback_published_roster",{p_roster_id:id});
+  let notificationOk=!!(result&&result.notification_id);
+  if(notificationOk){try{await oaDispatchRosterNotification(result.notification_id)}catch(e){notificationOk=false;console.error("Roster rollback notification dispatch failed",e)}}
   OA.editing=null;OA.page="rosters";OA.allRostersAt=0;OA.scrollReset=true;OA.preserveScrollTop=0;
-  toast("Roster publication revoked.","ok");
   await oaLoad(true);
+  toast(notificationOk?"Rollback published as Version "+(result&&result.version||"new")+".":"Rollback published, but push notification delivery failed.",notificationOk?"ok":"bad");
  }catch(e){toast(e.message||String(e),"bad")}
 }
 
@@ -10108,7 +10141,12 @@ function oaWordTableStart(width){return `<w:tbl><w:tblPr><w:tblW w:w="${width}" 
 function oaDistributeWidths(weights,total=11200){const sum=weights.reduce((a,b)=>a+b,0)||1;let used=0;return weights.map((w,i)=>{if(i===weights.length-1)return total-used;const n=Math.max(250,Math.round(total*w/sum));used+=n;return n})}
 async function oaExportDocx(){
  try{
-  const r=oaSyncRosterMeta(),c=oaEnsureRosterContent(),cols=c.columns||[],rows=c.rows||[],isPgt=(r.roster_type||OA.type)==="pgt_monthly";
+  const r=oaSyncRosterMeta(),c=oaEnsureRosterContent(),isPgt=(r.roster_type||OA.type)==="pgt_monthly";
+  if(!isPgt){
+   try{const userData=await oaRpc("office_admin_list_users",{});OA.users=Array.isArray(userData?.users)?userData.users:[];OA.usersAt=Date.now();OA.pgtUsersLoaded=true;oaSnapshotFacultyContacts(c)}
+   catch(contactError){console.warn("Using saved faculty contact snapshot for export",contactError)}
+  }
+  const cols=c.columns||[],rows=c.rows||[];
   if(!cols.length)throw new Error("The duty table has no columns.");
   if(isPgt&&c.groups.some(g=>(g.members||[]).some(m=>m.name&&!m.abbr)))throw new Error("Add a short code for every PGT name in the group settings.");
   if(!String(r.title||"").trim()||!r.period_start||!r.period_end)throw new Error("Enter a roster title and both period dates before exporting.");
@@ -10158,7 +10196,7 @@ async function oaExportDocx(){
     const raw=Array.isArray(row)?row[column.index]:(row&&row[cols[column.index]])||"";
     if(!isPgt&&oaFacultyDutyColumnKind(cols[column.index])){
      const details=oaFacultyContactDetails(c,rowIndex,column.index,raw),name=details.name||String(raw||"");
-     return oaWordCellLines(details.phone?[name,"Phone: "+details.phone]:[name],false,widths[i],18,pgtBodyPprSize,16);
+     return oaWordCellLines(details.phone?[name,"Ph. "+details.phone]:[name],false,widths[i],18,pgtBodyPprSize,16);
     }
     return oaWordCell(raw,false,widths[i],18,pgtBodyPprSize);
    });
@@ -10202,6 +10240,23 @@ async function oaExportDocx(){
   const blob=oaZip(files),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`${(r.title||"Duty_Roster").replace(/[^a-z0-9_-]+/gi,"_")}${r.status==="published"?"":"_DRAFT"}.docx`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
  }catch(e){toast(e.message||String(e),"bad")}
 }
+function oaPreviousPublishedRoster(r){
+ const rows=OA.allRosters||[],samePeriod=x=>String(x.roster_type||"")===String(r&&r.roster_type||"")
+  &&String(x.period_start||"").slice(0,10)===String(r&&r.period_start||"").slice(0,10)
+  &&String(x.period_end||"").slice(0,10)===String(r&&r.period_end||"").slice(0,10);
+ let cursor=r,seen=new Set([String(r&&r.id||"")]);
+ for(let depth=0;depth<50&&cursor&&cursor.revision_of;depth++){
+  const id=String(cursor.revision_of);
+  if(seen.has(id))break;
+  seen.add(id);
+  const previous=rows.find(x=>String(x.id)===id);
+  if(!previous)break;
+  if(previous.status==="published"&&samePeriod(previous))return previous;
+  cursor=previous;
+ }
+ return rows.filter(x=>x.status==="published"&&samePeriod(x)&&String(x.id)!==String(r&&r.id||"")&&Number(x.version||0)<Number(r&&r.version||0))
+  .sort((a,b)=>Number(b.version||0)-Number(a.version||0))[0]||null;
+}
 function oaRosterList(){
  const rows=OA.rosters||[];
  const kind=OA.type==="faculty_weekly"?"Faculty weekly":"PGT monthly";
@@ -10211,7 +10266,7 @@ function oaRosterList(){
  <button type="button" class="oa-roster-type-card ${OA.type==="faculty_weekly"?"selected":""}" onclick="if(OA.type!=='faculty_weekly'){OA.type='faculty_weekly';OA.rosters=OA.allRosters.filter(r=>r.roster_type===OA.type);render({force:1});if(!OA.allRostersAt)oaLoad()}" aria-pressed="${OA.type==="faculty_weekly"}"><span class="oa-roster-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.4-3.4 2.2-5.2 5.5-5.2s5.1 1.8 5.5 5.2M16 6.2a3 3 0 0 1 0 5.8M17 14c2.2.5 3.4 2.1 3.6 5"/></svg></span><span class="oa-roster-type-copy"><b>Faculty weekly</b><small>Faculty, VP and RP/GDMO duties</small></span><span class="oa-roster-type-chevron">›</span></button>
  </div></section>
  <div class="oa-roster-results-head"><div><h3>${oaEsc(kind)} rosters</h3><span>${rows.length} ${rows.length===1?"roster":"rosters"}</span></div></div>
- ${rows.length?`<div class="oa-table-wrap"><table class="oa-table"><thead><tr><th>Title</th><th>Period</th><th>Version</th><th>Reference</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${oaEsc(r.title||"Untitled roster")}</td><td>${oaDate(r.period_start)} – ${oaDate(r.period_end)}</td><td>${r.version||1}</td><td>${oaEsc(r.reference_number||"—")}</td><td><span class="oa-status ${oaEsc(r.status)}">${oaEsc(oaRosterLifecycle(r))}</span></td><td class="oa-td-act"><button type="button" class="btn secondary sm" onclick="oaEditRoster('${r.id}')">${r.status==="draft"||r.status==="review"?"Open":"View"}</button>${r.status==="published"?`<button type="button" class="btn secondary sm" onclick="oaEditPublishedRoster('${r.id}')">Edit</button><button type="button" class="btn oa-danger-btn sm" onclick="oaRevokePublishedRoster('${r.id}')">Revoke</button>`:""}</td></tr>`).join("")}</tbody></table></div>`:OA.error?`<div class="oa-empty oa-roster-empty">Could not load rosters. Use Refresh to try again.</div>`:`<div class="oa-empty oa-roster-empty">No ${OA.type==="pgt_monthly"?"PGT monthly":"Faculty weekly"} rosters yet.</div>`}`;
+ ${rows.length?`<div class="oa-table-wrap"><table class="oa-table"><thead><tr><th>Title</th><th>Period</th><th>Version</th><th>Reference</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${oaEsc(r.title||"Untitled roster")}</td><td>${oaDate(r.period_start)} – ${oaDate(r.period_end)}</td><td>${r.version||1}</td><td>${oaEsc(r.reference_number||"—")}</td><td><span class="oa-status ${oaEsc(r.status)}">${oaEsc(oaRosterLifecycle(r))}</span></td><td class="oa-td-act"><button type="button" class="btn secondary sm" onclick="oaEditRoster('${r.id}')">${r.status==="draft"||r.status==="review"?"Open":"View"}</button>${r.status==="draft"?`<button type="button" class="btn oa-danger-btn sm" onclick="oaDeleteDraftRoster('${r.id}')">Delete</button>`:""}${r.status==="published"?`<button type="button" class="btn secondary sm" onclick="oaEditPublishedRoster('${r.id}')">Edit</button>${r.is_current&&oaPreviousPublishedRoster(r)?`<button type="button" class="btn secondary sm" onclick="oaRollbackPublishedRoster('${r.id}')">Rollback</button>`:""}`:""}</td></tr>`).join("")}</tbody></table></div>`:OA.error?`<div class="oa-empty oa-roster-empty">Could not load rosters. Use Refresh to try again.</div>`:`<div class="oa-empty oa-roster-empty">No ${OA.type==="pgt_monthly"?"PGT monthly":"Faculty weekly"} rosters yet.</div>`}`;
 }
 function oaQueueFilter(key,value){
   OA[key]=value;
@@ -18824,13 +18879,19 @@ function notifParseUrl(url){
 }
 function notifDest(raw){
   raw=raw||{};
+  const metadata=raw.metadata&&typeof raw.metadata==="object"?raw.metadata:{};
   const url=raw.url||raw.target_url||raw.targetUrl||"";
   const parsed=notifParseUrl(url);
   const type=String(raw.type||raw.event_type||raw.category||"").toLowerCase();
   const patientId=raw.patient_id||raw.patientId||null;
   const entityId=raw.entity_id||raw.entityId||raw.task_id||raw.taskId||raw.handover_id||raw.handoverId||raw.ect_plan_id||raw.ectPlanId||null;
+  let rosterId=raw.roster_id||raw.rosterId||metadata.roster_id||metadata.rosterId||null;
+  const rosterType=raw.roster_type||raw.rosterType||metadata.roster_type||metadata.rosterType||null;
+  const rosterVersion=raw.roster_version||raw.rosterVersion||metadata.roster_version||metadata.rosterVersion||null;
   let page=String(raw.destination||raw.page||(parsed&&parsed.page)||"").toLowerCase();
   let routeId=raw.routeId||(parsed&&parsed.id)||null;
+  if(!rosterId&&page==="pgts"&&routeId){rosterId=routeId;routeId=null;}
+  if(type==="roster_publish"||rosterId){page="pgts";routeId=null;}
   // BDFT push notifications are for viewing the published distribution.
   // Never route them to the generation/terminal workflow.
   if(type==="bdft"){
@@ -18848,7 +18909,7 @@ function notifDest(raw){
   }
   if(page==="snap"&&!routeId) routeId=patientId||entityId;
   if(page==="bdft"&&routeId) ui.bdftOpenId=routeId;
-  return {nid:String(raw.id||raw.notification_id||raw.notificationId||""), type, page, routeId:routeId||null, patientId:patientId||(page==="snap"?routeId:null)};
+  return {nid:String(raw.id||raw.notification_id||raw.notificationId||""), type, page, routeId:routeId||null, patientId:patientId||(page==="snap"?routeId:null), rosterId:rosterId?String(rosterId):null, rosterType:rosterType?String(rosterType):null, rosterVersion:rosterVersion==null?null:String(rosterVersion)};
 }
 function notifRoleDest(dest){
   const page=dest.page;
@@ -18893,6 +18954,10 @@ function notifFlush(){
     ui.bdftOpenId=null;
     ui.bdftEditMode=false;
     ui.bdftMode="readonly";
+  }
+  if(dest.page==="pgts"&&dest.rosterId){
+    wardRosterSelectedId=String(dest.rosterId);
+    wardRosterViewMode="mine";
   }
   if(dest.missed) toast("That notification has no page for this sign-in.","info");
   if(dest.page==="setup") ui.setupTab="notify";

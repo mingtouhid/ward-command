@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r2.0.0-37";
+const VERSION = "ward-sync-pwa-r2.0.0-38";
 // R1.3.134: the on-device scanner engine lives in its own cache, filled and verified by the page; never deleted on update.
 const OCR_CACHE = "ocr-assets-v7";
 const PRECACHE = [
@@ -79,7 +79,11 @@ self.addEventListener("notificationclick", (event) => {
     type: data.event_type || data.category || "",
     url: target,
     patient_id: data.patient_id || null,
-    entity_id: data.task_id || data.handover_id || data.ect_plan_id || null
+    entity_id: data.task_id || data.handover_id || data.ect_plan_id || null,
+    roster_id: data.roster_id || null,
+    roster_type: data.roster_type || null,
+    roster_version: data.roster_version || null,
+    metadata: data.metadata || null
   };
   event.waitUntil((async () => {
     const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
