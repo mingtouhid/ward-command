@@ -10139,7 +10139,7 @@ function oaWordCellLines(lines,header=false,width=0,size=18,pprSize=36,secondary
 function oaWordTableRow(cells,header=false,height=300){return `<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="${height}"/></w:trPr>${cells.join("")}</w:tr>`}
 function oaWordTableStart(width){return `<w:tbl><w:tblPr><w:tblW w:w="${width}" w:type="dxa"/><w:tblInd w:w="32" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="7" w:space="0" w:color="auto"/><w:left w:val="single" w:sz="7" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="7" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="7" w:space="0" w:color="auto"/><w:insideH w:val="single" w:sz="5" w:space="0" w:color="auto"/><w:insideV w:val="single" w:sz="5" w:space="0" w:color="auto"/></w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="12" w:type="dxa"/><w:left w:w="32" w:type="dxa"/><w:bottom w:w="12" w:type="dxa"/><w:right w:w="32" w:type="dxa"/></w:tblCellMar><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr>`}
 function oaDistributeWidths(weights,total=11200){const sum=weights.reduce((a,b)=>a+b,0)||1;let used=0;return weights.map((w,i)=>{if(i===weights.length-1)return total-used;const n=Math.max(250,Math.round(total*w/sum));used+=n;return n})}
-async async function oaExportDocx(){
+async function oaExportDocx(){
  try{
   const r=oaSyncRosterMeta(),c=oaEnsureRosterContent(),isPgt=(r.roster_type||OA.type)==="pgt_monthly";
   if(!isPgt){
