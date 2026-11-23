@@ -8785,7 +8785,7 @@ async function doCloudPull(opts){
   if(unit[0]){S.unit={name:unit[0].unit_name||(S.unit&&S.unit.name)||"Psychiatry Ward"}; if(unit[0].ward_password) S.wardPassword=unit[0].ward_password}
   ensureUnits();
   S.sections=wardSort(sections.map(r=>({id:r.id,name:sectionLabel(r.name),active:r.active!==false,sort:Number(r.sort_order)||0})));
-  S.residents=residents.filter(r=>r.active!==false).map(r=>({id:r.id,username:r.username,displayName:r.display_name,role:r.role,active:r.active!==false}));
+  S.residents=residents.filter(r=>r.active!==false).map(r=>({id:r.id,username:r.username,displayName:r.display_name,fullName:r.full_name||"",designation:r.designation||"",role:r.role,active:r.active!==false}));
   S.dutyList=(wardState.duty||[]).map(d=>({userId:d.resident_id,shift:d.shift,at:d.started_at,area:d.duty_area||null,name:d.display_name||d.username||rname(d.resident_id)}));
   S.consultants=(consultants||[]).filter(r=>r.active!==false).map(r=>({id:r.id,name:r.name,designation:r.designation||""}));
   const occupancyHold=unresolved.some(o=>["patients","beds","patient_bed_assignments"].includes(o.table));
@@ -12116,13 +12116,20 @@ function wsFacultyTodayDuty(overrideDateISO){
     };
     var rawNorm = norm(raw);
 
-    var consultant = null;
-    if (id) {
+    var userProfile = id ? (S.residents || []).find(function(u){
+      return String(u.id) === id && String(u.role || '').toLowerCase() === 'consultant';
+    }) || null : null;
+    var consultant = userProfile;
+    if (id && !consultant) {
       consultant = (S.consultants || []).find(function(u){ return String(u.id) === id; }) ||
         (S.residents || []).find(function(u){ return String(u.id) === id; });
     }
     if (!consultant && rawNorm) {
-      consultant = (S.consultants || []).find(function(u){ return norm(u.name || u.fullName || u.displayName) === rawNorm; }) ||
+      consultant = (S.residents || []).find(function(u){
+        return String(u.role || '').toLowerCase() === 'consultant' &&
+          norm(u.fullName || u.displayName || u.username) === rawNorm;
+      }) ||
+        (S.consultants || []).find(function(u){ return norm(u.name || u.fullName || u.displayName) === rawNorm; }) ||
         (S.residents || []).find(function(u){ return norm(u.displayName || u.username) === rawNorm; });
     }
 
@@ -12141,7 +12148,12 @@ function wsFacultyTodayDuty(overrideDateISO){
     var photo = (consultant && consultant.photo) || (saved && saved.photo) ||
       ((S.residents || []).find(function(u){ return String(u.id) === id; })?.photo) || '';
 
-    var designation = roleKind === 'vp' ? 'VP' : roleKind === 'rp' ? 'RP' : (consultant && consultant.designation) || '';
+    var designation = String(
+      (userProfile && userProfile.designation) ||
+      (saved && saved.designation) ||
+      (consultant && consultant.designation) ||
+      ''
+    ).trim();
     var cleanName = name.replace(/\s*\((?:VP|RP)\)\s*$/i, '').trim();
 
     return { id: id, name: cleanName, designation: designation, phone: phone, photo: photo, roleKind: roleKind };
@@ -12162,35 +12174,33 @@ function wsFacultyDutyCard(mode){
     if (typeof wardRosterLoading !== 'undefined' && !wardRosterLoading) wardLoadPublishedRosters();
   }
   var duty = wsFacultyTodayDuty();
-  var sh = typeof currentShift === 'function' ? currentShift() : 'evening';
-  var shiftBadge = '<span class="r2-pill ok">' + esc(typeof shiftLabel === 'function' ? shiftLabel(sh) + ' shift' : 'On duty') + '</span>';
-  function personTile(person, roleTitle){
+  function personTile(person){
     if (!person || !person.name) return '';
-    var cleanPhone = String(person.phone || '').replace(/[^\d+]/g, '');
-    var callLink = cleanPhone ? '<a href="tel:' + esc(cleanPhone) + '" class="ws-faculty-call-btn" aria-label="Call ' + esc(person.name) + '">Call</a>' : '';
-    var avatar = typeof pgtFace === 'function' ? pgtFace({ name: person.name, photo: person.photo || '' }, 'ws-team-face') : '<div class="ws-team-face" aria-hidden="true">' + esc(person.name.slice(0, 2).toUpperCase()) + '</div>';
-    var desigTag = person.designation ? ' <span class="ws-faculty-designation-tag">(' + esc(person.designation) + ')</span>' : '';
+    var cleanPhone = String(person.phone || '').replace(/[^\\d+]/g, '');
+    var callLink = cleanPhone
+      ? '<a href="tel:' + esc(cleanPhone) + '" class="ws-faculty-call-btn" aria-label="Call ' + esc(person.name) + '">Call</a>'
+      : '';
+    var designation = String(person.designation || '').trim() || 'Designation not set';
     return '<div class="ws-team-person">'
-      + avatar
       + '<div class="ws-team-meta">'
-        + '<strong class="ws-team-name">' + esc(person.name) + desigTag + '</strong>'
-        + '<small class="ws-team-role">' + esc(roleTitle) + '</small>'
-        + callLink
+        + '<strong class="ws-team-name">' + esc(person.name) + '</strong>'
+        + '<small class="ws-team-role">' + esc(designation) + '</small>'
       + '</div>'
+      + callLink
     + '</div>';
   }
-  var vpTile = duty && duty.vp ? personTile(duty.vp, 'Faculty / VP') : '';
-  var rpTile = duty && duty.rp ? personTile(duty.rp, 'Resident Physician / GDMO') : '';
+  var vpTile = duty && duty.vp ? personTile(duty.vp) : '';
+  var rpTile = duty && duty.rp ? personTile(duty.rp) : '';
   var content = (vpTile || rpTile) ? (vpTile + rpTile) : '<span class="ws-team-empty">No faculty roster assigned for today.</span>';
   if (mode === 'mobile') {
-    return '<section class="r2-team ws-faculty-team-mobile" aria-label="Faculty on duty" style="margin-bottom:12px;">'
-      + '<div class="row"><span class="r2-cardh">Faculty on duty</span>' + shiftBadge + '</div>'
+    return '<section class="r2-team ws-faculty-team-mobile" aria-label="Faculty on duty" style="margin-bottom:8px;">'
+      + '<div class="row"><span class="r2-cardh">Faculty on duty</span></div>'
       + '<div class="ws-faculty-mobile-grid">'
         + content
       + '</div>'
     + '</section>';
   }
-  return '<section class="ws-landscape-card ws-team-section ws-faculty-team-section" aria-label="Faculty on duty" style="margin-bottom:12px;">'
+  return '<section class="ws-landscape-card ws-team-section ws-faculty-team-section" aria-label="Faculty on duty" style="margin-bottom:8px;">'
     + '<div class="ws-team-inner">'
       + '<div class="ws-team-heading-wrap">'
         + '<span class="ws-team-header-icon" aria-hidden="true">'
@@ -12200,9 +12210,6 @@ function wsFacultyDutyCard(mode){
       + '</div>'
       + '<div class="ws-team-list-wrap">'
         + content
-      + '</div>'
-      + '<div class="ws-team-action-wrap">'
-        + shiftBadge
       + '</div>'
     + '</div>'
   + '</section>';
@@ -32896,6 +32903,63 @@ img.ws-team-face,
   color: var(--muted, #656565) !important;
   font-style: italic !important;
   padding: 4px 0 !important;
+}
+
+/* R2.0.20 — compact faculty-on-duty cards without portraits or shift labels. */
+.ws-faculty-team-mobile { margin-bottom: 8px !important; }
+.ws-faculty-team-mobile .ws-faculty-mobile-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  margin-top: 6px !important;
+}
+.ws-faculty-team-mobile .ws-team-person,
+.ws-faculty-team-section .ws-team-person {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 6px 9px !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+.ws-faculty-team-mobile .ws-team-meta,
+.ws-faculty-team-section .ws-team-meta {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+  min-width: 0 !important;
+}
+.ws-faculty-team-mobile .ws-team-name,
+.ws-faculty-team-section .ws-team-name {
+  font-size: 13px !important;
+  line-height: 1.22 !important;
+  white-space: normal !important;
+}
+.ws-faculty-team-mobile .ws-team-role,
+.ws-faculty-team-section .ws-team-role {
+  display: block !important;
+  margin: 0 !important;
+  font-size: 11px !important;
+  line-height: 1.22 !important;
+  font-weight: 600 !important;
+}
+.ws-faculty-team-mobile .ws-faculty-call-btn,
+.ws-faculty-team-section .ws-faculty-call-btn {
+  flex: none !important;
+  margin: 0 0 0 auto !important;
+  padding: 3px 9px !important;
+  font-size: 10px !important;
+}
+.ws-faculty-team-section .ws-team-list-wrap {
+  gap: 8px !important;
+  padding: 1px 2px !important;
+}
+html.ws-resident-landscape .ws-faculty-team-section .ws-team-person {
+  flex: 1 1 180px !important;
+  min-width: 160px !important;
+  max-width: 260px !important;
 }
 </style>
 </body>
