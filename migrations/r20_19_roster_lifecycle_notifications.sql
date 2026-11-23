@@ -463,6 +463,9 @@ BEGIN
         v_role IN ('consultant','admin')
         OR e.recipient_scope='active_team'
         OR (e.event_type='bdft' AND v_role IN ('resident','admin','sr'))
+        -- Roster notifications are role-filtered above; include them in the
+        -- inbox even when the user has no push-device delivery row.
+        OR e.recipient_scope IN ('roster_residents','roster_consultants')
         OR EXISTS (
           SELECT 1 FROM public.notification_deliveries d
           WHERE d.notification_id=e.id AND d.resident_id=v_resident_id
