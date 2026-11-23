@@ -10188,13 +10188,15 @@ async function oaSaveUser(old){
   const args={p_display:display,p_password:pw,p_role:role,p_email:email,p_designation:designation,p_short:short};
   if(yearWrap&&!yearWrap.hidden)args.p_year=document.getElementById("ouYear").value;
   const call=payload=>old?oaRpc("office_admin_update_user",Object.assign({p_username:old,p_new_username:un,p_active:document.getElementById("ouActive").checked},payload)):oaRpc("office_admin_invite_user",Object.assign({p_username:un},payload));
-  let yearSkipped=false;
-  try{await call(args)}catch(e){
+  let yearSkipped=false,savedUser=null;
+  try{savedUser=await call(args)}catch(e){
     const msg=String((e&&e.message)||e||"");
     if(args.p_year===undefined||!/p_year|schema cache|Could not find the function/i.test(msg))throw e;
-    const retry=Object.assign({},args);delete retry.p_year;await call(retry);yearSkipped=true;
+    const retry=Object.assign({},args);delete retry.p_year;savedUser=await call(retry);yearSkipped=true;
   }
-  await oaRpc("office_admin_set_user_full_name",{p_username:un,p_full_name:fullName});
+  const userId=String(savedUser?.id||"").trim();
+  if(!userId)throw new Error("The server did not return the saved account ID, so the official full name was not saved. Reload and try again.");
+  await oaRpc("office_admin_set_user_full_name_by_id",{p_user_id:userId,p_full_name:fullName});
   if(phone)await oaRpc("office_admin_set_user_phone",{p_username:un,p_phone:phone});
   document.getElementById("oaModal").classList.remove("show");
   toast(yearSkipped?"Saved. Year was not stored because the server update is not applied yet.":"Saved","ok");
