@@ -6187,19 +6187,39 @@ html.ws-session-loading #app .login.ws-session-loader::after {
     box-shadow: none !important;
     cursor: pointer !important;
   }
-  #app.app > .top.resident-home .ws-mobile-home-avatar .home-photo {
+  /* Keep a 1px frame around the image: the old fixed 40px child was being
+     clipped by the 40px bordered button, shifting the visible photo. */
+  #app.app > .top.resident-home .ws-mobile-home-avatar .profile-photo.home-photo {
+    display: grid !important;
+    place-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    font-size: 13px !important;
+    line-height: 1 !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+  }
+  #app.app > .top.resident-home .ws-mobile-home-avatar img.photo-img.home-photo {
     display: block !important;
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    padding: 0 !important;
     border: 0 !important;
     border-radius: 50% !important;
     object-fit: cover !important;
-    overflow: hidden !important;
-    font-size: 13px !important;
-    line-height: 40px !important;
-    text-align: center !important;
+    object-position: 50% 50% !important;
     box-sizing: border-box !important;
   }
   #app.app > .top.resident-home .ws-mobile-home-meta {
@@ -6348,8 +6368,7 @@ html.ws-session-loading #app .login.ws-session-loader::after {
 @media (max-width: 359px) {
   #app.app > .top.resident-home { padding-left: 9px !important; padding-right: 9px !important; column-gap: 6px !important; }
   #app.app > .top.resident-home > .ws-mobile-home-left { grid-template-columns: 36px minmax(0, 1fr) !important; column-gap: 7px !important; }
-  #app.app > .top.resident-home .ws-mobile-home-avatar,
-  #app.app > .top.resident-home .ws-mobile-home-avatar .home-photo { width: 36px !important; height: 36px !important; min-width: 36px !important; min-height: 36px !important; }
+  #app.app > .top.resident-home .ws-mobile-home-avatar { width: 36px !important; height: 36px !important; min-width: 36px !important; min-height: 36px !important; }
   #app.app > .top.resident-home .ws-mobile-home-shift { gap: 5px !important; }
   #app.app > .top.resident-home .ws-mobile-home-shift .ws-home-shift-chip { padding: 0 6px !important; font-size: 9.5px !important; }
   #app.app > .top.resident-home .ws-mobile-home-shift .ws-home-duty-btn { min-width: 61px !important; padding: 0 7px !important; }
@@ -11650,6 +11669,7 @@ function homeView(){
   const dutyOn=!!dutyRecord();
   const tile=(n,l,fn,cls)=>`<button type="button" class="r2-tile ${cls||""}${Number(n)>0&&/today-(observation|admitted|discharged)/.test(cls||"")?" has-dot":""}" onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
   const consHome=isConsultant();
+  const residentPhoneHome=!!(!consHome&&canWrite()&&!isIntern()&&window.matchMedia&&window.matchMedia("(max-width:759px)").matches);
   return `<div class="r2-home">
     
     <div class="r2-wardhead"><h2>${esc((canWrite()&&!consHome&&!isIntern())?((S.unit&&S.unit.name)||"Ward"):"Today")}</h2></div>
@@ -11675,7 +11695,7 @@ function homeView(){
       
       <div class="r2-grid r2-today">${tile(obsN,"Observation","go('observe')","today-observation")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')","today-admitted")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()","today-discharged")}</div>
     </section><div class="r2-side">
-    ${consHome?"":`<section class="r2-duty r2-duty-compact" aria-label="Duty status">
+    ${consHome||residentPhoneHome?"":`<section class="r2-duty r2-duty-compact" aria-label="Duty status">
       <span class="r2-duty-message">${dutyOn?"You are already signed in":"You are not signed in"}</span>${canWrite()?`<button type="button" class="r2-signin" onclick="${dutyOn?"endDuty()":"signDuty()"}">${dutyOn?"Sign out":"Sign in"}</button>`:""}
     </section>`}
     ${r146TodayHtml()}
