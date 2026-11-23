@@ -10515,12 +10515,32 @@ function wardRosterTable(r){
  const tableRows=rows.map((row,rowIndex)=>{
   const values=Array.isArray(row)?row:cols.map(k=>row&&row[k]||"");
   if(!pgt){
-   const cells=facultyColumns.map(column=>{
-    if(column.kind==="dayDate")return '<td><div class="resident-roster-day-date"><strong>'+cell(values[column.dayIndex])+'</strong><span>'+cell(values[column.dateIndex])+'</span></div></td>';
+   const vpCol=facultyColumns.find(col=>oaFacultyDutyColumnKind(cols[col.index])==="vp")||facultyColumns[1];
+   const rpCol=facultyColumns.find(col=>oaFacultyDutyColumnKind(cols[col.index])==="rp")||facultyColumns[2];
+   const cells=facultyColumns.map((column,colIdx)=>{
+    if(column.kind==="dayDate")return '<td class="ws-faculty-cell-date"><div class="resident-roster-day-date"><strong>'+cell(values[column.dayIndex])+'</strong><span>'+cell(values[column.dateIndex])+'</span></div></td>';
     const raw=values[column.index];
-    if(oaFacultyDutyColumnKind(cols[column.index])){
+    const kind=oaFacultyDutyColumnKind(cols[column.index]);
+    if(kind==="vp"||(!kind&&colIdx===1)){
+     const vpDetails=contactFor(rowIndex,column.index,raw);
+     const rpRaw=rpCol?values[rpCol.index]:"";
+     const rpDetails=rpCol?contactFor(rowIndex,rpCol.index,rpRaw):{name:"",phone:""};
+     return '<td class="ws-faculty-cell-duty">'
+      + '<div class="resident-roster-faculty-person ws-person-vp">'
+       + (vpDetails.name?'<strong>'+cell(vpDetails.name)+' <span class="ws-faculty-inline-tag">(VP)</span></strong>':"")
+       + (vpDetails.phone?'<span>Phone: '+cell(vpDetails.phone)+'</span>':"")
+      + '</div>'
+      + (rpDetails&&rpDetails.name ? (
+        '<div class="resident-roster-faculty-person ws-person-rp-inline">'
+         + '<strong>'+cell(rpDetails.name)+' <span class="ws-faculty-inline-tag">(RP)</span></strong>'
+         + (rpDetails.phone?'<span>Phone: '+cell(rpDetails.phone)+'</span>':"")
+        + '</div>'
+      ) : '')
+      + '</td>';
+    }
+    if(kind==="rp"||(!kind&&colIdx===2)){
      const details=contactFor(rowIndex,column.index,raw);
-     return '<td><div class="resident-roster-faculty-person">'+(details.name?'<strong>'+cell(details.name)+'</strong>':"")+(details.phone?'<span>Phone: '+cell(details.phone)+'</span>':"")+'</div></td>';
+     return '<td class="ws-col-rp"><div class="resident-roster-faculty-person">'+(details.name?'<strong>'+cell(details.name)+' <span class="ws-faculty-tag-desktop">(RP)</span></strong>':"")+(details.phone?'<span>Phone: '+cell(details.phone)+'</span>':"")+'</div></td>';
     }
     return '<td>'+cell(raw)+'</td>';
    }).join("");
@@ -10539,8 +10559,17 @@ function wardRosterTable(r){
   }).join("");
   return "<tr>"+cells+"</tr>";
  }).join("");
- const headers=(pgt?cols.map(x=>"<th>"+cell(x)+"</th>"):facultyColumns.map(x=>"<th>"+cell(x.header)+"</th>")).join("");
- const dutyTable='<div class="resident-roster-table-wrap"><table class="resident-roster-table"><thead><tr>'+headers+'</tr></thead><tbody>'+tableRows+"</tbody></table></div>";
+ const headers=(pgt?cols.map(x=>"<th>"+cell(x)+"</th>"):facultyColumns.map((x,colIdx)=>{
+  const kind=oaFacultyDutyColumnKind(cols[x.index]);
+  if(kind==="vp"||(!kind&&colIdx===1)){
+   return '<th class="ws-faculty-th-duty"><span class="ws-header-desktop">'+cell(x.header)+'</span><span class="ws-header-mobile">Faculty on Duty</span></th>';
+  }
+  if(kind==="rp"||(!kind&&colIdx===2)){
+   return '<th class="ws-col-rp">'+cell(x.header)+'</th>';
+  }
+  return '<th class="ws-faculty-th-date">'+cell(x.header)+'</th>';
+ })).join("");
+ const dutyTable='<div class="resident-roster-table-wrap"><table class="resident-roster-table'+(pgt?'':' ws-faculty-roster-table')+'"><thead><tr>'+headers+'</tr></thead><tbody>'+tableRows+"</tbody></table></div>";
  const groups=(pgt&&Array.isArray(c.groups))?c.groups:[];
  const groupRows=Array.from({length:Math.max(0,...groups.map(g=>(g.members||[]).length))},(_,i)=>{
   return "<tr>"+groups.map(g=>{
@@ -11817,6 +11846,7 @@ function homeView(){
       ${off.length?`<p class="r2-none">None: ${off.map(f=>`<button type="button" class="r146-zchip" data-flag="${f.k}" onclick="${f.fn}">${esc(f.l)}</button>`).join(" · ")}</p>`:""}
     </section>
     ${consHome?"":r146ScheduleHtml()}
+    ${hasResidentPermission() && !isConsultant() && !isIntern() && !isOfficeAdmin() ? wsFacultyDutyCard("mobile") : ""}
     <section class="r2-team" aria-label="On-duty team">
       <div class="row"><span class="r2-cardh">On-duty team</span><span class="r2-pill ok">${esc(shiftLabel(sh))} shift</span></div>
       ${isConsultant()?`<p class="r2-sub">Welcome, ${esc((user()||{}).displayName||"Consultant")}</p>${dutyCardBody()}`:(canWrite()?dutyResidentGrid():dutyCardBody())}
@@ -11824,6 +11854,125 @@ function homeView(){
   </div>`;
 }
 
+/* ============================================================
+   TASK 2: Faculty On-Duty Board
+   Shows Faculty / VP and RP on duty today from published faculty roster.
+   Multi-role rule: visible to any account with resident permission
+   (hasResidentPermission()), including Admin + Resident dual-role accounts.
+============================================================ */
+function wsFacultyTodayDuty(){
+  var today = new Date();
+  var todayISO = today.getFullYear() + '-'
+    + String(today.getMonth() + 1).padStart(2, '0') + '-'
+    + String(today.getDate()).padStart(2, '0');
+  var rosters = (typeof wardPublishedRosters !== 'undefined' ? wardPublishedRosters : [])
+    .filter(function(r){ return r.roster_type === 'faculty_weekly' && r.status === 'published'; })
+    .filter(function(r){ return r.period_start <= todayISO && (!r.period_end || r.period_end >= todayISO); })
+    .sort(function(a,b){ return String(b.period_start).localeCompare(String(a.period_start)); });
+  if (!rosters.length) {
+    rosters = (typeof wardPublishedRosters !== 'undefined' ? wardPublishedRosters : [])
+      .filter(function(r){ return r.roster_type === 'faculty_weekly' && r.status === 'published'; })
+      .sort(function(a,b){ return String(b.period_start).localeCompare(String(a.period_start)); });
+  }
+  if (!rosters.length) return null;
+  var r = rosters[0];
+  var c = r.content || {};
+  var cols = Array.isArray(c.columns) ? c.columns : [];
+  var rows = Array.isArray(c.rows) ? c.rows : [];
+  if (!rows.length) return null;
+  var dayIdx = cols.findIndex(function(x){ return /^day/i.test(String(x || '').trim()); });
+  var dateIdx = cols.findIndex(function(x){ return /^date/i.test(String(x || '').trim()); });
+  var vpIdx = cols.findIndex(function(x){ return typeof oaFacultyDutyColumnKind === 'function' ? oaFacultyDutyColumnKind(x) === 'vp' : /faculty|\bvp\b/i.test(String(x || '')); });
+  var rpIdx = cols.findIndex(function(x){ return typeof oaFacultyDutyColumnKind === 'function' ? oaFacultyDutyColumnKind(x) === 'rp' : /resident\s*physician|\brp\b|gdmo/i.test(String(x || '')); });
+  if (vpIdx < 0 && rpIdx < 0) return null;
+  var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var todayDayName = dayNames[today.getDay()];
+  var matchedRow = null;
+  var matchedRowIndex = 0;
+  for (var ri = 0; ri < rows.length; ri++) {
+    var rv = Array.isArray(rows[ri]) ? rows[ri] : cols.map(function(k){ return rows[ri] && rows[ri][k] || ''; });
+    var dVal = dateIdx >= 0 ? rv[dateIdx] : '';
+    var dayVal = dayIdx >= 0 ? rv[dayIdx] : '';
+    var info = typeof wardRosterDateInfo === 'function' ? wardRosterDateInfo(dVal, dayVal, ri) : null;
+    if (info && info.dateKey === todayISO) {
+      matchedRow = rv; matchedRowIndex = ri; break;
+    }
+    if (String(dayVal).trim().toLowerCase() === todayDayName.toLowerCase()) {
+      matchedRow = rv; matchedRowIndex = ri;
+    }
+  }
+  if (!matchedRow) return null;
+  function resolvePerson(colIndex){
+    if (colIndex < 0) return { name: '', phone: '', photo: '' };
+    var raw = String(matchedRow[colIndex] || '').trim();
+    var assignments = Array.isArray(c.facultyAssignments) ? c.facultyAssignments : [];
+    var a = assignments.find(function(x){ return Number(x.row) === matchedRowIndex && Number(x.column) === colIndex; });
+    var id = String(a && (a.consultantId || a.consultant_id) || '');
+    var contacts = c.facultyContacts && typeof c.facultyContacts === 'object' && !Array.isArray(c.facultyContacts) ? c.facultyContacts : {};
+    var saved = id ? contacts[id] || null : null;
+    var name = String((saved && (saved.fullName || saved.full_name || saved.name)) || raw || '').trim();
+    var rawPhone = (saved && (saved.phone || saved.phone_number)) || '';
+    var phone = typeof oaFormatFacultyPhone === 'function' ? oaFormatFacultyPhone(rawPhone) : String(rawPhone);
+    var photo = (saved && saved.photo) || (id && (S.residents || []).find(function(x){ return String(x.id) === id; }))?.photo || '';
+    return { id: id, name: name, phone: phone, photo: photo };
+  }
+  return {
+    vp: resolvePerson(vpIdx),
+    rp: resolvePerson(rpIdx)
+  };
+}
+
+function wsFacultyDutyCard(mode){
+  if (!hasResidentPermission()) return '';
+  if (isConsultant() || isIntern() || isOfficeAdmin()) return '';
+  if (typeof wardRosterLoaded !== 'undefined' && !wardRosterLoaded && typeof wardLoadPublishedRosters === 'function') {
+    if (typeof wardRosterLoading !== 'undefined' && !wardRosterLoading) wardLoadPublishedRosters();
+  }
+  var duty = wsFacultyTodayDuty();
+  var sh = typeof currentShift === 'function' ? currentShift() : 'morning';
+  var shiftBadge = '<span class="r2-pill ok">' + esc(typeof shiftLabel === 'function' ? shiftLabel(sh) + ' shift' : 'On duty') + '</span>';
+  function personTile(person, roleTitle){
+    if (!person || !person.name) return '';
+    var cleanPhone = String(person.phone || '').replace(/[^\d+]/g, '');
+    var callLink = cleanPhone ? '<a href="tel:' + esc(cleanPhone) + '" class="ws-faculty-call-btn" aria-label="Call ' + esc(person.name) + '">Call</a>' : '';
+    var avatar = typeof pgtFace === 'function' ? pgtFace({ name: person.name, photo: person.photo || '' }, 'ws-team-face') : '<div class="ws-team-face" aria-hidden="true">' + esc(person.name.slice(0, 2).toUpperCase()) + '</div>';
+    return '<div class="ws-team-person">'
+      + avatar
+      + '<div class="ws-team-meta">'
+        + '<strong class="ws-team-name">' + esc(person.name) + '</strong>'
+        + '<small class="ws-team-role">' + esc(roleTitle) + '</small>'
+        + callLink
+      + '</div>'
+    + '</div>';
+  }
+  var vpTile = duty ? personTile(duty.vp, 'Faculty / VP') : '';
+  var rpTile = duty ? personTile(duty.rp, 'RP / GDMO') : '';
+  var content = (vpTile || rpTile) ? (vpTile + rpTile) : '<span class="ws-team-empty">No faculty roster assigned for today.</span>';
+  if (mode === 'mobile') {
+    return '<section class="r2-team ws-faculty-team-mobile" aria-label="Faculty on duty" style="margin-bottom:12px;">'
+      + '<div class="row"><span class="r2-cardh">Faculty on duty</span>' + shiftBadge + '</div>'
+      + '<div class="ws-faculty-mobile-grid" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;">'
+        + content
+      + '</div>'
+    + '</section>';
+  }
+  return '<section class="ws-landscape-card ws-team-section ws-faculty-team-section" aria-label="Faculty on duty" style="margin-bottom:12px;">'
+    + '<div class="ws-team-inner">'
+      + '<div class="ws-team-heading-wrap">'
+        + '<span class="ws-team-header-icon" aria-hidden="true">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+        + '</span>'
+        + '<h3 class="ws-team-heading">Faculty on duty</h3>'
+      + '</div>'
+      + '<div class="ws-team-list-wrap">'
+        + content
+      + '</div>'
+      + '<div class="ws-team-action-wrap">'
+        + shiftBadge
+      + '</div>'
+    + '</div>'
+  + '</section>';
+}
 function wsResidentLandscapeHome(){
   // 1. Live Data & Active Patients
   const list=occupied().filter(b=>{const p=patient(b.patientId);return !!(p&&p.status!=="discharged")});
@@ -12096,6 +12245,7 @@ function wsResidentLandscapeHome(){
       </div>
     </div>
 
+    ${hasResidentPermission() && !isConsultant() && !isIntern() && !isOfficeAdmin() ? wsFacultyDutyCard("tablet") : ""}
     <!-- Full-Width Bottom On-Duty Team Section -->
     <section class="ws-landscape-card ws-team-section" aria-label="On-duty team">
       <div class="ws-team-inner">
@@ -32317,6 +32467,165 @@ html.ws-resident-landscape #app.app > .top.resident-home img.photo-img.home-phot
 .resident-roster-table .resident-roster-faculty-person strong{font-weight:750}
 .resident-roster-table .resident-roster-day-date span,
 .resident-roster-table .resident-roster-faculty-person span{font-size:10px;font-weight:500;color:var(--muted);line-height:1.2}
+</style>
+<style id="ward-sync-faculty-roster-and-duty-v1">
+/* ============================================================
+   TASK 1: Faculty Duty Roster — Compact 2-column mobile layout
+============================================================ */
+@media (max-width: 767px) {
+  .ws-faculty-roster-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+  .ws-faculty-roster-table th.ws-col-rp,
+  .ws-faculty-roster-table td.ws-col-rp {
+    display: none !important;
+  }
+  .ws-faculty-roster-table .ws-header-desktop {
+    display: none !important;
+  }
+  .ws-faculty-roster-table .ws-header-mobile {
+    display: inline !important;
+  }
+  .ws-faculty-roster-table .ws-person-rp-inline {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 3px !important;
+    margin-top: 6px !important;
+    padding-top: 6px !important;
+    border-top: 1px dashed var(--line) !important;
+    width: 100% !important;
+  }
+  .ws-faculty-roster-table .ws-faculty-inline-tag {
+    display: inline-block !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: var(--muted) !important;
+    margin-left: 3px !important;
+  }
+  .ws-faculty-roster-table th:first-child,
+  .ws-faculty-roster-table td:first-child {
+    width: 32% !important;
+    max-width: 105px !important;
+    min-width: 75px !important;
+    padding: 8px 6px !important;
+    text-align: center !important;
+  }
+  .ws-faculty-roster-table th:nth-child(2),
+  .ws-faculty-roster-table td:nth-child(2) {
+    width: 68% !important;
+    padding: 8px 10px !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+  .ws-faculty-roster-table td:nth-child(2) .resident-roster-faculty-person {
+    align-items: flex-start !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+  .ws-faculty-roster-table th:nth-child(2) {
+    border-right: 1px solid var(--line) !important;
+    border-top-right-radius: 8px !important;
+  }
+  .ws-faculty-roster-table td:nth-child(2) {
+    border-right: 1px solid var(--line) !important;
+  }
+}
+@media (min-width: 768px) {
+  .ws-faculty-roster-table .ws-header-mobile {
+    display: none !important;
+  }
+  .ws-faculty-roster-table .ws-person-rp-inline {
+    display: none !important;
+  }
+  .ws-faculty-roster-table .ws-faculty-inline-tag {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   TASK 2: Faculty On-Duty Board — Styling & Call Button
+============================================================ */
+.ws-faculty-call-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1px 8px !important;
+  border-radius: 999px !important;
+  font-size: 10px !important;
+  font-weight: 750 !important;
+  text-decoration: none !important;
+  background: color-mix(in srgb, #7835DB 12%, transparent) !important;
+  color: #7835DB !important;
+  border: 1px solid color-mix(in srgb, #7835DB 30%, transparent) !important;
+  margin-top: 3px !important;
+  width: fit-content !important;
+  line-height: 1.5 !important;
+  transition: all 0.15s ease !important;
+}
+.ws-faculty-call-btn:hover {
+  background: #7835DB !important;
+  color: #fff !important;
+}
+.ws-faculty-team-section {
+  border-left: 3px solid #7835DB !important;
+}
+.ws-faculty-team-mobile {
+  border-left: 3px solid #7835DB !important;
+}
+.ws-team-face,
+.ws-faculty-team-mobile .ws-team-face {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  display: grid !important;
+  place-items: center !important;
+  flex: none !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  background: color-mix(in srgb, #7835DB 15%, var(--panel, #ffffff)) !important;
+  color: #7835DB !important;
+  border: 1px solid color-mix(in srgb, #7835DB 25%, transparent) !important;
+}
+img.ws-team-face,
+.ws-faculty-team-mobile img.ws-team-face {
+  display: block !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  overflow: hidden !important;
+}
+.ws-faculty-team-mobile .ws-team-person {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  background: var(--panel2, rgba(120, 53, 219, 0.04)) !important;
+  border: 1px solid var(--line, rgba(120, 53, 219, 0.12)) !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  min-width: 140px !important;
+  flex: 1 1 calc(50% - 14px) !important;
+}
+.ws-faculty-team-mobile .ws-team-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+  min-width: 0 !important;
+}
+.ws-faculty-team-mobile .ws-team-name {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--ink, #1f1f23) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.ws-faculty-team-mobile .ws-team-role {
+  font-size: 11px !important;
+  color: var(--muted, #656565) !important;
+  font-weight: 600 !important;
+}
 </style>
 </body>
 </html>
