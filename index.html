@@ -8138,9 +8138,9 @@ const lastBedObj=pid=>{
 };
 const lastBedNo=pid=>{const b=lastBedObj(pid);return b?b.no:"—"};
 const onBed=b=>b.patientId?patient(b.patientId):null;
-const occupied=()=>S.beds.filter(b=>b.active&&b.patientId).sort((a,b)=>a.no.localeCompare(b.no,undefined,{numeric:true}));
-const dueFor=pid=>S.doses.filter(d=>d.pid===pid&&d.status==="pending"&&(()=>{const o=(S.orders||[]).find(o=>o.id===d.oid);return !(isPrn(o)||hasStat(o))})()); // R1.5: STAT never due (given at entry)
-const openTasks=pid=>S.tasks.filter(t=>t.pid===pid&&t.status!=="done");
+const occupied=()=>(S.beds||[]).filter(b=>b.active&&b.patientId).sort((a,b)=>a.no.localeCompare(b.no,undefined,{numeric:true}));
+const dueFor=pid=>(S.doses||[]).filter(d=>d.pid===pid&&d.status==="pending"&&(()=>{const o=(S.orders||[]).find(o=>o.id===d.oid);return !(isPrn(o)||hasStat(o))})()); // R1.5: STAT never due (given at entry)
+const openTasks=pid=>(S.tasks||[]).filter(t=>t.pid===pid&&t.status!=="done");
 function ev(pid,title,ok,kind,detail,opts){
   const p=pid?patient(pid):null;
   const e={
@@ -10697,26 +10697,27 @@ function shell(inner){
   const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["handover","census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile","pgts"].includes(route.page))?"on":"";
   const bell=`<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications" title="Notifications">${ico("notify")}${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button>`;
   const isMoreWide=wardSyncIsMoreTabletWide()&&(route.page==="more"||nav.tab==="more"||["ward","users","setup","about","connection","profile","pgts","rosters","census","observe","ect","myorders","handover","tasks","activity","broadcast","reports"].includes(route.page));
-  const landscapeMode=(isHome||isMoreWide)&&hasResidentPermission()&&document.documentElement.classList.contains("ws-resident-landscape");
+  const tabletMode=(isHome||isMoreWide)&&hasResidentPermission()&&document.documentElement.classList.contains("ws-resident-tablet");
+  const landscapeMode=tabletMode;
   const landscapeDate=new Date().toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
   const landscapeTimes={morning:"8:00 AM – 2:00 PM",evening:"2:00 PM – 10:00 PM",night:"10:00 PM – 8:00 AM"}[currentShift()]||shiftHours(currentShift());
   const landscapeDuty=!!dutyRecord();
   const landscapeBar="";
-  const landscapeControls=landscapeMode?'<div class="ws-landscape-greeting-actions"><button type="button" class="ws-landscape-top-icon" aria-label="Search patients" title="Search patients" onclick="go(\'patients\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5" stroke-linecap="round"/></svg></button>'+bell+'<button type="button" class="ws-landscape-top-icon" aria-label="Connection status" title="Connection status" onclick="go(\'connection\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5a14 14 0 0 1 18 0M6.5 13a8.5 8.5 0 0 1 11 0M10 16.5a3.2 3.2 0 0 1 4 0"/><path d="M12 20h.01"/></svg></button><div class="ws-landscape-shift"><span class="ws-shift-cal-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><div><b>'+esc(shiftLabel(currentShift()))+' shift</b><small>'+esc(landscapeDate)+' · '+esc(landscapeTimes)+'</small></div></div><button type="button" class="ws-landscape-duty" onclick="'+(landscapeDuty?"endDuty()":"signDuty()")+'">'+(landscapeDuty?"Sign out":"Sign in")+'</button></div>':'';
+  const landscapeControls=tabletMode?'<div class="ws-landscape-greeting-actions"><button type="button" class="ws-landscape-top-icon" aria-label="Search patients" title="Search patients" onclick="go(\'patients\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5" stroke-linecap="round"/></svg></button>'+bell+'<button type="button" class="ws-landscape-top-icon" aria-label="Connection status" title="Connection status" onclick="go(\'connection\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5a14 14 0 0 1 18 0M6.5 13a8.5 8.5 0 0 1 11 0M10 16.5a3.2 3.2 0 0 1 4 0"/><path d="M12 20h.01"/></svg></button><div class="ws-landscape-shift-wrap"><div class="ws-landscape-shift"><span class="ws-shift-cal-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><div><b>'+esc(shiftLabel(currentShift()))+' shift</b><small>'+esc(landscapeDate)+' · '+esc(landscapeTimes)+'</small></div></div></div><button type="button" class="ws-landscape-duty" onclick="'+(landscapeDuty?"endDuty()":"signDuty()")+'">'+(landscapeDuty?"Sign out":"Sign in")+'</button></div>':'';
   const syncText=statusLabel()==="Live"?"Synced":statusLabel();
   const syncMini=`<span class="ws-sync-mini ${statusClass()}" title="${esc(statusLabel())}">${statusDot()}<span>${esc(syncText)}</span></span>`;
   const labels={patients:"Patients",handover:"Handovers",more:"More",tasks:"Task board",census:"Admit patient",observe:"Observation",ect:"ECT",activity:"Activity log",setup:(ui.setupTab==="notify"?"Notifications":ui.setupTab==="theme"?"Appearance":"Settings"),ward:"Ward setup",users:"User management",about:"About",connection:"Connection",broadcast:"Broadcast",myorders:"My orders",bdft:"BDFT",profile:"Account",pgts:"Resident directory",record:"Patient record",dcert:"Discharge certificate",dedit:"Discharge review",pedit:"Edit patient",vchart:"Vitals chart",scale:"Rating scales",srate:"Rating scale",ivitals:"Vitals",ireports:"Reports",ireport:"Report"};
   const contextTitle=labels[route.page]||((S.unit&&S.unit.name)||"Ward Sync");
-  const left=(isHome||(landscapeMode&&isMoreWide))
-    ? '<div class="home-id">'+photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")+'<div class="home-greet"><b>'+esc(greet())+', '+esc(u.displayName||u.username||"User")+'</b>'+homeSyncSlot()+(landscapeMode?'<span class="ws-landscape-dept">Psychiatry Ward</span>':"")+'</div>'+(landscapeMode?"":'<div class="ws-home-shift"><span class="ws-home-shift-chip">'+esc(shiftLabel(currentShift()))+' · '+esc(shiftHours(currentShift()))+'</span>'+(canWrite()?'<button type="button" class="ws-home-duty-btn '+(dutyRecord()?"is-on":"")+'" onclick="'+(dutyRecord()?"endDuty()":"signDuty()")+'">'+(dutyRecord()?"Sign out":"Sign in")+'</button>':"")+'</div>')+'</div>'
+  const left=(isHome||(tabletMode&&isMoreWide))
+    ? '<div class="ws-header-left"><div class="home-id">'+photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")+'<div class="home-greet"><b>'+esc(greet())+', '+esc(u.displayName||u.username||"User")+'</b>'+homeSyncSlot()+(tabletMode?'<span class="ws-landscape-dept">Psychiatry Ward</span>':"")+'</div>'+(tabletMode?"":'<div class="ws-home-shift"><span class="ws-home-shift-chip">'+esc(shiftLabel(currentShift()))+' · '+esc(shiftHours(currentShift()))+'</span>'+(canWrite()?'<button type="button" class="ws-home-duty-btn '+(dutyRecord()?"is-on":"")+'" onclick="'+(dutyRecord()?"endDuty()":"signDuty()")+'">'+(dutyRecord()?"Sign out":"Sign in")+'</button>':"")+'</div>')+'</div>'+(tabletMode?'<div class="ws-portrait-shift-slot"><div class="ws-landscape-shift"><span class="ws-shift-cal-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><div><b>'+esc(shiftLabel(currentShift()))+' shift</b><small>'+esc(landscapeDate)+' · '+esc(landscapeTimes)+'</small></div></div></div>':"")+'</div>'
     : snapP
       ? `<div class="patient-shell-left"><button class="patient-shell-back" type="button" aria-label="Back" title="Back" onclick="back()">${BACK_ICON}</button><div class="patient-shell-meta"><div class="patient-shell-primary"><span class="patient-shell-bed">${esc(snapB&&snapB.no?snapB.no:(snapP.status==="observation"?"OBS":"NO BED"))}</span><strong>${esc(snapP.name||"Patient")}</strong></div><div class="patient-shell-sync">${syncMini}</div></div></div>`
       : `<div class="compact-context"><span class="compact-kicker">WARD SYNC</span><strong>${esc(contextTitle)}</strong></div>`;
   const legacyHomeTools=`<div class="who-tools home-tools"><label class="ws-home-search"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg><input type="search" placeholder="Search patients" aria-label="Search patients" onkeydown="if(event.key===&#39;Enter&#39;){ui.q=this.value;go(&#39;patients&#39;)}" /></label>${bell}<button type="button" class="ws-home-profile" onclick="go(&quot;profile&quot;)" aria-label="Profile">${ico("profile")}</button></div>`;
-  const tools=(isHome||(landscapeMode&&isMoreWide))?(landscapeMode?'<div class="who-tools home-tools ws-landscape-greeting-tools">'+landscapeControls+'</div>':legacyHomeTools):snapP?'<div class="who-tools compact-tools">'+bell+'</div>':'<div class="who-tools compact-tools">'+syncMini+bell+'</div>';
+  const tools=(isHome||(tabletMode&&isMoreWide))?(tabletMode?'<div class="who-tools home-tools ws-landscape-greeting-tools">'+landscapeControls+'</div>':legacyHomeTools):snapP?'<div class="who-tools compact-tools">'+bell+'</div>':'<div class="who-tools compact-tools">'+syncMini+bell+'</div>';
   const sideIcon=name=>["home","patients","handover","more"].includes(name)?navIco(name):ico(name);
   const sideBtn=(page,label,icon,extra)=>`<button type="button" class="${on(page)}" onclick="${extra||`go('${page}')`}" aria-label="${label}">${sideIcon(icon)}<span>${label}</span></button>`;
-  return `${landscapeBar}<aside class="side-nav" aria-label="Ward"><p class="side-brand"><span class="ws-landscape-brand-mark" aria-hidden="true"><svg viewBox="0 0 36 28" fill="none"><path d="M2 14h7l4-10 5 20 5-14 3 4h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><strong>Ward Sync</strong></p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}${landscapeMode?'<div class="ws-landscape-profile">'+photoFace(profileInitials(u.displayName||u.username||""),"ws-landscape-profile-photo") + '<span><strong>'+esc(u.displayName||u.username||"Resident")+'</strong><small>'+esc(u.designation||(canAdmin()&&hasResidentPermission()?"SR · Admin":canAdmin()?"Admin":"PG Resident"))+'</small></span><button type="button" aria-label="Account settings" onclick="go(\'profile\')">'+ico("setup")+'</button></div>':""}</aside><header class="top${(isHome||(landscapeMode&&isMoreWide))?" resident-home":snapP?" patient-top":route.page==="rosters"?" compact-top roster-top":" compact-top"}">${left}${tools}</header>
+  return `${landscapeBar}<aside class="side-nav" aria-label="Ward"><p class="side-brand"><span class="ws-landscape-brand-mark" aria-hidden="true"><svg viewBox="0 0 36 28" fill="none"><path d="M2 14h7l4-10 5 20 5-14 3 4h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><strong>Ward Sync</strong></p>${sideBtn("home","Home","home")}${sideBtn("patients","Patients","patients")}${sideBtn("handover","Handovers","handover")}${sideBtn("ect","ECT","ect")}${sideBtn("bdft","BDFT","bdft","bdftOpenReadOnly()")}${sideBtn("tasks","Tasks","tasks")}${sideBtn("activity","Activity","activity")}${sideBtn("more","More","more")}${tabletMode?'<div class="ws-landscape-profile">'+photoFace(profileInitials(u.displayName||u.username||""),"ws-landscape-profile-photo") + '<span><strong>'+esc(u.displayName||u.username||"Resident")+'</strong><small>'+esc(u.designation||(canAdmin()&&hasResidentPermission()?"SR · Admin":canAdmin()?"Admin":"PG Resident"))+'</small></span><button type="button" aria-label="Account settings" onclick="go(\'profile\')">'+ico("setup")+'</button></div>':""}</aside><header class="top${(isHome||(tabletMode&&isMoreWide))?" resident-home":snapP?" patient-top":route.page==="rosters"?" compact-top roster-top":" compact-top"}">${left}${tools}</header>
     <main class="main${isMoreWide?" ws-more-main":""}">${inner}</main>${r151Dock()}${snapP&&isConsultant()&&snapP.status!=="discharged"?`<button type="button" class="snap-advice-fab" onclick="openAdviceForm('${snapP.id}')" aria-label="Give advice to ${esc(snapP.name)}"><span class="snap-advice-fab-ico">${ico("myorders")}</span><span>Give advice</span></button>`:""}
     <nav class="nav"><div class="nav-in">
       <button class="${on("home")}" onclick="go('home')" aria-label="Home">${navIco('home')}<span class="lbl">Home</span></button>
@@ -11338,7 +11339,7 @@ function dutyResidentGrid(){
 }
 function r146Reasons(p){
   const out=[];if(!p||p.status==="discharged")return out;
-  const pid=p.id,q=r146Q(pid),now=Date.now(),cw=canWrite(),sn=S.snaps[pid]||{};
+  const pid=p.id,q=r146Q(pid),now=Date.now(),cw=canWrite(),sn=(S.snaps&&S.snaps[pid])||{};
   const add=(lvl,kind,txt,act,fn,key)=>out.push({lvl,kind,txt,act,fn,key:key||kind});
   // R1.6 (t411u): no scale timers / "overdue". Only an abnormal latest rating (this admission) of the quick-change scales,
   // with Rate now. The CIWA-Ar ≥15/20 alert is merged into the same row (one CIWA row per patient).
@@ -11871,7 +11872,7 @@ function wsResidentLandscapeHome(){
 }
 const wsOriginalHomeView=homeView;
 homeView=function(){
- if(!document.documentElement.classList.contains("ws-resident-landscape"))return wsOriginalHomeView();
+ if(!document.documentElement.classList.contains("ws-resident-tablet"))return wsOriginalHomeView();
  return wsResidentLandscapeHome();
 };
 // ---------- Patient page ----------
@@ -17746,7 +17747,7 @@ function broadcastView(){
 
 function wardSyncIsMoreTabletWide(){
   try{
-    return !!(window.matchMedia && window.matchMedia("(min-width: 1024px)").matches);
+    return !!(window.matchMedia && window.matchMedia("(min-width: 768px)").matches);
   }catch(e){
     return false;
   }
@@ -27613,28 +27614,36 @@ function dropEmptySections(h){ // R1.3.145: a section header with nothing under 
 function wardSyncApplyResidentTabletMode(){
   try{
     const resident=!!(S.userId&&hasResidentPermission());
-    const tablet=!!(window.matchMedia&&window.matchMedia("(min-width:760px)").matches);
-    document.documentElement.classList.toggle("ws-resident-tablet",resident&&tablet);
-    const land=!!(S.userId&&resident&&window.matchMedia&&window.matchMedia("(min-width:900px) and (orientation:landscape)").matches);
+    const tablet=!!(resident&&window.matchMedia&&window.matchMedia("(min-width:768px)").matches);
+    document.documentElement.classList.toggle("ws-resident-tablet",tablet);
+    const isLand=!!(window.matchMedia&&window.matchMedia("(orientation:landscape)").matches);
+    const land=!!(tablet&&isLand);
+    const port=!!(tablet&&!isLand);
     document.documentElement.classList.toggle("ws-resident-landscape",land);
+    document.documentElement.classList.toggle("ws-resident-portrait",port);
     document.documentElement.classList.toggle("ws-intern",isIntern());
   }catch(e){
     document.documentElement.classList.remove("ws-resident-tablet");
     document.documentElement.classList.remove("ws-resident-landscape");
+    document.documentElement.classList.remove("ws-resident-portrait");
   }
 }
 function wardSyncIsResidentTabletWide(){
-  try{return !!(S.userId&&hasResidentPermission()&&window.matchMedia&&window.matchMedia("(min-width:900px) and (orientation:landscape)").matches)}catch(e){return false}
+  try{return !!(S.userId&&hasResidentPermission()&&window.matchMedia&&window.matchMedia("(min-width:768px)").matches)}catch(e){return false}
 }
 let wsResidentResizeRenderQueued=false;
 function wardSyncRefreshResidentTabletMode(){
   const wasLandscape=document.documentElement.classList.contains("ws-resident-landscape");
+  const wasPortrait=document.documentElement.classList.contains("ws-resident-portrait");
+  const wasTablet=document.documentElement.classList.contains("ws-resident-tablet");
   const wasMoreWide=!!document.documentElement.getAttribute("data-ws-more-wide");
   wardSyncApplyResidentTabletMode();
   const isLandscape=document.documentElement.classList.contains("ws-resident-landscape");
+  const isPortrait=document.documentElement.classList.contains("ws-resident-portrait");
+  const isTablet=document.documentElement.classList.contains("ws-resident-tablet");
   const isMoreWideNow=wardSyncIsMoreTabletWide();
   document.documentElement.setAttribute("data-ws-more-wide", isMoreWideNow ? "1" : "");
-  if((wasLandscape!==isLandscape || wasMoreWide!==isMoreWideNow)&&S.userId&&!wsResidentResizeRenderQueued){
+  if((wasLandscape!==isLandscape || wasPortrait!==isPortrait || wasTablet!==isTablet || wasMoreWide!==isMoreWideNow)&&S.userId&&!wsResidentResizeRenderQueued){
     wsResidentResizeRenderQueued=true;
     requestAnimationFrame(()=>{
       wsResidentResizeRenderQueued=false;
@@ -30549,13 +30558,15 @@ html.ws-intern .snap-cols>.card{
   flex-wrap: wrap !important;
  }
 }
+html.ws-resident-landscape .ws-portrait-shift-slot { display: none !important; }
+html.ws-resident-landscape .ws-landscape-shift-wrap { display: block !important; }
 </style>
 <style id="ward-sync-more-tablet-master-detail">
 /* =========================================================================
    WARD SYNC — MORE PAGE TABLET MASTER–DETAIL REDESIGN
    ========================================================================= */
 
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
  html.ws-resident-landscape #app.app > .main.ws-more-main,
  #app.app > .main.ws-more-main {
   padding: 14px 18px 16px !important;
@@ -30939,6 +30950,970 @@ html.ws-intern .snap-cols>.card{
   height: 14px !important;
   display: block !important;
  }
+}
+</style>
+<style id="ward-sync-tablet-portrait">
+/* =========================================================================
+   WARD SYNC — PORTRAIT TABLET UI ADAPTATION (HOME + MORE)
+   Complete styling for portrait tablets (width >= 768px in portrait)
+   ========================================================================= */
+
+/* 1. Global Shell & Navigation Rail */
+html.ws-resident-portrait .nav {
+  display: none !important;
+}
+
+html.ws-resident-portrait #app.app {
+  --ws-portrait-rail: 72px;
+  box-sizing: border-box !important;
+  width: calc(100vw - var(--ws-portrait-rail)) !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  margin: 0 0 0 var(--ws-portrait-rail) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+html.ws-resident-portrait #app.app > .side-nav {
+  position: fixed !important;
+  inset: 0 auto 0 0 !important;
+  z-index: 110 !important;
+  width: var(--ws-portrait-rail, 72px) !important;
+  height: 100dvh !important;
+  box-sizing: border-box !important;
+  padding: 14px 10px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 8px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  background: var(--panel) !important;
+  border-right: 1px solid var(--line) !important;
+}
+
+html.ws-resident-portrait #app.app > .side-nav .side-brand {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-height: 44px !important;
+  margin: 0 0 8px !important;
+  padding: 0 !important;
+}
+html.ws-resident-portrait #app.app > .side-nav .side-brand strong,
+html.ws-resident-portrait #app.app > .side-nav .side-brand .side-brand-text {
+  display: none !important;
+}
+html.ws-resident-portrait #app.app > .side-nav .side-brand-icon,
+html.ws-resident-portrait .ws-landscape-brand-mark {
+  display: grid !important;
+  place-items: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  flex: none !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #7835DB, #6826D9) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(120, 53, 219, 0.25) !important;
+}
+html.ws-resident-portrait #app.app > .side-nav .side-brand-icon svg,
+html.ws-resident-portrait .ws-landscape-brand-mark svg {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+html.ws-resident-portrait #app.app > .side-nav button,
+html.ws-resident-portrait #app.app > .side-nav .side-nav-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+  color: var(--muted) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+html.ws-resident-portrait #app.app > .side-nav button > span,
+html.ws-resident-portrait #app.app > .side-nav .side-nav-label {
+  display: none !important;
+}
+html.ws-resident-portrait #app.app > .side-nav button > svg,
+html.ws-resident-portrait #app.app > .side-nav button .ico svg {
+  width: 22px !important;
+  height: 22px !important;
+  display: block !important;
+  color: var(--muted) !important;
+  stroke: var(--muted) !important;
+}
+html.ws-resident-portrait #app.app > .side-nav button:hover,
+html.ws-resident-portrait #app.app > .side-nav .side-nav-btn:hover {
+  background: rgba(120, 53, 219, 0.08) !important;
+  color: #7835DB !important;
+}
+html.ws-resident-portrait #app.app > .side-nav button.on,
+html.ws-resident-portrait #app.app > .side-nav .side-nav-btn.on {
+  background: #7835DB !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(120, 53, 219, 0.3) !important;
+}
+html.ws-resident-portrait #app.app > .side-nav button.on > svg,
+html.ws-resident-portrait #app.app > .side-nav button.on .ico svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+html.ws-resident-portrait #app.app > .side-nav .ws-landscape-profile {
+  margin-top: auto !important;
+  padding-top: 12px !important;
+  border-top: 1px solid var(--line) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+html.ws-resident-portrait #app.app > .side-nav .ws-landscape-profile > span:not(.ws-landscape-profile-photo),
+html.ws-resident-portrait #app.app > .side-nav .ws-landscape-profile button {
+  display: none !important;
+}
+html.ws-resident-portrait #app.app > .side-nav .ws-landscape-profile .ws-landscape-profile-photo {
+  display: grid !important;
+  place-items: center !important;
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 12px !important;
+  font-size: 15px !important;
+  font-weight: 750 !important;
+  margin: 0 auto !important;
+  cursor: pointer !important;
+}
+
+/* 2. Top Header */
+html.ws-resident-portrait header.top {
+  position: relative !important;
+  z-index: 90 !important;
+  min-height: 86px !important;
+  height: auto !important;
+  padding: 12px 18px 10px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  background: var(--bg) !important;
+  border-bottom: 1px solid var(--line) !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+}
+html.ws-resident-portrait .ws-header-left {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+html.ws-resident-portrait .home-id {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+html.ws-resident-portrait .home-photo {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 11px !important;
+  font-size: 14px !important;
+  font-weight: 750 !important;
+  flex: none !important;
+}
+html.ws-resident-portrait .home-greet {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+html.ws-resident-portrait .home-greet b {
+  font-size: 15px !important;
+  font-weight: 750 !important;
+  color: var(--ink) !important;
+  line-height: 1.15 !important;
+}
+html.ws-resident-portrait .home-sync {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 11.5px !important;
+  color: #10B981 !important;
+  font-weight: 550 !important;
+  line-height: 1 !important;
+}
+html.ws-resident-portrait .ws-landscape-dept {
+  display: inline-block !important;
+  font-size: 11px !important;
+  color: var(--muted) !important;
+  font-weight: 550 !important;
+  line-height: 1 !important;
+  margin-left: 6px !important;
+}
+
+/* Row 2 Shift chip right under greeting */
+html.ws-resident-portrait .ws-portrait-shift-slot {
+  display: block !important;
+  margin-top: 2px !important;
+}
+html.ws-resident-portrait .ws-landscape-shift-wrap {
+  display: none !important;
+}
+html.ws-resident-portrait .ws-portrait-shift-slot .ws-landscape-shift {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 3px 12px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 10px !important;
+  background: var(--panel) !important;
+  color: var(--ink) !important;
+  white-space: nowrap !important;
+}
+html.ws-resident-portrait .ws-shift-cal-icon {
+  display: grid !important;
+  place-items: center !important;
+  width: 16px !important;
+  height: 16px !important;
+  color: #7835DB !important;
+  flex: none !important;
+}
+html.ws-resident-portrait .ws-shift-cal-icon svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+html.ws-resident-portrait .ws-portrait-shift-slot .ws-landscape-shift > div {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+}
+html.ws-resident-portrait .ws-portrait-shift-slot .ws-landscape-shift b {
+  font-size: 11.5px !important;
+  font-weight: 750 !important;
+  line-height: 1.1 !important;
+}
+html.ws-resident-portrait .ws-portrait-shift-slot .ws-landscape-shift small {
+  font-size: 10px !important;
+  color: var(--muted) !important;
+  line-height: 1.1 !important;
+}
+
+/* Top-right actions in header */
+html.ws-resident-portrait .ws-landscape-greeting-tools {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+  margin-top: 2px !important;
+}
+html.ws-resident-portrait .ws-landscape-greeting-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+html.ws-resident-portrait .ws-landscape-top-icon,
+html.ws-resident-portrait header.top .top-bell {
+  position: relative !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  display: grid !important;
+  place-items: center !important;
+  color: var(--muted) !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+}
+html.ws-resident-portrait .ws-landscape-top-icon svg,
+html.ws-resident-portrait header.top .top-bell svg {
+  width: 17px !important;
+  height: 17px !important;
+}
+html.ws-resident-portrait header.top .top-bell-n {
+  position: absolute !important;
+  top: -3px !important;
+  right: -3px !important;
+  background: #DC6473 !important;
+  color: #fff !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  border-radius: 999px !important;
+  min-width: 17px !important;
+  height: 17px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 4px !important;
+}
+html.ws-resident-portrait .ws-landscape-duty {
+  height: 36px !important;
+  min-width: 78px !important;
+  padding: 0 14px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: #7835DB !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 8px rgba(120, 53, 219, 0.25) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 3. Main Container */
+html.ws-resident-portrait #app.app > .main {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 14px 18px 24px !important;
+  box-sizing: border-box !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* 4. Home Dashboard Layout */
+html.ws-resident-portrait .ws-resident-landscape-home {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html.ws-resident-portrait .ws-landscape-title-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 0 2px !important;
+  margin-bottom: 2px !important;
+}
+html.ws-resident-portrait .ws-landscape-heading {
+  font-size: 24px !important;
+  font-weight: 850 !important;
+  color: var(--ink) !important;
+  letter-spacing: -0.02em !important;
+  margin: 0 !important;
+  line-height: 1.15 !important;
+}
+html.ws-resident-portrait .ws-landscape-subheading {
+  font-size: 12.5px !important;
+  color: var(--muted) !important;
+  margin: 2px 0 0 !important;
+  font-weight: 500 !important;
+}
+html.ws-resident-portrait .ws-landscape-title-wave {
+  max-width: 280px !important;
+  flex: 0 1 280px !important;
+  height: 46px !important;
+  overflow: hidden !important;
+  display: block !important;
+}
+html.ws-resident-portrait .ws-avg-wave {
+  width: 100% !important;
+  height: 46px !important;
+  object-fit: contain !important;
+  object-position: right center !important;
+  filter: hue-rotate(240deg) saturate(1.4) !important;
+  display: block !important;
+}
+
+/* Stack layout: Left Column full width, Right Column full width, Team full width */
+html.ws-resident-portrait .ws-landscape-main-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  width: 100% !important;
+}
+
+/* Ward Overview Card */
+html.ws-resident-portrait .ws-overview-card {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 16px !important;
+  padding: 16px 18px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+}
+html.ws-resident-portrait .ws-overview-top {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+}
+html.ws-resident-portrait .ws-overview-heading {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: var(--ink) !important;
+  margin: 0 !important;
+}
+html.ws-resident-portrait .ws-overview-summary-strip {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+html.ws-resident-portrait .ws-overview-total {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 6px !important;
+  padding: 6px 12px !important;
+  border-radius: 10px !important;
+  background: rgba(120, 53, 219, 0.08) !important;
+  color: #7835DB !important;
+}
+html.ws-resident-portrait .ws-overview-total-val {
+  font-size: 22px !important;
+  font-weight: 850 !important;
+  line-height: 1 !important;
+}
+html.ws-resident-portrait .ws-overview-total-label {
+  font-size: 12px !important;
+  font-weight: 650 !important;
+}
+html.ws-resident-portrait .ws-overview-metric-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 12px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--line) !important;
+  background: var(--bg) !important;
+  cursor: pointer !important;
+  font-size: 12px !important;
+}
+html.ws-resident-portrait .ws-overview-metric-pill b {
+  font-weight: 750 !important;
+  color: var(--ink) !important;
+}
+html.ws-resident-portrait .ws-overview-metric-pill small {
+  color: var(--muted) !important;
+  font-size: 11.5px !important;
+}
+html.ws-resident-portrait .ws-metric-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 999px !important;
+}
+html.ws-resident-portrait .ws-metric-dot.obs { background: #f59e0b !important; }
+html.ws-resident-portrait .ws-metric-dot.adm { background: #3b82f6 !important; }
+html.ws-resident-portrait .ws-metric-dot.dis { background: #64748b !important; }
+
+html.ws-resident-portrait .ws-overview-subhead {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 0 !important;
+  border-top: 1px solid var(--line) !important;
+  border-bottom: 1px solid var(--line) !important;
+  margin-bottom: 12px !important;
+}
+html.ws-resident-portrait .ws-overview-subhead-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+html.ws-resident-portrait .ws-overview-bed-ico {
+  color: #7835DB !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+html.ws-resident-portrait .ws-overview-bed-ico svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+html.ws-resident-portrait .ws-overview-subhead h3 {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: var(--ink) !important;
+  margin: 0 !important;
+}
+
+/* 6 unit cards in 2 columns */
+html.ws-resident-portrait .ws-units-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 12px !important;
+}
+html.ws-resident-portrait .ws-unit-card {
+  background: var(--bg) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+  padding: 10px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  min-height: 80px !important;
+}
+html.ws-resident-portrait .ws-unit-card-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+}
+html.ws-resident-portrait .ws-unit-title-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 13px !important;
+  font-weight: 750 !important;
+  color: var(--ink) !important;
+}
+html.ws-resident-portrait .ws-unit-icon {
+  color: #7835DB !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+html.ws-resident-portrait .ws-unit-count {
+  font-size: 11.5px !important;
+  color: var(--muted) !important;
+  font-weight: 550 !important;
+}
+html.ws-resident-portrait .ws-unit-chips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+html.ws-resident-portrait .ws-unit-empty {
+  font-size: 11.5px !important;
+  font-style: italic !important;
+  color: var(--muted) !important;
+}
+html.ws-resident-portrait .ws-bed-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 4px 10px !important;
+  border-radius: 8px !important;
+  background: rgba(120, 53, 219, 0.08) !important;
+  border: 1px solid rgba(120, 53, 219, 0.22) !important;
+  color: #7835DB !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+}
+html.ws-resident-portrait .ws-bed-chip:hover {
+  background: #7835DB !important;
+  color: #fff !important;
+}
+
+/* Right column supporting panels: 2 columns for BDFT & Flags, Needs you now full width below */
+html.ws-resident-portrait .ws-landscape-right-column {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  grid-template-areas:
+    "bdft flags"
+    "needs needs" !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+html.ws-resident-portrait .ws-panel-bdft {
+  grid-area: bdft !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+html.ws-resident-portrait .ws-panel-flags {
+  grid-area: flags !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+html.ws-resident-portrait .ws-panel-needs {
+  grid-area: needs !important;
+  width: 100% !important;
+}
+
+html.ws-resident-portrait .ws-panel-card {
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 16px !important;
+  padding: 14px 16px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+  box-sizing: border-box !important;
+}
+html.ws-resident-portrait .ws-panel-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  margin-bottom: 10px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid var(--line) !important;
+}
+html.ws-resident-portrait .ws-panel-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-size: 13.5px !important;
+  font-weight: 800 !important;
+  color: var(--ink) !important;
+  margin: 0 !important;
+}
+html.ws-resident-portrait .ws-panel-icon {
+  color: #7835DB !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+html.ws-resident-portrait .ws-panel-icon.needs-icon { color: #DC6473 !important; }
+html.ws-resident-portrait .ws-panel-icon.flags-icon { color: #7835DB !important; }
+html.ws-resident-portrait .ws-panel-link-btn {
+  border: 0 !important;
+  background: transparent !important;
+  color: #7835DB !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  padding: 0 !important;
+}
+html.ws-resident-portrait .ws-panel-badge-count {
+  display: inline-grid !important;
+  place-items: center !important;
+  min-width: 20px !important;
+  height: 20px !important;
+  padding: 0 5px !important;
+  border-radius: 999px !important;
+  font-size: 10.5px !important;
+  font-weight: 850 !important;
+  background: rgba(220, 100, 115, 0.14) !important;
+  color: #DC6473 !important;
+}
+
+/* BDFT Panel */
+html.ws-resident-portrait .ws-bdft-chip-grid {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+html.ws-resident-portrait .ws-bdft-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 26px !important;
+  padding: 0 9px !important;
+  border-radius: 8px !important;
+  background: color-mix(in srgb, #7835DB 9%, var(--panel)) !important;
+  border: 1px solid color-mix(in srgb, #7835DB 20%, var(--line)) !important;
+  color: var(--ink) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+html.ws-resident-portrait .ws-panel-empty-text {
+  font-size: 11.5px !important;
+  color: var(--muted) !important;
+  margin: 3px 0 !important;
+}
+html.ws-resident-portrait .ws-prepare-bdft-link {
+  display: inline-block !important;
+  margin-top: 6px !important;
+  padding: 4px 8px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: color-mix(in srgb, #7835DB 12%, var(--panel)) !important;
+  color: #7835DB !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  cursor: pointer !important;
+}
+
+/* Clinical Flags */
+html.ws-resident-portrait .ws-flags-container {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+html.ws-resident-portrait .ws-flag-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 10px !important;
+  border-radius: 8px !important;
+  font-size: 11.5px !important;
+  font-weight: 750 !important;
+  border: 0 !important;
+  cursor: pointer !important;
+}
+html.ws-resident-portrait .ws-flag-chip b {
+  font-weight: 850 !important;
+}
+html.ws-resident-portrait .ws-flag-chip.amber { background: #FEF3C7 !important; color: #92400E !important; }
+html.ws-resident-portrait .ws-flag-chip.red { background: #FEE2E2 !important; color: #991B1B !important; }
+html.ws-resident-portrait .ws-flag-chip.warm { background: #F1F5F9 !important; color: #334155 !important; }
+html.ws-resident-portrait .ws-flag-chip.blue { background: #DBEAFE !important; color: #1E40AF !important; }
+html.ws-resident-portrait .ws-flag-chip.lavender { background: #EDE9FE !important; color: #5B21B6 !important; }
+
+/* Needs You Now List */
+html.ws-resident-portrait .ws-needs-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+html.ws-resident-portrait .ws-need-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding-top: 7px !important;
+  border-top: 1px solid var(--line) !important;
+}
+html.ws-resident-portrait .ws-need-row:first-child { border-top: 0 !important; padding-top: 0 !important; }
+html.ws-resident-portrait .ws-need-dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  flex: none !important;
+}
+html.ws-resident-portrait .ws-need-dot.red { background: #DC6473 !important; }
+html.ws-resident-portrait .ws-need-dot.amber { background: #E4A54B !important; }
+html.ws-resident-portrait .ws-need-dot.blue { background: #3B82F6 !important; }
+html.ws-resident-portrait .ws-need-info {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  cursor: pointer !important;
+}
+html.ws-resident-portrait .ws-need-headline {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  color: var(--ink) !important;
+  line-height: 1.25 !important;
+}
+html.ws-resident-portrait .ws-need-pill.op {
+  padding: 1px 6px !important;
+  border-radius: 5px !important;
+  background: color-mix(in srgb, #10B981 14%, var(--panel)) !important;
+  color: #047857 !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+}
+html.ws-resident-portrait .ws-need-desc {
+  font-size: 10px !important;
+  color: var(--muted) !important;
+  margin: 1px 0 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+html.ws-resident-portrait .ws-need-act-btn {
+  flex: none !important;
+  min-width: 58px !important;
+  height: 26px !important;
+  padding: 0 9px !important;
+  border-radius: 7px !important;
+  border: 0 !important;
+  font-size: 10.5px !important;
+  font-weight: 750 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+html.ws-resident-portrait .ws-need-act-btn.release {
+  background: #DC6473 !important;
+  color: #fff !important;
+}
+html.ws-resident-portrait .ws-need-act-btn.review {
+  background: #7835DB !important;
+  color: #fff !important;
+}
+
+/* Bottom team section */
+html.ws-resident-portrait .ws-team-section {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 16px !important;
+  padding: 12px 18px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+}
+html.ws-resident-portrait .ws-team-inner {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+}
+html.ws-resident-portrait .ws-team-heading-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: var(--ink) !important;
+  flex: none !important;
+}
+html.ws-resident-portrait .ws-team-header-icon {
+  color: #7835DB !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+html.ws-resident-portrait .ws-team-list-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  flex-wrap: wrap !important;
+  flex: 1 1 auto !important;
+}
+html.ws-resident-portrait .ws-team-person {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+html.ws-resident-portrait .ws-team-avatar {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+}
+html.ws-resident-portrait .ws-team-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+}
+html.ws-resident-portrait .ws-team-name {
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  color: var(--ink) !important;
+  line-height: 1.15 !important;
+}
+html.ws-resident-portrait .ws-team-role {
+  font-size: 10px !important;
+  color: var(--muted) !important;
+  line-height: 1.15 !important;
+}
+html.ws-resident-portrait .ws-team-link {
+  border: 1px solid var(--line) !important;
+  border-radius: 9px !important;
+  background: var(--bg) !important;
+  color: #7835DB !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  padding: 5px 12px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  flex: none !important;
+}
+
+/* 5. More Page Master-Detail for Portrait Tablet */
+html.ws-resident-portrait #app.app > .main.ws-more-main {
+  padding: 14px 18px 16px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: calc(100dvh - 86px) !important;
+  max-height: calc(100dvh - 86px) !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+}
+html.ws-resident-portrait .ws-more-master-detail {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 14px !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+html.ws-resident-portrait .ws-more-menu-pane {
+  flex: 0 0 240px !important;
+  width: 240px !important;
+  min-width: 215px !important;
+  max-width: 260px !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  padding: 14px 10px 20px !important;
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 16px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+}
+@media (max-width: 800px) {
+  html.ws-resident-portrait .ws-more-menu-pane {
+    flex: 0 0 215px !important;
+    width: 215px !important;
+    min-width: 200px !important;
+  }
+}
+html.ws-resident-portrait .ws-more-content-pane {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  padding: 16px 18px 24px !important;
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 16px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Dark mode compatibility */
+html.theme-dark.ws-resident-portrait .ws-overview-total,
+body.theme-dark html.ws-resident-portrait .ws-overview-total {
+  background: rgba(167, 139, 250, 0.16) !important;
+  color: #c4b5fd !important;
+}
+html.theme-dark.ws-resident-portrait .ws-bed-chip,
+body.theme-dark html.ws-resident-portrait .ws-bed-chip {
+  background: rgba(167, 139, 250, 0.14) !important;
+  border-color: rgba(167, 139, 250, 0.28) !important;
+  color: #c4b5fd !important;
+}
+html.theme-dark.ws-resident-portrait .ws-flag-chip.warm,
+body.theme-dark html.ws-resident-portrait .ws-flag-chip.warm {
+  background: #334155 !important;
+  color: #e2e8f0 !important;
 }
 </style>
 </body>
