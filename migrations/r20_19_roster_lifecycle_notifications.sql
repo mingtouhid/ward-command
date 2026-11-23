@@ -100,9 +100,11 @@ BEGIN
       'period_end',p_period_end
     )
   )
-  ON CONFLICT (dedupe_key) DO UPDATE
-    SET id=public.notification_events.id
-  RETURNING id INTO v_notification_id;
+  ON CONFLICT (dedupe_key) DO NOTHING;
+
+  SELECT id INTO v_notification_id
+  FROM public.notification_events
+  WHERE dedupe_key='roster_publish:' || p_roster_id::text;
 
   RETURN v_notification_id;
 END;
