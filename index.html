@@ -32110,6 +32110,42 @@ html.ws-resident-portrait .ws-portrait-shift-slot .ws-landscape-shift {
   min-height: 40px !important;
   height: 40px !important;
 }
+
+/* Portrait unit bed pills must use the same visual treatment as landscape. */
+html.ws-resident-portrait .ws-unit-bed-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 27px !important;
+  padding: 0 10px !important;
+  border-radius: 8px !important;
+  background: #F1EAFB !important;
+  color: #6826D9 !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  border: 1px solid color-mix(in srgb, #7835DB 18%, transparent) !important;
+  cursor: pointer !important;
+  transition: transform .1s, background .15s !important;
+  white-space: nowrap !important;
+}
+html.ws-resident-portrait .ws-unit-bed-chip:hover {
+  background: #E8DDFA !important;
+  transform: translateY(-1px) !important;
+}
+
+/* The landscape-specific rule forced the initials fallback to block layout.
+   Centre text placeholders while retaining centered object-fit for real photos. */
+html.ws-resident-landscape #app.app > .top.resident-home .profile-photo.home-photo {
+  display: grid !important;
+  place-items: center !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+html.ws-resident-landscape #app.app > .top.resident-home img.photo-img.home-photo {
+  display: block !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
 </style>
 </body>
 </html>
