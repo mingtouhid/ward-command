@@ -8435,7 +8435,7 @@ let navDir="fwd";
 let navAnim=false;
 let navScroll={};
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
-const PAGE_TAB={ivitals:"ivitals",ireports:"ireports",ireport:"ireports",home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",dedit:"patients",vchart:"patients",scale:"patients",srate:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more",bdft:"more",profile:"more",pgts:"more"};
+const PAGE_TAB={ivitals:"ivitals",ireports:"ireports",ireport:"ireports",home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",dedit:"patients",vchart:"patients",scale:"patients",srate:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more",bdft:"more",profile:"more",pgts:"more",rosters:"more"};
 function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more"||tab==="ivitals"||tab==="ireports")?tab:"home"} // R1.3.142: ivitals/ireports are intern-only tabs
 function syncRoute(){
   if(nav.stack.length){
@@ -19079,8 +19079,9 @@ function notifDest(raw){
   const rosterVersion=raw.roster_version||raw.rosterVersion||metadata.roster_version||metadata.rosterVersion||null;
   let page=String(raw.destination||raw.page||(parsed&&parsed.page)||"").toLowerCase();
   let routeId=raw.routeId||(parsed&&parsed.id)||null;
-  if(!rosterId&&page==="pgts"&&routeId){rosterId=routeId;routeId=null;}
-  if(type==="roster_publish"||rosterId){page="pgts";routeId=null;}
+  // Legacy roster notifications used the pgts route; resolve them to Duty Rosters.
+  if(!rosterId&&(page==="pgts"||page==="rosters")&&routeId){rosterId=routeId;routeId=null;}
+  if(type==="roster_publish"||rosterId){page="rosters";routeId=null;}
   // BDFT push notifications are for viewing the published distribution.
   // Never route them to the generation/terminal workflow.
   if(type==="bdft"){
@@ -19104,11 +19105,11 @@ function notifRoleDest(dest){
   const page=dest.page;
   const ok=p=>{
     if(isIntern()) return ["home","snap","ivitals","ireports","ireport"].includes(p);
-    if(isConsultant()) return ["home","patients","snap","record","handover","ect","tasks","setup","broadcast","myorders","pgts","more","dcert","activity","about","connection"].includes(p);
+    if(isConsultant()) return ["home","patients","snap","record","handover","ect","tasks","setup","broadcast","myorders","pgts","rosters","more","dcert","activity","about","connection"].includes(p);
     return !!(PAGE_TAB[p]||p==="home");
   };
   if(ok(page)) return dest;
-  if(dest.patientId&&ok("snap")) return Object.assign({}, dest, {page:"snap", routeId:dest.patientId});
+  if(dest.patientId&&!dest.rosterId&&!["bdft","roster_publish"].includes(dest.type)&&ok("snap")) return Object.assign({}, dest, {page:"snap", routeId:dest.patientId});
   return Object.assign({}, dest, {page:isIntern()?"home":"setup", routeId:null, missed:true});
 }
 function notifReady(){
@@ -19144,9 +19145,9 @@ function notifFlush(){
     ui.bdftEditMode=false;
     ui.bdftMode="readonly";
   }
-  if(dest.page==="pgts"&&dest.rosterId){
+  if(dest.page==="rosters"&&dest.rosterId){
     wardRosterSelectedId=String(dest.rosterId);
-    wardRosterViewMode="mine";
+    wardRosterViewMode=dest.rosterType==="faculty_weekly"?"all":"mine";
   }
   if(dest.missed) toast("That notification has no page for this sign-in.","info");
   if(dest.page==="setup") ui.setupTab="notify";
