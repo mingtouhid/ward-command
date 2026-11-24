@@ -19105,6 +19105,7 @@ function notifRoleDest(dest){
   const page=dest.page;
   const ok=p=>{
     if(isIntern()) return ["home","snap","ivitals","ireports","ireport"].includes(p);
+    if(isOfficeAdmin()) return p==="home";
     if(isConsultant()) return ["home","patients","snap","record","handover","ect","tasks","setup","broadcast","myorders","pgts","rosters","more","dcert","activity","about","connection"].includes(p);
     return !!(PAGE_TAB[p]||p==="home");
   };
