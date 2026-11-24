@@ -8434,14 +8434,75 @@ let nav={tab:"home",stack:[]};
 let navDir="fwd";
 let navAnim=false;
 let navScroll={};
+let wardRosterSelectedId=null;
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
-const PAGE_TAB={ivitals:"ivitals",ireports:"ireports",ireport:"ireports",home:"home",patients:"patients",snap:"patients",record:"patients",dcert:"patients",dedit:"patients",vchart:"patients",scale:"patients",srate:"patients",handover:"handover",more:"more",tasks:"more",census:"more",observe:"more",ect:"more",activity:"more",setup:"more",ward:"more",users:"more",about:"more",connection:"more",broadcast:"more",myorders:"more",bdft:"more",profile:"more",pgts:"more",rosters:"more"};
-function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more"||tab==="ivitals"||tab==="ireports")?tab:"home"} // R1.3.142: ivitals/ireports are intern-only tabs
+// One registry is the source of truth for route-to-tab mapping and notification permissions.
+const ROUTE_REGISTRY=Object.freeze({
+  home:{tab:"home",roles:["resident","consultant","intern","office_admin"]},
+  patients:{tab:"patients",roles:["resident","consultant","intern"]},
+  snap:{tab:"patients",roles:["resident","consultant","intern"]},
+  record:{tab:"patients",roles:["resident","consultant"]},
+  pedit:{tab:"patients",roles:["resident"]},
+  dcert:{tab:"patients",roles:["resident","consultant"]},
+  dedit:{tab:"patients",roles:["resident"]},
+  vchart:{tab:"patients",roles:["resident"]},
+  scale:{tab:"patients",roles:["resident"]},
+  srate:{tab:"patients",roles:["resident"]},
+  more:{tab:"more",roles:["resident","consultant"]},
+  handover:{tab:"more",roles:["resident","consultant"]},
+  tasks:{tab:"more",roles:["resident","consultant"]},
+  census:{tab:"more",roles:["resident"]},
+  observe:{tab:"more",roles:["resident"]},
+  ect:{tab:"more",roles:["resident","consultant"]},
+  activity:{tab:"more",roles:["resident","consultant"]},
+  setup:{tab:"more",roles:["resident","consultant"]},
+  ward:{tab:"more",roles:["resident"]},
+  users:{tab:"more",roles:["resident"]},
+  about:{tab:"more",roles:["resident","consultant"]},
+  connection:{tab:"more",roles:["resident","consultant"]},
+  broadcast:{tab:"more",roles:["resident","consultant"]},
+  myorders:{tab:"more",roles:["consultant"]},
+  bdft:{tab:"more",roles:["resident"]},
+  profile:{tab:"more",roles:["resident","consultant"]},
+  pgts:{tab:"more",roles:["resident","consultant"]},
+  rosters:{tab:"more",roles:["resident","consultant"]},
+  theme:{tab:"more",roles:["resident","consultant"]},
+  notify:{tab:"more",roles:["resident","consultant"]},
+  ivitals:{tab:"ivitals",roles:["intern"]},
+  ireports:{tab:"ireports",roles:["intern"]},
+  ireport:{tab:"ireports",roles:["intern"]}
+});
+const PAGE_TAB=Object.freeze(Object.fromEntries(Object.entries(ROUTE_REGISTRY).map(([page,config])=>[page,config.tab])));
+function navRoleKey(){
+  if(typeof isOfficeAdmin==="function"&&isOfficeAdmin())return "office_admin";
+  if(typeof isIntern==="function"&&isIntern())return "intern";
+  if(typeof isConsultant==="function"&&isConsultant())return "consultant";
+  return "resident";
+}
+function navRouteAllowed(page){const spec=ROUTE_REGISTRY[String(page||"")];return !!(spec&&spec.roles.includes(navRoleKey()));}
+function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more"||tab==="ivitals"||tab==="ireports")?tab:"home"} // Keep handover as a legacy root for existing history entries.
+function navStateSnapshot(){return {__wsNav:1,tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))};}
+function navWriteHistory(mode){
+  const snapshot=navStateSnapshot(),current=history.state||{};
+  try{
+    if(mode==="replace"){
+      const state=Object.assign({},current,snapshot);
+      if(state.__wsParent==null)state.__wsParent=!!(current.__wsNav&&current.tab);
+      history.replaceState(state,"",navHash());
+    }else{
+      snapshot.__wsParent=!!(current.__wsNav&&current.tab);
+      history.pushState(snapshot,"",navHash());
+    }
+    return true;
+  }catch(e){return false;}
+}
 function syncRoute(){
   if(nav.stack.length){
     const top=nav.stack[nav.stack.length-1];
     route={page:top.page,id:top.id||null};
   } else route={page:tabRoot(nav.tab),id:null};
+  if(typeof wardRosterSelectedId!=="undefined")wardRosterSelectedId=route.page==="rosters"&&route.id?String(route.id):null;
+  if(route.page==="more")ui.moreSelected=route.id||ui.moreSelected||null;
   return route;
 }
 function navHash(){
@@ -8450,8 +8511,9 @@ function navHash(){
 }
 function applyNavState(st){
   if(!st||!st.tab)return false;
-  nav.tab=st.tab;
-  nav.stack=Array.isArray(st.stack)?st.stack.map(x=>({page:x.page,id:x.id||null})):[]
+  const allowedTabs=["home","patients","handover","more","ivitals","ireports"];
+  nav.tab=allowedTabs.includes(st.tab)?st.tab:"home";
+  nav.stack=Array.isArray(st.stack)?st.stack.filter(x=>x&&ROUTE_REGISTRY[x.page]).map(x=>({page:x.page,id:x.id||null})):[];
   syncRoute();
   return true;
 }
@@ -8509,36 +8571,37 @@ function go(page,id,keepTab){
   if(ui.busy){ui.busy=false;ui.busyLabel="";}
   navDir="fwd";navAnim=true;
   syncRoute();
-  try{history.pushState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(e){}
+  navWriteHistory("push");
   render({force:1,nav:1});
 }
 function back(){
-  if(ui.r16More){r16MoreClose(1);return} // R1.6: Back closes the More drawer first
+  if(ui.r16More){r16MoreClose(1);return} // Close the More drawer before changing pages.
   if(overlayOpen()){dismissOverlay();return}
   snapshotScroll();
   if(nav.stack.length){
+    if(ui.busy){ui.busy=false;ui.busyLabel="";}
+    // Only use browser Back when this entry was pushed from another app route.
+    // Direct/deep-linked entries fall back to the in-app parent stack.
+    if(history.state&&history.state.__wsParent){
+      try{history.back();return}catch(e){}
+    }
     nav.stack=nav.stack.slice(0,-1);
-    if(ui.busy){ui.busy=false;ui.busyLabel="";}
-    navDir="back";navAnim=true;
-    syncRoute();
-    try{history.pushState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(e){}
-    render({force:1,nav:1});
-    return;
-  }
-  if(nav.tab!=="home"){
+  }else if(nav.tab!=="home"){
     nav.tab="home";nav.stack=[];
-    if(ui.busy){ui.busy=false;ui.busyLabel="";}
-    navDir="back";navAnim=true;
-    syncRoute();
-    try{history.pushState({tab:nav.tab,stack:[]},"",navHash())}catch(e){}
-    render({force:1,nav:1});
-  }
+  }else return;
+  if(ui.busy){ui.busy=false;ui.busyLabel="";}
+  navDir="back";navAnim=true;syncRoute();navWriteHistory("replace");
+  render({force:1,nav:1});
 }
 window.addEventListener("popstate",e=>{
-  if(ui.r16More){ui.r16More=null;try{history.pushState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(err){}render();return} // R1.6: system Back closes the More drawer first
+  if(ui.r16More){ui.r16More=null;navWriteHistory("replace");render();return}
   snapshotScroll();
-  if(applyNavState(e.state)){if(ui._sheetLeaving)ui._sheetLeaving=false;clearOverlayState();navDir="back";navAnim=true;render({force:1,nav:1});return}
-  try{history.pushState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(err){}
+  if(!applyNavState(e.state)){
+    // A direct/deep-linked first entry may have no app state behind it.
+    nav.tab="home";nav.stack=[];ui.moreSelected=null;syncRoute();navWriteHistory("replace");
+  }
+  if(ui._sheetLeaving)ui._sheetLeaving=false;
+  clearOverlayState();navDir="back";navAnim=true;render({force:1,nav:1});
 });
 function cloudOn(){return !!(S.supabaseUrl&&S.supabaseAnonKey&&/^https:\/\//i.test(S.supabaseUrl)&&window.supabase)}
 function liveOutboxCount(){return myOutbox().filter(op=>op.status!=="failed").length}
@@ -10415,7 +10478,7 @@ function wardRostersFromCache(){
   }catch(e){}
   return [];
 }
-let wardPublishedRosters=wardRostersFromCache();let wardRosterLoading=false;let wardRosterLoaded=wardPublishedRosters.length>0;let wardRosterError="";let wardRosterSelectedId=null;
+let wardPublishedRosters=wardRostersFromCache();let wardRosterLoading=false;let wardRosterLoaded=wardPublishedRosters.length>0;let wardRosterError="";
 async function wardLoadPublishedRosters(force){
  if(wardRosterLoading && !force)return;
  if(!sb||!sessionTok)return;
@@ -10446,7 +10509,12 @@ function wardRosterBadge(r){
 }
 let wardRosterViewMode="mine";
 function wardRosterCenterToday(){requestAnimationFrame(()=>{const row=document.querySelector(".resident-roster-my-duty-day.is-today"),scroller=document.querySelector(".main");if(!row||!scroller)return;const sr=scroller.getBoundingClientRect(),rr=row.getBoundingClientRect();const target=scroller.scrollTop+(rr.top-sr.top)-(scroller.clientHeight-row.offsetHeight)/2;scroller.scrollTo({top:Math.max(0,target),behavior:"smooth"});});}
-function wardOpenRoster(id){wardRosterSelectedId=String(id);wardRosterViewMode="mine";render();wardRosterCenterToday()}
+function wardOpenRoster(id){
+ const rosterId=String(id||"");if(!rosterId)return;
+ wardRosterViewMode="mine";
+ go("rosters",rosterId,true);
+ wardRosterCenterToday();
+}
 function wardSetRosterView(mode){wardRosterViewMode=mode==="all"?"all":"mine";render()}
 
 const WARD_ROSTER_ANNOTATION_COLORS = ["#F2CA66", "#78C69B", "#82AFE8", "#B69BE1", "#E58F98"];
@@ -10680,7 +10748,8 @@ function wardRosterTable(r){
 function wardRostersView(){
  if(!wardRosterLoaded&&!wardRosterLoading)wardLoadPublishedRosters();
  const rows=(wardPublishedRosters||[]).slice().sort((a,b)=>String(b.period_start||"").localeCompare(String(a.period_start||""))||String(a.roster_type).localeCompare(String(b.roster_type)));
- const selected=rows.find(r=>String(r.id)===String(wardRosterSelectedId));
+ const selectedId=route.page==="rosters"?(route.id||wardRosterSelectedId):wardRosterSelectedId;
+ const selected=rows.find(r=>String(r.id)===String(selectedId));
  const header=`<div class="page-head"><h1 class="page-title">Duty rosters</h1><p class="muted">Current schedules and the previous two months</p></div>`;
  if(wardRosterError)return `${header}<div class="card"><p class="err">${esc(wardRosterError)}</p><button class="btn secondary" onclick="wardRosterLoaded=false;wardLoadPublishedRosters()">Retry</button></div>`;
  if(wardRosterLoading&&!wardRosterLoaded)return `${header}<div class="card muted">Loading duty rosters…</div>`;
@@ -10691,7 +10760,7 @@ function wardRostersView(){
   const body=isPgt&&mode==="mine"?wardRosterMyDuties(selected):wardRosterTable(selected);
   if(isPgt&&mode==="mine")requestAnimationFrame(()=>{const todayRow=document.querySelector(".resident-roster-my-duty-day.is-today");if(todayRow)todayRow.scrollIntoView({block:"center",behavior:"auto"});});
   return '<div class="resident-roster-detail-page"><div class="resident-roster-detail-head">'
-   + '<div class="resident-roster-detail-top"><button class="btn ghost sm" onclick="wardRosterSelectedId=null;wardRosterViewMode=\'mine\';render()">← All rosters</button>'
+   + '<div class="resident-roster-detail-top"><button class="btn ghost sm" onclick="back()">← All rosters</button>'
    + '<div class="resident-roster-detail-title"><span class="resident-roster-month">'+esc(wardRosterMonthLabel(selected))+'</span><h2>'+esc(wardRosterKindLabel(selected))+'</h2></div>'
    + wardRosterBadge(selected) + '</div>' + switcher + '</div>' + body + '</div>';
  }
@@ -11040,9 +11109,9 @@ function shell(inner){
   const isHome=route.page==="home";
   const snapP=route.page==="snap"?patient(route.id):null;
   const snapB=snapP?bedObj(snapP.id):null;
-  const on=p=>route.page===p||(p==="patients"&&(route.page==="snap"||route.page==="pedit"||route.page==="dcert"||route.page==="dedit"||route.page==="vchart"||route.page==="scale"||route.page==="srate"))||(p==="more"&&["handover","census","observe","ect","activity","setup","ward","more","users","about","connection","broadcast","myorders","bdft","profile","pgts","rosters"].includes(route.page))?"on":"";
+  const on=p=>(route.page===p||PAGE_TAB[route.page]===p)?"on":"";
   const bell=`<button type="button" class="top-bell" onclick="ui.setupTab='notify';go('setup')" aria-label="Notifications" title="Notifications">${ico("notify")}${((ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length?`<span class="top-bell-n">${(ui.notifyInbox||[]).filter(n=>isLocalToday(n.created_at)).length}</span>`:"")}</button>`;
-  const isMoreWide=wardSyncIsMoreTabletWide()&&(route.page==="more"||nav.tab==="more"||["ward","users","setup","about","connection","profile","pgts","rosters","census","observe","ect","myorders","handover","tasks","activity","broadcast","reports"].includes(route.page));
+  const isMoreWide=wardSyncIsMoreTabletWide()&&(route.page==="more"||nav.tab==="more"||PAGE_TAB[route.page]==="more");
   const tabletMode=(isHome||isMoreWide)&&(hasResidentPermission()||isConsultant())&&document.documentElement.classList.contains("ws-resident-tablet");
   const mobileHomeMode=!!(isHome&&!tabletMode&&window.matchMedia&&window.matchMedia("(max-width: 759px)").matches);
   const landscapeMode=tabletMode;
@@ -11053,7 +11122,7 @@ function shell(inner){
   const landscapeControls=tabletMode?'<div class="ws-landscape-greeting-actions"><button type="button" class="ws-landscape-top-icon" aria-label="Search patients" title="Search patients" onclick="go(\'patients\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5" stroke-linecap="round"/></svg></button>'+bell+'<button type="button" class="ws-landscape-top-icon" aria-label="Connection status" title="Connection status" onclick="go(\'connection\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5a14 14 0 0 1 18 0M6.5 13a8.5 8.5 0 0 1 11 0M10 16.5a3.2 3.2 0 0 1 4 0"/><path d="M12 20h.01"/></svg></button><div class="ws-landscape-shift-wrap"><div class="ws-landscape-shift"><span class="ws-shift-cal-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><div><b>'+esc(shiftLabel(currentShift()))+' shift</b><small>'+esc(landscapeDate)+' · '+esc(landscapeTimes)+'</small></div></div></div>'+(canWrite()?'<button type="button" class="ws-landscape-duty" onclick="'+(landscapeDuty?"endDuty()":"signDuty()")+'">'+(landscapeDuty?"Sign out":"Sign in")+'</button>':'')+'</div>':'';
   const syncText=statusLabel()==="Live"?"Synced":statusLabel();
   const syncMini=`<span class="ws-sync-mini ${statusClass()}" title="${esc(statusLabel())}">${statusDot()}<span>${esc(syncText)}</span></span>`;
-  const labels={patients:"Patients",handover:"Handovers",more:"More",tasks:"Task board",census:"Admit patient",observe:"Observation",ect:"ECT",activity:"Activity log",setup:(ui.setupTab==="notify"?"Notifications":ui.setupTab==="theme"?"Appearance":"Settings"),ward:"Ward setup",users:"User management",about:"About",connection:"Connection",broadcast:"Broadcast",myorders:"My orders",bdft:"BDFT",profile:"Account",pgts:"Resident directory",record:"Patient record",dcert:"Discharge certificate",dedit:"Discharge review",pedit:"Edit patient",vchart:"Vitals chart",scale:"Rating scales",srate:"Rating scale",ivitals:"Vitals",ireports:"Reports",ireport:"Report"};
+  const labels={home:"Home",patients:"Patients",handover:"Handovers",more:"More",tasks:"Task board",census:"Admit patient",observe:"Observation",ect:"ECT",activity:"Activity log",setup:(ui.setupTab==="notify"?"Notifications":ui.setupTab==="theme"?"Appearance":"Settings"),ward:"Ward setup",users:"User management",about:"About",connection:"Connection",broadcast:"Broadcast",myorders:"My orders",bdft:"BDFT",profile:"Account",pgts:"Resident directory",rosters:"Duty Rosters",record:"Patient record",dcert:"Discharge certificate",dedit:"Discharge review",pedit:"Edit patient",vchart:"Vitals chart",scale:"Rating scales",srate:"Rating scale",ivitals:"Vitals",ireports:"Reports",ireport:"Report"};
   const contextTitle=labels[route.page]||((S.unit&&S.unit.name)||"Ward Sync");
   const mobileHomeLeft='<div class="ws-mobile-home-left"><button type="button" class="ws-mobile-home-avatar" onclick="go(\'profile\')" aria-label="Open profile">'+photoFace(profileInitials(u.displayName||u.username||""),"profile-photo home-photo")+'</button><div class="ws-mobile-home-meta"><b>'+esc(greet())+', '+esc(u.displayName||u.username||"User")+'</b>'+homeSyncSlot()+'</div><div class="ws-mobile-home-shift"><span class="ws-home-shift-chip">'+esc(shiftLabel(currentShift()))+' · '+esc(shiftHours(currentShift()))+'</span>'+(canWrite()?'<button type="button" class="ws-home-duty-btn '+(dutyRecord()?"is-on":"")+'" onclick="'+(dutyRecord()?"endDuty()":"signDuty()")+'">'+(dutyRecord()?"Sign out":"Sign in")+'</button>':"")+'</div></div>';
   const mobileHomeTools='<div class="who-tools home-tools ws-mobile-home-tools"><button type="button" class="ws-mobile-search-btn" aria-label="Search patients" title="Search patients" onclick="go(\'patients\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg></button>'+bell+'</div>';
@@ -11752,7 +11821,7 @@ function r146Step(d){
   snapshotScroll();
   const top=nav.stack[nav.stack.length-1];if(top&&top.page==="snap")top.id=pid;else nav.stack.push({page:"snap",id:pid});
   ui.ptabPid=pid;ui.sheet=null;navDir=d>0?"fwd":"back";navAnim=true;syncRoute();
-  try{history.replaceState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(e){}
+  navWriteHistory("replace");
   render({force:1,nav:1});const m=document.querySelector(".main");if(m)m.scrollTop=0;
 }
 function r146Do(fn,id){
@@ -18397,33 +18466,24 @@ const WS_MORE_PAGES = ["more", "ward", "users", "setup", "about", "connection", 
 function wsSelectMoreItem(itemKey, extraFn){
   if(extraFn) extraFn();
   if(!wardSyncIsMoreTabletWide()){
-    if(itemKey==="ward") go('ward');
-    else if(itemKey==="theme" || itemKey==="notify"){ ui.setupTab=itemKey; go('setup'); }
-    else if(itemKey==="reports"){ ui.moreSelected="reports"; go('more'); }
+    if(itemKey==="ward") go("ward");
+    else if(itemKey==="theme"||itemKey==="notify"){ui.setupTab=itemKey;go("setup");}
+    else if(itemKey==="reports"){ui.moreSelected="reports";go("more");}
     else go(itemKey);
     return;
   }
-  ui.moreSelected = itemKey;
-  const m = document.querySelector(".ws-more-menu-pane");
-  if(m) ui._moreMenuScrollTop = m.scrollTop;
-
-  if(itemKey==="theme" || itemKey==="notify"){
-    ui.setupTab = itemKey;
-  }
-  if(itemKey==="census"){
-    ui.ctab = 'in';
-    ui.disListOnly = false;
-  }
-
-  try{
-    const hash = "#/more/" + encodeURIComponent(itemKey);
-    history.replaceState({tab: "more", stack: [{page: "more", id: itemKey}]}, "", hash);
-  }catch(e){}
-
-  nav.tab = "more";
-  route = {page: "more", id: itemKey};
-
-  render({force: true});
+  if(itemKey!=="reports"&&!ROUTE_REGISTRY[itemKey])return;
+  ui.moreSelected=itemKey;
+  const m=document.querySelector(".ws-more-menu-pane");
+  if(m)ui._moreMenuScrollTop=m.scrollTop;
+  if(itemKey==="theme"||itemKey==="notify")ui.setupTab=itemKey;
+  if(itemKey==="census"){ui.ctab="in";ui.disListOnly=false;}
+  // More master-detail selection replaces the current selection; it is not a nested page.
+  nav.tab="more";
+  nav.stack=[{page:"more",id:itemKey}];
+  syncRoute();
+  navWriteHistory("replace");
+  render({force:true});
 }
 
 function wsMoreItemHeader(itemKey){
@@ -19103,15 +19163,11 @@ function notifDest(raw){
 }
 function notifRoleDest(dest){
   const page=dest.page;
-  const ok=p=>{
-    if(isIntern()) return ["home","snap","ivitals","ireports","ireport"].includes(p);
-    if(isOfficeAdmin()) return p==="home";
-    if(isConsultant()) return ["home","patients","snap","record","handover","ect","tasks","setup","broadcast","myorders","pgts","rosters","more","dcert","activity","about","connection"].includes(p);
-    return !!(PAGE_TAB[p]||p==="home");
-  };
+  const ok=p=>navRouteAllowed(p);
   if(ok(page)) return dest;
   if(dest.patientId&&!dest.rosterId&&!["bdft","roster_publish"].includes(dest.type)&&ok("snap")) return Object.assign({}, dest, {page:"snap", routeId:dest.patientId});
-  return Object.assign({}, dest, {page:isIntern()?"home":"setup", routeId:null, missed:true});
+  const fallback=(navRoleKey()==="intern"||navRoleKey()==="office_admin")?"home":"setup";
+  return Object.assign({}, dest, {page:fallback, routeId:null, missed:true});
 }
 function notifReady(){
   if(!S.userId||!sessionTok) return false;
@@ -19146,13 +19202,16 @@ function notifFlush(){
     ui.bdftEditMode=false;
     ui.bdftMode="readonly";
   }
-  if(dest.page==="rosters"&&dest.rosterId){
-    wardRosterSelectedId=String(dest.rosterId);
-    wardRosterViewMode=dest.rosterType==="faculty_weekly"?"all":"mine";
-  }
   if(dest.missed) toast("That notification has no page for this sign-in.","info");
   if(dest.page==="setup") ui.setupTab="notify";
-  go(dest.page, dest.page==="bdft"?null:dest.routeId);
+  if(dest.page==="rosters"){
+    const rosterId=dest.rosterId||dest.routeId;
+    wardRosterViewMode=dest.rosterType==="faculty_weekly"?"all":"mine";
+    go("rosters"); // Establish the published roster library as the parent.
+    if(rosterId)go("rosters",String(rosterId),true);
+    return true;
+  }
+  go(dest.page,dest.page==="bdft"?null:dest.routeId);
   return true;
 }
 function notifCaptureLaunch(){
@@ -26042,7 +26101,7 @@ function srateOpen(pid,sid){if(!patient(pid))return;if(sid&&!scCanRate(sid)){toa
 function scaleOpen(pid,sid){if(!patient(pid)||!SCALE_DEFS[sid])return;if(isIntern()&&!SC_INTERN.has(sid))return;go("scale",pid+"~"+sid,1)}
 function scReplaceRoute(page,id){ // picker → form without leaving the picker in the back stack
   if(nav.stack.length&&nav.stack[nav.stack.length-1].page==="srate")nav.stack[nav.stack.length-1]={page,id};else nav.stack.push({page,id});
-  syncRoute();try{history.replaceState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(e){}
+  syncRoute();navWriteHistory("replace");
   navDir="fwd";navAnim=true;render({force:1,nav:1});
 }
 function scPick(pid,sid){if(!scCanRate(sid))return;SCR=null;scReplaceRoute("srate",pid+"~"+sid)}
@@ -28372,7 +28431,7 @@ function render(opts){
       </section>
       <section class="ws-tablet-patient-detail" aria-label="Selected patient">${snapView()}</section>
     </div>`);
-  }else if(wardSyncIsMoreTabletWide()&&(route.page==="more"||(nav.tab==="more"&&WS_MORE_PAGES.includes(route.page)))){
+  }else if(wardSyncIsMoreTabletWide()&&(route.page==="more"||PAGE_TAB[route.page]==="more"||nav.tab==="more")){
     _html=shell(wsMoreMasterDetailView());
   }else{
     _html=route.page==="vchart"?vchartShell(vchartView()):(route.page==="scale"||route.page==="srate")?scShell(pages[route.page]()):isIntern()?internShell((pages[route.page]||internHomeView)()):shell((pages[route.page]||patientsView)());
@@ -28429,7 +28488,10 @@ function render(opts){
       navAnim=false;
     }
   }
-  try{if(!history.state||history.state.tab!==nav.tab) history.replaceState({tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))},"",navHash())}catch(e){}
+  try{
+    const hs=history.state||{},want=navStateSnapshot();
+    if(hs.tab!==want.tab||JSON.stringify(hs.stack||[])!==JSON.stringify(want.stack)||location.hash!==navHash())navWriteHistory("replace");
+  }catch(e){}
   if(opts.fromInput) restoreTyping(keep);
   try{r151After()}catch(e){} // R1.5.1
   try{paintHomeSync()}catch(e){}
