@@ -1,4 +1,4 @@
-const VERSION = "ward-sync-pwa-r2.0.0-39";
+const VERSION = "ward-sync-pwa-r2.0.0-40";
 // R1.3.134: the on-device scanner engine lives in its own cache, filled and verified by the page; never deleted on update.
 const OCR_CACHE = "ocr-assets-v7";
 const PRECACHE = [
@@ -49,7 +49,7 @@ self.addEventListener("push", (event) => {
   try { data = event.data ? event.data.json() : {}; }
   catch (e) { data = { body: event.data ? event.data.text() : "New Ward Command notification." }; }
   const title = data.title || "Ward Command";
-  const inner = data.data || {};
+  const inner = data.data && typeof data.data === "object" ? data.data : {};
   const priority = String(data.priority || inner.priority || "normal").toLowerCase();
   const providedTag = data.tag || data.dedupe_key || inner.dedupe_key || data.event_id || inner.notification_id;
   const tag = providedTag ? String(providedTag) : ("wc-" + Date.now());
@@ -61,19 +61,58 @@ self.addEventListener("push", (event) => {
     renotify: providedTag ? true : !!data.renotify,
     vibrate: priority === "high" ? [200, 100, 200] : [120],
     requireInteraction: !!data.requireInteraction,
-    data: { url: data.url || "/#/home", ...(data.data || {}) }
+    data: {
+      ...inner,
+      url: notifAbs(data.url || inner.url || "./#/home")
+    }
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
 function notifAbs(url){
-  try { return new URL(url || "/#/home", self.registration.scope).href; }
-  catch (e) { return new URL("/#/home", self.registration.scope).href; }
+  const scope = new URL(self.registration.scope);
+  const fallback = new URL("./#/home", scope);
+  try {
+    const candidate = new URL(url || "./#/home", scope);
+    const scopePath = scope.pathname.endsWith("/") ? scope.pathname : scope.pathname + "/";
+    if (candidate.origin !== scope.origin || !candidate.pathname.startsWith(scopePath)) {
+      return fallback.href;
+    }
+    candidate.username = "";
+    candidate.password = "";
+    return candidate.href;
+  } catch (e) {
+    return fallback.href;
+  }
 }
+
+// The page's existing cold-start parser reads ?wn=... and decodes it once
+// after URLSearchParams has performed its own query-string decoding.
+function notifLaunchUrl(target, payload){
+  try {
+    const launch = new URL(target);
+    launch.searchParams.set("wn", encodeURIComponent(JSON.stringify(payload)));
+    return launch.href;
+  } catch (e) {
+    return target;
+  }
+}
+
+function isWardAppClient(client, scope){
+  if (!client || !client.url) return false;
+  try {
+    const url = new URL(client.url);
+    const scopePath = scope.pathname.endsWith("/") ? scope.pathname : scope.pathname + "/";
+    return url.origin === scope.origin && url.pathname.startsWith(scopePath);
+  } catch (e) {
+    return false;
+  }
+}
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const data = (event.notification && event.notification.data) || {};
-  const target = notifAbs(data.url || "/#/home");
+  const target = notifAbs(data.url || "./#/home");
   const payload = {
     id: data.notification_id || data.event_id || data.id || event.notification.tag || "",
     type: data.event_type || data.category || "",
@@ -86,14 +125,32 @@ self.addEventListener("notificationclick", (event) => {
     metadata: data.metadata || null
   };
   event.waitUntil((async () => {
+    const scope = new URL(self.registration.scope);
     const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    const client = clientsList.find((c) => c && "focus" in c);
-    if (client) {
+    const appClients = clientsList
+      .filter((client) => isWardAppClient(client, scope))
+      .sort((a, b) => {
+        const score = (client) =>
+          (client.focused ? 4 : 0) + (client.visibilityState === "visible" ? 2 : 0);
+        return score(b) - score(a);
+      });
+
+    // Reuse the focused/visible Ward Sync window. Do not navigate it directly:
+    // the app's ward-notif handler persists the payload and applies role-aware routing.
+    for (const client of appClients) {
       try { await client.focus(); } catch (e) {}
-      try { client.postMessage({ type: "ward-notif", payload }); } catch (e) {}
-      return;
+      try {
+        client.postMessage({ type: "ward-notif", payload });
+        return;
+      } catch (e) {
+        // Try another in-scope app window before opening a fresh one.
+      }
     }
-    if (self.clients.openWindow) await self.clients.openWindow(target);
+
+    // A cold launch must carry the same structured data as a live-window click.
+    if (self.clients.openWindow) {
+      await self.clients.openWindow(notifLaunchUrl(target, payload));
+    }
   })());
 });
 
