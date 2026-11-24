@@ -8434,6 +8434,7 @@ let nav={tab:"home",stack:[]};
 let navDir="fwd";
 let navAnim=false;
 let navScroll={};
+let wardRosterSelectedId=null;
 let ui={sheet:null,q:"",htab:"in",mtab:"inbox",aq:"",akind:"all"};
 // One registry is the source of truth for route-to-tab mapping and notification permissions.
 const ROUTE_REGISTRY=Object.freeze({
@@ -8482,10 +8483,16 @@ function navRouteAllowed(page){const spec=ROUTE_REGISTRY[String(page||"")];retur
 function tabRoot(tab){return (tab==="home"||tab==="patients"||tab==="handover"||tab==="more"||tab==="ivitals"||tab==="ireports")?tab:"home"} // Keep handover as a legacy root for existing history entries.
 function navStateSnapshot(){return {__wsNav:1,tab:nav.tab,stack:nav.stack.map(x=>({page:x.page,id:x.id||null}))};}
 function navWriteHistory(mode){
-  const snapshot=navStateSnapshot();
+  const snapshot=navStateSnapshot(),current=history.state||{};
   try{
-    if(mode==="replace")history.replaceState(Object.assign({},history.state||{},snapshot),"",navHash());
-    else history.pushState(snapshot,"",navHash());
+    if(mode==="replace"){
+      const state=Object.assign({},current,snapshot);
+      if(state.__wsParent==null)state.__wsParent=!!(current.__wsNav&&current.tab);
+      history.replaceState(state,"",navHash());
+    }else{
+      snapshot.__wsParent=!!(current.__wsNav&&current.tab);
+      history.pushState(snapshot,"",navHash());
+    }
     return true;
   }catch(e){return false;}
 }
@@ -8573,8 +8580,11 @@ function back(){
   snapshotScroll();
   if(nav.stack.length){
     if(ui.busy){ui.busy=false;ui.busyLabel="";}
-    // Restore the previous navigation snapshot for app, Android and browser Back.
-    try{history.back();return}catch(e){}
+    // Only use browser Back when this entry was pushed from another app route.
+    // Direct/deep-linked entries fall back to the in-app parent stack.
+    if(history.state&&history.state.__wsParent){
+      try{history.back();return}catch(e){}
+    }
     nav.stack=nav.stack.slice(0,-1);
   }else if(nav.tab!=="home"){
     nav.tab="home";nav.stack=[];
@@ -10468,7 +10478,7 @@ function wardRostersFromCache(){
   }catch(e){}
   return [];
 }
-let wardPublishedRosters=wardRostersFromCache();let wardRosterLoading=false;let wardRosterLoaded=wardPublishedRosters.length>0;let wardRosterError="";let wardRosterSelectedId=null;
+let wardPublishedRosters=wardRostersFromCache();let wardRosterLoading=false;let wardRosterLoaded=wardPublishedRosters.length>0;let wardRosterError="";
 async function wardLoadPublishedRosters(force){
  if(wardRosterLoading && !force)return;
  if(!sb||!sessionTok)return;
