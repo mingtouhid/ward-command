@@ -11877,6 +11877,9 @@ function homeView(){
   const hasActiveBdft=!!(activeBdft&&activeBdft.tiers&&
     Object.keys(activeBdft.tiers||{}).length&&
     (activeBdftOffset===0||activeBdftOffset===1));
+  // A board for today does not fulfil the evening resident's task of preparing
+  // tomorrow's distribution. Hide the prompt only when tomorrow is already published.
+  const hasTomorrowBdft=hasActiveBdft&&activeBdftOffset===1;
   const info=bdftGetMyAssignedBeds();
   const offDay=hasActiveBdft?activeBdftOffset:(info?bdftDayOffset(info.dateStr):null);
   const current=hasActiveBdft||(offDay===0||offDay===1);
@@ -11884,7 +11887,7 @@ function homeView(){
   const bedCodes=bedList.map(b=>typeof b==="string"?b:(b&&(b.code||b.no)||"")).filter(Boolean);
   const bdftPill=current?(offDay===0?"Today":"Tomorrow"):"No BDFT today";
   const bdftSub=current?(bedCodes.length?bedCodes.join(" · "):(info&&info.isGeneric?"Bed distribution is ready":"No beds assigned "+(offDay===0?"today":"tomorrow"))):"No bed distribution available";
-  const showBdftPrompt=(canWrite()&&!isIntern()&&!isConsultant()&&isEveningDuty()&&!hasActiveBdft);
+  const showBdftPrompt=(canWrite()&&!isIntern()&&!isConsultant()&&isEveningDuty()&&!hasTomorrowBdft);
   const make="";
   const dutyOn=!!dutyRecord();
   const tile=(n,l,fn,cls)=>`<button type="button" class="r2-tile ${cls||""}${Number(n)>0&&/today-(observation|admitted|discharged)/.test(cls||"")?" has-dot":""}" onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
