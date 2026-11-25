@@ -11887,9 +11887,8 @@ function homeView(){
   const bedCodes=bedList.map(b=>typeof b==="string"?b:(b&&(b.code||b.no)||"")).filter(Boolean);
   const bdftPill=current?(offDay===0?"Today":"Tomorrow"):"No BDFT today";
   const bdftSub=current?(bedCodes.length?bedCodes.join(" · "):(info&&info.isGeneric?"Bed distribution is ready":"No beds assigned "+(offDay===0?"today":"tomorrow"))):"No bed distribution available";
-  // Keep the evening BDFT action available after publication as well; the generate flow
-  // asks for confirmation before replacing an existing current distribution.
-  const showBdftPrompt=(canWrite()&&!isIntern()&&!isConsultant()&&isEveningDuty());
+  // Show the creation prompt only until tomorrow's active distribution exists.
+  const showBdftPrompt=(canWrite()&&!isIntern()&&!isConsultant()&&isEveningDuty()&&!hasTomorrowBdft);
   const make="";
   const dutyOn=!!dutyRecord();
   const tile=(n,l,fn,cls)=>`<button type="button" class="r2-tile ${cls||""}${Number(n)>0&&/today-(observation|admitted|discharged)/.test(cls||"")?" has-dot":""}" onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
@@ -11905,7 +11904,7 @@ function homeView(){
     </div>`}
     ${showBdftPrompt&&!consHome?`<section class="card" data-home="make-bdft" style="margin:8px 0 10px;padding:12px 14px;border-left:3px solid var(--teal);">
       <div class="row" style="align-items:center;justify-content:space-between;gap:12px;">
-        <div style="min-width:0;"><div class="tiny" style="font-weight:750;color:var(--teal);letter-spacing:.04em;text-transform:uppercase;">Evening shift</div><div style="font-size:13px;font-weight:650;margin-top:3px;">Prepare or update tomorrow’s bed distribution</div></div>
+        <div style="min-width:0;"><div class="tiny" style="font-weight:750;color:var(--teal);letter-spacing:.04em;text-transform:uppercase;">Evening shift</div><div style="font-size:13px;font-weight:650;margin-top:3px;">Prepare tomorrow’s bed distribution</div></div>
         <button type="button" class="btn sm" style="flex:none;" onclick="bdftOpenGenerate()">Make BDFT</button>
       </div>
     </section>`:""}
