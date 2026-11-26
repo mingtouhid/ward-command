@@ -2,7 +2,7 @@
 
 **Repository:** `mingtouhid/ward-command`  
 **Branch:** `main`  
-**Snapshot:** 20 November 2026  
+**Snapshot:** 26 November 2026  
 **Application:** Static, single-document progressive web app (PWA)
 
 This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCHITECTURE.md) for runtime, role, backend and deployment behaviour, and [CHANGELOG.md](CHANGELOG.md) for dated product changes.
@@ -30,7 +30,7 @@ This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCH
 | `icons/` | Canonical current PWA icons: regular 192/512, maskable 192/512, Apple touch icon, favicons, notification glyph and badge. |
 | Root `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` and `favicon-32.png` | Compatibility aliases refreshed from the canonical `icons/` assets because the service worker also precaches these root paths. Current HTML and manifest use `icons/`. Other historical root PNGs are not referenced by the current manifest or HTML head. |
 | `ocr/` | Tesseract.js runtime, trained data, workers/wasm, OCR manifest and Ward Sync OCR integration. |
-| `migrations/` | Supabase SQL migrations, rollback scripts and test/precheck files, including the canonical PGT resident-identity migration and verification script. Presence in Git does not establish production apply status. |
+| `migrations/` | Supabase SQL migrations, rollback scripts and test/precheck files, including the canonical PGT resident-identity migration and verification script and the Transfer discharge referral migration. Presence in Git does not establish production apply status. |
 | `supabase/functions/dispatch-bdft/` | BDFT push-dispatch Edge Function, worker module, Deno config and schedule notes. |
 | `docs/superpowers/specs/` | Historical design specifications for R1.7 and R1.8 work. |
 | `docs/superpowers/plans/` | Historical implementation plans associated with those specifications. |
@@ -43,17 +43,17 @@ This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCH
 - Office Admin covers PGT monthly and Faculty weekly roster administration, reusable PGT group sets, account management, and ward configuration. PGT group membership is keyed by `residents.id`; roster snapshots retain that ID alongside historical display name/code. The published staff roster library is read-only.
 - Supabase provides Postgres, RLS and RPCs. Vercel serves the static PWA. The source for BDFT dispatch is in this repository; some other server functions invoked by the client are not included.
 
-## Version identifiers in the 19 November 2026 source snapshot
+## Version identifiers in the 26 November 2026 source snapshot
 
 | Identifier | Value | Meaning |
 | --- | --- | --- |
-| HTML `APP_VERSION` | `R2.0.11` | Build label displayed by the app. |
+| HTML `APP_VERSION` | `R2.0.15` | Build label displayed by the app. |
 | BDFT `BDFT_APP_VERSION` | `7.0` | Inlined BDFT engine label. |
-| Service worker `VERSION` | `ward-sync-pwa-r2.0.0-15` | Cache name; changing it triggers app cache replacement. |
+| Service worker `VERSION` | `ward-sync-pwa-r2.0.0-45` | Cache name; changing it triggers app cache replacement. |
 | OCR cache | `ocr-assets-v7` | Separate OCR asset cache. |
 | Manifest `version` / `build` | `1.3.20` / `R1.3.20 icons` | Legacy custom manifest metadata, not the displayed HTML build. |
 
-These identifiers have different purposes and are not interchangeable. Current CSS/feature comments also include R2.0.10, R2.0.11, R2.0.14 and R2.0.15; those comments do not override the value of `APP_VERSION`.
+These identifiers have different purposes and are not interchangeable. Current CSS/feature comments include earlier R2.0.x feature markers; the HTML `APP_VERSION` is the displayed build identifier.
 
 ## Backend and migration caveats
 

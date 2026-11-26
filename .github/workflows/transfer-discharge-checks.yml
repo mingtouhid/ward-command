@@ -1,0 +1,80 @@
+name: Transfer discharge feature checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "sw.js"
+      - "migrations/r20_20_transfer_discharge_referrals*.sql"
+      - ".github/workflows/transfer-discharge-checks.yml"
+  push:
+    branches: [feat/transfer-discharge-referral]
+    paths:
+      - "index.html"
+      - "sw.js"
+      - "migrations/r20_20_transfer_discharge_referrals*.sql"
+      - ".github/workflows/transfer-discharge-checks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  javascript-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Extract and syntax-check inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class InlineScripts(HTMLParser):
+              def __init__(self):
+                  super().__init__(convert_charrefs=False)
+                  self.current = None
+                  self.blocks = []
+
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() != "script":
+                      return
+                  attrs = dict(attrs)
+                  if attrs.get("src"):
+                      return
+                  kind = attrs.get("type", "").split(";", 1)[0].strip().lower()
+                  if kind not in ("", "text/javascript", "application/javascript", "module"):
+                      return
+                  self.current = []
+
+              def handle_data(self, data):
+                  if self.current is not None:
+                      self.current.append(data)
+
+              def handle_endtag(self, tag):
+                  if tag.lower() == "script" and self.current is not None:
+                      self.blocks.append("".join(self.current))
+                      self.current = None
+
+          html = Path("index.html").read_text(encoding="utf-8")
+          parser = InlineScripts()
+          parser.feed(html)
+          blocks = [block for block in parser.blocks if block.strip()]
+          if not blocks:
+              raise SystemExit("No inline JavaScript blocks found")
+
+          output = Path("/tmp/ward-sync-inline")
+          output.mkdir(parents=True, exist_ok=True)
+          for index, block in enumerate(blocks):
+              (output / f"inline-{index:02d}.js").write_text(block, encoding="utf-8")
+          print(f"Extracted {len(blocks)} inline JavaScript blocks")
+          PY
+          for file in /tmp/ward-sync-inline/*.js; do
+            echo "Checking $file"
+            node --check "$file"
+          done
+      - name: Syntax-check service worker
+        run: node --check sw.js
