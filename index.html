@@ -7818,7 +7818,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R2.0.14";
+const APP_VERSION="R2.0.15";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -16970,7 +16970,6 @@ function dischargeFromCensus(){
   const ectBefore=ect?{status:ect.status,nextAt:ect.nextAt,sessionsDone:ect.sessionsDone}:null;
   p.diagnosis=nextDx;
   if(d.ddxPid===p.id){ p.dx2=String(d.ddx2||"").trim(); p.dx3=String(d.ddx3||"").trim(); try{p.comorb=normComorb(d.dcomorb)||""}catch(e){p.comorb=String(d.dcomorb||"").trim()} }
-  try{localStorage.removeItem(disDraftKey(p.id))}catch(e){}
   p.status="discharged";
   p.dischargedAt=d.ddate?new Date(d.ddate).toISOString():now();
   p.dischargeMode=d.mode||"advice";
@@ -17003,11 +17002,21 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
     const reqArgs=xx&&xx.reqBy&&xx.reqBy.length?{p_discharge_requested_by:xx.reqBy,...(xx.reqName?{p_discharge_requester_name:xx.reqName}:{})}:(xx&&xx.reqName?{p_discharge_requester_name:xx.reqName}:{});
     const msePayload=r17MsePayload(p.id);
     let atomic;
-    if(msePayload){
+    if(p.dischargeMode==="transfer"){
+      atomic=await callAtomicWorkflow("ward_discharge_with_transfer",{...disArgs,...reqArgs,p_discharge_mse:msePayload,p_referral_to:xx&&xx.referralTo,p_referral_reason:xx&&xx.referralReason});
+      if(!atomic.used) throw new Error("Transfer discharge requires the updated server migration. No discharge was saved; keep this draft and apply the migration before retrying.");
+      const r=atomic.data&&atomic.data.referral;
+      if(!r||!r.id||!r.referral_to||!r.reason) throw new Error("Transfer discharge response did not confirm the saved referral. Reload the ward state before retrying.");
+      S.dischargeReferrals=S.dischargeReferrals||[];
+      S.dischargeReferrals=S.dischargeReferrals.filter(x=>!(String(x.pid)===String(r.patient_id)&&Math.abs((Date.parse(x.dischargedAt||"")||0)-(Date.parse(r.discharged_at||"")||0))<=1000));
+      S.dischargeReferrals.unshift({id:r.id,pid:r.patient_id,dischargedAt:r.discharged_at,referralTo:r.referral_to,reason:r.reason,createdBy:r.created_by||null,createdByName:r.created_by_name||"",createdAt:r.created_at});
+      const te=ev(p.id,"Transferred to "+r.referral_to,true,"xfer","Reason for transfer: "+r.reason,{local:true});
+      te.id="wdr-event-"+r.id;te.at=r.created_at||p.dischargedAt;te.by=r.created_by||S.userId;te.actorName=r.created_by_name||te.actorName;
+    }else if(msePayload){
       atomic=await callAtomicWorkflow("ward_discharge_with_review",{...disArgs,...reqArgs,p_discharge_mse:msePayload});
       if(!atomic.used)atomic=await callAtomicWorkflow("ward_discharge_patient",{...disArgs,...reqArgs});
     }else atomic=await callAtomicWorkflow("ward_discharge_patient",{...disArgs,...reqArgs});
-    if(!atomic.used&&Object.keys(reqArgs).length&&sb&&sessionTok){console.warn("Discharge requester not supported by server; retrying without it");atomic=await callAtomicWorkflow("ward_discharge_patient",disArgs)}
+    if(p.dischargeMode!=="transfer"&&!atomic.used&&Object.keys(reqArgs).length&&sb&&sessionTok){console.warn("Discharge requester not supported by server; retrying without it");atomic=await callAtomicWorkflow("ward_discharge_patient",disArgs)}
     if(xx&&atomic.used&&atomic.data&&Array.isArray(atomic.data.discharge_meds)){
       // R1.3.133: a server without the R1.3.133 migration drops "instructions" (taper text); keep ours and say so.
       const lost=(xx.dmeds||[]).some(m=>m&&m.instructions)&&!atomic.data.discharge_meds.some(m=>m&&m.instructions);
@@ -17051,7 +17060,7 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
       S.patientEdits.unshift({id:"pe-"+uid("ed"),pid:p.id,field:"mrd_no",old:null,new:xx.mrd,by:S.userId,at:p.dischargedAt||now(),group:"dis-mrd-"+p.id});
       ev(p.id,"Patient details edited",true,"note","MRD No.: — → "+xx.mrd);
     }
-    ev(p.id,"Discharged · "+labelOf(DISCHARGE_MODES,p.dischargeMode)+" · "+labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome),true,"note");
+    if(p.dischargeMode!=="transfer") ev(p.id,"Discharged · "+labelOf(DISCHARGE_MODES,p.dischargeMode)+" · "+labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome),true,"note");
     try{
       const savedId=atomic.used&&atomic.data&&atomic.data.mse_id;
       if(savedId){
@@ -17067,11 +17076,12 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
         if(me){ev(p.id,"MSE queued · not saved with the discharge yet"+(me.highRisk?" · high risk":""),true,"mse",msePreviewText(me.data||{}).slice(0,160));setTimeout(()=>{try{flushPending()}catch(x){}},0)}
       }
     }catch(me){console.warn("MSE at discharge",me)} // R1.3.124 · R1.7 atomic only when the discharge RPC saved it
+    try{localStorage.removeItem(disDraftKey(p.id))}catch(e){}
     ui.r17Ov=null;
-    if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dreview;delete ui.census.dmrd;delete ui.census.dect;delete ui.census.dreq;delete ui.census.dreqName;}
+    if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dreview;delete ui.census.dmrd;delete ui.census.dect;delete ui.census.dreq;delete ui.census.dreqName;delete ui.census.drefTo;delete ui.census.drefReason;}
     if(ui.obsClose&&ui.obsClose.pid===p.id) ui.obsClose=null;
-    ui.disDone=certEligible(p)?{pid:p.id,at:p.dischargedAt}:null; // R1.3.126: offer the certificate right away
-    flashBtn(".btn.danger.block","ok");toast("Discharged "+p.name,"ok");
+    ui.disDone=(p.dischargeMode==="transfer"||certEligible(p))?{pid:p.id,at:p.dischargedAt}:null; // R2.0.15
+    flashBtn(".btn.danger.block","ok");toast(p.dischargeMode==="transfer"?"Transferred "+p.name+" to "+(xx.referralTo||"the receiving department"):"Discharged "+p.name,"ok");
     ui.disId="";ui.disForm=false;save();ui.ctab="out";render();
   }catch(e){
     if(oldDx!==undefined) p.diagnosis=oldDx;
