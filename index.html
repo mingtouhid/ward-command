@@ -12183,7 +12183,7 @@ function wsFacultyDutyCard(mode){
   var duty = wsFacultyTodayDuty();
   function personTile(person){
     if (!person || !person.name) return '';
-    var cleanPhone = String(person.phone || '').replace(/[^\\d+]/g, '');
+    var cleanPhone = String(person.phone || '').replace(/[^\d+]/g, '');
     var callLink = cleanPhone
       ? '<a href="tel:' + esc(cleanPhone) + '" class="ws-faculty-call-btn" aria-label="Call ' + esc(person.name) + '">Call</a>'
       : '';
