@@ -8673,7 +8673,7 @@ async function cloudReadWardState(){
   if(!data||data.ok!==true) throw new Error("ward_read_ward_state: invalid response");
   return data;
 }
-async async function qDischargeReferrals(){
+async function qDischargeReferrals(){
   if(!sb||!sessionTok) return null;
   try{
     const {data,error}=await sb.rpc("ward_list_discharge_referrals",{p_token:sessionTok});
@@ -8681,7 +8681,7 @@ async async function qDischargeReferrals(){
     return data&&Array.isArray(data.referrals)?data.referrals:null;
   }catch(e){console.warn("Transfer referral list unavailable",e);return null;}
 }
-function qCriticalStatusUpdates(){
+async function qCriticalStatusUpdates(){
   if(!sb||!sessionTok) return [];
   const {data,error}=await sb.rpc("ward_list_critical_status_updates",{
     p_session_token:sessionTok
