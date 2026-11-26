@@ -10,7 +10,7 @@ begin;
 
 create table if not exists public.ward_discharge_referrals (
   id text primary key,
-  patient_id text not null references public.patients(id) on delete cascade,
+  patient_id text not null references public.patients(id),
   discharged_at timestamptz not null,
   referral_to text not null,
   reason text not null,
