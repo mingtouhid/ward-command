@@ -2,7 +2,7 @@
 
 **Repository:** `mingtouhid/ward-command`  
 **Branch:** `main`  
-**Snapshot:** 20 November 2026  
+**Snapshot:** 26 November 2026  
 **Application:** Static, single-document progressive web app (PWA)
 
 This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCHITECTURE.md) for runtime, role, backend and deployment behaviour, and [CHANGELOG.md](CHANGELOG.md) for dated product changes.
