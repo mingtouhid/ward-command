@@ -1,3 +1,16 @@
+## 2026-11-26 — Transfer discharge referral workflow
+
+### Added
+- Transfer discharge now requires a receiving department and a clinical reason for referral. Both fields are retained in discharge drafts.
+- Added episode-keyed `ward_discharge_referrals` records so a later readmission using the same patient ID does not overwrite an earlier transfer referral.
+- Added `ward_discharge_with_transfer`, which wraps the existing R1.7 discharge/MSE review workflow and writes the referral record plus transfer activity event in one database transaction. Transfer requires this RPC; the client never falls back to the legacy offline discharge write.
+- Added the session-protected `ward_list_discharge_referrals` read RPC. Recent discharges, patient activity history and monthly reports can show the transfer destination and reason.
+- Transfer confirmation is a non-printable transfer review; the existing LAMA/Transfer certificate exclusion remains unchanged.
+
+### Release and migration
+- Client version: `R2.0.15`; service-worker cache: `ward-sync-pwa-r2.0.0-45`.
+- Prepared migration: `migrations/r20_20_transfer_discharge_referrals.sql`; rollback and read-only verification scripts are included. The migration must be applied to the production Supabase project before deploying this client. Repository presence does not confirm production application.
+
 ## 2026-11-22 — Final resident landscape home design
 
 ### Added
