@@ -170,7 +170,7 @@ Auth, users, duty, phones: `ward_login`, `ward_invite_user`, `ward_update_user`,
 
 Read models: `ward_read_ward_state`, `ward_intern_read_state`, `ward_list_r17_status`, `ward_list_faculty`, `ward_list_patient_consultants`, `ward_list_ect_plan_meta`.
 
-Census and movement: `ward_admit_patient` (named by the assemble workflow and the undo migration), `ward_confirm_admission`, `ward_undo_admission`, `ward_start_observation`, `ward_convert_observation`, `ward_close_observation`, `ward_close_observation_with_review`, `ward_discharge_patient` (SQL), `ward_discharge_with_review`, `ward_edit_patient`, `ward_edit_discharge`, `ward_discharge_edit_versions`.
+Census and movement: `ward_admit_patient` (named by the assemble workflow and the undo migration), `ward_confirm_admission`, `ward_undo_admission`, `ward_start_observation`, `ward_convert_observation`, `ward_close_observation`, `ward_close_observation_with_review`, `ward_discharge_patient` (SQL), `ward_discharge_with_review`, `ward_discharge_with_transfer`, `ward_list_discharge_referrals`, `ward_edit_patient`, `ward_edit_discharge`, `ward_discharge_edit_versions`.
 
 Clinical writes: the flush list above, plus `ward_edit_med_order`, `ward_edit_advice`, `ward_issue_advice`, `ward_remove_advice`, `ward_ack_advice`, `ward_list_my_advice`, `ward_list_patient_advice`, `ward_create_critical_status_update`, `ward_delete_mse`, `ward_restore_mse`, `ward_delete_lab_report`, `ward_restore_lab_report`, `ward_delete_scale`, `ward_restore_scale`, `ward_take_handover`, `ward_ack_handover`, `ward_update_handover_item`, `ward_update_task`, `ward_assign_intern_task`, `ward_complete_intern_task`, `ward_undo_intern_task`, `ward_link_intern_report_task`, `ward_complete_scheduled_ect`, `ward_undo_scheduled_ect`.
 
