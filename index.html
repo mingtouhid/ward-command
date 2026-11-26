@@ -16961,7 +16961,7 @@ function dischargeFromCensus(){
   const review=String(d.dreview||"").trim().slice(0,200);
   const ectN=(d.treat||[]).includes("ect")?disEctVal(p):null;
   const dmeds=dmCollect(id);
-  const extra={mrd:needMrd?mrd:null,advice,review,dmeds,ectN,referralTo:dmode==="transfer"?String(d.drefTo||"").trim():null,referralReason:dmode==="transfer"?String(d.drefReason||"").trim():null,prev:{mrdNo:p.mrdNo||"",advice:p.dischargeAdvice||"",review:p.dischargeReview||"",ectN:p.dischargeEctSessions==null?null:p.dischargeEctSessions,meds:p.dischargeMeds||[],reqBy:p.dischargeRequestedBy||[],reqName:p.dischargeRequesterName||""},reqBy,reqName};
+  const extra={mrd:needMrd?mrd:null,advice,review,dmeds,ectN,referralTo:dmode==="transfer"?String(d.drefTo||"").trim():null,referralReason:dmode==="transfer"?String(d.drefReason||"").trim():null,prev:{mrdNo:p.mrdNo||"",advice:p.dischargeAdvice||"",review:p.dischargeReview||"",ectN:p.dischargeEctSessions==null?null:p.dischargeEctSessions,meds:p.dischargeMeds||[],reqBy:p.dischargeRequestedBy||[],reqName:p.dischargeRequesterName||"",dx2:p.dx2,dx3:p.dx3,comorb:p.comorb,treatmentMode:p.treatmentMode},reqBy,reqName};
   const oldDx=p.diagnosis||"";
   const nextDx=(d.ddx!=null&&d.ddxPid===p.id?String(d.ddx):oldDx).trim()||oldDx;
   const bed=S.beds.find(b=>b.patientId===id);
@@ -17086,7 +17086,7 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
   }catch(e){
     if(oldDx!==undefined) p.diagnosis=oldDx;
     p.status="admitted"; p.dischargedAt=null; p.dischargeMode=null; p.dischargeOutcome=null; p.treatmentMode=null;
-    if(xx){p.mrdNo=xx.prev.mrdNo;p.dischargeAdvice=xx.prev.advice;p.dischargeReview=xx.prev.review;p.dischargeEctSessions=xx.prev.ectN;p.dischargeMeds=xx.prev.meds;p.dischargeRequestedBy=xx.prev.reqBy;p.dischargeRequesterName=xx.prev.reqName}
+    if(xx){p.mrdNo=xx.prev.mrdNo;p.dischargeAdvice=xx.prev.advice;p.dischargeReview=xx.prev.review;p.dischargeEctSessions=xx.prev.ectN;p.dischargeMeds=xx.prev.meds;p.dischargeRequestedBy=xx.prev.reqBy;p.dischargeRequesterName=xx.prev.reqName;p.dx2=xx.prev.dx2;p.dx3=xx.prev.dx3;p.comorb=xx.prev.comorb;p.treatmentMode=xx.prev.treatmentMode}
     if(bed)bed.patientId=p.id;
     (S.assignments||[]).forEach(a=>{const old=releasedBefore&&releasedBefore.find(x=>x.id===a.id);if(old)a.released=old.released});
     if(ect&&ectBefore){ect.status=ectBefore.status;ect.nextAt=ectBefore.nextAt;ect.sessionsDone=ectBefore.sessionsDone}
