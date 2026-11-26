@@ -8244,6 +8244,11 @@ function qAssign(a){if(!a)return;queue("patient_bed_assignments",{id:a.id,patien
 const user=()=>S.residents.find(r=>r.id===S.userId);
 const rname=id=>(S.residents.find(r=>r.id===id)||{}).displayName||"?";
 const patient=id=>S.patients.find(p=>p.id===id);
+function dischargeReferralOf(p){
+  if(!p||!Array.isArray(S.dischargeReferrals)) return null;
+  const target=Date.parse(p.dischargedAt||"");
+  return S.dischargeReferrals.find(r=>String(r.pid)===String(p.id)&&isFinite(target)&&Math.abs((Date.parse(r.dischargedAt||"")||0)-target)<=1000)||null;
+}
 const onWard=id=>{const p=patient(id);return !!(p&&p.status==="admitted")};
 const underObs=id=>{const p=patient(id);return !!(p&&p.status==="observation")};
 const bedOf=pid=>{const b=S.beds.find(x=>x.patientId===pid);return b?b.no:"—"};
@@ -8668,7 +8673,15 @@ async function cloudReadWardState(){
   if(!data||data.ok!==true) throw new Error("ward_read_ward_state: invalid response");
   return data;
 }
-async function qCriticalStatusUpdates(){
+async async function qDischargeReferrals(){
+  if(!sb||!sessionTok) return null;
+  try{
+    const {data,error}=await sb.rpc("ward_list_discharge_referrals",{p_token:sessionTok});
+    if(error){console.warn("Transfer referral list unavailable",error.message||error);return null;}
+    return data&&Array.isArray(data.referrals)?data.referrals:null;
+  }catch(e){console.warn("Transfer referral list unavailable",e);return null;}
+}
+function qCriticalStatusUpdates(){
   if(!sb||!sessionTok) return [];
   const {data,error}=await sb.rpc("ward_list_critical_status_updates",{
     p_session_token:sessionTok
@@ -8754,8 +8767,8 @@ async function doCloudPull(opts){
   if(isIntern())return internPull(); // R1.3.139
   const unresolvedAtStart=pending.filter(o=>o.status!=="acked"),pullT0=Date.now();
   const dirtySnaps=snapshotDirtyPids();
-  const [wardState,criticalStatusUpdates,adviceRows,facultyRows,consLinks]=await Promise.all([
-    cloudReadWardState(),qCriticalStatusUpdates(),qPatientAdvice(),qFaculty(),qPatientConsultantLinks(),qDutyPhones()
+  const [wardState,criticalStatusUpdates,adviceRows,facultyRows,consLinks,_dutyPhones,referralRows]=await Promise.all([
+    cloudReadWardState(),qCriticalStatusUpdates(),qPatientAdvice(),qFaculty(),qPatientConsultantLinks(),qDutyPhones(),qDischargeReferrals()
   ]);
   if(!isIntern()) wardLoadPublishedRosters(true).catch(()=>{});
   // R1.3.141 SYNC: keep everything that was unsent when the read started, is unsent now, or was acked during the read
@@ -8832,6 +8845,7 @@ async function doCloudPull(opts){
   if(Array.isArray(wardState.vitals)) vitalsMerge(wardState.vitals); // R1.3.139
   if(Array.isArray(wardState.scales)) scalesMerge(wardState.scales,unresolved); // R1.3.143
   S.patientEdits=(wardState.patient_edits||[]).map(r=>({id:r.id,pid:r.patient_id,field:r.field,old:r.old_value,new:r.new_value,by:r.edited_by,at:r.edited_at,group:r.edit_group})); // R1.3.90
+  if(Array.isArray(referralRows)) S.dischargeReferrals=referralRows.map(r=>({id:r.id,pid:r.patient_id,dischargedAt:r.discharged_at,referralTo:r.referral_to||"",reason:r.reason||"",createdBy:r.created_by||null,createdByName:r.created_by_name||"",createdAt:r.created_at}));
   const _prevDm=new Map((S.obsStays||[]).map(x=>[x.id,x.dischargeMeds]));
   S.obsStays=(wardState.observation_stays||[]).map(r=>({dischargeMeds:Array.isArray(r.discharge_meds)?r.discharge_meds:(_prevDm.get(r.id)||[]),id:r.id,pid:r.patient_id,bedId:r.bed_id,reason:r.reason||"",note:r.note||"",at:r.started_at,by:r.started_by,endedAt:r.ended_at||null,endedBy:r.ended_by||null,outcome:r.outcome||null,referralTo:r.referral_to||""}));
   if(adviceRows&&route&&route.page==="myorders"&&!ui.myOrdersLoading) setTimeout(()=>loadMyOrders().then(render).catch(()=>{}),0);
@@ -18760,7 +18774,7 @@ function reasonLine(p){
   }).filter(Boolean).join("; ");
 }
 function reportHeaders(){
-  return ["S. No.","Hospital No.","Date of admission","Consultant","Patient name","Age","Sex","Address","Phone no.","Source of referral","Reason for referral","Diagnosis","Comorbidities","Mode of treatment","Date of discharge","Mode of discharge","Outcome"];
+  return ["S. No.","Hospital No.","Date of admission","Consultant","Patient name","Age","Sex","Address","Phone no.","Source of referral","Reason for referral","Diagnosis","Comorbidities","Mode of treatment","Date of discharge","Mode of discharge","Transfer to department","Reason for transfer","Outcome"];
 }
 function obsStaysOf(pid){
   return (S.obsStays||[]).filter(s=>s.pid===pid);
@@ -18780,6 +18794,7 @@ function reportAdmitAt(p){
   return p.admittedAt;
 }
 function reportRow(p,i){
+  const transfer=dischargeReferralOf(p);
   return [
     i,
     p.hospitalNo||p.code||"",
@@ -18797,6 +18812,8 @@ function reportRow(p,i){
     treatLabel(p.treatmentMode),
     dmy(p.dischargedAt),
     reportDischargeMode(p),
+    transfer?transfer.referralTo:"",
+    transfer?transfer.reason:"",
     p.dischargedAt?(labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome)||p.dischargeOutcome||""):""
   ];
 }
@@ -18817,7 +18834,7 @@ function downloadSheet(filename,sheets){
     const wb=XLSX.utils.book_new();
     sheets.forEach(([name,aoa])=>{
       const ws=XLSX.utils.aoa_to_sheet(aoa);
-      ws["!cols"]=reportHeaders().map((h,i)=>({wch:i===4||i===3||i===7||i===11||i===12?22:i===8||i===10||i===15?18:14}));
+      ws["!cols"]=reportHeaders().map((h,i)=>({wch:i===4||i===3||i===7||i===11||i===12?22:i===8||i===10||i===15||i===16?18:i===17?32:14}));
       XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31));
     });
     XLSX.writeFile(wb,filename.replace(/\.csv$/,".xlsx"));
