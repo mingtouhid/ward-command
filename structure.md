@@ -30,7 +30,7 @@ This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCH
 | `icons/` | Canonical current PWA icons: regular 192/512, maskable 192/512, Apple touch icon, favicons, notification glyph and badge. |
 | Root `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` and `favicon-32.png` | Compatibility aliases refreshed from the canonical `icons/` assets because the service worker also precaches these root paths. Current HTML and manifest use `icons/`. Other historical root PNGs are not referenced by the current manifest or HTML head. |
 | `ocr/` | Tesseract.js runtime, trained data, workers/wasm, OCR manifest and Ward Sync OCR integration. |
-| `migrations/` | Supabase SQL migrations, rollback scripts and test/precheck files, including the canonical PGT resident-identity migration and verification script. Presence in Git does not establish production apply status. |
+| `migrations/` | Supabase SQL migrations, rollback scripts and test/precheck files, including the canonical PGT resident-identity migration and verification script and the Transfer discharge referral migration. Presence in Git does not establish production apply status. |
 | `supabase/functions/dispatch-bdft/` | BDFT push-dispatch Edge Function, worker module, Deno config and schedule notes. |
 | `docs/superpowers/specs/` | Historical design specifications for R1.7 and R1.8 work. |
 | `docs/superpowers/plans/` | Historical implementation plans associated with those specifications. |
