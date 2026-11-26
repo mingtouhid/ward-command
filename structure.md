@@ -43,7 +43,7 @@ This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCH
 - Office Admin covers PGT monthly and Faculty weekly roster administration, reusable PGT group sets, account management, and ward configuration. PGT group membership is keyed by `residents.id`; roster snapshots retain that ID alongside historical display name/code. The published staff roster library is read-only.
 - Supabase provides Postgres, RLS and RPCs. Vercel serves the static PWA. The source for BDFT dispatch is in this repository; some other server functions invoked by the client are not included.
 
-## Version identifiers in the 19 November 2026 source snapshot
+## Version identifiers in the 26 November 2026 source snapshot
 
 | Identifier | Value | Meaning |
 | --- | --- | --- |
