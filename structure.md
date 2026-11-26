@@ -53,7 +53,7 @@ This is the quick repository map. See [WARD_SYNC_ARCHITECTURE.md](WARD_SYNC_ARCH
 | OCR cache | `ocr-assets-v7` | Separate OCR asset cache. |
 | Manifest `version` / `build` | `1.3.20` / `R1.3.20 icons` | Legacy custom manifest metadata, not the displayed HTML build. |
 
-These identifiers have different purposes and are not interchangeable. Current CSS/feature comments also include R2.0.10, R2.0.11, R2.0.14 and R2.0.15; those comments do not override the value of `APP_VERSION`.
+These identifiers have different purposes and are not interchangeable. Current CSS/feature comments include earlier R2.0.x feature markers; the HTML `APP_VERSION` is the displayed build identifier.
 
 ## Backend and migration caveats
 
