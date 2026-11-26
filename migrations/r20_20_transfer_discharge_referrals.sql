@@ -233,4 +233,6 @@ $fn$;
 revoke all on function public.ward_list_discharge_referrals(uuid) from public;
 grant execute on function public.ward_list_discharge_referrals(uuid) to anon, authenticated, service_role;
 
+notify pgrst, 'reload schema';
+
 commit;
