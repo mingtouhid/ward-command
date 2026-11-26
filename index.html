@@ -16678,8 +16678,8 @@ function censusView(){
     const form=!!(p&&ui.disForm);
     const disSearch=`<input id="disQ" placeholder="Search name, hospital no., diagnosis or bed" value="${esc(ui.disQ||"")}" oninput="ui.disQ=this.value;render({fromInput:1})" style="margin-bottom:10px" enterkeyhint="search" autocomplete="off"/>`;
     const disCard=x=>{
-      const bno=lastBedNo(x.id);
-      return `<div class="card" style="cursor:pointer" onclick="go('record','${x.id}',1)"><b>${esc(x.name)}</b><p class="tiny">${esc(x.hospitalNo||x.code)}${mrdLabel(x)?" · "+esc(mrdLabel(x)):""}${bno&&bno!=="—"?" · Bed "+esc(bno):""}${x.diagnosis?" · "+esc(x.diagnosis):""} · ${labelOf(DISCHARGE_MODES,x.dischargeMode)} · ${labelOf(DISCHARGE_OUTCOMES,x.dischargeOutcome)} · ${x.dischargedAt?fmt(x.dischargedAt):""}</p></div>`;
+      const bno=lastBedNo(x.id), referral=dischargeReferralOf(x);
+      return `<div class="card" style="cursor:pointer" onclick="go('record','${x.id}',1)"><b>${esc(x.name)}</b><p class="tiny">${esc(x.hospitalNo||x.code)}${mrdLabel(x)?" · "+esc(mrdLabel(x)):""}${bno&&bno!=="—"?" · Bed "+esc(bno):""}${x.diagnosis?" · "+esc(x.diagnosis):""} · ${labelOf(DISCHARGE_MODES,x.dischargeMode)} · ${labelOf(DISCHARGE_OUTCOMES,x.dischargeOutcome)} · ${x.dischargedAt?fmt(x.dischargedAt):""}</p>${referral?`<p class="tiny"><b>Transferred to:</b> ${esc(referral.referralTo)} · <b>Reason:</b> ${esc(referral.reason)}</p>`:""}</div>`;
     };
     const disCards=recent.length?recentDischargeGroups(recent).map(g=>`<p class="sec">${esc(g.title)}</p>${g.items.map(disCard).join("")}`).join(""):`<div class="card"><p class="sm">${dq?"No matching discharged patients.":"No recent discharges."}</p></div>`;
     if(ui.disListOnly){
