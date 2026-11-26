@@ -11915,7 +11915,7 @@ function homeView(){
       </div>
       <p class="r2-h r2-h-spacer" aria-hidden="true"></p>
       <div class="r2-grid r2-where">${wards.map(w=>tile(w.n,w.name.charAt(0).toUpperCase()+w.name.slice(1),`openWardSection('${esc(w.id)}')`)).join("")}</div>
-      <div class="r2-medical-strip" aria-hidden="true"><img src="./medical-banner-60s.svg" alt="" width="390" height="65" decoding="async" fetchpriority="high"></div>
+      ${hasResidentPermission()&&!isConsultant()&&!isIntern()&&!isOfficeAdmin()?`<div class="r2-medical-strip" aria-hidden="true"><img src="./medical-banner-50px-v5.svg" alt="" width="390" height="50" decoding="async" fetchpriority="high"></div>`:""}
       
       <div class="r2-grid r2-today">${tile(obsN,"Observation","go('observe')","today-observation")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')","today-admitted")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()","today-discharged")}</div>
     </section><div class="r2-side">
@@ -12382,7 +12382,7 @@ function wsResidentLandscapeHome(){
     : `<div class="ws-team-empty">No team members currently signed in on duty. <button type="button" class="ws-link-btn" onclick="signDuty()">Sign in</button></div>`;
 
   // SVG Waveform Asset
-  const avgWaveSvg='<img class="ws-avg-wave" src="./medical-banner-60s.svg" alt="" width="360" height="46" decoding="async" fetchpriority="high">';
+  const avgWaveSvg='<img class="ws-avg-wave" src="./medical-banner-50px-v5.svg" alt="" width="390" height="50" decoding="async" fetchpriority="high">';
 
   return `<div class="ws-resident-landscape-home">
     <!-- Title Row: Psychiatry Ward + Live ward overview + AVG Animation -->
@@ -28633,8 +28633,8 @@ html[data-theme="ot"] #app.app .r162-nav.r16-nav.pt-nav button:not(:disabled){
 #app.app .r2-medical-strip{
   box-sizing:border-box;
   width:100%;
-  height:65px;
-  max-height:65px;
+  height:50px;
+  max-height:50px;
   margin:2px 0 3px;
   display:flex;
   align-items:center;
@@ -28644,8 +28644,8 @@ html[data-theme="ot"] #app.app .r162-nav.r16-nav.pt-nav button:not(:disabled){
 #app.app .r2-medical-strip img{
   display:block;
   width:100%;
-  height:65px;
-  max-height:65px;
+  height:50px;
+  max-height:50px;
   object-fit:contain;
 }
 #app.app .r2-today{
