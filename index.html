@@ -11580,7 +11580,7 @@ function disDraftSaveNow(){
   censusDraft();
   const id=ui.disId; if(!id) return;
   const d=ui.census||{};
-  const keep={ddx:d.ddx,ddx2:d.ddx2,ddx3:d.ddx3,dcomorb:d.dcomorb,mode:d.mode,outcome:d.outcome,ddate:d.ddate,dadvice:d.dadvice,dreview:d.dreview,treat:d.treat,dmrd:d.dmrd,dnomeds:!!d.dnomeds,dreq:d.dreq,dreqName:d.dreqName};
+  const keep={ddx:d.ddx,ddx2:d.ddx2,ddx3:d.ddx3,dcomorb:d.dcomorb,mode:d.mode,outcome:d.outcome,ddate:d.ddate,dadvice:d.dadvice,dreview:d.dreview,treat:d.treat,dmrd:d.dmrd,dnomeds:!!d.dnomeds,dreq:d.dreq,dreqName:d.dreqName,drefTo:d.drefTo,drefReason:d.drefReason};
   try{localStorage.setItem(disDraftKey(id),JSON.stringify(keep))}catch(e){}
   ui.disPreview=false;
   toast("Draft saved. This patient is still admitted.","ok");
@@ -13118,6 +13118,8 @@ function censusDraft(){
   if(g("dadvice")) ui.census.dadvice=g("dadvice").value;
   if(g("dreview")) ui.census.dreview=g("dreview").value;
   if(g("dnomeds")) ui.census.dnomeds=!!g("dnomeds").checked; // R1.3.133
+  if(g("drefTo")) ui.census.drefTo=g("drefTo").value;
+  if(g("drefReason")) ui.census.drefReason=g("drefReason").value;
   if(g("ddate")&&ui.obsClose&&ui.obsClose.pid===ui.disId) dmDraft();
 }
 function openWardSection(secId){
@@ -13151,6 +13153,7 @@ function openSnapDischargeNow(pid){
     dmrd:"",
     dect:null,
     dreq:[],dreqName:"",
+    drefTo:"",drefReason:"",
     treat:disDefaultTreat(p)
   });
   ui.disDone=null;
@@ -13285,6 +13288,10 @@ function disMissing(p,d){
   if(!isFinite(t)) out.push({id:"ddate",msg:"Enter the date and time of discharge"});
   else if(isFinite(adm)&&t<adm-60000) out.push({id:"ddate",msg:"Discharge date is before the admission date"});
   else if(t>Date.now()+6*3600e3) out.push({id:"ddate",msg:"Discharge date is in the future"});
+  if(mode==="transfer"){
+    if(!String(d.drefTo||"").trim()) out.push({id:"drefTo",msg:"Select the receiving department"});
+    if(!String(d.drefReason||"").trim()) out.push({id:"drefReason",msg:"Enter the reason for transfer"});
+  }
   if(!disCertMode(mode)) return out;
   const dm=ui.obsClose&&ui.obsClose.pid===p.id?ui.obsClose:null;
   if(dm){try{if(document.getElementById("dmAcc"))dmDraft()}catch(e){}}
@@ -13304,6 +13311,8 @@ function disNeedText(p,d){
   if(!p) return "";const L=[];
   if(disNeedsMrd(p)&&!normMrd(d.dmrd)) L.push("M.R.D. No.");
   if((d.mode||"advice")==="dama"&&!disReqNorm(d.dreq,"dama").length) L.push("who requested DAMA");
+  if((d.mode||"advice")==="transfer"&&!String(d.drefTo||"").trim()) L.push("receiving department");
+  if((d.mode||"advice")==="transfer"&&!String(d.drefReason||"").trim()) L.push("reason for transfer");
   let m=[];try{m=disMissing(p,d)}catch(e){}
   const short=x=>/^Add the medications/.test(x.msg)?"medications on discharge":/instruction/.test(x.msg)?"instructions to the patient":/review/.test(x.msg)?"review interval":/date/i.test(x.msg)?"discharge date":x.msg;
   m.forEach(x=>{const s=short(x);if(!L.includes(s))L.push(s)});
@@ -16635,7 +16644,7 @@ function censusView(){
   if(tab==="out"){
     const pid=ui.disId||"";
     const p=pid?patient(pid):null;
-    if(p && d.ddxPid!==p.id){ d.ddx=p.diagnosis||""; d.ddx2=p.dx2||""; d.ddx3=p.dx3||""; d.dcomorb=p.comorb||""; d.ddxPid=p.id; d.dadvice=""; d.dreview=""; d.dnomeds=false; d.dmrd=""; d.dect=null; d.treat=disDefaultTreat(p); disMedsReset(p.id); ui.disDraftAsked=null; }
+    if(p && d.ddxPid!==p.id){ d.ddx=p.diagnosis||""; d.ddx2=p.dx2||""; d.ddx3=p.dx3||""; d.dcomorb=p.comorb||""; d.ddxPid=p.id; d.dadvice=""; d.dreview=""; d.dnomeds=false; d.dmrd=""; d.dect=null; d.drefTo=""; d.drefReason=""; d.treat=disDefaultTreat(p); disMedsReset(p.id); ui.disDraftAsked=null; }
     if(p && ui.disForm && ui.disDraftAsked!==p.id){ ui.disDraftAsked=p.id; ui.disDraftHit=!!disDraftGet(p.id); }
     const needMrd=disNeedsMrd(p), mrdOff=(needMrd&&!normMrd(d.dmrd))||((d.mode||"advice")==="dama"&&!disReqNorm(d.dreq,"dama").length);
     const curDx=d.ddx!=null?d.ddx:(p&&p.diagnosis||"");
@@ -16925,7 +16934,7 @@ function dischargeFromCensus(){
   const review=String(d.dreview||"").trim().slice(0,200);
   const ectN=(d.treat||[]).includes("ect")?disEctVal(p):null;
   const dmeds=dmCollect(id);
-  const extra={mrd:needMrd?mrd:null,advice,review,dmeds,ectN,prev:{mrdNo:p.mrdNo||"",advice:p.dischargeAdvice||"",review:p.dischargeReview||"",ectN:p.dischargeEctSessions==null?null:p.dischargeEctSessions,meds:p.dischargeMeds||[],reqBy:p.dischargeRequestedBy||[],reqName:p.dischargeRequesterName||""},reqBy,reqName};
+  const extra={mrd:needMrd?mrd:null,advice,review,dmeds,ectN,referralTo:dmode==="transfer"?String(d.drefTo||"").trim():null,referralReason:dmode==="transfer"?String(d.drefReason||"").trim():null,prev:{mrdNo:p.mrdNo||"",advice:p.dischargeAdvice||"",review:p.dischargeReview||"",ectN:p.dischargeEctSessions==null?null:p.dischargeEctSessions,meds:p.dischargeMeds||[],reqBy:p.dischargeRequestedBy||[],reqName:p.dischargeRequesterName||""},reqBy,reqName};
   const oldDx=p.diagnosis||"";
   const nextDx=(d.ddx!=null&&d.ddxPid===p.id?String(d.ddx):oldDx).trim()||oldDx;
   const bed=S.beds.find(b=>b.patientId===id);
@@ -19632,10 +19641,10 @@ function patchFrozenSheetPick(id,v){
 function setPick(id,v){
   ui.fields=ui.fields||{};
   ui.fields[id]=v;
-  if(id==="disel"){ui.disId=v;ui.disForm=false;const dp=v?patient(v):null;ui.census=ui.census||{};ui.census.ddx=dp?(dp.diagnosis||""):"";ui.census.ddxPid=v||"";ui.census.dadvice="";ui.census.dreview="";ui.census.dnomeds=false;ui.census.dmrd="";ui.census.dect=null;ui.census.dreq=[];ui.census.dreqName="";ui.disDone=null;ui.census.treat=disDefaultTreat(dp);disMedsReset(v||"")}
+  if(id==="disel"){ui.disId=v;ui.disForm=false;const dp=v?patient(v):null;ui.census=ui.census||{};ui.census.ddx=dp?(dp.diagnosis||""):"";ui.census.ddxPid=v||"";ui.census.dadvice="";ui.census.dreview="";ui.census.dnomeds=false;ui.census.dmrd="";ui.census.dect=null;ui.census.dreq=[];ui.census.dreqName="";ui.census.drefTo="";ui.census.drefReason="";ui.disDone=null;ui.census.treat=disDefaultTreat(dp);disMedsReset(v||"")}
   if(id==="dmode"||id==="dout"||id==="asex"||id==="abed"||id==="acon"||id==="acon2"||id==="hshift"){
     ui.census=ui.census||{};
-    if(id==="dmode"){ui.census.mode=v;if(!disReqMode(v)){ui.census.dreq=[];ui.census.dreqName=""}else ui.census.dreq=disReqNorm(ui.census.dreq,v)} // R1.3.126
+    if(id==="dmode"){ui.census.mode=v;if(!disReqMode(v)){ui.census.dreq=[];ui.census.dreqName=""}else ui.census.dreq=disReqNorm(ui.census.dreq,v);if(v!=="transfer"){ui.census.drefTo="";ui.census.drefReason=""}} // R1.3.126 · R2.0.15
     if(id==="dout") ui.census.outcome=v;
     if(id==="asex") ui.census.sex=v;
     if(id==="acon") ui.census.con=v;
