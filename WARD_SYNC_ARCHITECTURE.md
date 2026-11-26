@@ -156,6 +156,7 @@ A 45 s timer reconnects realtime. A 15 s timer retries due outbox ops. `wardFetc
 | `r161_archive_rerun_request.sql` | Rerun request columns and pg_cron job `ward-archive-rerun` |
 | `r18_bdft.sql` | `residents.bdft_batch`, `bdft_short`, `bdft_order`; `bdft_bed_owners`, `bdft_distributions`, `bdft_rows`. Header says prepared, not applied to production |
 | `r18_1_bdft_resident_self_edit.sql` | Replaces `ward_bdft_save_setup` and adds `ward_bdft_save_distribution` |
+| `r20_20_transfer_discharge_referrals.sql` | Episode-keyed `ward_discharge_referrals`, atomic `ward_discharge_with_transfer`, and session-protected `ward_list_discharge_referrals`. Prepared migration; apply status must be verified separately. |
 
 RLS on the new clinical and BDFT tables in these files is enabled and forced, with no policies, and `anon` / `authenticated` have table privileges revoked. Access is `SECURITY DEFINER` RPCs. Grants to `anon` and `authenticated` are `EXECUTE` on the session-token RPCs the browser calls. Helpers such as `bdft_compute`, `bdft_actor`, `ward_bdft_service_claim`, and `ward_archive_state` are revoked from `anon` and `authenticated`.
 
