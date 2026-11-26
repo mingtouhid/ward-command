@@ -146,7 +146,7 @@ begin
 
   insert into public.activity_log (id, patient_id, kind, title, detail, actor_id, created_at)
   values (
-    'wdr-event-' || substr(md5(v_ref.id), 1, 24),
+    'wdr-event-' || v_ref.id,
     v_pid,
     'note',
     'Transferred to ' || v_ref.referral_to,
@@ -155,6 +155,18 @@ begin
     v_ref.created_at
   )
   on conflict (id) do nothing;
+
+  -- Replace the generic discharge notification text with a transfer-specific message.
+  update public.notification_events
+  set title = 'Patient transferred',
+      body = (select coalesce(name, 'Patient') from public.patients where id = v_pid)
+             || ' transferred to ' || v_ref.referral_to,
+      metadata = coalesce(metadata, '{}'::jsonb) || jsonb_build_object(
+        'discharge_mode', 'transfer',
+        'referral_to', v_ref.referral_to,
+        'referral_reason', v_ref.reason
+      )
+  where id = nullif(v_result->>'notification_id', '')::uuid;
 
   return coalesce(v_result, '{}'::jsonb) || jsonb_build_object(
     'referral', jsonb_build_object(
