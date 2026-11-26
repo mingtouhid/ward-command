@@ -11605,6 +11605,18 @@ function disPreviewOverlay(){
   const card=(h,b)=>`<div class="card" style="margin:0 0 8px"><p class="tiny">${h}</p>${b}</div>`;
   const line=(k,v)=>`<p class="sm" style="margin:4px 0"><b>${k}</b> ${esc(v||"—")}</p>`;
   const mode=d.mode||"advice";
+  if(mode==="transfer"){
+    return `<div class="sheet"><button class="mask" type="button" onclick="ui.disPreview=false;render()"></button><div class="box" role="dialog" aria-modal="true" aria-label="Review transfer details" style="max-width:520px">
+      <h2 class="page-title" style="margin:0 0 8px">Review transfer details</h2>
+      ${card("Patient",line("Name",p.name)+line("Hospital no.",p.hospitalNo||p.code)+line("Age / sex",(p.age||"")+" "+(p.sex||"")))}
+      ${card("Admission and transfer",line("Admitted",p.admittedAt?fmt(p.admittedAt):"")+line("Transfer",d.ddate||"")+line("Condition",labelOf(DISCHARGE_OUTCOMES,d.outcome||"improved")))}
+      ${card("Receiving department",line("Refer to",d.drefTo||"")+line("Reason for referral",d.drefReason||""))}
+      ${card("MSE and investigations",`<p class="sm">${esc((r17ReviewFor(p.id).hasMse?"MSE on record.":"No MSE recorded.")+" "+(r17ReviewFor(p.id).hasReport?"Investigations updated.":"No investigations updated."))}</p>`)}
+      <button type="button" class="btn danger block" onclick="ui.disPreview=false;censusDraft();dischargeFromCensus()">Confirm transfer</button>
+      <button type="button" class="btn ghost block" style="margin-top:8px" onclick="disDraftSaveNow()">Save draft</button>
+      <button type="button" class="btn ghost block" style="margin-top:8px" onclick="ui.disPreview=false;render()">Return to editing</button>
+    </div></div>`;
+  }
   const sig=(mode==="request"||mode==="dama")?card("Attendant's signature",`<div style="height:72px;border-bottom:1px solid var(--line);margin-top:12px"></div><p class="tiny">Space for a handwritten signature on the printed certificate.</p>`):"";
   return `<div class="sheet"><button class="mask" type="button" onclick="ui.disPreview=false;render()"></button><div class="box" role="dialog" aria-modal="true" aria-label="Review discharge certificate" style="max-width:520px">
     <h2 class="page-title" style="margin:0 0 8px">Review discharge certificate</h2>
@@ -16695,13 +16707,14 @@ function censusView(){
           <label class="field"><span>Condition at discharge</span>${picker("dout",DISCHARGE_OUTCOMES,d.outcome||"improved","Condition at discharge")}</label>
         </div>
         ${disReqRowHtml(d)}
+        ${d.mode==="transfer"?`<label class="field"><span>Refer to department <b class="dis-star" aria-label="required">*</b></span><input id="drefTo" maxlength="160" value="${esc(d.drefTo||"")}" placeholder="e.g. Medicine / Neurology / Surgery" autocomplete="off" oninput="ui.census=ui.census||{};ui.census.drefTo=this.value;disNeedPaint()"/></label><label class="field"><span>Reason for referral <b class="dis-star" aria-label="required">*</b></span><textarea id="drefReason" rows="3" maxlength="3000" placeholder="Clinical reason for transfer" oninput="ui.census=ui.census||{};ui.census.drefReason=this.value;disNeedPaint()">${esc(d.drefReason||"")}</textarea></label>`:""}
         <label class="field"><span>Date &amp; time of discharge${disReqMark(true)}</span>${dmyField("ddate",d.ddate==null?localStamp():d.ddate,{time:1,label:"Date of discharge"})}</label>
         ${dmSectionHtml(p.id,"discharge")}
         ${disAdviceHtml(d)}
         ${disReviewHtml(d)}
         <div class="field dis-mse"><span>MSE at discharge <em style="font-style:normal;opacity:.6">(optional)</em></span>${mseDisRowHtml(p.id)}</div>
         ${(()=>{const t=disNeedText(p,d);return `<p class="tiny dis-need ${/^All required/.test(t)?"ok":""}" id="disNeed" aria-live="polite">${esc(t)}</p>`})()}
-        <button class="btn block" type="button" onclick="disReviewOpen()">Review discharge certificate</button>
+        <button class="btn block" type="button" onclick="disReviewOpen()">${d.mode==="transfer"?"Review transfer details":"Review discharge certificate"}</button>
         <button class="btn ghost block" type="button" style="margin-top:8px" onclick="disDraftSaveNow()">Save draft</button>
       </div>`:""}
       ${(!form&&recentAll.length)?`<p class="sec">Recent discharges</p>${disSearch}${disCards}`:""}`;
@@ -23136,7 +23149,12 @@ function buildCertPdf(m,o){
 }
 function disDoneHtml(){
   const dd=ui.disDone;if(!dd) return "";const p=(S.patients||[]).find(x=>x.id===dd.pid);
-  if(!p||!certEligible(p)||!certSame(p.dischargedAt,dd.at)){return ""}
+  if(!p||!certSame(p.dischargedAt,dd.at)) return "";
+  if(p.dischargeMode==="transfer"){
+    const r=dischargeReferralOf(p);
+    return `<div class="card dis-done" id="disDone"><div><b>Transferred ${esc(p.name)}</b><p class="tiny">${r?"To "+esc(r.referralTo)+" · "+esc(r.reason):"Transfer recorded"} · ${esc(certDT(p.dischargedAt))} IST</p></div><div class="dis-done-act"><button class="btn sm ghost" type="button" onclick="go('record','${p.id}',1)">View record</button><button class="btn sm ghost" type="button" aria-label="Dismiss" onclick="ui.disDone=null;render()">Done</button></div></div>`;
+  }
+  if(!certEligible(p)) return "";
   return `<div class="card dis-done" id="disDone"><div><b>Discharged ${esc(p.name)}</b><p class="tiny">${esc(labelOf(DISCHARGE_MODES,p.dischargeMode))} · ${esc(certDT(p.dischargedAt))} IST</p></div><div class="dis-done-act">${certBtnHtml(p,"sm primary")}<button class="btn sm ghost" type="button" aria-label="Dismiss" onclick="ui.disDone=null;render()">Done</button></div></div>`;
 }
 const PDF_TIMES_W=[[250,333,408,500,500,833,778,180,333,333,500,564,250,333,250,278,500,500,500,500,500,500,500,500,500,500,278,278,564,564,564,444,921,722,667,667,722,611,556,722,722,333,389,722,611,889,722,722,556,722,667,556,611,722,722,944,722,722,611,333,278,333,469,500,333,444,500,444,500,444,333,500,500,278,278,500,278,778,500,500,500,500,333,389,278,500,500,722,500,500,444,480,200,480,541,350,500,250,333,500,444,1000,500,500,333,1000,556,333,889,250,611,250,250,333,333,444,444,350,500,1000,333,980,389,333,722,250,444,722,250,333,500,500,500,500,200,500,333,760,276,500,564,333,760,333,400,564,350,350,333,500,453,250,333,350,310,500,750,750,750,444,722,722,722,722,722,722,889,667,611,611,611,611,333,333,333,333,722,722,722,722,722,722,722,564,722,722,722,722,722,722,556,500,444,444,444,444,444,444,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,564,500,500,500,500,500,500,500,500],[250,333,555,500,500,1000,833,278,333,333,500,570,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,570,570,570,500,930,722,667,722,722,667,611,778,778,389,500,778,667,944,722,778,611,778,722,556,667,722,722,1000,722,722,667,333,278,333,581,500,333,500,556,444,556,444,333,500,556,278,333,556,278,833,556,500,556,556,444,389,333,556,500,722,500,500,444,394,220,394,520,350,500,250,333,500,500,1000,500,500,333,1000,556,333,1000,250,667,250,250,333,333,500,500,350,500,1000,333,1000,389,333,722,250,444,722,250,333,500,500,500,500,220,500,333,747,300,500,570,333,747,333,400,570,350,350,333,556,540,250,333,350,330,500,750,750,750,500,722,722,722,722,722,722,1000,722,667,667,667,667,389,389,389,389,722,722,778,778,778,778,778,570,778,722,722,722,722,722,611,556,500,500,500,500,500,500,722,444,444,444,444,444,278,278,278,278,500,556,500,500,500,500,500,570,500,556,556,556,556,500,556,500],[250,333,420,500,500,833,778,214,333,333,500,675,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,675,675,675,500,920,611,611,667,722,611,611,722,722,333,444,667,556,833,667,722,611,722,611,500,556,722,611,833,611,556,556,389,278,389,422,500,333,500,500,444,500,444,278,500,500,278,278,444,278,722,500,500,500,500,389,389,278,500,444,667,444,444,389,400,275,400,541,350,500,250,333,500,556,889,500,500,333,1000,500,333,944,250,556,250,250,333,333,556,556,350,500,889,333,980,389,333,667,250,389,556,250,389,500,500,500,500,275,500,333,760,276,500,675,333,760,333,400,675,350,350,333,500,523,250,333,350,310,500,750,750,750,500,611,611,611,611,611,611,889,667,611,611,611,611,333,333,333,333,722,667,722,722,722,722,722,675,722,722,722,722,722,556,611,500,500,500,500,500,500,500,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,675,500,500,500,500,500,444,500,444]];
