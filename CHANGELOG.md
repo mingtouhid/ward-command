@@ -1,3 +1,15 @@
+## 2026-11-27 — Fix Transfer discharge referral form and record display
+
+### Fixed
+- **Referral Details UI:** Replaced the `<datalist>` input with Ward Sync's picker dropdown (`dtransferdeptPick`) reusing the hospital department list and `"Other"` custom department input, plus inline validation error messages and a dedicated **Referral Details** section when `Transfer` is selected.
+- **Mode switching & drafts:** Preserved entered receiving department and reason for referral when switching away from `Transfer` and back during the same form session; synced picker state on draft restore and cleared drafts only after commit succeeds.
+- **Error rollback:** Restored secondary/tertiary diagnoses, comorbidities, and treatment mode alongside admission status and bed assignment if the `ward_transfer_patient` RPC fails.
+- **Record & read-state integration:** Exposed `patient_transfer_referrals` through `ward_read_ward_state` (`migrations/r2_0_23_transfer_referrals_read_state.sql`), hydrated `S.transferReferrals`, and displayed **Discharge mode: Transfer**, **Referred to**, and **Reason for referral** in the confirmation banner, recent discharges list, discharged patient snapshot, clinical record timeline, and record PDF export without generating a discharge certificate.
+
+### Preserved
+- Client version: `R2.0.16`; service-worker cache: `ward-sync-pwa-r2.0.0-46`.
+- Existing discharge modes, certificate generation, Observation referral workflow, and `patient_transfer_referrals` / `ward_transfer_patient` backend remain intact.
+
 ## 2026-11-27 — Transfer discharge referral capture
 
 ### Added
