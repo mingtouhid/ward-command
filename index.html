@@ -7821,7 +7821,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R2.0.16";
+const APP_VERSION="R2.0.17";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -11919,6 +11919,36 @@ function r146ScheduleHtml(){
     ${r17ScheduleHtml(ect, typeof canWrite==="function"?canWrite():true)}
   </section>`;
 }
+const MOBILE_HERO_WARD_SLOTS=[
+  {id:"sec_m",rx:/^male(\s+ward)?$/i,label:"Male"},
+  {id:"sec_f",rx:/^female(\s+ward)?$/i,label:"Female"},
+  {id:"sec_dqxvz7",rx:/^(ddc|de-?\s*addiction(\s+ward)?)$/i,label:"DDC"},
+  {id:"sec_3g3xnt",rx:/^(pc|paying(\s+cabins?)?|cabins?|private(\s+cabins?)?)$/i,label:"Paying Cabin"},
+  {id:"sec_3zt6x5",rx:/^(iso|isolation)(\s+ward)?$/i,label:"Isolation"},
+  {id:"sec_rc0ol2",rx:/^(e\s*ward|extra(\s+ward)?|obs(ervation)?\s*\(\s*e\s*\))$/i,label:"Extra Ward"}
+];
+function mobileHeroWards(wards){
+  const slotFor=w=>{
+    const nm=String(w&&w.name||"").trim(), id=String(w&&w.id||"");
+    let idx=MOBILE_HERO_WARD_SLOTS.findIndex(s=>s.rx.test(nm));
+    if(idx<0) idx=MOBILE_HERO_WARD_SLOTS.findIndex(s=>s.id===id);
+    return idx;
+  };
+  return (wards||[]).map((w,i)=>{
+    const slot=slotFor(w);
+    return {
+      id:w.id,
+      n:w.n,
+      label:slot>=0?MOBILE_HERO_WARD_SLOTS[slot].label:(w.name.charAt(0).toUpperCase()+w.name.slice(1)),
+      rank:slot>=0?slot:MOBILE_HERO_WARD_SLOTS.length,
+      orig:i
+    };
+  }).sort((a,b)=>(a.rank-b.rank)||(a.orig-b.orig));
+}
+function wsToggleMobHero(){
+  ui.homeHeroExpanded=!ui.homeHeroExpanded;
+  render();
+}
 function homeView(){
   const list=occupied();
   const high=list.filter(b=>isDelirium(b.patientId)).length;
@@ -11969,9 +11999,35 @@ function homeView(){
   const showBdftPrompt=(canWrite()&&!isIntern()&&!isConsultant()&&isEveningDuty()&&!hasTomorrowBdft);
   const make="";
   const dutyOn=!!dutyRecord();
-  const tile=(n,l,fn,cls)=>`<button type="button" class="r2-tile ${cls||""}${Number(n)>0&&/today-(observation|admitted|discharged)/.test(cls||"")?" has-dot":""}" onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
+  const tile=(n,l,fn,cls,extra)=>`<button type="button" class="r2-tile ${cls||""}${Number(n)>0&&/today-(observation|admitted|discharged)/.test(cls||"")?" has-dot":""}"${extra||""} onclick="${fn}"><b>${n}</b><span>${esc(l)}</span></button>`;
   const consHome=isConsultant();
   const residentPhoneHome=!!(!consHome&&canWrite()&&!isIntern()&&window.matchMedia&&window.matchMedia("(max-width:759px)").matches);
+  const residentMobileHero=!!(!consHome&&(hasResidentPermission()||hasAdminPermission())&&!isIntern()&&!isOfficeAdmin()&&!document.documentElement.classList.contains("ws-resident-tablet"));
+  const heroExpanded=!!ui.homeHeroExpanded;
+  const admN=wardTodayAdmissionCount();
+  const disN=wardTodayDischargeCount();
+  const heroSection=residentMobileHero?`<section class="r2-overview ws-mob-hero${heroExpanded?" is-expanded":""}" aria-label="Ward">
+      <div class="r2-medical-strip ws-mob-hero-anim" aria-hidden="true"><img src="./medical-banner-50px-v5.svg" alt="" width="390" height="50" decoding="async" fetchpriority="high"></div>
+      <div class="r2-grid ws-mob-hero-top">${tile(list.length,"Total Patients","clearPatientListFilters(true)","ws-mob-hero-total")}${tile(obsN,"Observation","go('observe')","today-observation")}${tile(admN,"Admissions","ui.psec='';ui.ptag='today';ui.pf='';go('patients')","today-admitted")}${tile(disN,"Discharges","openRecentDischarges()","today-discharged")}</div>
+      <div class="ws-mob-hero-collapse" id="wsMobHeroExtra" aria-hidden="${heroExpanded?"false":"true"}"${heroExpanded?"":" inert"}>
+        <div class="ws-mob-hero-collapse-inner">
+          <div class="r2-grid ws-mob-hero-wards">${mobileHeroWards(wards).map(w=>tile(w.n,w.label,`openWardSection('${esc(w.id)}')`,"",heroExpanded?"":' tabindex="-1"')).join("")}</div>
+        </div>
+      </div>
+      <div class="ws-mob-hero-foot">
+        <button type="button" class="ws-mob-hero-toggle" aria-expanded="${heroExpanded?"true":"false"}" aria-controls="wsMobHeroExtra" onclick="wsToggleMobHero()"><span>${heroExpanded?"Collapse":"Expand"}</span><svg viewBox="0 0 10 6" width="10" height="6" aria-hidden="true" focusable="false"><path d="M1.4 1.2h7.2a.6.6 0 0 1 .47.97L5.47 5.75a.6.6 0 0 1-.94 0L.93 2.17a.6.6 0 0 1 .47-.97Z" fill="currentColor"/></svg></button>
+      </div>
+    </section>`:`<section class="r2-overview" aria-label="Ward">
+      <div class="row">
+        <div><div class="r2-count${roleOf()==="resident"||isConsultant()?" r2-count-lg":""}">${list.length}<small>Total patients</small></div></div>
+        <div class="r2-shift">${esc(shiftLabel(sh))} shift<b>${esc(dateStrong)}</b></div>
+      </div>
+      <p class="r2-h r2-h-spacer" aria-hidden="true"></p>
+      <div class="r2-grid r2-where">${wards.map(w=>tile(w.n,w.name.charAt(0).toUpperCase()+w.name.slice(1),`openWardSection('${esc(w.id)}')`)).join("")}</div>
+      ${hasResidentPermission()&&!isConsultant()&&!isIntern()&&!isOfficeAdmin()?`<div class="r2-medical-strip" aria-hidden="true"><img src="./medical-banner-50px-v5.svg" alt="" width="390" height="50" decoding="async" fetchpriority="high"></div>`:""}
+      
+      <div class="r2-grid r2-today">${tile(obsN,"Observation","go('observe')","today-observation")}${tile(admN,"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')","today-admitted")}${tile(disN,"Discharged","openRecentDischarges()","today-discharged")}</div>
+    </section>`;
   return `<div class="r2-home">
     
     <div class="r2-wardhead"><h2>${esc((canWrite()&&!consHome&&!isIntern())?((S.unit&&S.unit.name)||"Ward"):"Today")}</h2></div>
@@ -11986,17 +12042,7 @@ function homeView(){
         <button type="button" class="btn sm" style="flex:none;" onclick="bdftOpenGenerate()">Make BDFT</button>
       </div>
     </section>`:""}
-    <div class="r2-split"><section class="r2-overview" aria-label="Ward">
-      <div class="row">
-        <div><div class="r2-count${roleOf()==="resident"||isConsultant()?" r2-count-lg":""}">${list.length}<small>Total patients</small></div></div>
-        <div class="r2-shift">${esc(shiftLabel(sh))} shift<b>${esc(dateStrong)}</b></div>
-      </div>
-      <p class="r2-h r2-h-spacer" aria-hidden="true"></p>
-      <div class="r2-grid r2-where">${wards.map(w=>tile(w.n,w.name.charAt(0).toUpperCase()+w.name.slice(1),`openWardSection('${esc(w.id)}')`)).join("")}</div>
-      ${hasResidentPermission()&&!isConsultant()&&!isIntern()&&!isOfficeAdmin()?`<div class="r2-medical-strip" aria-hidden="true"><img src="./medical-banner-50px-v5.svg" alt="" width="390" height="50" decoding="async" fetchpriority="high"></div>`:""}
-      
-      <div class="r2-grid r2-today">${tile(obsN,"Observation","go('observe')","today-observation")}${tile(wardTodayAdmissionCount(),"Admitted","ui.psec='';ui.ptag='today';ui.pf='';go('patients')","today-admitted")}${tile(wardTodayDischargeCount(),"Discharged","openRecentDischarges()","today-discharged")}</div>
-    </section><div class="r2-side">
+    <div class="r2-split">${heroSection}<div class="r2-side">
     ${consHome||residentPhoneHome?"":`<section class="r2-duty r2-duty-compact" aria-label="Duty status">
       <span class="r2-duty-message">${dutyOn?"You are already signed in":"You are not signed in"}</span>${canWrite()?`<button type="button" class="r2-signin" onclick="${dutyOn?"endDuty()":"signDuty()"}">${dutyOn?"Sign out":"Sign in"}</button>`:""}
     </section>`}
@@ -33213,6 +33259,190 @@ html.ws-resident-landscape .ws-faculty-team-section .ws-team-person {
   flex: 1 1 180px !important;
   min-width: 160px !important;
   max-width: 260px !important;
+}
+</style>
+<style id="ward-sync-mobile-resident-hero-v1">
+/* R2.0.17 — Mobile-only collapsible resident Home hero card. */
+html:not(.ws-resident-tablet) #app.app .r2-overview.ws-mob-hero {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  padding: 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  overflow: visible !important;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-anim {
+  box-sizing: border-box;
+  width: 100%;
+  height: 50px;
+  max-height: 50px;
+  margin: 0 0 8px !important;
+  padding: 0 6px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--teal) 5%, var(--panel2));
+  border: 1px solid color-mix(in srgb, var(--teal) 13%, var(--line));
+  overflow: hidden;
+}
+html[data-theme="dark"]:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-anim,
+html[data-theme="night"]:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-anim,
+html[data-theme="ot"]:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-anim {
+  background: color-mix(in srgb, var(--teal) 9%, var(--panel2));
+  border-color: color-mix(in srgb, var(--teal) 24%, var(--line));
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-anim img {
+  display: block;
+  width: 100%;
+  height: 50px;
+  max-height: 50px;
+  object-fit: contain;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-top {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  align-items: stretch;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-top .r2-tile {
+  height: auto;
+  min-height: 56px;
+  padding: 8px 6px 8px 7px;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 4px;
+  border-radius: 14px !important;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-top .r2-tile b {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-top .r2-tile.has-dot b {
+  padding-right: 12px;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-top .r2-tile.ws-mob-hero-total b {
+  color: var(--accent, var(--teal));
+  font-weight: 800;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-top .r2-tile span {
+  font-size: clamp(9.2px, 2.65vw, 11px);
+  font-weight: 550;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--muted);
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+  max-width: 100%;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-top .r2-tile.today-observation.has-dot:after,
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-top .r2-tile.today-admitted.has-dot:after,
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-top .r2-tile.today-discharged.has-dot:after {
+  right: 7px;
+  top: 7px;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  margin-top: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: grid-template-rows .24s ease, opacity .2s ease, margin-top .24s ease, visibility 0s linear .24s;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero.is-expanded .ws-mob-hero-collapse {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 6px;
+  visibility: visible;
+  pointer-events: auto;
+  transition: grid-template-rows .24s ease, opacity .22s ease .02s, margin-top .24s ease, visibility 0s linear 0s;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-collapse-inner {
+  min-height: 0;
+  overflow: hidden;
+  padding: 2px;
+  margin: -2px;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-wards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-wards .r2-tile {
+  height: auto;
+  min-height: 56px;
+  padding: 8px 10px;
+  gap: 3px;
+  border-radius: 14px !important;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-wards .r2-tile b {
+  font-size: 22px;
+  font-weight: 550;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-wards .r2-tile span {
+  font-size: 11.5px;
+  font-weight: 550;
+  line-height: 1.15;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-foot {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 8px;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--teal) 22%, var(--line));
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--teal) 11%, var(--panel)),
+    color-mix(in srgb, var(--teal) 5%, var(--panel2)));
+  color: var(--teal2, var(--ink));
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(44, 29, 69, .05);
+  transition: transform .12s ease, background .15s ease;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-toggle:active {
+  transform: scale(.97);
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-toggle svg {
+  width: 9px;
+  height: 6px;
+  flex: none;
+  transition: transform .22s ease;
+}
+html:not(.ws-resident-tablet) #app.app .ws-mob-hero.is-expanded .ws-mob-hero-toggle svg {
+  transform: rotate(180deg);
+}
+html[data-theme="dark"]:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-toggle,
+html[data-theme="night"]:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-toggle,
+html[data-theme="ot"]:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-toggle {
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--teal) 20%, var(--panel)),
+    color-mix(in srgb, var(--teal) 9%, var(--panel2)));
+  border-color: color-mix(in srgb, var(--teal) 34%, var(--line));
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-collapse,
+  html:not(.ws-resident-tablet) #app.app .ws-mob-hero.is-expanded .ws-mob-hero-collapse,
+  html:not(.ws-resident-tablet) #app.app .ws-mob-hero .ws-mob-hero-toggle svg {
+    transition: none !important;
+  }
 }
 </style>
 </body>

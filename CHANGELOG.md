@@ -1,3 +1,15 @@
+## 2026-11-27 — Mobile resident Home hero card redesign
+
+### Changed
+- Redesigned the mobile residents Home hero card (`homeView()` when not in tablet mode) to default to a compact collapsed state with an **Expand** / **Collapse** pill toggle at the bottom right.
+- Moved the resident-only medical banner animation (`./medical-banner-50px-v5.svg`) to the top of the card so it stays visible in both collapsed and expanded states.
+- Placed the 4 primary summary tiles in a single row: **Total Patients**, **Observation**, **Admissions**, and **Discharges**, preserving existing navigation actions and the pulsing orange/blue/red indicator dots.
+- Placed the 6 ward-category tiles inside the collapsible drawer in two 3-column rows ordered **Male**, **Female**, **DDC** and **Paying Cabin**, **Isolation**, **Extra Ward**.
+
+### Preserved
+- Tablet/landscape resident Home (`wsResidentLandscapeHome`), consultant mobile Home, intern Home, Office Admin, and all clinical workflows and indicator dots remain unchanged.
+- Client version: `R2.0.17`; service-worker cache: `ward-sync-pwa-r2.0.0-47`.
+
 ## 2026-11-27 — Fix Transfer discharge referral form and record display
 
 ### Fixed
