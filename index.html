@@ -7818,7 +7818,7 @@ function bdftIstTomorrow(v){
 }
 /* BDFT_RULES_END */
 
-const APP_VERSION="R2.0.14";
+const APP_VERSION="R2.0.15";
 /* R1.3.130: belt-and-braces for the CSS no-select rule — block long-press selection and the context popup on anything
    that is not a real editable field (covers content rendered later: modals, cards, inbox, timeline, chips). */
 const NOSEL_EDIT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]),textarea,select,[contenteditable]:not([contenteditable=false])';
@@ -11580,7 +11580,7 @@ function disDraftSaveNow(){
   censusDraft();
   const id=ui.disId; if(!id) return;
   const d=ui.census||{};
-  const keep={ddx:d.ddx,ddx2:d.ddx2,ddx3:d.ddx3,dcomorb:d.dcomorb,mode:d.mode,outcome:d.outcome,ddate:d.ddate,dadvice:d.dadvice,dreview:d.dreview,treat:d.treat,dmrd:d.dmrd,dnomeds:!!d.dnomeds,dreq:d.dreq,dreqName:d.dreqName};
+  const keep={ddx:d.ddx,ddx2:d.ddx2,ddx3:d.ddx3,dcomorb:d.dcomorb,mode:d.mode,outcome:d.outcome,ddate:d.ddate,dadvice:d.dadvice,dreview:d.dreview,treat:d.treat,dmrd:d.dmrd,dnomeds:!!d.dnomeds,dreq:d.dreq,dreqName:d.dreqName,transferDept:d.transferDept,transferReason:d.transferReason};
   try{localStorage.setItem(disDraftKey(id),JSON.stringify(keep))}catch(e){}
   ui.disPreview=false;
   toast("Draft saved. This patient is still admitted.","ok");
@@ -11594,6 +11594,10 @@ function disDraftApply(id){
 function disReviewOpen(){
   censusDraft();
   const id=ui.disId; const p=patient(id); if(!p) return;
+  if((ui.census||{}).mode==="transfer"){
+    const miss=disMissing(p,ui.census||{});
+    if(miss.length){disShowMissing(miss);return;}
+  }
   const review=r17ReviewFor(id);
   const open=function(){ ui.disPreview=true; render(); };
   if(review.warn){ ui.r17Next=open; r17OpenWarn(id,review); return; }
@@ -11605,16 +11609,20 @@ function disPreviewOverlay(){
   const card=(h,b)=>`<div class="card" style="margin:0 0 8px"><p class="tiny">${h}</p>${b}</div>`;
   const line=(k,v)=>`<p class="sm" style="margin:4px 0"><b>${k}</b> ${esc(v||"—")}</p>`;
   const mode=d.mode||"advice";
+  const transfer=mode==="transfer";
+  const heading=transfer?"Review transfer details":"Review discharge certificate";
+  const referral=transfer?card("Referral",line("Receiving department",d.transferDept)+line("Reason for referral",d.transferReason)):"";
   const sig=(mode==="request"||mode==="dama")?card("Attendant's signature",`<div style="height:72px;border-bottom:1px solid var(--line);margin-top:12px"></div><p class="tiny">Space for a handwritten signature on the printed certificate.</p>`):"";
-  return `<div class="sheet"><button class="mask" type="button" onclick="ui.disPreview=false;render()"></button><div class="box" role="dialog" aria-modal="true" aria-label="Review discharge certificate" style="max-width:520px">
-    <h2 class="page-title" style="margin:0 0 8px">Review discharge certificate</h2>
+  return `<div class="sheet"><button class="mask" type="button" onclick="ui.disPreview=false;render()"></button><div class="box" role="dialog" aria-modal="true" aria-label="${heading}" style="max-width:520px">
+    <h2 class="page-title" style="margin:0 0 8px">${heading}</h2>
     ${card("Patient",line("Name",p.name)+line("Hospital no.",p.hospitalNo||p.code)+line("Age / sex",(p.age||"")+" "+(p.sex||"")))}
     ${card("Admission and discharge",line("Admitted",p.admittedAt?fmt(p.admittedAt):"")+line("Discharge",d.ddate||"")+line("Type",labelOf(DISCHARGE_MODES,mode))+line("Condition",labelOf(DISCHARGE_OUTCOMES,d.outcome||"improved")))}
+    ${referral}
     ${card("Diagnoses",line("Primary",d.ddx||p.diagnosis)+line("Secondary",d.ddx2||"")+line("Tertiary",d.ddx3||"")+line("Comorbidities",d.dcomorb||""))}
     ${card("MSE and investigations",`<p class="sm">${esc((r17ReviewFor(p.id).hasMse?"MSE on record.":"No MSE recorded.")+" "+(r17ReviewFor(p.id).hasReport?"Investigations updated.":"No investigations updated."))}</p>`)}
     ${card("Treatment",line("Mode",(d.treat||[]).join(", "))+line("Instructions",d.dadvice||"")+line("Review",d.dreview||""))}
     ${sig}
-    <button type="button" class="btn danger block" onclick="ui.disPreview=false;censusDraft();dischargeFromCensus()">Confirm discharge</button>
+    <button type="button" class="btn danger block" onclick="ui.disPreview=false;censusDraft();dischargeFromCensus()">${transfer?"Confirm transfer":"Confirm discharge"}</button>
     <button type="button" class="btn ghost block" style="margin-top:8px" onclick="disDraftSaveNow()">Save draft</button>
     <button type="button" class="btn ghost block" style="margin-top:8px" onclick="ui.disPreview=false;render()">Return to editing</button>
   </div></div>`;
@@ -13109,6 +13117,8 @@ function censusDraft(){
   if(g("dmode")|| (ui.fields&&ui.fields.dmode!=null)) ui.census.mode=val("dmode")||ui.census.mode;
   if(g("dout")|| (ui.fields&&ui.fields.dout!=null)) ui.census.outcome=val("dout")||ui.census.outcome;
   if(g("ddate")) ui.census.ddate=g("ddate").value;
+  if(g("dtransferdept")) ui.census.transferDept=g("dtransferdept").value;
+  if(g("dtransferreason")) ui.census.transferReason=g("dtransferreason").value;
   if(g("ddx")) ui.census.ddx=g("ddx").value;
   if(g("ddx2")) ui.census.ddx2=g("ddx2").value;
   if(g("ddx3")) ui.census.ddx3=g("ddx3").value;
@@ -13132,8 +13142,8 @@ function openRecentDischarges(){
   ui.disForm=false;
   go("census",null,1);
 }
-function openSnapDischarge(pid){r17EnterDischarge(pid,function(){openSnapDischargeNow(pid)})}
-function openSnapDischargeNow(pid){
+function openSnapDischarge(pid,draft){r17EnterDischarge(pid,function(){openSnapDischargeNow(pid,draft||null)})}
+function openSnapDischargeNow(pid,draft){
   if(!needWrite()) return;
   const p=patient(pid);
   if(!p||p.status!=="admitted") return;
@@ -13141,6 +13151,11 @@ function openSnapDischargeNow(pid){
   ui.disListOnly=false;
   ui.disId=p.id;
   ui.disForm=true;
+  const startMode=draft&&draft.mode==="transfer"?"transfer":"advice";
+  const startOutcome=draft&&draft.outcome?draft.outcome:"improved";
+  ui.fields=ui.fields||{};
+  ui.fields.dmode=startMode;
+  ui.fields.dout=startOutcome;
   ui.census=Object.assign(ui.census||{reasons:[],treat:["conservative"],mode:"advice",outcome:"improved"},{
     ddate:localStamp(),
     ddx:p.diagnosis||"",
@@ -13151,6 +13166,10 @@ function openSnapDischargeNow(pid){
     dmrd:"",
     dect:null,
     dreq:[],dreqName:"",
+    mode:startMode,
+    outcome:startOutcome,
+    transferDept:draft?String(draft.transferDept||""):"",
+    transferReason:draft?String(draft.transferReason||""):"",
     treat:disDefaultTreat(p)
   });
   ui.disDone=null;
@@ -13225,6 +13244,19 @@ function disNeedsMrd(p){return !!p&&!normMrd(p.mrdNo)}
    instructions to the patient (DAMA: optional, a DAMA line is added), review interval (DAMA: defaults to 1 week). */
 function disCertMode(m){return ["advice","request","dama"].includes(m||"advice")}
 function disReqMark(on){return on?' <b class="dis-star" aria-label="required">*</b>':' <em style="font-style:normal;opacity:.6">(optional)</em>'}
+const DIS_TRANSFER_DEPARTMENTS=["Medicine","Neurology","Cardiology","General Surgery","Orthopaedics","ENT","Ophthalmology","Dermatology","Paediatrics","Emergency Medicine","Other"];
+function disTransferFieldsHtml(d){
+  const x=d||{};
+  return `<div class="dis-transfer-fields">
+    <label class="field"><span>Receiving department${disReqMark(true)}</span>
+      <input id="dtransferdept" type="text" list="dtransferdeptoptions" maxlength="120" required aria-required="true" autocomplete="off" placeholder="Choose or enter a department" value="${esc(x.transferDept||"")}" oninput="ui.census=ui.census||{};ui.census.transferDept=this.value;disNeedPaint()"/>
+      <datalist id="dtransferdeptoptions">${DIS_TRANSFER_DEPARTMENTS.map(v=>`<option value="${esc(v)}"></option>`).join("")}</datalist>
+    </label>
+    <label class="field"><span>Reason for referral${disReqMark(true)}</span>
+      <textarea id="dtransferreason" rows="3" maxlength="2000" required aria-required="true" placeholder="Enter the clinical reason for transfer" oninput="ui.census=ui.census||{};ui.census.transferReason=this.value;disNeedPaint()">${esc(x.transferReason||"")}</textarea>
+    </label>
+  </div>`;
+}
 const DIS_ADV_CHIPS=["Continue medications as advised.","Remain abstinent from alcohol.","Avoid alcohol and other substances.","Take medicines regularly; do not stop them on your own.","Return earlier if symptoms recur."];
 const DIS_REV_CHIPS=["1 week","2 weeks","3 weeks","1 month"];
 function disRecordHtml(p){
@@ -13285,6 +13317,11 @@ function disMissing(p,d){
   if(!isFinite(t)) out.push({id:"ddate",msg:"Enter the date and time of discharge"});
   else if(isFinite(adm)&&t<adm-60000) out.push({id:"ddate",msg:"Discharge date is before the admission date"});
   else if(t>Date.now()+6*3600e3) out.push({id:"ddate",msg:"Discharge date is in the future"});
+  if(mode==="transfer"){
+    if(!String(d.transferDept||"").trim()) out.push({id:"dtransferdept",msg:"Enter the receiving department"});
+    if(!String(d.transferReason||"").trim()) out.push({id:"dtransferreason",msg:"Enter the reason for referral"});
+    return out;
+  }
   if(!disCertMode(mode)) return out;
   const dm=ui.obsClose&&ui.obsClose.pid===p.id?ui.obsClose:null;
   if(dm){try{if(document.getElementById("dmAcc"))dmDraft()}catch(e){}}
@@ -13305,7 +13342,7 @@ function disNeedText(p,d){
   if(disNeedsMrd(p)&&!normMrd(d.dmrd)) L.push("M.R.D. No.");
   if((d.mode||"advice")==="dama"&&!disReqNorm(d.dreq,"dama").length) L.push("who requested DAMA");
   let m=[];try{m=disMissing(p,d)}catch(e){}
-  const short=x=>/^Add the medications/.test(x.msg)?"medications on discharge":/instruction/.test(x.msg)?"instructions to the patient":/review/.test(x.msg)?"review interval":/date/i.test(x.msg)?"discharge date":x.msg;
+  const short=x=>/^Add the medications/.test(x.msg)?"medications on discharge":/instruction/.test(x.msg)?"instructions to the patient":/review/.test(x.msg)?"review interval":/receiving department/i.test(x.msg)?"receiving department":/reason for referral/i.test(x.msg)?"reason for referral":/date/i.test(x.msg)?"discharge date":x.msg;
   m.forEach(x=>{const s=short(x);if(!L.includes(s))L.push(s)});
   return L.length?"Still needed: "+L.join(" · "):"All required details are filled.";
 }
@@ -16685,6 +16722,7 @@ function censusView(){
           <label class="field"><span>Mode of discharge</span>${picker("dmode",DISCHARGE_MODES,d.mode||"advice","Mode of discharge")}</label>
           <label class="field"><span>Condition at discharge</span>${picker("dout",DISCHARGE_OUTCOMES,d.outcome||"improved","Condition at discharge")}</label>
         </div>
+        ${d.mode==="transfer"?disTransferFieldsHtml(d):""}
         ${disReqRowHtml(d)}
         <label class="field"><span>Date &amp; time of discharge${disReqMark(true)}</span>${dmyField("ddate",d.ddate==null?localStamp():d.ddate,{time:1,label:"Date of discharge"})}</label>
         ${dmSectionHtml(p.id,"discharge")}
@@ -16692,7 +16730,7 @@ function censusView(){
         ${disReviewHtml(d)}
         <div class="field dis-mse"><span>MSE at discharge <em style="font-style:normal;opacity:.6">(optional)</em></span>${mseDisRowHtml(p.id)}</div>
         ${(()=>{const t=disNeedText(p,d);return `<p class="tiny dis-need ${/^All required/.test(t)?"ok":""}" id="disNeed" aria-live="polite">${esc(t)}</p>`})()}
-        <button class="btn block" type="button" onclick="disReviewOpen()">Review discharge certificate</button>
+        <button class="btn block" type="button" onclick="disReviewOpen()">${d.mode==="transfer"?"Review transfer details":"Review discharge certificate"}</button>
         <button class="btn ghost block" type="button" style="margin-top:8px" onclick="disDraftSaveNow()">Save draft</button>
       </div>`:""}
       ${(!form&&recentAll.length)?`<p class="sec">Recent discharges</p>${disSearch}${disCards}`:""}`;
@@ -16925,7 +16963,7 @@ function dischargeFromCensus(){
   const review=String(d.dreview||"").trim().slice(0,200);
   const ectN=(d.treat||[]).includes("ect")?disEctVal(p):null;
   const dmeds=dmCollect(id);
-  const extra={mrd:needMrd?mrd:null,advice,review,dmeds,ectN,prev:{mrdNo:p.mrdNo||"",advice:p.dischargeAdvice||"",review:p.dischargeReview||"",ectN:p.dischargeEctSessions==null?null:p.dischargeEctSessions,meds:p.dischargeMeds||[],reqBy:p.dischargeRequestedBy||[],reqName:p.dischargeRequesterName||""},reqBy,reqName};
+  const extra={mrd:needMrd?mrd:null,advice,review,dmeds,ectN,transferDept:dmode==="transfer"?String(d.transferDept||"").trim():"",transferReason:dmode==="transfer"?String(d.transferReason||"").trim():"",prev:{mrdNo:p.mrdNo||"",advice:p.dischargeAdvice||"",review:p.dischargeReview||"",ectN:p.dischargeEctSessions==null?null:p.dischargeEctSessions,meds:p.dischargeMeds||[],reqBy:p.dischargeRequestedBy||[],reqName:p.dischargeRequesterName||""},reqBy,reqName};
   const oldDx=p.diagnosis||"";
   const nextDx=(d.ddx!=null&&d.ddxPid===p.id?String(d.ddx):oldDx).trim()||oldDx;
   const bed=S.beds.find(b=>b.patientId===id);
@@ -16967,11 +17005,19 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
     const reqArgs=xx&&xx.reqBy&&xx.reqBy.length?{p_discharge_requested_by:xx.reqBy,...(xx.reqName?{p_discharge_requester_name:xx.reqName}:{})}:(xx&&xx.reqName?{p_discharge_requester_name:xx.reqName}:{});
     const msePayload=r17MsePayload(p.id);
     let atomic;
-    if(msePayload){
+    if(p.dischargeMode==="transfer"){
+      atomic=await callAtomicWorkflow("ward_transfer_patient",{
+        ...disArgs,...reqArgs,
+        p_receiving_department:String(xx&&xx.transferDept||"").trim(),
+        p_referral_reason:String(xx&&xx.transferReason||"").trim(),
+        ...(msePayload?{p_discharge_mse:msePayload}:{})
+      });
+      if(!atomic.used) throw new Error("Transfer referral workflow is unavailable on the server. Refresh after the Ward Sync update and retry.");
+    }else if(msePayload){
       atomic=await callAtomicWorkflow("ward_discharge_with_review",{...disArgs,...reqArgs,p_discharge_mse:msePayload});
       if(!atomic.used)atomic=await callAtomicWorkflow("ward_discharge_patient",{...disArgs,...reqArgs});
     }else atomic=await callAtomicWorkflow("ward_discharge_patient",{...disArgs,...reqArgs});
-    if(!atomic.used&&Object.keys(reqArgs).length&&sb&&sessionTok){console.warn("Discharge requester not supported by server; retrying without it");atomic=await callAtomicWorkflow("ward_discharge_patient",disArgs)}
+    if(p.dischargeMode!=="transfer"&&!atomic.used&&Object.keys(reqArgs).length&&sb&&sessionTok){console.warn("Discharge requester not supported by server; retrying without it");atomic=await callAtomicWorkflow("ward_discharge_patient",disArgs)}
     if(xx&&atomic.used&&atomic.data&&Array.isArray(atomic.data.discharge_meds)){
       // R1.3.133: a server without the R1.3.133 migration drops "instructions" (taper text); keep ours and say so.
       const lost=(xx.dmeds||[]).some(m=>m&&m.instructions)&&!atomic.data.discharge_meds.some(m=>m&&m.instructions);
@@ -17000,7 +17046,7 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
           metadata:{bed_number:bed?bed.no:null,discharge_mode:p.dischargeMode,discharge_outcome:p.dischargeOutcome}
         });
       }
-      ev(p.id,"Discharge notification dispatched · "+((result.dispatch&&result.dispatch.sent)||0)+" device(s)",true);
+      ev(p.id,(p.dischargeMode==="transfer"?"Transfer":"Discharge")+" notification dispatched · "+((result.dispatch&&result.dispatch.sent)||0)+" device(s)",true);
     }catch(ne){
       evFail(p.id,"Discharge notification",ne);
       console.warn("Discharge notification failed",ne);
@@ -17015,7 +17061,7 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
       S.patientEdits.unshift({id:"pe-"+uid("ed"),pid:p.id,field:"mrd_no",old:null,new:xx.mrd,by:S.userId,at:p.dischargedAt||now(),group:"dis-mrd-"+p.id});
       ev(p.id,"Patient details edited",true,"note","MRD No.: — → "+xx.mrd);
     }
-    ev(p.id,"Discharged · "+labelOf(DISCHARGE_MODES,p.dischargeMode)+" · "+labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome),true,"note");
+    if(p.dischargeMode!=="transfer") ev(p.id,"Discharged · "+labelOf(DISCHARGE_MODES,p.dischargeMode)+" · "+labelOf(DISCHARGE_OUTCOMES,p.dischargeOutcome),true,"note");
     try{
       const savedId=atomic.used&&atomic.data&&atomic.data.mse_id;
       if(savedId){
@@ -17032,7 +17078,7 @@ async function dischargeCommit(p,bed,releasedBefore,ect,ectBefore,oldDx,extra){s
       }
     }catch(me){console.warn("MSE at discharge",me)} // R1.3.124 · R1.7 atomic only when the discharge RPC saved it
     ui.r17Ov=null;
-    if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dreview;delete ui.census.dmrd;delete ui.census.dect;delete ui.census.dreq;delete ui.census.dreqName;}
+    if(ui.census){delete ui.census.ddx;delete ui.census.ddxPid;delete ui.census.dadvice;delete ui.census.dreview;delete ui.census.dmrd;delete ui.census.dect;delete ui.census.dreq;delete ui.census.dreqName;delete ui.census.transferDept;delete ui.census.transferReason;}
     if(ui.obsClose&&ui.obsClose.pid===p.id) ui.obsClose=null;
     ui.disDone=certEligible(p)?{pid:p.id,at:p.dischargedAt}:null; // R1.3.126: offer the certificate right away
     flashBtn(".btn.danger.block","ok");toast("Discharged "+p.name,"ok");
@@ -17102,16 +17148,35 @@ function admitPatient(){
   admitCommit(id,p,bed,asg,hosp,prevBackup,prevSnapBackup);
 }
 function dischargeForm(id){ const p=patient(id);if(!p||p.status==="discharged")return; openPanel("discharge",{id}); }
+function continueDischargeFromPanel(pid){
+  if(!needWrite()) return;
+  const mode=val("dmode")||"advice";
+  const outcome=val("dout")||"improved";
+  let transferDept="",transferReason="";
+  if(mode==="transfer"){
+    transferDept=String((document.getElementById("dtransferdept")||{}).value||"").trim();
+    transferReason=String((document.getElementById("dtransferreason")||{}).value||"").trim();
+    if(!transferDept){toast("Enter the receiving department.","bad");const el=document.getElementById("dtransferdept");if(el){el.focus();el.classList.add("dis-err")}return}
+    if(!transferReason){toast("Enter the reason for referral.","bad");const el=document.getElementById("dtransferreason");if(el){el.focus();el.classList.add("dis-err")}return}
+  }
+  ui.fields=ui.fields||{};
+  ui.fields.dmode=mode;ui.fields.dout=outcome;
+  const draft={mode,outcome,transferDept,transferReason};
+  openSnapDischarge(pid,draft);
+  closePanel();
+}
 function dischargeFormBody(id){
   const p=patient(id);if(!p) return `<p class="sm">Patient not found.</p>`;
   const treat=val("dtrt")||p.treatmentMode||(ectPlan(id)?"ect":"conservative");
   const curDx=val("ddx")||(ui.fields&&ui.fields.ddx!=null?ui.fields.ddx:(p.diagnosis||""));
+  const mode=val("dmode")||p.dischargeMode||"advice";
   return `<p class="sm" style="margin:8px 0">${esc(p.name)}</p>
     ${dxFieldHtml("Working diagnosis","ddx",curDx,"Diagnosis","fields_ddx")}
     <label class="field"><span>Mode of treatment</span>${picker("dtrt",TREATMENT_MODES,treat,"Mode of treatment")}</label>
-    <label class="field"><span>Mode of discharge</span>${picker("dmode",DISCHARGE_MODES,val("dmode")||p.dischargeMode||"advice","Mode of discharge")}</label>
+    <label class="field"><span>Mode of discharge</span>${picker("dmode",DISCHARGE_MODES,mode,"Mode of discharge")}</label>
+    ${mode==="transfer"?disTransferFieldsHtml(ui.census||{}):""}
     <label class="field"><span>Outcome</span>${picker("dout",DISCHARGE_OUTCOMES,val("dout")||p.dischargeOutcome||"improved","Outcome")}</label>
-    <button class="btn danger block" onclick="openSnapDischarge('${p.id}');closePanel()">Continue</button>`;
+    <button class="btn danger block" onclick="continueDischargeFromPanel('${p.id}')">Continue</button>`;
 }
 function dischargePatient(id){
   if(!needWrite())return;
@@ -19635,7 +19700,7 @@ function setPick(id,v){
   if(id==="disel"){ui.disId=v;ui.disForm=false;const dp=v?patient(v):null;ui.census=ui.census||{};ui.census.ddx=dp?(dp.diagnosis||""):"";ui.census.ddxPid=v||"";ui.census.dadvice="";ui.census.dreview="";ui.census.dnomeds=false;ui.census.dmrd="";ui.census.dect=null;ui.census.dreq=[];ui.census.dreqName="";ui.disDone=null;ui.census.treat=disDefaultTreat(dp);disMedsReset(v||"")}
   if(id==="dmode"||id==="dout"||id==="asex"||id==="abed"||id==="acon"||id==="acon2"||id==="hshift"){
     ui.census=ui.census||{};
-    if(id==="dmode"){ui.census.mode=v;if(!disReqMode(v)){ui.census.dreq=[];ui.census.dreqName=""}else ui.census.dreq=disReqNorm(ui.census.dreq,v)} // R1.3.126
+    if(id==="dmode"){ui.census.mode=v;if(v!=="transfer"){ui.census.transferDept="";ui.census.transferReason=""}if(!disReqMode(v)){ui.census.dreq=[];ui.census.dreqName=""}else ui.census.dreq=disReqNorm(ui.census.dreq,v)} // R1.3.126 + transfer
     if(id==="dout") ui.census.outcome=v;
     if(id==="asex") ui.census.sex=v;
     if(id==="acon") ui.census.con=v;
