@@ -1,3 +1,15 @@
+## 2026-11-27 — Transfer discharge referral capture
+
+### Added
+- Selecting **Transfer** in either discharge entry point reveals required receiving-department and reason-for-referral fields. Department supports common suggestions and custom entry.
+- Transfer details are saved in a dedicated, episode-keyed referral table through the atomic `ward_transfer_patient` RPC. The patient discharge, referral, timeline entry, notification details, and optional discharge MSE are committed together.
+- Transfer uses a review/confirmation screen but does not generate or offer a printable discharge certificate.
+
+### Preserved
+- Existing discharge modes and the original discharge RPC remain unchanged.
+- The transfer table is protected by RLS and has no direct client-role table grants.
+- Client version: `R2.0.15`; service-worker cache: `ward-sync-pwa-r2.0.0-45`.
+
 ## 2026-11-22 — Final resident landscape home design
 
 ### Added
